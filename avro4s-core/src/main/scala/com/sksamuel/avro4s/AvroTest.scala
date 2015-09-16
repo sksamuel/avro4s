@@ -3,12 +3,22 @@ package com.sksamuel.avro4s
 import java.io.File
 import java.util.UUID
 
-import org.apache.avro.Schema
+import org.apache.avro.{SchemaBuilder, Schema}
 import org.apache.avro.file.{DataFileReader, DataFileWriter}
 import org.apache.avro.generic.GenericData.Record
 import org.apache.avro.generic.{GenericData, GenericDatumReader, GenericDatumWriter, GenericRecord}
 
 object AvroTest extends App {
+
+  val s = SchemaBuilder
+    .record("HandshakeRequest").namespace("org.apache.avro.ipc")
+    .fields()
+    .name("clientHash").`type`().fixed("MD5").size(16).noDefault()
+    .name("clientProtocol").`type`().nullable().stringType().noDefault()
+    .name("meta").`type`().nullable().map().values().bytesType().noDefault()
+    .endRecord()
+
+  println(s)
 
   val schema = new Schema.Parser().parse(getClass.getResourceAsStream("/students.avsc"))
 
