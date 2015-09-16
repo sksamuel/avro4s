@@ -10,12 +10,17 @@ trait AvroSchemaWriter[T] {
 }
 
 object SchemaUtils {
+
   def schemaType(sig: String): Schema.Type = {
     sig match {
-      case "String" => Schema.Type.STRING
+      case "Array[Byte]" | "List[Byte]" | "Seq[Byte]" => Schema.Type.BYTES
+      case "Array" => Schema.Type.ARRAY
+      case "Boolean" => Schema.Type.BOOLEAN
+      case "Double" => Schema.Type.DOUBLE
+      case "Float" => Schema.Type.FLOAT
       case "Int" => Schema.Type.INT
       case "Long" => Schema.Type.LONG
-      case "Boolean" => Schema.Type.BOOLEAN
+      case "String" => Schema.Type.STRING
       case _ => Schema.Type.STRING
     }
   }

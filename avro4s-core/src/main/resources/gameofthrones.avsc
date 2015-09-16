@@ -13,6 +13,21 @@
       "name": "season",
       "type": "int",
       "doc": "Generated from scala type: Int"
+    },
+    {
+      "name": "rating",
+      "type": "double",
+      "doc": "Generated from scala type: Double"
+    },
+    {
+      "name": "deathCount",
+      "type": "long",
+      "doc": "Generated from scala type: Long"
+    },
+    {
+      "name": "aired",
+      "type": "boolean",
+      "doc": "Generated from scala type: Boolean"
     }
   ]
 }
