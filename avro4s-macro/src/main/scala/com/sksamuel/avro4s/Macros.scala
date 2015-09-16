@@ -1,41 +1,15 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.{Schema, SchemaBuilder}
+import org.apache.avro.Schema
 
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
-
-//object Macros {
-//
-//  import scala.reflect.macros.Context
-//
-//  def toMap_impl[T: c.WeakTypeTag](c: Context) = {
-//    import c.universe._
-//
-//    val mapApply = Select(reify(Map).tree, newTermName("apply"))
-//
-//    val pairs = weakTypeOf[T].declarations.collect {
-//      case m: MethodSymbol if m.isCaseAccessor =>
-//        val name = c.literal(m.name.decoded)
-//        val value = c.Expr(Select(c.resetAllAttrs(c.prefix.tree), m.name))
-//        reify(name.splice -> value.splice).tree
-//    }
-//
-//    c.Expr[Map[String, Any]](Apply(mapApply, pairs.toList))
-//  }
-//}
 
 trait AvroSchemaWriter[T] {
   def schema: org.apache.avro.Schema
 }
 
-//object SchemaTypeMapper {
-//  def scalaTypeToSchemaType(klass: Class[T]): Schema.Type = {
-//    Schema.create(Schema.Type.INT)
-//  }
-//}
-
-object Schemas {
+object SchemaUtils {
   def schemaType(sig: String): Schema.Type = {
     sig match {
       case "String" => Schema.Type.STRING
@@ -54,8 +28,6 @@ object Schemas {
 }
 
 object Macros {
-  implicit def materializeWriter[T]: AvroSchemaWriter[T] = macro materializeWriterImpl[T]
-
   def materializeWriterImpl[T: c.WeakTypeTag](c: Context): c.Expr[AvroSchemaWriter[T]] = {
     import c.universe._
 
@@ -73,7 +45,7 @@ object Macros {
         def schema : org.apache.avro.Schema = {
           import scala.collection.JavaConverters._
           val s = org.apache.avro.Schema.createRecord(${tpe.typeSymbol.fullName}, "", ${tpe.typeSymbol.fullName}, false)
-          val fields = com.sksamuel.avro4s.Schemas.schemaFields($aa)
+          val fields = com.sksamuel.avro4s.SchemaUtils.schemaFields($aa)
           s.setFields(fields.asJava)
           s
         }

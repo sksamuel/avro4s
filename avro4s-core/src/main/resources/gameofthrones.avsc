@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "GameOfThrones",
+  "namespace": "com.sksamuel.avro4s",
+  "doc": "",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Generated from scala type: String"
+    },
+    {
+      "name": "season",
+      "type": "int",
+      "doc": "Generated from scala type: Int"
+    }
+  ]
+}
