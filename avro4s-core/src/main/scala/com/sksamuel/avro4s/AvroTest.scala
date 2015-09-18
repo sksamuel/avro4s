@@ -20,7 +20,7 @@ object AvroTest extends App {
 
   println(s)
 
-  val schema = new Schema.Parser().parse(getClass.getResourceAsStream("/students.avsc"))
+  val schema = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/students.avsc"))
 
   val avroFile = new File("students.avro")
   // Create a writer to serialize the record

@@ -2,32 +2,27 @@
   "type": "record",
   "name": "GameOfThrones",
   "namespace": "com.sksamuel.avro4s",
-  "doc": "",
   "fields": [
     {
       "name": "id",
-      "type": "string",
-      "doc": "Generated from scala type: String"
+      "type": "string"
     },
     {
       "name": "season",
-      "type": "int",
-      "doc": "Generated from scala type: Int"
+      "type": "int"
     },
     {
       "name": "rating",
-      "type": "double",
-      "doc": "Generated from scala type: Double"
+      "type": "double"
     },
     {
       "name": "deathCount",
-      "type": "long",
-      "doc": "Generated from scala type: Long"
+      "type": "long"
     },
     {
       "name": "aired",
       "type": "boolean",
-      "doc": "Generated from scala type: Boolean"
+      "doc": ""
     }
   ]
 }
