@@ -3,7 +3,7 @@ package com.sksamuel.avro4s
 import org.apache.avro.Schema
 
 import scala.language.experimental.macros
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.macros.Context
 
 trait AvroSchemaWriter[T] {
@@ -50,6 +50,12 @@ object Macros {
     }
   }
 
+  implicit def IterableSchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[Iterable[S]] = {
+    new AvroSchemaWriter[Iterable[S]] {
+      def schema: Schema = Schema.createArray(subschema.schema)
+    }
+  }
+
   implicit def ListSchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[List[S]] = {
     new AvroSchemaWriter[List[S]] {
       def schema: Schema = Schema.createArray(subschema.schema)
@@ -59,6 +65,12 @@ object Macros {
   implicit def SeqSchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[Seq[S]] = {
     new AvroSchemaWriter[Seq[S]] {
       def schema: Schema = Schema.createArray(subschema.schema)
+    }
+  }
+
+  implicit def MapSchema[V](implicit valueSchema: AvroSchemaWriter[V]): AvroSchemaWriter[Map[String, V]] = {
+    new AvroSchemaWriter[Map[String, V]] {
+      def schema: Schema = Schema.createMap(valueSchema.schema)
     }
   }
 

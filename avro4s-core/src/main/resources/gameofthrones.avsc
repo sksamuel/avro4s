@@ -43,6 +43,13 @@
         "type": "array",
         "items": "int"
       }
+    },
+    {
+      "name": "alligence",
+      "type": {
+        "type": "map",
+        "values": "string"
+      }
     }
   ]
 }

@@ -23,4 +23,5 @@ case class GameOfThrones(id: String,
                          aired: Boolean,
                          locations: Seq[String],
                          kings: Array[String],
-                         seasons: List[Int])
+                         seasons: List[Int],
+                         alligence: Map[String, String])
