@@ -50,6 +50,39 @@
         "type": "map",
         "values": "string"
       }
+    },
+    {
+      "name": "throne",
+      "type": {
+        "type": "record",
+        "name": "IronThrone",
+        "fields": [
+          {
+            "name": "swordCount",
+            "type": "int"
+          }
+        ]
+      }
+    },
+    {
+      "name": "houses",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "House",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "ruler",
+              "type": "string"
+            }
+          ]
+        }
+      }
     }
   ]
 }

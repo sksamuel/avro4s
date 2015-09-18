@@ -24,4 +24,9 @@ case class GameOfThrones(id: String,
                          locations: Seq[String],
                          kings: Array[String],
                          seasons: List[Int],
-                         alligence: Map[String, String])
+                         alligence: Map[String, String],
+                         throne: IronThrone,
+                         houses: Seq[House])
+
+case class IronThrone(swordCount: Int)
+case class House(name: String, ruler: String)
