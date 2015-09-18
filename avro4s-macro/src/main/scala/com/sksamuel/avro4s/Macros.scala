@@ -44,6 +44,18 @@ object Macros {
     def schema: Schema = Schema.create(Schema.Type.DOUBLE)
   }
 
+  implicit def ArraySchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[Array[S]] = {
+    new AvroSchemaWriter[Array[S]] {
+      def schema: Schema = Schema.createArray(subschema.schema)
+    }
+  }
+
+  implicit def ListSchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[List[S]] = {
+    new AvroSchemaWriter[List[S]] {
+      def schema: Schema = Schema.createArray(subschema.schema)
+    }
+  }
+
   implicit def SeqSchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[Seq[S]] = {
     new AvroSchemaWriter[Seq[S]] {
       def schema: Schema = Schema.createArray(subschema.schema)

@@ -8,7 +8,7 @@
       "type": "string"
     },
     {
-      "name": "season",
+      "name": "kingdoms",
       "type": "int"
     },
     {
@@ -28,6 +28,20 @@
       "type": {
         "type": "array",
         "items": "string"
+      }
+    },
+    {
+      "name": "kings",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "name": "seasons",
+      "type": {
+        "type": "array",
+        "items": "int"
       }
     }
   ]
