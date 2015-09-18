@@ -13,6 +13,13 @@
     },
     {
       "name": "rating",
+      "type": "double",
+      "logicalType": "decimal",
+      "precision": "4",
+      "scale": "2"
+    },
+    {
+      "name": "temperature",
       "type": "double"
     },
     {

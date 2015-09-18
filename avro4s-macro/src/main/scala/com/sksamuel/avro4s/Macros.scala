@@ -8,6 +8,7 @@ import scala.reflect.macros.Context
 
 trait AvroSchemaWriter[T] {
   def schema: org.apache.avro.Schema
+  def props: Map[String, String] = Map.empty
 }
 
 trait AvroFieldWriter[T] {
@@ -44,6 +45,11 @@ object Macros {
     def schema: Schema = Schema.create(Schema.Type.DOUBLE)
   }
 
+  implicit val BigDecimalSchema: AvroSchemaWriter[BigDecimal] = new AvroSchemaWriter[BigDecimal] {
+    def schema: Schema = Schema.create(Schema.Type.DOUBLE)
+    override def props: Map[String, String] = Map("logicalType" -> "decimal", "precision" -> "4", "scale" -> "2")
+  }
+
   implicit def ArraySchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[Array[S]] = {
     new AvroSchemaWriter[Array[S]] {
       def schema: Schema = Schema.createArray(subschema.schema)
@@ -75,7 +81,9 @@ object Macros {
   }
 
   def fieldBuilder[T](name: String)(implicit schema: AvroSchemaWriter[T]): Schema.Field = {
-    new Schema.Field(name, schema.schema, null, null)
+    val field = new Schema.Field(name, schema.schema, null, null)
+    schema.props.foreach { case (k, v) => field.addProp(k, v) }
+    field
   }
 
   def schemaImpl[T: c.WeakTypeTag](c: Context): c.Expr[AvroSchemaWriter[T]] = {
@@ -90,8 +98,9 @@ object Macros {
     val name = t.typeSymbol.fullName
 
     val fieldSchemaPartTrees: Seq[Tree] = fields.map { f =>
-      // q"""{import Macros._; implicitly[AvroFieldWriter[${f.typeSignature}]].field(${f.name.decoded})}"""
-      q"""{import Macros._; fieldBuilder[${f.typeSignature}](${f.name.decoded})}"""
+      val name = f.name.decoded
+      val sig = f.typeSignature
+      q"""{import Macros._; fieldBuilder[$sig]($name)}"""
     }
 
     c.Expr[AvroSchemaWriter[T]]( q"""

@@ -18,7 +18,8 @@ class MacroWriterTest extends WordSpec with Matchers {
 
 case class GameOfThrones(id: String,
                          kingdoms: Int,
-                         rating: Double,
+                         rating: BigDecimal,
+                         temperature: Double,
                          deathCount: Long,
                          aired: Boolean,
                          locations: Seq[String],
