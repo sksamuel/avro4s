@@ -106,7 +106,7 @@ object Macros {
     c.Expr[AvroSchemaWriter[T]]( q"""
       new AvroSchemaWriter[$t] {
         def schema = {
-         import scala.collection.JavaConverters._ 
+         import scala.collection.JavaConverters._
          val s = org.apache.avro.Schema.createRecord($name, null, $name, false)
          val fields = Seq(..$fieldSchemaPartTrees)
          s.setFields(fields.asJava)
