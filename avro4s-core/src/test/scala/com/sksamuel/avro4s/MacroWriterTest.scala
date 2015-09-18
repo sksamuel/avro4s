@@ -20,4 +20,5 @@ case class GameOfThrones(id: String,
                          season: Int,
                          rating: Double,
                          deathCount: Long,
-                         aired: Boolean)
+                         aired: Boolean,
+                         locations: Seq[String])

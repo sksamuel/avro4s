@@ -21,8 +21,14 @@
     },
     {
       "name": "aired",
-      "type": "boolean",
-      "doc": ""
+      "type": "boolean"
+    },
+    {
+      "name": "locations",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
     }
   ]
 }
