@@ -21,7 +21,7 @@ trait AvroSerializer[T] {
 }
 
 trait AvroRecordPut[T] {
-  def put(name: String, value: Any, record: Record): Unit = record.put(name, value)
+  def put(name: String, value: T, record: Record): Unit = record.put(name, value)
 }
 
 object Writers {
@@ -33,17 +33,37 @@ object Writers {
   implicit val BooleanSchema: AvroRecordPut[Boolean] = new AvroRecordPut[Boolean] {}
   implicit val IntSchema: AvroRecordPut[Int] = new AvroRecordPut[Int] {}
   implicit val LongSchema: AvroRecordPut[Long] = new AvroRecordPut[Long] {}
-  implicit def ArraySchema[S]: AvroRecordPut[Array[S]] = new AvroRecordPut[Array[S]] {}
-  implicit def IterableSchema[S]: AvroRecordPut[Iterable[S]] = new AvroRecordPut[Iterable[S]] {}
-  implicit def ListSchema[S]: AvroRecordPut[List[S]] = new AvroRecordPut[List[S]] {}
-  implicit def SeqSchema[S]: AvroRecordPut[Seq[S]] = new AvroRecordPut[Seq[S]] {}
+
+  implicit def ArraySchema[S]: AvroRecordPut[Array[S]] = new AvroRecordPut[Array[S]] {
+    override def put(name: String, value: Array[S], record: Record): Unit = {
+      record.put(name, value)
+    }
+  }
+
+  implicit def ListSchema[S]: AvroRecordPut[List[S]] = new AvroRecordPut[List[S]] {
+    override def put(name: String, value: List[S], record: Record): Unit = {
+      import scala.collection.JavaConverters._
+      record.put(name, value.asJavaCollection)
+    }
+  }
+
+  implicit def SeqSchema[S]: AvroRecordPut[Seq[S]] = new AvroRecordPut[Seq[S]] {
+    override def put(name: String, value: Seq[S], record: Record): Unit = {
+      import scala.collection.JavaConverters._
+      println(value)
+      record.put(name, value.asJavaCollection)
+    }
+  }
+
+  implicit def IterableSchema[S]: AvroRecordPut[Iterable[S]] = new AvroRecordPut[Iterable[S]] {
+    override def put(name: String, value: Iterable[S], record: Record): Unit = {
+      import scala.collection.JavaConverters._
+      record.put(name, value.asJavaCollection)
+    }
+  }
 
   def fieldWriter[T](name: String, value: T, record: Record)(implicit s: AvroSchema[T], w: AvroRecordPut[T]): Unit = {
     w.put(name, value, record)
-  }
-
-  def put[T](name: String, record: Record): Unit = {
-    record.put(name, name)
   }
 
   def impl[T: c.WeakTypeTag](c: Context): c.Expr[AvroSerializer[T]] = {
@@ -51,7 +71,7 @@ object Writers {
     import c.universe._
     val t = weakTypeOf[T]
 
-    val fields  = t.declarations.collectFirst {
+    val fields = t.declarations.collectFirst {
       case m: MethodSymbol if m.isPrimaryConstructor => m
     }.get.paramss.head
 
