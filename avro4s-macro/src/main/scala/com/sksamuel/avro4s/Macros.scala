@@ -50,7 +50,6 @@ object Writers {
   implicit def SeqSchema[S]: AvroRecordPut[Seq[S]] = new AvroRecordPut[Seq[S]] {
     override def put(name: String, value: Seq[S], record: Record): Unit = {
       import scala.collection.JavaConverters._
-      println(value)
       record.put(name, value.asJavaCollection)
     }
   }
