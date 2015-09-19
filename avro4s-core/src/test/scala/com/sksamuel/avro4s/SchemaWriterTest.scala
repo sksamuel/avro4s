@@ -4,7 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 class MacroWriterTest extends WordSpec with Matchers {
 
-  import SchemaGenerator._
+  import AvroImplicits._
 
   "SchemaGenerator.schemaFor" should {
     "generate correct schema" in {

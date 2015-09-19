@@ -1,12 +1,13 @@
 package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData.Record
 
 import scala.language.experimental.macros
 import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.macros.Context
 
-trait AvroSchemaWriter[T] {
+trait AvroSchema[T] {
   def schema: org.apache.avro.Schema
   def props: Map[String, String] = Map.empty
 }
@@ -15,78 +16,144 @@ trait AvroFieldWriter[T] {
   def field(name: String): Schema.Field
 }
 
+trait AvroSerializer[T] {
+  def write(value: T)(implicit s: AvroSchema[T]): Record
+}
+
+trait AvroRecordPut[T] {
+  def put(name: String, value: Any, record: Record): Unit = record.put(name, value)
+}
+
+object Writers {
+
+  implicit val StringWriter: AvroRecordPut[String] = new AvroRecordPut[String] {}
+  implicit val BigDecimalSchema: AvroRecordPut[BigDecimal] = new AvroRecordPut[BigDecimal] {}
+  implicit val DoubleSchema: AvroRecordPut[Double] = new AvroRecordPut[Double] {}
+  implicit val FloatSchema: AvroRecordPut[Float] = new AvroRecordPut[Float] {}
+  implicit val BooleanSchema: AvroRecordPut[Boolean] = new AvroRecordPut[Boolean] {}
+  implicit val IntSchema: AvroRecordPut[Int] = new AvroRecordPut[Int] {}
+  implicit val LongSchema: AvroRecordPut[Long] = new AvroRecordPut[Long] {}
+  implicit def ArraySchema[S]: AvroRecordPut[Array[S]] = new AvroRecordPut[Array[S]] {}
+  implicit def IterableSchema[S]: AvroRecordPut[Iterable[S]] = new AvroRecordPut[Iterable[S]] {}
+  implicit def ListSchema[S]: AvroRecordPut[List[S]] = new AvroRecordPut[List[S]] {}
+  implicit def SeqSchema[S]: AvroRecordPut[Seq[S]] = new AvroRecordPut[Seq[S]] {}
+
+  def fieldWriter[T](name: String, value: T, record: Record)(implicit s: AvroSchema[T], w: AvroRecordPut[T]): Unit = {
+    w.put(name, value, record)
+  }
+
+  def put[T](name: String, record: Record): Unit = {
+    record.put(name, name)
+  }
+
+  def impl[T: c.WeakTypeTag](c: Context): c.Expr[AvroSerializer[T]] = {
+
+    import c.universe._
+    val t = weakTypeOf[T]
+
+    val fields  = t.declarations.collectFirst {
+      case m: MethodSymbol if m.isPrimaryConstructor => m
+    }.get.paramss.head
+
+    val fieldWrites: Seq[Tree] = fields.map { f =>
+      val termName = f.name.toTermName
+      val decoded = f.name.decoded
+      val sig = f.typeSignature
+      q"""{ import Writers._
+            val putter = implicitly[AvroRecordPut[$sig]]
+            (t: $t, r: org.apache.avro.generic.GenericData.Record) => {
+              putter.put($decoded, t.$termName, r)
+            }
+          }
+      """
+    }
+
+    c.Expr[AvroSerializer[T]]( q"""
+      new AvroSerializer[$t] {
+        import org.apache.avro.generic.GenericData.Record
+        import Macros._
+        override def write(t: $t)(implicit s: AvroSchema[$t]): org.apache.avro.generic.GenericData.Record = {
+         val r = new org.apache.avro.generic.GenericData.Record(s.schema)
+         Seq(..$fieldWrites).foreach(fn => fn(t, r))
+         r
+        }
+      }
+    """)
+  }
+}
+
 object Macros {
 
-  implicit val StringSchema: AvroSchemaWriter[String] = new AvroSchemaWriter[String] {
+  implicit val StringSchema: AvroSchema[String] = new AvroSchema[String] {
     def schema: Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit val IntSchema: AvroSchemaWriter[Int] = new AvroSchemaWriter[Int] {
+  implicit val IntSchema: AvroSchema[Int] = new AvroSchema[Int] {
     def schema: Schema = Schema.create(Schema.Type.INT)
   }
 
-  implicit val LongSchema: AvroSchemaWriter[Long] = new AvroSchemaWriter[Long] {
+  implicit val LongSchema: AvroSchema[Long] = new AvroSchema[Long] {
     def schema: Schema = Schema.create(Schema.Type.LONG)
   }
 
-  implicit val BooleanSchema: AvroSchemaWriter[Boolean] = new AvroSchemaWriter[Boolean] {
+  implicit val BooleanSchema: AvroSchema[Boolean] = new AvroSchema[Boolean] {
     def schema: Schema = Schema.create(Schema.Type.BOOLEAN)
   }
 
-  implicit val FloatSchema: AvroSchemaWriter[Float] = new AvroSchemaWriter[Float] {
+  implicit val FloatSchema: AvroSchema[Float] = new AvroSchema[Float] {
     def schema: Schema = Schema.create(Schema.Type.FLOAT)
   }
 
-  implicit val ByteArraySchema: AvroSchemaWriter[Array[Byte]] = new AvroSchemaWriter[Array[Byte]] {
+  implicit val ByteArraySchema: AvroSchema[Array[Byte]] = new AvroSchema[Array[Byte]] {
     def schema: Schema = Schema.create(Schema.Type.BYTES)
   }
 
-  implicit val DoubleSchema: AvroSchemaWriter[Double] = new AvroSchemaWriter[Double] {
+  implicit val DoubleSchema: AvroSchema[Double] = new AvroSchema[Double] {
     def schema: Schema = Schema.create(Schema.Type.DOUBLE)
   }
 
-  implicit val BigDecimalSchema: AvroSchemaWriter[BigDecimal] = new AvroSchemaWriter[BigDecimal] {
+  implicit val BigDecimalSchema: AvroSchema[BigDecimal] = new AvroSchema[BigDecimal] {
     def schema: Schema = Schema.create(Schema.Type.DOUBLE)
     override def props: Map[String, String] = Map("logicalType" -> "decimal", "precision" -> "4", "scale" -> "2")
   }
 
-  implicit def ArraySchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[Array[S]] = {
-    new AvroSchemaWriter[Array[S]] {
+  implicit def ArraySchema[S](implicit subschema: AvroSchema[S]): AvroSchema[Array[S]] = {
+    new AvroSchema[Array[S]] {
       def schema: Schema = Schema.createArray(subschema.schema)
     }
   }
 
-  implicit def IterableSchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[Iterable[S]] = {
-    new AvroSchemaWriter[Iterable[S]] {
+  implicit def IterableSchema[S](implicit subschema: AvroSchema[S]): AvroSchema[Iterable[S]] = {
+    new AvroSchema[Iterable[S]] {
       def schema: Schema = Schema.createArray(subschema.schema)
     }
   }
 
-  implicit def ListSchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[List[S]] = {
-    new AvroSchemaWriter[List[S]] {
+  implicit def ListSchema[S](implicit subschema: AvroSchema[S]): AvroSchema[List[S]] = {
+    new AvroSchema[List[S]] {
       def schema: Schema = Schema.createArray(subschema.schema)
     }
   }
 
-  implicit def SeqSchema[S](implicit subschema: AvroSchemaWriter[S]): AvroSchemaWriter[Seq[S]] = {
-    new AvroSchemaWriter[Seq[S]] {
+  implicit def SeqSchema[S](implicit subschema: AvroSchema[S]): AvroSchema[Seq[S]] = {
+    new AvroSchema[Seq[S]] {
       def schema: Schema = Schema.createArray(subschema.schema)
     }
   }
 
-  implicit def MapSchema[V](implicit valueSchema: AvroSchemaWriter[V]): AvroSchemaWriter[Map[String, V]] = {
-    new AvroSchemaWriter[Map[String, V]] {
+  implicit def MapSchema[V](implicit valueSchema: AvroSchema[V]): AvroSchema[Map[String, V]] = {
+    new AvroSchema[Map[String, V]] {
       def schema: Schema = Schema.createMap(valueSchema.schema)
     }
   }
 
-  def fieldBuilder[T](name: String)(implicit schema: AvroSchemaWriter[T]): Schema.Field = {
+  def fieldBuilder[T](name: String)(implicit schema: AvroSchema[T]): Schema.Field = {
     val field = new Schema.Field(name, schema.schema, null, null)
     schema.props.foreach { case (k, v) => field.addProp(k, v) }
     field
   }
 
-  def schemaImpl[T: c.WeakTypeTag](c: Context): c.Expr[AvroSchemaWriter[T]] = {
+  def schemaImpl[T: c.WeakTypeTag](c: Context): c.Expr[AvroSchema[T]] = {
 
     import c.universe._
     val t = weakTypeOf[T]
@@ -103,8 +170,8 @@ object Macros {
       q"""{import Macros._; fieldBuilder[$sig]($name)}"""
     }
 
-    c.Expr[AvroSchemaWriter[T]]( q"""
-      new AvroSchemaWriter[$t] {
+    c.Expr[AvroSchema[T]]( q"""
+      new AvroSchema[$t] {
         def schema = {
          import scala.collection.JavaConverters._
          val s = org.apache.avro.Schema.createRecord($name, null, $name, false)

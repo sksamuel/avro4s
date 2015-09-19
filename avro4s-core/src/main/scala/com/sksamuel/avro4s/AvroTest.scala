@@ -3,7 +3,7 @@ package com.sksamuel.avro4s
 import java.io.File
 import java.util.UUID
 
-import org.apache.avro.{SchemaBuilder, Schema}
+import org.apache.avro.SchemaBuilder
 import org.apache.avro.file.{DataFileReader, DataFileWriter}
 import org.apache.avro.generic.GenericData.Record
 import org.apache.avro.generic.{GenericData, GenericDatumReader, GenericDatumWriter, GenericRecord}
