@@ -132,7 +132,7 @@ Features to be added before 1.0 release
 
 ## Using Elastic4s in your project
 
-Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.7.4'`
+Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:0.90.0'`
 
 SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "0.90.0"`
 
