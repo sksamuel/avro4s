@@ -8,10 +8,6 @@ trait AvroPopulator[T] {
   def read(record: GenericRecord): T
 }
 
-trait AvroFieldGetter[T] {
-  def read(record: GenericRecord, name: String): T
-}
-
 trait AvroConverter[T] {
   def convert(value: AnyRef): T
 }
@@ -45,7 +41,21 @@ object Readers {
   implicit def SeqConverter[S <: AnyRef](implicit converter: AvroConverter[S]) = new AvroConverter[Seq[S]] {
     override def convert(value: AnyRef): Seq[S] = {
       import scala.collection.JavaConverters._
-      value.asInstanceOf[java.util.Collection[S]].asScala.toList.map(s => converter.convert(s))
+      value.asInstanceOf[java.util.Collection[S]].asScala.map(s => converter.convert(s)).toList
+    }
+  }
+
+  implicit def SetConverter[S <: AnyRef](implicit converter: AvroConverter[S]) = new AvroConverter[Set[S]] {
+    override def convert(value: AnyRef): Set[S] = {
+      import scala.collection.JavaConverters._
+      value.asInstanceOf[java.util.Collection[S]].asScala.map(s => converter.convert(s)).toSet
+    }
+  }
+
+  implicit def MapConverter[S <: AnyRef](implicit converter: AvroConverter[S]) = new AvroConverter[Map[String, S]] {
+    override def convert(value: AnyRef): Map[String, S] = {
+      import scala.collection.JavaConverters._
+      value.asInstanceOf[java.util.Map[String, S]].asScala.map { case (k, v) => k -> converter.convert(v) }.toMap
     }
   }
 
