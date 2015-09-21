@@ -30,4 +30,5 @@ case class GameOfThrones(id: String,
                          houses: Seq[House])
 
 case class IronThrone(swordCount: Int)
+
 case class House(name: String, ruler: String)

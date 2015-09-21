@@ -13,6 +13,9 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
   val michelangelo = Artist("michelangelo", 1475, 1564, "Caprese", Seq("sculpture", "fresco"))
   val raphael = Artist("raphael", 1483, 1520, "florence", Seq("painter", "architect"))
 
+  import scala.collection.JavaConverters._
+  import AvroImplicits._
+
   "AvroSerializer" should {
     "write out simple records" in {
 
@@ -20,11 +23,6 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
       val path = Files.createTempFile("AvroSerializerTest", ".avro")
       path.toFile.deleteOnExit()
 
-      import AvroImplicits._
-
-      import scala.collection.JavaConverters._
-
-      val w = writerFor[Artist]
       val s = schemaFor[Artist]
 
       val writer = AvroOutputStream[Artist](path)
