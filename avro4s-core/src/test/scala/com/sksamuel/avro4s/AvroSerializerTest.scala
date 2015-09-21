@@ -54,4 +54,3 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
   }
 }
 
-case class Artist(name: String, yearOfBirth: Int, yearOfDeath: Int, birthplace: String, styles: Seq[String])

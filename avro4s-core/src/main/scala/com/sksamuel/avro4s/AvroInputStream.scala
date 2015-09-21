@@ -22,6 +22,8 @@ class AvroInputStream[T](in: SeekableInput)(implicit s: AvroSchema[T], pop: Avro
       }
     }
   }
+
+  def close(): Unit = in.close()
 }
 
 object AvroInputStream {

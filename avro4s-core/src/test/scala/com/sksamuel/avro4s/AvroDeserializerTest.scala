@@ -18,6 +18,7 @@ class AvroDeserializerTest extends WordSpec with Matchers with Timeouts {
       val in = AvroInputStream[Artist](file)
       val painters = in.iterator.toSet
       painters shouldBe Set(michelangelo, raphael)
+      in.close()
     }
   }
 }
