@@ -71,8 +71,8 @@ object Writers {
       val termName = f.name.toTermName
       val decoded = f.name.decoded
       val sig = f.typeSignature
-      q"""{ import Writers._
-            val putter = implicitly[AvroRecordPut[$sig]]
+      q"""{ import com.sksamuel.avro4s.Writers._
+            val putter = implicitly[com.sksamuel.avro4s.AvroRecordPut[$sig]]
             (t: $t, r: org.apache.avro.generic.GenericData.Record) => {
               putter.put($decoded, t.$termName, r)
             }
@@ -83,8 +83,8 @@ object Writers {
     c.Expr[AvroSerializer[T]]( q"""
       new AvroSerializer[$t] {
         import org.apache.avro.generic.GenericData.Record
-        import SchemaMacros._
-        override def write(t: $t)(implicit s: AvroSchema[$t]): org.apache.avro.generic.GenericData.Record = {
+        import com.sksamuel.avro4s.SchemaMacros._
+        override def write(t: $t)(implicit s: com.sksamuel.avro4s.AvroSchema[$t]): org.apache.avro.generic.GenericData.Record = {
          val r = new org.apache.avro.generic.GenericData.Record(s.schema)
          Seq(..$fieldWrites).foreach(fn => fn(t, r))
          r
