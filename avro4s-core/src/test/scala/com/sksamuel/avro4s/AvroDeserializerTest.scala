@@ -21,4 +21,7 @@ class AvroDeserializerTest extends WordSpec with Matchers with Timeouts {
       in.close()
     }
   }
+
+  implicit val s = AvroImplicits.schemaFor[Artist]
+  println(s.schema)
 }

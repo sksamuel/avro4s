@@ -92,12 +92,42 @@ would output
 }
 ```
 
+
+## Type Mappings
+
+### Primitives
+
+|Scala Type|Avro Type|
+|----------|---------|
+|Boolean|boolean|
+|String|string|
+|Int|int|
+|Long|long|
+|BigDecimal|decimal|
+|Double|double|
+|Float|float|
+
+### Complex Types
+
+|Scala Type|Avro Type|
+|----------|---------|
+|scala.collection.Array[T]|array|
+|scala.collection.List[T]|array|
+|scala.collection.Seq[T]|array|
+|scala.collection.Iterable[T]|array|
+|scala.collection.Set[T]|array|
+|scala.collection.Map[String, T]|map|
+|Double|double|
+|Float|float|
+|T|record|
+
 ## Todo
 
 Features to be added before 1.0 release
 
 * Annotation for Avro properties 
 * Annotation for aliases
+* Union and fixed types
 * Error handling during deserialization
 
 ## Using Elastic4s in your project

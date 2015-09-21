@@ -81,7 +81,6 @@ object Build extends Build {
   lazy val avroMacro = Project("avro4s-macro", file("avro4s-macro"))
     .settings(rootSettings: _*)
     .settings(publish := {})
-    .settings(publishArtifact := false)
     .settings(libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-reflect" % _))
     .settings(libraryDependencies ++= (
     if (scalaVersion.value.startsWith("2.10")) List("org.scalamacros" %% "quasiquotes" % paradiseVersion)
@@ -92,7 +91,6 @@ object Build extends Build {
   lazy val core = Project("avro4s-core", file("avro4s-core"))
     .settings(rootSettings: _*)
     .settings(publish := {})
-    .settings(publishArtifact := false)
     .settings(name := "avro4s-core")
     .dependsOn(avroMacro)
 }
