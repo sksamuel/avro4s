@@ -6,7 +6,7 @@
 [![Build Status](https://travis-ci.org/sksamuel/avro4s.png)](https://travis-ci.org/sksamuel/avro4s)
 
 Avro4s is a schema generation and serializing/deserializing library for Avro written in Scala. The objective is to
-allow seemless use with Scala without the runtime overhead of reflection. Hence, this is a macro based
+allow seemless use with Scala without the need to to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a macro based
 library and generates code for use with avro at _compile time_.
 
 ## Serializing
