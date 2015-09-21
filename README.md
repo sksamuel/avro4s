@@ -60,6 +60,41 @@ implicit val s = AvroImplicits.schemaFor[Artist]
 println(s.schema)
 ```
 
+would output
+
+```json
+{  
+   "type":"record",
+   "name":"Artist",
+   "namespace":"com.sksamuel.avro4s",
+   "fields":[  
+      {  
+         "name":"name",
+         "type":"string"
+      },
+      {  
+         "name":"yearOfBirth",
+         "type":"int"
+      },
+      {  
+         "name":"yearOfDeath",
+         "type":"int"
+      },
+      {  
+         "name":"birthplace",
+         "type":"string"
+      },
+      {  
+         "name":"styles",
+         "type":{  
+            "type":"array",
+            "items":"string"
+         }
+      }
+   ]
+}
+```
+
 ## Todo
 
 Features to be added before 1.0 release
