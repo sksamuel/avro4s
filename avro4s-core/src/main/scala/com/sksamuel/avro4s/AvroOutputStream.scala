@@ -28,6 +28,9 @@ class AvroOutputStream[T](os: OutputStream)(implicit s: AvroSchema[T], w: AvroSe
 object AvroOutputStream {
   def apply[T](file: File)(implicit s: AvroSchema[T], w: AvroSerializer[T]): AvroOutputStream[T] = apply(file.toPath)
   def apply[T](path: Path)(implicit s: AvroSchema[T], w: AvroSerializer[T]): AvroOutputStream[T] = {
-    new AvroOutputStream[T](Files.newOutputStream(path))
+    apply(Files.newOutputStream(path))
+  }
+  def apply[T](os: OutputStream)(implicit s: AvroSchema[T], w: AvroSerializer[T]): AvroOutputStream[T] = {
+    new AvroOutputStream[T](os)
   }
 }
