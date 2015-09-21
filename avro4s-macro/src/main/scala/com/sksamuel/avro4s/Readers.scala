@@ -14,6 +14,10 @@ trait AvroConverter[T] {
 
 object Readers {
 
+  implicit val BooleanConverter = new AvroConverter[Boolean] {
+    override def convert(value: AnyRef): Boolean = value.toString.toBoolean
+  }
+
   implicit val StringConverter = new AvroConverter[String] {
     override def convert(value: AnyRef): String = value.toString // should be org.apache.avro.util.Utf8
   }
@@ -28,10 +32,6 @@ object Readers {
 
   implicit val IntConverter = new AvroConverter[Int] {
     override def convert(value: AnyRef): Int = value.toString.toInt
-  }
-
-  implicit val BooleanConverter = new AvroConverter[Boolean] {
-    override def convert(value: AnyRef): Boolean = value.toString.toBoolean
   }
 
   implicit val DoubleConverter = new AvroConverter[Double] {
