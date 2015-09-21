@@ -97,5 +97,6 @@ object Build extends Build {
   lazy val generator = Project("avro4s-generator", file("avro4s-generator"))
     .settings(rootSettings: _*)
     .settings(publish := {})
+    .settings(libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.1")
     .settings(name := "avro4s-generator")
 }

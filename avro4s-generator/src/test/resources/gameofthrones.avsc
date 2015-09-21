@@ -1,0 +1,95 @@
+{
+  "type": "record",
+  "name": "GameOfThrones",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "kingdoms",
+      "type": "int"
+    },
+    {
+      "name": "rating",
+      "type": "double",
+      "logicalType": "decimal",
+      "precision": "4",
+      "scale": "2"
+    },
+    {
+      "name": "temperature",
+      "type": "double"
+    },
+    {
+      "name": "deathCount",
+      "type": "long"
+    },
+    {
+      "name": "aired",
+      "type": "boolean"
+    },
+    {
+      "name": "locations",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "name": "kings",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "name": "seasons",
+      "type": {
+        "type": "array",
+        "items": "int"
+      }
+    },
+    {
+      "name": "alligence",
+      "type": {
+        "type": "map",
+        "values": "string"
+      }
+    },
+    {
+      "name": "throne",
+      "type": {
+        "type": "record",
+        "name": "IronThrone",
+        "fields": [
+          {
+            "name": "swordCount",
+            "type": "int"
+          }
+        ]
+      }
+    },
+    {
+      "name": "houses",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "House",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "ruler",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
