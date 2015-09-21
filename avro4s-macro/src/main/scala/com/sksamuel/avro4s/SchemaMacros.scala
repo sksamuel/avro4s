@@ -96,11 +96,11 @@ object SchemaMacros {
     val fieldSchemaPartTrees: Seq[Tree] = fields.map { f =>
       val name = f.name.decoded
       val sig = f.typeSignature
-      q"""{import SchemaMacros._; fieldBuilder[$sig]($name)}"""
+      q"""{import com.sksamuel.avro4s.SchemaMacros._; fieldBuilder[$sig]($name)}"""
     }
 
     c.Expr[AvroSchema[T]]( q"""
-      new AvroSchema[$t] {
+      new com.sksamuel.avro4s.AvroSchema[$t] {
         def schema = {
          import scala.collection.JavaConverters._
          val s = org.apache.avro.Schema.createRecord($name, null, $name, false)

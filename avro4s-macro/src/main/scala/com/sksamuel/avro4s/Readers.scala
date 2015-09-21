@@ -72,8 +72,8 @@ object Readers {
       val termName = f.name.toTermName
       val decoded = f.name.decoded
       val sig = f.typeSignature
-      q"""{ import Readers._
-            val converter = implicitly[AvroConverter[$sig]]
+      q"""{ import com.sksamuel.avro4s.Readers._
+            val converter = implicitly[com.sksamuel.avro4s.AvroConverter[$sig]]
             val value = r.get($decoded)
             converter.convert(value)
           }
@@ -81,8 +81,8 @@ object Readers {
     }
 
     c.Expr[AvroPopulator[T]]( q"""
-      new AvroPopulator[$t] {
-        import Readers._
+      new com.sksamuel.avro4s.AvroPopulator[$t] {
+        import com.sksamuel.avro4s.Readers._
         override def read(r: org.apache.avro.generic.GenericRecord): $t = {
           val t = new $t(..$params)
           t

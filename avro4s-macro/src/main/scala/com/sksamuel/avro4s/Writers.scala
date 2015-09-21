@@ -81,7 +81,7 @@ object Writers {
     }
 
     c.Expr[AvroSerializer[T]]( q"""
-      new AvroSerializer[$t] {
+      new com.sksamuel.avro4s.AvroSerializer[$t] {
         import org.apache.avro.generic.GenericData.Record
         import com.sksamuel.avro4s.SchemaMacros._
         override def write(t: $t)(implicit s: com.sksamuel.avro4s.AvroSchema[$t]): org.apache.avro.generic.GenericData.Record = {
