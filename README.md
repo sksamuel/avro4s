@@ -18,11 +18,10 @@ val michelangelo = Artist("michelangelo", 1475, 1564, "Caprese", Seq("sculpture"
 val raphael = Artist("raphael", 1483, 1520, "Florence", Seq("painter", "architect"))
 ```
 
-Then we can create an `AvroOutputStream` which we write to, and close, just like you would any regular output stream.
-Note that when we create the output stream we must specify the type it will accept.
+Then we can create an `AvroOutputStream` which we write to, and close, just like you would any regular output stream. Note that when we create the output stream we must specify the type it will accept. We first include the `import AvroImplicits._` line as the macros that generate the writers and schemas are located there.
 
 ```scala
-import AvroImplicits._
+import AvroImplicits._ // contains the macros that do the magic
 import java.nio.file.Paths
 import com.sksamuel.avro4s.AvroOutputStream 
 
@@ -34,12 +33,10 @@ out.close()
 
 ## Deserializing
 
-With avro4s we can easily deserialize a file back into Scala case classes. Given the `artists.avro` file we generated
-in the previous section on serialization, we will read this back in using the `AvroInputStream` class.
+With avro4s we can easily deserialize a file back into Scala case classes. Given the `artists.avro` file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class. We first include the `import AvroImplicits._` line as the macros that generate the readers and schemas are located there.
 
 ```scala
-implicit val s = AvroImplicits.schemaFor[Artist]
-implicit val r = AvroImplicits.populatorFor[Artist]
+import AvroImplicits._ // contains the macros that do the magic
 
 val path = Paths.get("artists.avro")
 val in = AvroInputStream[Artist](path)
