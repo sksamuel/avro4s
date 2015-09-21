@@ -76,7 +76,7 @@ object Build extends Build {
     .settings(publish := {})
     .settings(publishArtifact := false)
     .settings(name := "avro4s")
-    .aggregate(avroMacro, core)
+    .aggregate(avroMacro, core, generator)
 
   lazy val avroMacro = Project("avro4s-macro", file("avro4s-macro"))
     .settings(rootSettings: _*)
@@ -93,4 +93,9 @@ object Build extends Build {
     .settings(publish := {})
     .settings(name := "avro4s-core")
     .dependsOn(avroMacro)
+
+  lazy val generator = Project("avro4s-generator", file("avro4s-generator"))
+    .settings(rootSettings: _*)
+    .settings(publish := {})
+    .settings(name := "avro4s-generator")
 }
