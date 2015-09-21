@@ -4,7 +4,7 @@ import sbt.Keys._
 object Build extends Build {
 
   val org = "com.sksamuel.avro4s"
-  val appVersion = "0.90.0"
+  val appVersion = "0.91.0"
 
   val paradiseVersion = "2.1.0-M5"
   val ScalaVersion = "2.10.5"
@@ -31,9 +31,7 @@ object Build extends Build {
       "org.scalactic" %% "scalactic" % "2.2.5",
       "org.apache.avro" % "avro" % "1.7.7",
       "org.scala-lang" % "scala-reflect" % ScalaVersion,
-      "org.apache.avro" % "avro-tools" % "1.7.7",
       "org.slf4j" % "slf4j-api" % Slf4jVersion,
-      "commons-io" % "commons-io" % CommonsIoVersion % "test",
       "log4j" % "log4j" % Log4jVersion % "test",
       "org.slf4j" % "log4j-over-slf4j" % Slf4jVersion % "test",
       "org.scalatest" %% "scalatest" % ScalatestVersion % "test"
@@ -97,6 +95,5 @@ object Build extends Build {
   lazy val generator = Project("avro4s-generator", file("avro4s-generator"))
     .settings(rootSettings: _*)
     .settings(publish := {})
-    .settings(libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.1")
     .settings(name := "avro4s-generator")
 }
