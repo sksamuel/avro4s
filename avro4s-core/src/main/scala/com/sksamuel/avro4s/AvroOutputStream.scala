@@ -12,11 +12,11 @@ class AvroOutputStream[T](os: OutputStream)(implicit s: AvroSchema[T], w: AvroSe
   val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
   dataFileWriter.create(s.schema, os)
 
-  def write(ts: Seq[T]): Unit = {
-    ts.foreach(t => {
-      val record = w.write(t)
-      dataFileWriter.append(record)
-    })
+  def write(ts: Seq[T]): Unit = ts.foreach(write)
+
+  def write(t: T): Unit = {
+    val record = w.write(t)
+    dataFileWriter.append(record)
   }
 
   def close(): Unit = {
