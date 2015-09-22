@@ -31,16 +31,22 @@ class ClassGenerator(schema: Schema) {
   }
 
   def defs: Seq[ClassDef] = {
+    def complex(schema: Schema): Option[Schema] = schema.getType match {
+      case Schema.Type.RECORD => Some(schema)
+      case Schema.Type.ARRAY => complex(schema.getElementType)
+      case Schema.Type.MAP => complex(schema.getValueType)
+      case _ => None
+    }
+    val seen = scala.collection.mutable.Set.empty[String]
     def records(schema: Schema): Seq[Schema] = {
       require(complex(schema).isDefined)
-      def complex(schema: Schema): Option[Schema] = schema.getType match {
-        case Schema.Type.RECORD => Some(schema)
-        case Schema.Type.ARRAY => complex(schema.getElementType)
-        case Schema.Type.MAP => complex(schema.getValueType)
-        case _ => None
+      if (seen.contains(schema.getFullName)) {
+        Nil
+      } else {
+        seen.add(schema.getFullName)
+        val rs = schema.getFields.asScala.map(f => complex(f.schema)).filter(_.isDefined).map(_.get)
+        schema +: rs.flatMap(records)
       }
-      val rs = schema.getFields.asScala.map(f => complex(f.schema)).filter(_.isDefined).map(_.get)
-      schema +: rs.flatMap(records)
     }
     records(schema).map(classForRecord).distinct
   }
