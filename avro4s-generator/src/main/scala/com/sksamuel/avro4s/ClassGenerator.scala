@@ -10,76 +10,107 @@ class ClassGenerator(schema: Schema) {
 
   import scala.collection.JavaConverters._
 
-  def records: Seq[Record] = {
-    val records = scala.collection.mutable.Map.empty[String, Record]
+  def records: Seq[TopLevelType] = {
+
+    val types = scala.collection.mutable.Map.empty[String, TopLevelType]
 
     def schemaToType(schema: Schema): Type = {
       schema.getType match {
         case Schema.Type.ARRAY => ArrayType(schemaToType(schema.getElementType))
-        case Schema.Type.BOOLEAN => Primitive("Boolean")
-        case Schema.Type.DOUBLE => Primitive("Double")
-        case Schema.Type.ENUM => EnumType(schema.getEnumSymbols.asScala)
-        case Schema.Type.FIXED => Primitive("String")
-        case Schema.Type.FLOAT => Primitive("Float")
-        case Schema.Type.INT => Primitive("Int")
-        case Schema.Type.LONG => Primitive("Long")
+        case Schema.Type.BOOLEAN => PrimitiveType("Boolean")
+        case Schema.Type.DOUBLE => PrimitiveType("Double")
+        case Schema.Type.ENUM => types.getOrElse(schema.getFullName, enumFor(schema))
+        case Schema.Type.FIXED => PrimitiveType("String")
+        case Schema.Type.FLOAT => PrimitiveType("Float")
+        case Schema.Type.INT => PrimitiveType("Int")
+        case Schema.Type.LONG => PrimitiveType("Long")
         case Schema.Type.MAP => MapType(schemaToType(schema.getValueType))
-        case Schema.Type.RECORD => records.getOrElse(schema.getFullName, recordFor(schema))
-        case Schema.Type.STRING => Primitive("String")
-        case Schema.Type.UNION => Primitive("UNION")
+        case Schema.Type.RECORD => types.getOrElse(schema.getFullName, recordFor(schema))
+        case Schema.Type.STRING => PrimitiveType("String")
+        case Schema.Type.UNION => PrimitiveType("UNION")
         case _ => sys.error("Unsupported field type: " + schema.getType)
       }
     }
 
+    def enumFor(schema: Schema): EnumType = {
+      val enum = EnumType(schema.getNamespace, schema.getName, schema.getEnumSymbols.asScala)
+      types.put(schema.getFullName, enum)
+      enum
+    }
+
     def recordFor(schema: Schema): Record = {
       val record = Record(schema.getNamespace, schema.getName, Nil)
-      records.put(schema.getFullName, record)
+      types.put(schema.getFullName, record)
       val updated = record.copy(fields = schema.getFields.asScala.map { field =>
         FieldDef(field.name, schemaToType(field.schema))
       })
-      records.put(schema.getFullName, updated)
+      types.put(schema.getFullName, updated)
       updated
     }
 
     require(schema.getType == Schema.Type.RECORD)
     recordFor(schema)
-    records.values.toSeq
+    types.values.toSeq
   }
 }
 
 object ClassGenerator {
-  def apply(in: InputStream): Seq[Record] = new ClassGenerator(new Parser().parse(in)).records
-  def apply(file: File): Seq[Record] = new ClassGenerator(new Parser().parse(file)).records
-  def apply(path: Path): Seq[Record] = apply(path.toFile)
+  def apply(in: InputStream): Seq[TopLevelType] = new ClassGenerator(new Parser().parse(in)).records
+  def apply(file: File): Seq[TopLevelType] = new ClassGenerator(new Parser().parse(file)).records
+  def apply(path: Path): Seq[TopLevelType] = apply(path.toFile)
 }
 
 sealed trait Type
 
-case class Record(namespace: String, name: String, fields: Seq[FieldDef]) extends Type
+sealed trait TopLevelType extends Type {
+  def namespace: String
+  def name: String
+}
+
+case class Record(namespace: String, name: String, fields: Seq[FieldDef]) extends TopLevelType
+
+case class EnumType(namespace: String, name: String, symbols: Seq[String]) extends TopLevelType
 
 case class MapType(valueType: Type) extends Type
 
-case class EnumType(values: Seq[String]) extends Type
-
-case class Primitive(baseType: String) extends Type
+case class PrimitiveType(baseType: String) extends Type
 
 case class ArrayType(arrayType: Type) extends Type
 
 case class FieldDef(name: String, `type`: Type)
 
+object TypeRenderer {
+  def render(f: FieldDef): String = s"  ${f.name}: ${renderType(f.`type`)}"
+  def renderType(t: Type): String = {
+    t match {
+      case PrimitiveType(base) => base
+      case ArrayType(arrayType) => renderType(arrayType)
+      case Record(namespace, name, _) => namespace + "." + name
+      case EnumType(namespace, name, _) => namespace + "." + name
+      case MapType(valueType) => renderType(valueType)
+    }
+  }
+}
 
 object StringClassRenderer {
 
-  def render(classes: Seq[Record]): String = {
-    require(classes.nonEmpty)
-    s"package ${classes.head.namespace}\n\n" + classes.map(render).mkString("\n\n")
+  def render(types: Seq[TopLevelType]): String = {
+    require(types.nonEmpty)
+    s"package ${types.head.namespace}\n\n" + types.map {
+      case r: Record => render(r)
+      case e: EnumType => render(e)
+    }.mkString("\n\n")
   }
 
-  def render(classdef: Record): String = {
-    val isCase = if (classdef.fields.size <= 22) "case " else ""
+  def render(enum: EnumType): String = {
+    s"sealed trait ${enum.name}\n" + enum.symbols.map(symbol => s"case object $symbol extends ${enum.name}").mkString("\n")
+  }
+
+  def render(record: Record): String = {
+    val isCase = if (record.fields.size <= 22) "case " else ""
     "// auto generated code by avro4s\n" +
-      s"${isCase}class ${classdef.name}(\n" +
-      classdef.fields.map(field => s"  ${field.name}: ${field.`type`}").mkString(",\n") +
+      s"${isCase}class ${record.name}(\n" +
+      record.fields.map(TypeRenderer.render).mkString(",\n") +
       "\n)"
   }
 }

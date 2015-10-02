@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "MyRecord",
+  "namespace": "com.example.avro",
+  "fields": [
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "MyEnum",
+        "symbols": [
+          "DONE",
+          "ARCHIVED",
+          "DELETED"
+        ]
+      }
+    }
+  ]
+}
