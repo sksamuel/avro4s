@@ -87,7 +87,7 @@ object TypeRenderer {
       case ArrayType(arrayType) => renderType(arrayType)
       case Record(namespace, name, _) => namespace + "." + name
       case EnumType(namespace, name, _) => namespace + "." + name
-      case MapType(valueType) => renderType(valueType)
+      case MapType(valueType) => s"Map[String, ${renderType(valueType)}]"
     }
   }
 }

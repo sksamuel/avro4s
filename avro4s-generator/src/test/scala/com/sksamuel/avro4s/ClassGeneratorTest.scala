@@ -37,6 +37,10 @@ class ClassGeneratorTest extends WordSpec with Matchers {
       val types = ClassGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
       StringClassRenderer.render(types) should include("deathCount: Long")
     }
+    "generate field for Maps with primitives" in {
+      val types = ClassGenerator(getClass.getResourceAsStream("/map.avsc"))
+      StringClassRenderer.render(types) should include("mymap: Map[String, Long]")
+    }
     "generate definition for enums" in {
       val types = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
       println(StringClassRenderer.render(types))

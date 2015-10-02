@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "mapexample",
+  "namespace": "org.apache.avro",
+  "fields": [
+    {
+      "name": "mymap",
+      "type": {
+        "type": "map",
+        "values": "long"
+      }
+    }
+  ]
+}
