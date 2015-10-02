@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.io.{File, InputStream}
-import java.nio.file.{Paths, Files, Path}
+import java.nio.file.{Files, Path, Paths}
 
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Parser
@@ -10,66 +10,72 @@ class ClassGenerator(schema: Schema) {
 
   import scala.collection.JavaConverters._
 
-  def schemaToScalaType(schema: Schema): String = {
-    schema.getType match {
-      case Schema.Type.STRING => "String"
-      case Schema.Type.BOOLEAN => "Boolean"
-      case Schema.Type.DOUBLE => "Double"
-      case Schema.Type.FLOAT => "Float"
-      case Schema.Type.INT => "Int"
-      case Schema.Type.LONG => "Long"
-      case Schema.Type.RECORD => schema.getName
-      case Schema.Type.ARRAY => s"Seq[${schemaToScalaType(schema.getElementType)}]"
-      case Schema.Type.MAP => s"Map[String, ${schemaToScalaType(schema.getValueType)}]"
-      case _ => "todo"
-    }
-  }
+  def records: Seq[Record] = {
+    val records = scala.collection.mutable.Map.empty[String, Record]
 
-  def classForRecord(schema: Schema): ClassDef = {
-    val fields = schema.getFields.asScala.map(field => FieldDef(field.name, schemaToScalaType(field.schema)))
-    ClassDef(schema.getNamespace, schema.getName, fields)
-  }
-
-  def defs: Seq[ClassDef] = {
-    def complex(schema: Schema): Option[Schema] = schema.getType match {
-      case Schema.Type.RECORD => Some(schema)
-      case Schema.Type.ARRAY => complex(schema.getElementType)
-      case Schema.Type.MAP => complex(schema.getValueType)
-      case _ => None
-    }
-    val seen = scala.collection.mutable.Set.empty[String]
-    def records(schema: Schema): Seq[Schema] = {
-      require(complex(schema).isDefined)
-      if (seen.contains(schema.getFullName)) {
-        Nil
-      } else {
-        seen.add(schema.getFullName)
-        val rs = schema.getFields.asScala.map(f => complex(f.schema)).filter(_.isDefined).map(_.get)
-        schema +: rs.flatMap(records)
+    def schemaToType(schema: Schema): Type = {
+      schema.getType match {
+        case Schema.Type.ARRAY => ArrayType(schemaToType(schema.getElementType))
+        case Schema.Type.BOOLEAN => Primitive("Boolean")
+        case Schema.Type.DOUBLE => Primitive("Double")
+        case Schema.Type.ENUM => EnumType(schema.getEnumSymbols.asScala)
+        case Schema.Type.FIXED => Primitive("String")
+        case Schema.Type.FLOAT => Primitive("Float")
+        case Schema.Type.INT => Primitive("Int")
+        case Schema.Type.LONG => Primitive("Long")
+        case Schema.Type.MAP => MapType(schemaToType(schema.getValueType))
+        case Schema.Type.RECORD => records.getOrElse(schema.getFullName, recordFor(schema))
+        case Schema.Type.STRING => Primitive("String")
+        case Schema.Type.UNION => Primitive("UNION")
+        case _ => sys.error("Unsupported field type: " + schema.getType)
       }
     }
-    records(schema).map(classForRecord).distinct
+
+    def recordFor(schema: Schema): Record = {
+      val record = Record(schema.getNamespace, schema.getName, Nil)
+      records.put(schema.getFullName, record)
+      val updated = record.copy(fields = schema.getFields.asScala.map { field =>
+        FieldDef(field.name, schemaToType(field.schema))
+      })
+      records.put(schema.getFullName, updated)
+      updated
+    }
+
+    require(schema.getType == Schema.Type.RECORD)
+    recordFor(schema)
+    records.values.toSeq
   }
 }
 
 object ClassGenerator {
-  def apply(in: InputStream): Seq[ClassDef] = new ClassGenerator(new Parser().parse(in)).defs
-  def apply(path: Path): Seq[ClassDef] = apply(path.toFile)
-  def apply(file: File): Seq[ClassDef] = new ClassGenerator(new Parser().parse(file)).defs
+  def apply(in: InputStream): Seq[Record] = new ClassGenerator(new Parser().parse(in)).records
+  def apply(file: File): Seq[Record] = new ClassGenerator(new Parser().parse(file)).records
+  def apply(path: Path): Seq[Record] = apply(path.toFile)
 }
 
-case class ClassDef(namespace: String, name: String, fields: Seq[FieldDef])
+sealed trait Type
 
-case class FieldDef(name: String, `type`: String)
+case class Record(namespace: String, name: String, fields: Seq[FieldDef]) extends Type
+
+case class MapType(valueType: Type) extends Type
+
+case class EnumType(values: Seq[String]) extends Type
+
+case class Primitive(baseType: String) extends Type
+
+case class ArrayType(arrayType: Type) extends Type
+
+case class FieldDef(name: String, `type`: Type)
+
 
 object StringClassRenderer {
 
-  def render(classes: Seq[ClassDef]): String = {
+  def render(classes: Seq[Record]): String = {
     require(classes.nonEmpty)
     s"package ${classes.head.namespace}\n\n" + classes.map(render).mkString("\n\n")
   }
 
-  def render(classdef: ClassDef): String = {
+  def render(classdef: Record): String = {
     val isCase = if (classdef.fields.size <= 22) "case " else ""
     "// auto generated code by avro4s\n" +
       s"${isCase}class ${classdef.name}(\n" +
@@ -79,7 +85,7 @@ object StringClassRenderer {
 }
 
 object FileRenderer {
-  def render(dir: Path, classes: Seq[ClassDef]): Seq[Path] = {
+  def render(dir: Path, classes: Seq[Record]): Seq[Path] = {
     classes.groupBy(_.namespace).map { case (namespace, packageClasses) =>
       val packageDir = dir.resolve(Paths.get(namespace.replace(".", File.separator)))
       packageDir.toFile.mkdirs()

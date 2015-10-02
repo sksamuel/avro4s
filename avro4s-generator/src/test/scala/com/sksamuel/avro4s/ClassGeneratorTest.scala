@@ -1,7 +1,5 @@
 package com.sksamuel.avro4s
 
-import java.nio.file.Paths
-
 import org.scalatest.{Matchers, WordSpec}
 
 class ClassGeneratorTest extends WordSpec with Matchers {
@@ -10,15 +8,13 @@ class ClassGeneratorTest extends WordSpec with Matchers {
     "generate class name" in {
       val defs = ClassGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
       println(StringClassRenderer.render(defs))
-      FileRenderer.render(Paths.get("."), defs)
     }
     "generate sealed trait for enums" in {
-      val defs = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
-      println(StringClassRenderer.render(defs))
-    }
-    "handle complex schemas" in {
-      val defs = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
-      println(StringClassRenderer.render(defs))
+      val records = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
+      println(StringClassRenderer.render(records))
+      records.find(_.name == "TwitterAccount").get.fields
+        .find(_.name == "status").get.`type`.asInstanceOf[EnumType].values.toSet shouldBe
+        Set("ACTIVE", "EXPIRED", "REVOKED", "PENDING", "DENIED")
     }
   }
 }
