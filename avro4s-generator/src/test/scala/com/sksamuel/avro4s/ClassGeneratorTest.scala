@@ -15,7 +15,10 @@ class ClassGeneratorTest extends WordSpec with Matchers {
     "generate sealed trait for enums" in {
       val defs = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
       println(StringClassRenderer.render(defs))
-
+    }
+    "handle complex schemas" in {
+      val defs = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
+      println(StringClassRenderer.render(defs))
     }
   }
 }
