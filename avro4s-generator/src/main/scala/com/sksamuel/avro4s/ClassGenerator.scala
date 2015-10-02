@@ -103,7 +103,10 @@ object StringClassRenderer {
   }
 
   def render(enum: EnumType): String = {
-    s"sealed trait ${enum.name}\n" + enum.symbols.map(symbol => s"case object $symbol extends ${enum.name}").mkString("\n")
+    s"sealed trait ${enum.name}\n" +
+      s"object ${enum.name} {\n" +
+      enum.symbols.map(symbol => s"  case object $symbol extends ${enum.name}").mkString("\n") +
+      "\n}"
   }
 
   def render(record: Record): String = {
