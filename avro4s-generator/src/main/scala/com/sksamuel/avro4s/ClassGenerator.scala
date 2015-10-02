@@ -84,7 +84,7 @@ object TypeRenderer {
   def renderType(t: Type): String = {
     t match {
       case PrimitiveType(base) => base
-      case ArrayType(arrayType) => renderType(arrayType)
+      case ArrayType(arrayType) => s"Seq[${renderType(arrayType)}]"
       case Record(namespace, name, _) => namespace + "." + name
       case EnumType(namespace, name, _) => namespace + "." + name
       case MapType(valueType) => s"Map[String, ${renderType(valueType)}]"
