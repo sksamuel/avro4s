@@ -114,8 +114,6 @@ would output
 |scala.collection.Map[String, T]|map|
 |scala.collection.Option[T]|union:null,T|
 |scala.collection.Either[L, R]|union:L,R|
-|Double|double|
-|Float|float|
 |T|record|
 
 ## Todo
