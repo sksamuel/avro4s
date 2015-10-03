@@ -20,18 +20,21 @@ class SchemaMacroTest extends WordSpec with Matchers {
     "generate array type for a scala.collection.immutable.Seq" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq.avsc"))
       val writer = schemaFor[SeqExample]
-      println(writer.schema)
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for an Array" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/array.avsc"))
       val writer = schemaFor[ArrayExample]
-      println(writer.schema)
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a List" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/list.avsc"))
       val writer = schemaFor[ListExample]
+      writer.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate union:null for Option" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option.avsc"))
+      val writer = schemaFor[OptionExample]
       println(writer.schema)
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
@@ -45,6 +48,8 @@ case class SeqExample(seq: Seq[Double])
 case class ArrayExample(array: Seq[Boolean])
 
 case class ListExample(list: Seq[Float])
+
+case class OptionExample(option: Option[Array[Byte]])
 
 case class GameOfThrones(id: String,
                          kingdoms: Int,

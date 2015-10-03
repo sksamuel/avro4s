@@ -1,5 +1,7 @@
 package com.sksamuel.avro4s
 
+import java.util
+
 import org.apache.avro.Schema
 
 import scala.language.experimental.macros
@@ -31,6 +33,12 @@ object SchemaMacros {
 
   implicit val FloatSchema: AvroSchema[Float] = new AvroSchema[Float] {
     def schema: Schema = Schema.create(Schema.Type.FLOAT)
+  }
+
+  implicit def OptionSchema[T](implicit valueSchema: AvroSchema[T]): AvroSchema[Option[T]] = {
+    new AvroSchema[Option[T]] {
+      def schema: Schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), valueSchema.schema))
+    }
   }
 
   implicit val ByteArraySchema: AvroSchema[Array[Byte]] = new AvroSchema[Array[Byte]] {

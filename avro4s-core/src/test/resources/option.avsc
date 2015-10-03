@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "OptionExample",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "option",
+      "type": [
+        "null",
+        "bytes"
+      ]
+    }
+  ]
+}
