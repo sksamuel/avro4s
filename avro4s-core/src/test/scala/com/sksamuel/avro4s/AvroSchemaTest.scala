@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import org.scalatest.{Matchers, WordSpec}
 
-class MacroWriterTest extends WordSpec with Matchers {
+class SchemaMacroTest extends WordSpec with Matchers {
 
   import AvroImplicits._
 
@@ -15,6 +15,23 @@ class MacroWriterTest extends WordSpec with Matchers {
     "generate map type for a scala.collection.immutable.Map" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map.avsc"))
       val writer = schemaFor[MapExample]
+      writer.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for a scala.collection.immutable.Seq" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq.avsc"))
+      val writer = schemaFor[SeqExample]
+      println(writer.schema)
+      writer.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for an Array" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/array.avsc"))
+      val writer = schemaFor[ArrayExample]
+      println(writer.schema)
+      writer.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for a List" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/list.avsc"))
+      val writer = schemaFor[ListExample]
       println(writer.schema)
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
@@ -22,6 +39,12 @@ class MacroWriterTest extends WordSpec with Matchers {
 }
 
 case class MapExample(mymap: Map[String, Long])
+
+case class SeqExample(seq: Seq[Double])
+
+case class ArrayExample(array: Seq[Boolean])
+
+case class ListExample(list: Seq[Float])
 
 case class GameOfThrones(id: String,
                          kingdoms: Int,

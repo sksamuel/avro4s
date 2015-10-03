@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "SeqExample",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "seq",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "double"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "ArrayExample",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "array",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "boolean"
+        }
+      }
+    }
+  ]
+}
