@@ -40,7 +40,11 @@ class SchemaMacroTest extends WordSpec with Matchers {
     "generate union:T,U for Either[T,U]" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/either.avsc"))
       val writer = schemaFor[EitherExample]
-      println(writer.schema)
+      writer.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate aliases when specified by Aliases annotation" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases.avsc"))
+      val writer = schemaFor[AliasExample]
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
   }
@@ -57,6 +61,8 @@ case class ListExample(list: Seq[Float])
 case class OptionExample(option: Option[Array[Byte]])
 
 case class EitherExample(either: Either[String, Double])
+
+case class AliasExample(@AvroAlias("tother", "tnext") field: String)
 
 case class GameOfThrones(id: String,
                          kingdoms: Int,

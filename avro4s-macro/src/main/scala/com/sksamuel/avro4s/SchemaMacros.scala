@@ -90,9 +90,10 @@ object SchemaMacros {
     }
   }
 
-  def fieldBuilder[T](name: String)(implicit schema: AvroSchema[T]): Schema.Field = {
+  def fieldBuilder[T](name: String, aliases: Seq[String])(implicit schema: AvroSchema[T]): Schema.Field = {
     val field = new Schema.Field(name, schema.schema, null, null)
     schema.props.foreach { case (k, v) => field.addProp(k, v) }
+    aliases.foreach(field.addAlias)
     field
   }
 
@@ -110,7 +111,8 @@ object SchemaMacros {
     val fieldSchemaPartTrees: Seq[Tree] = fields.map { f =>
       val name = f.name.decoded
       val sig = f.typeSignature
-      q"""{import com.sksamuel.avro4s.SchemaMacros._; fieldBuilder[$sig]($name)}"""
+      val aliases = f.annotations.filter(_.tpe <:< typeOf[AvroAlias]).flatMap(_.scalaArgs).map(_.toString.drop(1).dropRight(1))
+      q"""{import com.sksamuel.avro4s.SchemaMacros._; fieldBuilder[$sig]($name, $aliases)}"""
     }
 
     c.Expr[AvroSchema[T]]( q"""
