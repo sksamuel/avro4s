@@ -10,11 +10,18 @@ class MacroWriterTest extends WordSpec with Matchers {
     "generate correct schema" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/gameofthrones.avsc"))
       val writer = schemaFor[GameOfThrones]
+      writer.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate map type for a scala.collection.immutable.Map" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map.avsc"))
+      val writer = schemaFor[MapExample]
       println(writer.schema)
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
   }
 }
+
+case class MapExample(mymap: Map[String, Long])
 
 case class GameOfThrones(id: String,
                          kingdoms: Int,

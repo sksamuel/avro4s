@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "MapExample",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "mymap",
+      "type": {
+        "type": "map",
+        "values": "long"
+      }
+    }
+  ]
+}
