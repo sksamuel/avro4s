@@ -95,22 +95,17 @@ would output
 
 ## Type Mappings
 
-### Primitives
-
 |Scala Type|Avro Type|
 |----------|---------|
 |Boolean|boolean|
-|String|string|
+|Array[Byte]|bytes|
+|String|string or fixed|
 |Int|int|
 |Long|long|
 |BigDecimal|decimal|
 |Double|double|
 |Float|float|
-
-### Complex Types
-
-|Scala Type|Avro Type|
-|----------|---------|
+|sealed trait T|enum|
 |scala.collection.Array[T]|array|
 |scala.collection.List[T]|array|
 |scala.collection.Seq[T]|array|
@@ -118,6 +113,7 @@ would output
 |scala.collection.Set[T]|array|
 |scala.collection.Map[String, T]|map|
 |scala.collection.Option[T]|union:null,T|
+|scala.collection.Either[L, R]|union:L,R|
 |Double|double|
 |Float|float|
 |T|record|
