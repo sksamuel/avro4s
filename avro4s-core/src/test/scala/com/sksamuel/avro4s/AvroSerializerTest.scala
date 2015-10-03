@@ -163,11 +163,11 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
       val path = Files.createTempFile("AvroSerializerTest", ".avro")
       path.toFile.deleteOnExit()
 
-      val bytes = BooleanWriteExample(true, false)
+      val example = BooleanWriteExample(true, false)
 
       import AvroImplicits._
       val output = AvroOutputStream[BooleanWriteExample](path)
-      output.write(bytes)
+      output.write(example)
       output.close()
 
       val datum = new GenericDatumReader[GenericRecord](schemaFor[BooleanWriteExample].schema)
@@ -177,6 +177,44 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
       val rec = reader.next()
       rec.get("left").toString.toBoolean shouldBe true
       rec.get("right").toString.toBoolean shouldBe false
+    }
+    "support writing Arrays of primitives" in {
+      val path = Files.createTempFile("AvroSerializerTest", ".avro")
+      path.toFile.deleteOnExit()
+
+      val example = ArrayWriteExample(Array("elton", "john"), Array(true, false, true))
+
+      import AvroImplicits._
+      val output = AvroOutputStream[ArrayWriteExample](path)
+      output.write(example)
+      output.close()
+
+      val datum = new GenericDatumReader[GenericRecord](schemaFor[ArrayWriteExample].schema)
+      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
+
+      reader.hasNext
+      val rec = reader.next()
+      rec.get("strings").asInstanceOf[org.apache.avro.generic.GenericData.Array[Utf8]].asScala.map(_.toString).toSet shouldBe Set("elton", "john")
+      rec.get("booleans").asInstanceOf[org.apache.avro.generic.GenericData.Array[Boolean]].asScala.toSet shouldBe Set(true, false, true)
+    }
+    "support writing Seqs of primitives" in {
+      val path = Files.createTempFile("AvroSerializerTest", ".avro")
+      path.toFile.deleteOnExit()
+
+      val example = SeqWriteExample(Seq("elton", "john"), Seq(true, false, true))
+
+      import AvroImplicits._
+      val output = AvroOutputStream[SeqWriteExample](path)
+      output.write(example)
+      output.close()
+
+      val datum = new GenericDatumReader[GenericRecord](schemaFor[SeqWriteExample].schema)
+      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
+
+      reader.hasNext
+      val rec = reader.next()
+      rec.get("strings").asInstanceOf[org.apache.avro.generic.GenericData.Array[Utf8]].asScala.map(_.toString).toSet shouldBe Set("elton", "john")
+      rec.get("booleans").asInstanceOf[org.apache.avro.generic.GenericData.Array[Boolean]].asScala.toSet shouldBe Set(true, false, true)
     }
   }
 }
@@ -192,3 +230,7 @@ case class DoubleWriteExample(double: Double)
 case class LongWriteExample(long: Long)
 
 case class BooleanWriteExample(left: Boolean, right: Boolean)
+
+case class ArrayWriteExample(strings: Array[String], booleans: Array[Boolean])
+
+case class SeqWriteExample(strings: Seq[String], booleans: Seq[Boolean])

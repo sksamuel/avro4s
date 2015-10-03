@@ -48,9 +48,11 @@ object Writers {
     }
   }
 
+  import scala.collection.JavaConverters._
+
   implicit def ArraySchema[S]: AvroRecordPut[Array[S]] = new AvroRecordPut[Array[S]] {
     override def put(name: String, value: Array[S], record: Record): Unit = {
-      record.put(name, value)
+      record.put(name, value.toList.asJavaCollection)
     }
   }
 
