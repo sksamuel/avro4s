@@ -2,11 +2,18 @@
 
 [![Join the chat at https://gitter.im/sksamuel/avro4s](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/sksamuel/avro4s?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/sksamuel/avro4s.png)](https://travis-ci.org/sksamuel/avro4s)
 
-Avro4s is a schema generation and serializing/deserializing library for Avro written in Scala. The objective is to
+Avro4s is a scheme/class generation and serializing/deserializing library for Avro written in Scala. The objective is to
 allow seemless use with Scala without the need to to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a macro based
 library and generates code for use with avro at _compile time_.
 
+The features of the library are: 
+* Schema generation from classes at compile time
+* Class generation from schemas at build time
+* Boilerplate free serialization of classes to avro
+* Boilerplate free deserialization of avro to classes
+
 ## Changelog
+* 0.93.0 - Added support for either and options in schema generator. Added support for aliases via scala annotation.
 * 0.92.0 - Added support for unions (and unions of nulls to Options) and enums to class generator.
 
 ## Serializing
