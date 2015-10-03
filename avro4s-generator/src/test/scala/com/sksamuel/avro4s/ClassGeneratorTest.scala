@@ -61,6 +61,10 @@ class ClassGeneratorTest extends WordSpec with Matchers {
       val types = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
       StringClassRenderer.render(types) should include("photo: Array[Byte]")
     }
+    "generate BigDecimal field for decimal logical type" in {
+      val types = ClassGenerator(getClass.getResourceAsStream("/decimal.avsc"))
+      StringClassRenderer.render(types) should include("decimal: BigDecimal")
+    }
     "generate definition for enums" in {
       val types = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
       println(StringClassRenderer.render(types))

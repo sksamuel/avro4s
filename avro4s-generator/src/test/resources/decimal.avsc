@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "DecimalExample",
+  "namespace": "org.apache.avro",
+  "fields": [
+    {
+      "name": "decimal",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 7,
+        "scale": 2
+      }
+    }
+  ]
+}

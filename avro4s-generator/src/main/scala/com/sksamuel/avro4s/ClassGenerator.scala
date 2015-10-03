@@ -18,6 +18,7 @@ class ClassGenerator(schema: Schema) {
       schema.getType match {
         case Schema.Type.ARRAY => ArrayType(schemaToType(schema.getElementType))
         case Schema.Type.BOOLEAN => PrimitiveType("Boolean")
+        case Schema.Type.BYTES if schema.getProp("logicalType") == "decimal" => PrimitiveType("BigDecimal")
         case Schema.Type.BYTES => PrimitiveType("Array[Byte]")
         case Schema.Type.DOUBLE => PrimitiveType("Double")
         case Schema.Type.ENUM => types.getOrElse(schema.getFullName, enumFor(schema))
