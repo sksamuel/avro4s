@@ -45,6 +45,18 @@ class ClassGeneratorTest extends WordSpec with Matchers {
       val types = ClassGenerator(getClass.getResourceAsStream("/array.avsc"))
       StringClassRenderer.render(types) should include("myarray: Seq[String]")
     }
+    "generate field for arrays of doubles" in {
+      val types = ClassGenerator(getClass.getResourceAsStream("/arraydouble.avsc"))
+      StringClassRenderer.render(types) should include("myarray: Seq[Double]")
+    }
+    "generate field for arrays of longs" in {
+      val types = ClassGenerator(getClass.getResourceAsStream("/arraylong.avsc"))
+      StringClassRenderer.render(types) should include("myarray: Seq[Long]")
+    }
+    "generate field for arrays of records" in {
+      val types = ClassGenerator(getClass.getResourceAsStream("/arrayrec.avsc"))
+      StringClassRenderer.render(types) should include("bibble: com.example.avro.NestedRecord")
+    }
     "generate field for bytes" in {
       val types = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
       StringClassRenderer.render(types) should include("photo: Array[Byte]")

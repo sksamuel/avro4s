@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "MyRecord",
+  "namespace": "com.example.avro",
+  "fields": [
+    {
+      "name": "bibble",
+      "type": {
+        "type": "record",
+        "name": "NestedRecord",
+        "fields": [
+          {
+            "name": "foo",
+            "type": "int"
+          }
+        ]
+      }
+    }
+  ]
+}

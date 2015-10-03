@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "mapexample",
+  "namespace": "org.apache.avro",
+  "fields": [
+    {
+      "name": "myarray",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "double"
+        }
+      }
+    }
+  ]
+}
