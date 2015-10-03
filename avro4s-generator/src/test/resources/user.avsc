@@ -53,7 +53,10 @@
             {
               "name": "dateBounced",
               "doc": "Timestamp (milliseconds since epoch) when an email sent to this address last bounced. Reset to null when the address no longer bounces.",
-              "type": ["null", "long"]
+              "type": [
+                "null",
+                "long"
+              ]
             }
           ]
         }
@@ -76,13 +79,23 @@
                 "type": "enum",
                 "name": "OAuthStatus",
                 "doc": "* `PENDING`: the user has started authorizing, but not yet finished\n* `ACTIVE`: the token should work\n* `DENIED`: the user declined the authorization\n* `EXPIRED`: the token used to work, but now it doesn't\n* `REVOKED`: the user has explicitly revoked the token",
-                "symbols": ["PENDING", "ACTIVE", "DENIED", "EXPIRED", "REVOKED"]
+                "symbols": [
+                  "PENDING",
+                  "ACTIVE",
+                  "DENIED",
+                  "EXPIRED",
+                  "REVOKED"
+                ]
               }
             },
             {
               "name": "userId",
               "doc": "Twitter's numeric ID for this user",
               "type": "long"
+            },
+            {
+              "name": "photo",
+              "type": "bytes"
             },
             {
               "name": "screenName",
@@ -97,7 +110,10 @@
             {
               "name": "oauthTokenSecret",
               "doc": "The OAuth secret, used for signing requests on behalf of this Twitter account. `null` whilst the OAuth flow is not yet complete.",
-              "type": ["null", "string"]
+              "type": [
+                "null",
+                "string"
+              ]
             },
             {
               "name": "dateAuthorized",
@@ -125,7 +141,13 @@
                 "type": "enum",
                 "name": "ToDoStatus",
                 "doc": "* `HIDDEN`: not currently visible, e.g. because it becomes actionable in future\n* `ACTIONABLE`: appears in the current to-do list\n* `DONE`: marked as done, but still appears in the list\n* `ARCHIVED`: marked as done and no longer visible\n* `DELETED`: not done and removed from list (preserved for undo purposes)",
-                "symbols": ["HIDDEN", "ACTIONABLE", "DONE", "ARCHIVED", "DELETED"]
+                "symbols": [
+                  "HIDDEN",
+                  "ACTIONABLE",
+                  "DONE",
+                  "ARCHIVED",
+                  "DELETED"
+                ]
               }
             },
             {
@@ -136,12 +158,18 @@
             {
               "name": "description",
               "doc": "Detailed description (may contain HTML markup)",
-              "type": ["null", "string"]
+              "type": [
+                "null",
+                "string"
+              ]
             },
             {
               "name": "snoozeDate",
               "doc": "Timestamp (milliseconds since epoch) at which the item should go from `HIDDEN` to `ACTIONABLE` status",
-              "type": ["double", "long"]
+              "type": [
+                "double",
+                "long"
+              ]
             },
             {
               "name": "subItems",

@@ -18,14 +18,15 @@ class ClassGenerator(schema: Schema) {
       schema.getType match {
         case Schema.Type.ARRAY => ArrayType(schemaToType(schema.getElementType))
         case Schema.Type.BOOLEAN => PrimitiveType("Boolean")
+        case Schema.Type.BYTES => PrimitiveType("Array[Byte]")
         case Schema.Type.DOUBLE => PrimitiveType("Double")
-        case Schema.Type.NULL => NullType
         case Schema.Type.ENUM => types.getOrElse(schema.getFullName, enumFor(schema))
         case Schema.Type.FIXED => PrimitiveType("String")
         case Schema.Type.FLOAT => PrimitiveType("Float")
         case Schema.Type.INT => PrimitiveType("Int")
         case Schema.Type.LONG => PrimitiveType("Long")
         case Schema.Type.MAP => MapType(schemaToType(schema.getValueType))
+        case Schema.Type.NULL => NullType
         case Schema.Type.RECORD => types.getOrElse(schema.getFullName, recordFor(schema))
         case Schema.Type.STRING => PrimitiveType("String")
         case Schema.Type.UNION => UnionType(schemaToType(schema.getTypes.get(0)), schemaToType(schema.getTypes.get(1)))

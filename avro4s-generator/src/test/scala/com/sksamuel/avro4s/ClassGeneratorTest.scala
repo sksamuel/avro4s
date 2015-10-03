@@ -45,6 +45,10 @@ class ClassGeneratorTest extends WordSpec with Matchers {
       val types = ClassGenerator(getClass.getResourceAsStream("/array.avsc"))
       StringClassRenderer.render(types) should include("myarray: Seq[String]")
     }
+    "generate field for bytes" in {
+      val types = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
+      StringClassRenderer.render(types) should include("photo: Array[Byte]")
+    }
     "generate definition for enums" in {
       val types = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
       println(StringClassRenderer.render(types))
