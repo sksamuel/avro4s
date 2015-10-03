@@ -6,6 +6,9 @@ Avro4s is a schema generation and serializing/deserializing library for Avro wri
 allow seemless use with Scala without the need to to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a macro based
 library and generates code for use with avro at _compile time_.
 
+## Changelog
+* 0.92.0 - Added support for unions (and unions of nulls to Options) and enums to class generator.
+
 ## Serializing
 
 Avro4s allows us to easily serialize Scala case classes into an avro stream. 
@@ -114,6 +117,7 @@ would output
 |scala.collection.Iterable[T]|array|
 |scala.collection.Set[T]|array|
 |scala.collection.Map[String, T]|map|
+|scala.collection.Option[T]|union:null,T|
 |Double|double|
 |Float|float|
 |T|record|
@@ -128,9 +132,9 @@ Features to be added before 1.0 release
 
 ## Using Elastic4s in your project
 
-Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:0.91.0'`
+Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:0.92.0'`
 
-SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "0.91.0"`
+SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "0.92.0"`
 
 Maven:
 
@@ -138,7 +142,7 @@ Maven:
 <dependency>
     <groupId>com.sksamuel.avro4s</groupId>
     <artifactId>avro4s-core_2.11</artifactId>
-    <version>0.91.0</version>
+    <version>0.92.0</version>
 </dependency>
 ```
 
