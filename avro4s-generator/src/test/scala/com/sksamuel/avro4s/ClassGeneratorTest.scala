@@ -59,5 +59,9 @@ class ClassGeneratorTest extends WordSpec with Matchers {
       StringClassRenderer.render(records) should include("case object ARCHIVED extends MyEnum")
       StringClassRenderer.render(records) should include("case object DELETED extends MyEnum")
     }
+    "generate option for nullable types" in {
+      val types = ClassGenerator(getClass.getResourceAsStream("/user.avsc"))
+      StringClassRenderer.render(types) should include("description: Option[String]")
+    }
   }
 }

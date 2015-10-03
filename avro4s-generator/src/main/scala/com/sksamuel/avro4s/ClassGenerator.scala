@@ -19,6 +19,7 @@ class ClassGenerator(schema: Schema) {
         case Schema.Type.ARRAY => ArrayType(schemaToType(schema.getElementType))
         case Schema.Type.BOOLEAN => PrimitiveType("Boolean")
         case Schema.Type.DOUBLE => PrimitiveType("Double")
+        case Schema.Type.NULL => NullType
         case Schema.Type.ENUM => types.getOrElse(schema.getFullName, enumFor(schema))
         case Schema.Type.FIXED => PrimitiveType("String")
         case Schema.Type.FLOAT => PrimitiveType("Float")
@@ -27,7 +28,7 @@ class ClassGenerator(schema: Schema) {
         case Schema.Type.MAP => MapType(schemaToType(schema.getValueType))
         case Schema.Type.RECORD => types.getOrElse(schema.getFullName, recordFor(schema))
         case Schema.Type.STRING => PrimitiveType("String")
-        case Schema.Type.UNION => PrimitiveType("UNION")
+        case Schema.Type.UNION => UnionType(schemaToType(schema.getTypes.get(0)), schemaToType(schema.getTypes.get(1)))
         case _ => sys.error("Unsupported field type: " + schema.getType)
       }
     }
@@ -77,6 +78,10 @@ case class PrimitiveType(baseType: String) extends Type
 
 case class ArrayType(arrayType: Type) extends Type
 
+case class UnionType(left: Type, right: Type) extends Type
+
+case object NullType extends Type
+
 case class FieldDef(name: String, `type`: Type)
 
 object TypeRenderer {
@@ -88,6 +93,9 @@ object TypeRenderer {
       case Record(namespace, name, _) => namespace + "." + name
       case EnumType(namespace, name, _) => namespace + "." + name
       case MapType(valueType) => s"Map[String, ${renderType(valueType)}]"
+      case UnionType(NullType, right) => s"Option[${renderType(right)}]"
+      case UnionType(left, right) => s"Either[${renderType(left)}, ${renderType(right)}]"
+      case NullType => "null"
     }
   }
 }
