@@ -4,7 +4,7 @@ import sbt.Keys._
 object Build extends Build {
 
   val org = "com.sksamuel.avro4s"
-  val appVersion = "0.92.0"
+  val appVersion = "0.93.0"
 
   val paradiseVersion = "2.1.0-M5"
   val ScalaVersion = "2.10.5"
