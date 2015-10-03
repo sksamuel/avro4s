@@ -141,7 +141,7 @@
             {
               "name": "snoozeDate",
               "doc": "Timestamp (milliseconds since epoch) at which the item should go from `HIDDEN` to `ACTIONABLE` status",
-              "type": ["null", "long"]
+              "type": ["double", "long"]
             },
             {
               "name": "subItems",
