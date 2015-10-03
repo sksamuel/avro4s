@@ -39,6 +39,13 @@ object Writers {
     }
   }
 
+  implicit def EitherPut[A, B]: AvroRecordPut[Either[A, B]] = new AvroRecordPut[Either[A, B]] {
+    override def put(name: String, either: Either[A, B], record: Record): Unit = {
+      either.left.foreach(record.put(name, _))
+      either.right.foreach(record.put(name, _))
+    }
+  }
+
   implicit def ArraySchema[S]: AvroRecordPut[Array[S]] = new AvroRecordPut[Array[S]] {
     override def put(name: String, value: Array[S], record: Record): Unit = {
       record.put(name, value)

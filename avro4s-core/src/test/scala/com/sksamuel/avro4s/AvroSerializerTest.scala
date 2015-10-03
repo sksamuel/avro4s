@@ -85,7 +85,28 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
       val rec = reader.next()
       rec.get("option") shouldBe null
     }
+    "supporting writing Eithers" in {
+      val path = Files.createTempFile("AvroSerializerTest", ".avro")
+      path.toFile.deleteOnExit()
+
+      val either = EitherWriteExample(Left("sammy"), Right(123l))
+
+      import AvroImplicits._
+      val output = AvroOutputStream[EitherWriteExample](path)
+      output.write(either)
+      output.close()
+
+      val datum = new GenericDatumReader[GenericRecord](schemaFor[EitherWriteExample].schema)
+      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
+
+      reader.hasNext
+      val rec = reader.next()
+      rec.get("either1").toString shouldBe "sammy"
+      rec.get("either2").toString.toLong shouldBe 123l
+    }
   }
 }
 
 case class OptionWriteExample(option: Option[String])
+
+case class EitherWriteExample(either1: Either[String, Boolean], either2: Either[String, Long])
