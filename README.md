@@ -124,7 +124,6 @@ Features to be added before 1.0 release
 
 * Annotation for Avro properties 
 * Annotation for aliases
-* Union and fixed types
 * Error handling during deserialization
 
 ## Using Elastic4s in your project
