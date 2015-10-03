@@ -123,6 +123,61 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
       val rec = reader.next()
       rec.get("bytes").asInstanceOf[ByteBuffer].array shouldBe Array[Byte](1,2,3)
     }
+    "supporting writing Longs" in {
+      val path = Files.createTempFile("AvroSerializerTest", ".avro")
+      path.toFile.deleteOnExit()
+
+      val bytes = LongWriteExample(3453453l)
+
+      import AvroImplicits._
+      val output = AvroOutputStream[LongWriteExample](path)
+      output.write(bytes)
+      output.close()
+
+      val datum = new GenericDatumReader[GenericRecord](schemaFor[LongWriteExample].schema)
+      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
+
+      reader.hasNext
+      val rec = reader.next()
+      rec.get("long").toString.toLong shouldBe 3453453l
+    }
+    "supporting writing Doubles" in {
+      val path = Files.createTempFile("AvroSerializerTest", ".avro")
+      path.toFile.deleteOnExit()
+
+      val bytes = DoubleWriteExample(123412.522)
+
+      import AvroImplicits._
+      val output = AvroOutputStream[DoubleWriteExample](path)
+      output.write(bytes)
+      output.close()
+
+      val datum = new GenericDatumReader[GenericRecord](schemaFor[DoubleWriteExample].schema)
+      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
+
+      reader.hasNext
+      val rec = reader.next()
+      rec.get("double").toString.toDouble shouldBe 123412.522
+    }
+    "supporting writing Booleans" in {
+      val path = Files.createTempFile("AvroSerializerTest", ".avro")
+      path.toFile.deleteOnExit()
+
+      val bytes = BooleanWriteExample(true, false)
+
+      import AvroImplicits._
+      val output = AvroOutputStream[BooleanWriteExample](path)
+      output.write(bytes)
+      output.close()
+
+      val datum = new GenericDatumReader[GenericRecord](schemaFor[BooleanWriteExample].schema)
+      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
+
+      reader.hasNext
+      val rec = reader.next()
+      rec.get("left").toString.toBoolean shouldBe true
+      rec.get("right").toString.toBoolean shouldBe false
+    }
   }
 }
 
@@ -131,3 +186,9 @@ case class OptionWriteExample(option: Option[String])
 case class EitherWriteExample(either1: Either[String, Boolean], either2: Either[String, Long])
 
 case class ByteWriteExample(bytes: Array[Byte])
+
+case class DoubleWriteExample(double: Double)
+
+case class LongWriteExample(long: Long)
+
+case class BooleanWriteExample(left: Boolean, right: Boolean)
