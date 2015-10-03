@@ -38,6 +38,12 @@ object Readers {
     override def convert(value: AnyRef): Double = value.toString.toDouble
   }
 
+  implicit def OptionConverter[T <: AnyRef](implicit converter: AvroConverter[T]) = new AvroConverter[Option[T]] {
+    override def convert(value: AnyRef): Option[T] = {
+      Option(value).map(converter.convert)
+    }
+  }
+
   implicit def SeqConverter[S <: AnyRef](implicit converter: AvroConverter[S]) = new AvroConverter[Seq[S]] {
     override def convert(value: AnyRef): Seq[S] = {
       import scala.collection.JavaConverters._

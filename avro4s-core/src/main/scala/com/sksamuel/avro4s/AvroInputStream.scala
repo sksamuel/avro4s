@@ -27,6 +27,7 @@ class AvroInputStream[T](in: SeekableInput)(implicit s: AvroSchema[T], pop: Avro
 }
 
 object AvroInputStream {
+  def apply[T: AvroSchema : AvroPopulator](path: String): AvroInputStream[T] = apply(new File(path))
   def apply[T: AvroSchema : AvroPopulator](path: Path): AvroInputStream[T] = apply(path.toFile)
   def apply[T: AvroSchema : AvroPopulator](file: File): AvroInputStream[T] = new AvroInputStream[T](new SeekableFileInput(file))
 }
