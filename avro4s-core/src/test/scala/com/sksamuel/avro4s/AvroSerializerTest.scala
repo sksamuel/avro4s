@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import java.nio.ByteBuffer
 import java.nio.file.Files
 
 import org.apache.avro.file.DataFileReader
@@ -104,9 +105,29 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
       rec.get("either1").toString shouldBe "sammy"
       rec.get("either2").toString.toLong shouldBe 123l
     }
+    "supporting writing Bytes" in {
+      val path = Files.createTempFile("AvroSerializerTest", ".avro")
+      path.toFile.deleteOnExit()
+
+      val bytes = ByteWriteExample(Array[Byte](1,2,3))
+
+      import AvroImplicits._
+      val output = AvroOutputStream[ByteWriteExample](path)
+      output.write(bytes)
+      output.close()
+
+      val datum = new GenericDatumReader[GenericRecord](schemaFor[ByteWriteExample].schema)
+      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
+
+      reader.hasNext
+      val rec = reader.next()
+      rec.get("bytes").asInstanceOf[ByteBuffer].array shouldBe Array[Byte](1,2,3)
+    }
   }
 }
 
 case class OptionWriteExample(option: Option[String])
 
 case class EitherWriteExample(either1: Either[String, Boolean], either2: Either[String, Long])
+
+case class ByteWriteExample(bytes: Array[Byte])

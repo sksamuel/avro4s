@@ -1,5 +1,7 @@
 package com.sksamuel.avro4s
 
+import java.nio.ByteBuffer
+
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData.Record
 
@@ -29,7 +31,7 @@ object Writers {
 
   implicit val ByteArrayPut: AvroRecordPut[Array[Byte]] = new AvroRecordPut[Array[Byte]] {
     override def put(name: String, value: Array[Byte], record: Record): Unit = {
-      record.put(name, value)
+      record.put(name, ByteBuffer.wrap(value))
     }
   }
 
