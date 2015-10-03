@@ -13,8 +13,9 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
   val michelangelo = Artist("michelangelo", 1475, 1564, "Caprese", Seq("sculpture", "fresco"))
   val raphael = Artist("raphael", 1483, 1520, "florence", Seq("painter", "architect"))
 
-  import scala.collection.JavaConverters._
   import AvroImplicits._
+
+  import scala.collection.JavaConverters._
 
   "AvroSerializer" should {
     "write out simple records" in {
@@ -47,8 +48,44 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
       rec2.get("yearOfDeath").toString.toInt shouldBe raphael.yearOfDeath
       val styles2 = rec2.get("styles").asInstanceOf[GenericData.Array[Utf8]].asScala.toSet
       styles2.map(_.toString) shouldBe raphael.styles.toSet
+    }
+    "write Some as populated union" in {
+      val path = Files.createTempFile("AvroSerializerTest", ".avro")
+      path.toFile.deleteOnExit()
 
+      val option = OptionWriteExample(Option("sammy"))
+
+      import AvroImplicits._
+      val output = AvroOutputStream[OptionWriteExample](path)
+      output.write(option)
+      output.close()
+
+      val datum = new GenericDatumReader[GenericRecord](schemaFor[OptionWriteExample].schema)
+      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
+
+      reader.hasNext
+      val rec = reader.next()
+      rec.get("option").toString shouldBe "sammy"
+    }
+    "write None as union null" in {
+      val path = Files.createTempFile("AvroSerializerTest", ".avro")
+      path.toFile.deleteOnExit()
+
+      val option = OptionWriteExample(None)
+
+      import AvroImplicits._
+      val output = AvroOutputStream[OptionWriteExample](path)
+      output.write(option)
+      output.close()
+
+      val datum = new GenericDatumReader[GenericRecord](schemaFor[OptionWriteExample].schema)
+      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
+
+      reader.hasNext
+      val rec = reader.next()
+      rec.get("option") shouldBe null
     }
   }
 }
 
+case class OptionWriteExample(option: Option[String])

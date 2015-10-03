@@ -19,6 +19,8 @@ class AvroOutputStream[T](os: OutputStream)(implicit s: AvroSchema[T], w: AvroSe
     dataFileWriter.append(record)
   }
 
+  def flush(): Unit = dataFileWriter.flush()
+
   def close(): Unit = {
     dataFileWriter.flush()
     dataFileWriter.close()

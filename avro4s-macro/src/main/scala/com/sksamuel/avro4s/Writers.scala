@@ -27,6 +27,18 @@ object Writers {
   implicit val IntSchema: AvroRecordPut[Int] = new AvroRecordPut[Int] {}
   implicit val LongSchema: AvroRecordPut[Long] = new AvroRecordPut[Long] {}
 
+  implicit val ByteArrayPut: AvroRecordPut[Array[Byte]] = new AvroRecordPut[Array[Byte]] {
+    override def put(name: String, value: Array[Byte], record: Record): Unit = {
+      record.put(name, value)
+    }
+  }
+
+  implicit def OptionPut[T]: AvroRecordPut[Option[T]] = new AvroRecordPut[Option[T]] {
+    override def put(name: String, value: Option[T], record: Record): Unit = {
+      value.foreach(record.put(name, _))
+    }
+  }
+
   implicit def ArraySchema[S]: AvroRecordPut[Array[S]] = new AvroRecordPut[Array[S]] {
     override def put(name: String, value: Array[S], record: Record): Unit = {
       record.put(name, value)
