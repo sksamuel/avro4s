@@ -32,9 +32,14 @@ class SchemaMacroTest extends WordSpec with Matchers {
       val writer = schemaFor[ListExample]
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
-    "generate union:null for Option" in {
+    "generate union:null,T for Option[T]" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option.avsc"))
       val writer = schemaFor[OptionExample]
+      writer.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate union:T,U for Either[T,U]" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/either.avsc"))
+      val writer = schemaFor[EitherExample]
       println(writer.schema)
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
@@ -50,6 +55,8 @@ case class ArrayExample(array: Seq[Boolean])
 case class ListExample(list: Seq[Float])
 
 case class OptionExample(option: Option[Array[Byte]])
+
+case class EitherExample(either: Either[String, Double])
 
 case class GameOfThrones(id: String,
                          kingdoms: Int,

@@ -41,6 +41,12 @@ object SchemaMacros {
     }
   }
 
+  implicit def EitherSchema[A, B](implicit aSchema: AvroSchema[A], bSchema: AvroSchema[B]): AvroSchema[Either[A, B]] = {
+    new AvroSchema[Either[A, B]] {
+      def schema: Schema = Schema.createUnion(util.Arrays.asList(aSchema.schema, bSchema.schema))
+    }
+  }
+
   implicit val ByteArraySchema: AvroSchema[Array[Byte]] = new AvroSchema[Array[Byte]] {
     def schema: Schema = Schema.create(Schema.Type.BYTES)
   }
