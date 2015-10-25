@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "SeqExample3",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "map",
+       "type": {
+         "type": "map",
+         "values": "string"
+       }
+    }
+  ]
+}

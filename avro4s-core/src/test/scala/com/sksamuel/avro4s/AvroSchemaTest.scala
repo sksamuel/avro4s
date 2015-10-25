@@ -47,12 +47,26 @@ class SchemaMacroTest extends WordSpec with Matchers {
       val writer = schemaFor[AliasExample]
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
+    "support seq of seq" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq2.avsc"))
+      val writer = schemaFor[SeqExample2]
+      writer.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support seq of map" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq3.avsc"))
+      val writer = schemaFor[SeqExample3]
+      writer.schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
 case class MapExample(mymap: Map[String, Long])
 
 case class SeqExample(seq: Seq[Double])
+
+case class SeqExample2(seq: Seq[SeqExample])
+
+case class SeqExample3(map: Map[String, String])
 
 case class ArrayExample(array: Seq[Boolean])
 
