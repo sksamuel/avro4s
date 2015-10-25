@@ -16,6 +16,7 @@ class AvroOutputStream[T](os: OutputStream)(implicit s: AvroSchema[T], w: AvroSe
 
   def write(t: T): Unit = {
     val record = w.write(t)
+    println(record)
     dataFileWriter.append(record)
   }
 

@@ -25,7 +25,7 @@ class AvroSerializerTest extends WordSpec with Matchers with Timeouts {
       val path = Files.createTempFile("AvroSerializerTest", ".avro")
       path.toFile.deleteOnExit()
 
-      val s = schemaFor[Artist]
+      implicit val s = schemaFor[Artist]
 
       val writer = AvroOutputStream[Artist](path)
       writer.write(painters)

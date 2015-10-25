@@ -1,9 +1,11 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
+import java.util
 
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData.Record
+import org.apache.avro.generic.GenericRecord
 
 import scala.reflect.macros.Context
 
@@ -50,6 +52,13 @@ object Writers {
 
   import scala.collection.JavaConverters._
 
+  implicit object StringMapPut extends AvroRecordPut[Map[String, String]] {
+    override def put(name: String, value: Map[String, String], record: Record): Unit = {
+      import scala.collection.JavaConverters._
+      record.put(name, value.asJava)
+    }
+  }
+
   implicit def ArraySchema[S]: AvroRecordPut[Array[S]] = new AvroRecordPut[Array[S]] {
     override def put(name: String, value: Array[S], record: Record): Unit = {
       record.put(name, value.toList.asJavaCollection)
@@ -63,22 +72,51 @@ object Writers {
     }
   }
 
-  implicit def SeqSchema[S]: AvroRecordPut[Seq[S]] = new AvroRecordPut[Seq[S]] {
-    override def put(name: String, value: Seq[S], record: Record): Unit = {
+
+  class PrimitiveSeqRecordPut[T] extends AvroRecordPut[Seq[T]] {
+    override def put(name: String, value: Seq[T], record: Record): Unit = {
       import scala.collection.JavaConverters._
       record.put(name, value.asJavaCollection)
+    }
+  }
+
+  implicit object StringSeqPut extends PrimitiveSeqRecordPut[String]
+
+  implicit object FloatPut extends PrimitiveSeqRecordPut[Float]
+
+  implicit object DoubleSeqPut extends PrimitiveSeqRecordPut[Double]
+
+  implicit object IntSeqPut extends PrimitiveSeqRecordPut[Int]
+
+  implicit object LongSeqPut extends PrimitiveSeqRecordPut[Long]
+
+  implicit object BooleanSeqPut extends PrimitiveSeqRecordPut[Boolean]
+
+  implicit def SeqSchema[S](implicit s: AvroSchema[S], serializer: AvroSerializer[S]): AvroRecordPut[Seq[S]] = new AvroRecordPut[Seq[S]] {
+    override def put(name: String, value: Seq[S], record: Record): Unit = {
+      val list = new util.ArrayList[GenericRecord]()
+      value.foreach(x => list.add(serializer.write(x)))
+      record.put(name, list)
     }
   }
 
   implicit def IterableSchema[S]: AvroRecordPut[Iterable[S]] = new AvroRecordPut[Iterable[S]] {
     override def put(name: String, value: Iterable[S], record: Record): Unit = {
       import scala.collection.JavaConverters._
-      record.put(name, value.asJavaCollection)
+      record.put(name, value.toList.asJavaCollection)
     }
   }
 
-  def fieldWriter[T](name: String, value: T, record: Record)(implicit s: AvroSchema[T], w: AvroRecordPut[T]): Unit = {
-    w.put(name, value, record)
+
+  //  implicit def MapPut[V]: AvroRecordPut[Map[String, V]] = new AvroRecordPut[Map[String, V]] {
+  //    override def put(name: String, value: Map[String, V], record: Record): Unit = {
+  //      import scala.collection.JavaConverters._
+  //      record.put(name, value.asJava)
+  //    }
+  //  }
+
+  def fieldWriter[T](name: String, value: T, record: Record)(implicit s: AvroSchema[T], p: AvroRecordPut[T]): Unit = {
+    p.put(name, value, record)
   }
 
   def impl[T: c.WeakTypeTag](c: Context): c.Expr[AvroSerializer[T]] = {
@@ -95,15 +133,15 @@ object Writers {
       val decoded = f.name.decoded
       val sig = f.typeSignature
       q"""{ import com.sksamuel.avro4s.Writers._
-            val putter = implicitly[com.sksamuel.avro4s.AvroRecordPut[$sig]]
             (t: $t, r: org.apache.avro.generic.GenericData.Record) => {
-              putter.put($decoded, t.$termName, r)
+              implicitly[com.sksamuel.avro4s.AvroRecordPut[$sig]].put($decoded, t.$termName, r)
             }
           }
       """
     }
 
-    c.Expr[AvroSerializer[T]]( q"""
+    c.Expr[AvroSerializer[T]](
+      q"""
       new com.sksamuel.avro4s.AvroSerializer[$t] {
         import org.apache.avro.generic.GenericData.Record
         import com.sksamuel.avro4s.SchemaMacros._
