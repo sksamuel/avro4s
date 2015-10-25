@@ -20,16 +20,21 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       painters shouldBe Set(michelangelo, raphael)
       in.close()
     }
-    "populate to Options" in {
+    "read Options" in {
       val options = Seq(OptionReadTest(Option("sammy")), OptionReadTest(None))
-      //      val out = AvroOutputStream[OptionReadTest](new File("options.avro"))
-      //      out.write(options)
-      //      out.close()
       val in = AvroInputStream[OptionReadTest](getClass.getResource("/options.avro").getFile)
       in.iterator.toSet shouldBe options.toSet
+      in.close()
+    }
+    "read Eithers" in {
+      val eithers = Seq(EitherReadTest(Left("sammy")), EitherReadTest(Right(true)))
+      val in = AvroInputStream[EitherReadTest](getClass.getResource("/eithers.avro").getFile)
+      in.iterator.toSet shouldBe eithers.toSet
       in.close()
     }
   }
 }
 
 case class OptionReadTest(option: Option[String])
+
+case class EitherReadTest(either: Either[String, Boolean])

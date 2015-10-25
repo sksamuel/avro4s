@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.Path
 
 import org.apache.avro.file.{DataFileReader, SeekableFileInput, SeekableInput}
-import org.apache.avro.generic.{GenericData, GenericDatumReader, GenericRecord}
+import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 
 class AvroInputStream[T](in: SeekableInput)(implicit s: AvroSchema[T], pop: AvroPopulator[T]) {
 
@@ -17,7 +17,7 @@ class AvroInputStream[T](in: SeekableInput)(implicit s: AvroSchema[T], pop: Avro
       override def hasNext: Boolean = dataFileReader.hasNext
 
       override def next(): T = {
-        val record = dataFileReader.next(new GenericData.Record(s.schema))
+        val record = dataFileReader.next
         pop.read(record)
       }
     }
