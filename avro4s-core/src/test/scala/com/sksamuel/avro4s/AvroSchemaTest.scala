@@ -34,8 +34,8 @@ class SchemaMacroTest extends WordSpec with Matchers {
     }
     "generate union:null,T for Option[T]" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option.avsc"))
-      val writer = schemaFor[OptionExample]
-      writer.schema.toString(true) shouldBe expected.toString(true)
+      val schema = schemaFor[OptionExample]
+      schema.schema.toString(true) shouldBe expected.toString(true)
     }
     "generate union:T,U for Either[T,U]" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/either.avsc"))
@@ -47,15 +47,21 @@ class SchemaMacroTest extends WordSpec with Matchers {
       val writer = schemaFor[AliasExample]
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
-    "support seq of seq" in {
+    "support seq of seq of simple types" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq2.avsc"))
-      val writer = schemaFor[SeqExample2]
-      writer.schema.toString(true) shouldBe expected.toString(true)
+      val schema = schemaFor[SeqExample2]
+      schema.schema.toString(true) shouldBe expected.toString(true)
     }
-    "support seq of map" in {
+    "support seq of map of simple types" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq3.avsc"))
-      val writer = schemaFor[SeqExample3]
-      writer.schema.toString(true) shouldBe expected.toString(true)
+      val schema = schemaFor[SeqExample3]
+      schema.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support seq of map of complex types" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq4.avsc"))
+      val schema = schemaFor[SeqExample4]
+      println(schema.schema.toString(true))
+      schema.schema.toString(true) shouldBe expected.toString(true)
     }
   }
 }
@@ -67,6 +73,8 @@ case class SeqExample(seq: Seq[Double])
 case class SeqExample2(seq: Seq[SeqExample])
 
 case class SeqExample3(map: Map[String, String])
+
+case class SeqExample4(map: Map[String, SeqExample2])
 
 case class ArrayExample(array: Seq[Boolean])
 
