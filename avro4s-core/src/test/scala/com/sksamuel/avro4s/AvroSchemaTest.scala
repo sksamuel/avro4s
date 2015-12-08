@@ -59,9 +59,15 @@ class SchemaMacroTest extends WordSpec with Matchers {
     }
     "support seq of map of complex types" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq4.avsc"))
-      val schema = schemaFor[SeqExample4]
+      val schema = schemaFor[ClassWithComplexMap]
       println(schema.schema.toString(true))
       schema.schema.toString(true) shouldBe expected.toString(true)
+    }
+    "nested seq in maps in classes" in {
+      //   val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq5.avsc"))
+      //   val schema = schemaFor[SeqExample5]
+      //   println(schema.schema.toString(true))
+      //  schema.schema.toString(true) shouldBe expected.toString(true)
     }
   }
 }
@@ -72,9 +78,13 @@ case class SeqExample(seq: Seq[Double])
 
 case class SeqExample2(seq: Seq[SeqExample])
 
-case class SeqExample3(map: Map[String, String])
+case class SeqExample3(seq: Seq[ClassWithStringMap])
 
-case class SeqExample4(map: Map[String, SeqExample2])
+case class ClassWithStringMap(map: Map[String, String])
+
+case class ClassWithComplexMap(map: Map[String, SeqExample2])
+
+case class SeqExample5(seq: Seq[ClassWithStringMap])
 
 case class ArrayExample(array: Seq[Boolean])
 

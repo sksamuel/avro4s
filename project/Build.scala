@@ -7,16 +7,16 @@ object Build extends Build {
   val appVersion = "0.93.0"
 
   val paradiseVersion = "2.1.0-M5"
-  val ScalaVersion = "2.10.5"
+  val ScalaVersion = "2.11.7"
   val ScalatestVersion = "2.2.5"
   val Slf4jVersion = "1.7.12"
   val Log4jVersion = "1.2.17"
+  val ShapelessVersion = "2.2.5"
 
   val rootSettings = Seq(
     version := appVersion,
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.11.7", "2.10.5"),
     publishMavenStyle := true,
     resolvers += Resolver.mavenLocal,
     publishArtifact in Test := false,
@@ -24,15 +24,15 @@ object Build extends Build {
     scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8"),
     javacOptions := Seq("-source", "1.7", "-target", "1.7"),
     libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-reflect" % ScalaVersion,
+      "com.chuusai" %% "shapeless" % ShapelessVersion,
       "org.scalactic" %% "scalactic" % "2.2.5",
       "org.apache.avro" % "avro" % "1.7.7",
-      "org.scala-lang" % "scala-reflect" % ScalaVersion,
       "org.slf4j" % "slf4j-api" % Slf4jVersion,
       "log4j" % "log4j" % Log4jVersion % "test",
       "org.slf4j" % "log4j-over-slf4j" % Slf4jVersion % "test",
       "org.scalatest" %% "scalatest" % ScalatestVersion % "test"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
     publishTo <<= version {
       (v: String) =>
         val nexus = "https://oss.sonatype.org/"
@@ -76,10 +76,6 @@ object Build extends Build {
     .settings(rootSettings: _*)
     .settings(publish := {})
     .settings(libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-reflect" % _))
-    .settings(libraryDependencies ++= (
-    if (scalaVersion.value.startsWith("2.10")) List("org.scalamacros" %% "quasiquotes" % paradiseVersion)
-    else Nil
-    ))
     .settings(name := "avro4s-macro")
 
   lazy val core = Project("avro4s-core", file("avro4s-core"))

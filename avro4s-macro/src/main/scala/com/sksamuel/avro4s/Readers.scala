@@ -50,9 +50,7 @@ object Readers {
                                      rightConverter: AvroConverter[R],
                                      leftType: ClassTag[L],
                                      rightType: ClassTag[R]) = new AvroConverter[Either[L, R]] {
-    def isMatch[T](tag: ClassTag[T], value: Any) = {
-      tag.runtimeClass.isInstance()
-    }
+    def isMatch[T](tag: ClassTag[T], value: Any) = false
     override def convert(value: Any): Either[L, R] = {
       val name = value match {
         case utf8: Utf8 => classOf[String].getCanonicalName

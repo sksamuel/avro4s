@@ -3,15 +3,10 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.util
 
-import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData.Record
 import org.apache.avro.generic.GenericRecord
 
-import scala.reflect.macros.Context
-
-trait AvroFieldWriter[T] {
-  def field(name: String): Schema.Field
-}
+import scala.reflect.macros.blackbox
 
 trait AvroSerializer[T] {
   def write(value: T)(implicit s: AvroSchema[T]): Record
@@ -119,7 +114,7 @@ object Writers {
     p.put(name, value, record)
   }
 
-  def impl[T: c.WeakTypeTag](c: Context): c.Expr[AvroSerializer[T]] = {
+  def impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[AvroSerializer[T]] = {
 
     import c.universe._
     val t = weakTypeOf[T]
