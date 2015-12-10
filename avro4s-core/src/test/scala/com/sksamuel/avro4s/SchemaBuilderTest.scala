@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.AvroImplicits._
 import org.scalatest.{WordSpec, Matchers}
 
 class SchemaBuilderTest extends WordSpec with Matchers {
@@ -104,6 +105,12 @@ class SchemaBuilderTest extends WordSpec with Matchers {
       case class Nested2(b: Boolean)
       case class Test(either: Either[Nested1, Nested2])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/eitherrecord.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate map type for a scala.collection.immutable.Map of primitives" in {
+      case class Test(map: Map[String, String])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map.avsc"))
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }

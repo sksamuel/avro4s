@@ -12,11 +12,7 @@ class SchemaMacroTest extends WordSpec with Matchers {
       val writer = schemaFor[GameOfThrones]
       writer.schema.toString(true) shouldBe expected.toString(true)
     }
-    "generate map type for a scala.collection.immutable.Map" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map.avsc"))
-      val writer = schemaFor[MapExample]
-      writer.schema.toString(true) shouldBe expected.toString(true)
-    }
+
 
     //    "generate aliases when specified by Aliases annotation" in {
     //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases.avsc"))

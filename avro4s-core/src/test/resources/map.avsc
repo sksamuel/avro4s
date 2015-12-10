@@ -1,13 +1,13 @@
 {
   "type": "record",
-  "name": "MapExample",
+  "name": "Test",
   "namespace": "com.sksamuel.avro4s",
   "fields": [
     {
-      "name": "mymap",
+      "name": "map",
       "type": {
         "type": "map",
-        "values": "long"
+        "values": "string"
       }
     }
   ]

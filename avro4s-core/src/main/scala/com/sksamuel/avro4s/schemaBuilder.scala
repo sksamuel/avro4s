@@ -60,6 +60,10 @@ object FieldWrite {
     }
   }
 
+  implicit def MapFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Map[String, T]] = new FieldWrite[Map[String, T]] {
+    override def schema: Option[Schema] = write.schema.map { schema => Schema.createMap(schema) }
+  }
+
   implicit def ListFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[List[T]] = new FieldWrite[List[T]] {
     override def schema: Option[Schema] = write.schema.map { schema => Schema.createArray(schema) }
   }
