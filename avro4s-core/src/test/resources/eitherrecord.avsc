@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "Test",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "either",
+      "type": [
+      {
+       "type" : "record",
+       "name" : "Nested1",
+       "fields" : [
+           {
+             "name" : "a",
+              "type" : "string"
+           }
+         ]
+       }, {
+       "type" : "record",
+       "name" : "Nested2",
+       "fields" : [
+           {
+             "name" : "b",
+             "type" : "boolean"
+           }
+        ]
+       }
+      ]
+    }
+  ]
+}

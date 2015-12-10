@@ -99,5 +99,13 @@ class SchemaBuilderTest extends WordSpec with Matchers {
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "generate union:T,U for Either[T,U] of records" in {
+      case class Nested1(a: String)
+      case class Nested2(b: Boolean)
+      case class Test(either: Either[Nested1, Nested2])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/eitherrecord.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
