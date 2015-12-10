@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "Test",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "array",
+      "type": {
+        "type": "array",
+        "items" : {
+           "type" : "record",
+           "name" : "Nested",
+             "fields" : [
+               {
+                 "name" : "nested",
+                 "type" : "string"
+               }
+             ]
+          }
+      }
+    }
+  ]
+}

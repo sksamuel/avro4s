@@ -54,21 +54,42 @@ class SchemaBuilderTest extends WordSpec with Matchers {
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "generate array type for a scala.collection.immutable.Seq" in {
+    "generate array type for a scala.collection.immutable.Seq of primitives" in {
       case class Test(seq: Seq[String])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq.avsc"))
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "generate array type for an Array" in {
+    "generate array type for an Array of primitives" in {
       case class Test(array: Array[Boolean])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/array.avsc"))
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "generate array type for a List" in {
+    "generate array type for a List of primitives" in {
       case class Test(list: List[String])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/list.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for a scala.collection.immutable.Seq of records" in {
+      case class Nested(nested: String)
+      case class Test(seq: Seq[Nested])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seqrecords.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for an Array of records" in {
+      case class Nested(nested: String)
+      case class Test(array: Array[Nested])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/arrayrecords.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for a List of records" in {
+      case class Nested(nested: String)
+      case class Test(list: List[Nested])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/listrecords.avsc"))
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
