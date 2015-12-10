@@ -2,10 +2,8 @@ package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
-import org.apache.avro.generic.GenericData.Record
 import shapeless.labelled._
 import shapeless._
-import shapeless.ops.record.{Fields, Values, Keys}
 
 import scala.reflect.ClassTag
 
@@ -44,6 +42,9 @@ object FieldWrite {
     override def field(name: String): List[Field] = Nil
   }
 
+  implicit def RecordFieldWrite[T](implicit builder: SchemaBuilder[T]) = new FieldWrite[T] {
+    override def field(name: String): List[Field] = List(new Schema.Field(name, builder(), null, null))
+  }
 }
 
 trait SchemaFields[L <: HList] extends DepFn0 with Serializable {
