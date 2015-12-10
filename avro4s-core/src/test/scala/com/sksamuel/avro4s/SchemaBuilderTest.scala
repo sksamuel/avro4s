@@ -48,5 +48,11 @@ class SchemaBuilderTest extends WordSpec with Matchers {
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "accept options as Union[T, Null]" in {
+      case class Test(option: Option[String])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }

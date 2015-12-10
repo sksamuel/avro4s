@@ -1,5 +1,7 @@
 package com.sksamuel.avro4s
 
+import java.util
+
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
 import shapeless.labelled._
@@ -44,6 +46,18 @@ object FieldWrite {
 
   implicit def RecordFieldWrite[T](implicit builder: SchemaBuilder[T]) = new FieldWrite[T] {
     override def field(name: String): List[Field] = List(new Schema.Field(name, builder(), null, null))
+  }
+
+  implicit def OptionFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Option[T]] = new FieldWrite[Option[T]] {
+    override def field(name: String): List[Field] = {
+      val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), write.field("dummy").head.schema))
+      List(new Schema.Field(name, schema, null, null))
+    }
+  }
+
+  implicit def OptionFieldWriteRecord[T](implicit builder: SchemaBuilder[T]): FieldWrite[Option[T]] = new FieldWrite[Option[T]] {
+    val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), builder()))
+    override def field(name: String): List[Field] = List(new Schema.Field(name, schema, null, null))
   }
 }
 
