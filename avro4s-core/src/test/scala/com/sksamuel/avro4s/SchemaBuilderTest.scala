@@ -127,5 +127,12 @@ class SchemaBuilderTest extends WordSpec with Matchers {
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support maps of seqs of records" in {
+      case class Nested(float: Float)
+      case class Test(map: Map[String, Seq[Nested]])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map_seq_nested.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
