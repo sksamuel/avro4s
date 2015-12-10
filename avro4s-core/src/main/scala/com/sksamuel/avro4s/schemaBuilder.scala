@@ -9,79 +9,64 @@ import shapeless._
 import scala.reflect.ClassTag
 
 
-trait FieldWrite[T] {
+trait SchemaBuilder[T] {
   def schema: Option[Schema]
 }
 
-object FieldWrite {
+object SchemaBuilder {
 
-  implicit object ByteArrayFieldWrite extends FieldWrite[Array[Byte]] {
+  implicit object ByteArraySchemaBuilder extends SchemaBuilder[Array[Byte]] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BYTES))
   }
 
-  implicit object StringFieldWrite extends FieldWrite[String] {
+  implicit object StringSchemaBuilder extends SchemaBuilder[String] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.STRING))
   }
 
-  implicit object BooleanFieldWrite extends FieldWrite[Boolean] {
+  implicit object BooleanSchemaBuilder extends SchemaBuilder[Boolean] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BOOLEAN))
   }
 
-  implicit object IntFieldWrite extends FieldWrite[Int] {
+  implicit object IntSchemaBuilder extends SchemaBuilder[Int] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.INT))
   }
 
-  implicit object LongFieldWrite extends FieldWrite[Long] {
+  implicit object LongSchemaBuilder extends SchemaBuilder[Long] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.LONG))
   }
 
-  implicit object DoubleFieldWrite extends FieldWrite[Double] {
+  implicit object DoubleSchemaBuilder extends SchemaBuilder[Double] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.DOUBLE))
   }
 
-  implicit object FloatFieldWrite extends FieldWrite[Float] {
+  implicit object FloatSchemaBuilder extends SchemaBuilder[Float] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.FLOAT))
   }
 
-  implicit object HNilFieldWrite extends FieldWrite[HNil] {
-    override def schema: Option[Schema] = None
-  }
-
-  implicit def RecordFieldWrite[T](implicit builder: SchemaBuilder[T]) = new FieldWrite[T] {
-    override def schema: Option[Schema] = Some(builder())
-  }
-
-  implicit def OptionFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Option[T]] = new FieldWrite[Option[T]] {
+  implicit def OptionFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[Option[T]] = new SchemaBuilder[Option[T]] {
     override def schema: Option[Schema] = {
-      write.schema.map { schema => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), schema)) }
+      builder.schema.map { schema => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), schema)) }
     }
   }
 
-  implicit def OptionFieldWriteRecord[T](implicit builder: SchemaBuilder[T]): FieldWrite[Option[T]] = new FieldWrite[Option[T]] {
-    override def schema: Option[Schema] = {
-      val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), builder()))
-      Some(schema)
-    }
+  implicit def MapFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[Map[String, T]] = new SchemaBuilder[Map[String, T]] {
+    override def schema: Option[Schema] = builder.schema.map { schema => Schema.createMap(schema) }
   }
 
-  implicit def MapFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Map[String, T]] = new FieldWrite[Map[String, T]] {
-    override def schema: Option[Schema] = write.schema.map { schema => Schema.createMap(schema) }
+  implicit def ListFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[List[T]] = new SchemaBuilder[List[T]] {
+    override def schema: Option[Schema] = builder.schema.map { schema => Schema.createArray(schema) }
   }
 
-  implicit def ListFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[List[T]] = new FieldWrite[List[T]] {
-    override def schema: Option[Schema] = write.schema.map { schema => Schema.createArray(schema) }
+  implicit def ArrayFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[Array[T]] = new SchemaBuilder[Array[T]] {
+    override def schema: Option[Schema] = builder.schema.map { schema => Schema.createArray(schema) }
   }
 
-  implicit def ArrayFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Array[T]] = new FieldWrite[Array[T]] {
-    override def schema: Option[Schema] = write.schema.map { schema => Schema.createArray(schema) }
+  implicit def SeqFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[Seq[T]] = new SchemaBuilder[Seq[T]] {
+    override def schema: Option[Schema] = builder.schema.map { schema => Schema.createArray(schema) }
   }
 
-  implicit def SeqFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Seq[T]] = new FieldWrite[Seq[T]] {
-    override def schema: Option[Schema] = write.schema.map { schema => Schema.createArray(schema) }
-  }
-
-  implicit def EitherFieldWrite[T, U](implicit twrite: FieldWrite[T],
-                                      uwrite: FieldWrite[U]): FieldWrite[Either[T, U]] = new FieldWrite[Either[T, U]] {
+  implicit def EitherFieldWrite[T, U](implicit twrite: SchemaBuilder[T],
+                                      uwrite: SchemaBuilder[U]): SchemaBuilder[Either[T, U]] = new SchemaBuilder[Either[T, U]] {
     override def schema: Option[Schema] = {
       for (t <- twrite.schema;
            u <- uwrite.schema) yield {
@@ -89,23 +74,27 @@ object FieldWrite {
       }
     }
   }
+
+  implicit def RecordFieldWrite[T](implicit builder: RecordSchemaBuilder[T]) = new SchemaBuilder[T] {
+    override def schema: Option[Schema] = Some(builder())
+  }
 }
 
-trait SchemaFields[L <: HList] extends DepFn0 with Serializable {
+trait RecordSchemaFields[L <: HList] extends DepFn0 with Serializable {
   type Out = List[Schema.Field]
 }
 
-object SchemaFields {
+object RecordSchemaFields {
 
-  implicit object HNilFields extends SchemaFields[HNil] {
+  implicit object HNilFields extends RecordSchemaFields[HNil] {
     def apply() = List.empty
   }
 
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
-                                                       write: FieldWrite[V],
-                                                       remaining: SchemaFields[T],
-                                                       tag: ClassTag[V]): SchemaFields[FieldType[K, V] :: T] = {
-    new SchemaFields[FieldType[K, V] :: T] {
+                                                       write: SchemaBuilder[V],
+                                                       remaining: RecordSchemaFields[T],
+                                                       tag: ClassTag[V]): RecordSchemaFields[FieldType[K, V] :: T] = {
+    new RecordSchemaFields[FieldType[K, V] :: T] {
       def apply: List[Schema.Field] = {
         val fieldFn: (Schema => Schema.Field) = schema => new Schema.Field(key.value.name, schema, null, null)
         write.schema.map(fieldFn).toList ++ remaining()
@@ -114,24 +103,31 @@ object SchemaFields {
   }
 }
 
-trait SchemaBuilder[T] {
+trait RecordSchemaBuilder[T] {
   def apply(): Schema
 }
 
-object SchemaBuilder {
+object RecordSchemaBuilder {
 
   implicit def schemaBuilder[T, Repr <: HList](implicit label: LabelledGeneric.Aux[T, Repr],
-                                               schemaFields: SchemaFields[Repr],
-                                               tag: ClassTag[T]): SchemaBuilder[T] = new SchemaBuilder[T] {
+                                               schemaFields: RecordSchemaFields[Repr],
+                                               tag: ClassTag[T]): RecordSchemaBuilder[T] = new RecordSchemaBuilder[T] {
 
     import scala.collection.JavaConverters._
 
     def apply(): Schema = {
-      val schema = org.apache.avro.Schema.createRecord(tag.runtimeClass.getSimpleName.takeWhile(_ != '$'), null, tag.runtimeClass.getPackage.getName, false)
+      val schema = org.apache.avro.Schema.createRecord(
+        tag.runtimeClass.getSimpleName.takeWhile(_ != '$'),
+        null,
+        tag.runtimeClass.getPackage.getName,
+        false
+      )
       schema.setFields(schemaFields().asJava)
       schema
     }
   }
+}
 
-  def apply[T](implicit builder: SchemaBuilder[T]): Schema = builder.apply()
+object AvroSchema2 {
+  def apply[T](implicit builder: RecordSchemaBuilder[T]): Schema = builder.apply()
 }

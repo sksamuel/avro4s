@@ -73,7 +73,7 @@ object FieldTags extends App {
 
   implicit def hconsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
                                                        tailFields: FieldTags[T],
-                                                       write: FieldWrite[V],
+                                                       write: SchemaBuilder[V],
                                                        tag: ClassTag[V]): FieldTags[FieldType[K, V] :: T] = {
     new FieldTags[FieldType[K, V] :: T] {
       def apply() = {
