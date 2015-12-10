@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Test",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "foo",
+      "type": "long"
+    }
+  ]
+}
