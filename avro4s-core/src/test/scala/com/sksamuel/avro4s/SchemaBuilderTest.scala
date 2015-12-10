@@ -48,7 +48,7 @@ class SchemaBuilderTest extends WordSpec with Matchers {
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "accept options as Union[T, Null]" in {
+    "generate option as Union[T, Null]" in {
       case class Test(option: Option[String])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option.avsc"))
       val schema = SchemaBuilder[Test]
@@ -90,6 +90,12 @@ class SchemaBuilderTest extends WordSpec with Matchers {
       case class Nested(nested: String)
       case class Test(list: List[Nested])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/listrecords.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate union:T,U for Either[T,U] of primitives" in {
+      case class Test(either: Either[String, Double])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/either.avsc"))
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }

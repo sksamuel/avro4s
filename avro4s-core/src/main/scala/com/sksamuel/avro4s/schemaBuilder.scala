@@ -71,6 +71,16 @@ object FieldWrite {
   implicit def SeqFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Seq[T]] = new FieldWrite[Seq[T]] {
     override def schema: Option[Schema] = write.schema.map { schema => Schema.createArray(schema) }
   }
+
+  implicit def EitherFieldWrite[T, U](implicit twrite: FieldWrite[T],
+                                      uwrite: FieldWrite[U]): FieldWrite[Either[T, U]] = new FieldWrite[Either[T, U]] {
+    override def schema: Option[Schema] = {
+      for (t <- twrite.schema;
+           u <- uwrite.schema) yield {
+        Schema.createUnion(util.Arrays.asList(t, u))
+      }
+    }
+  }
 }
 
 trait SchemaFields[L <: HList] extends DepFn0 with Serializable {

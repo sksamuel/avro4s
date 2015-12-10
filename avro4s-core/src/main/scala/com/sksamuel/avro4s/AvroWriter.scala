@@ -92,13 +92,6 @@ object Write extends App {
 
   println("qweqw".narrow)
 
-  val labl = LabelledGeneric[Foo]
-  val keys = Keys[labl.Repr].apply
-
-  val things = keys.map(MyFunc)
-  println("things=" + things)
-
-
   import AvroImplicits._
 
   def write[T](t: T)(implicit s: AvroSchema[T], serializer: AvroSerializer2[T]): Unit = {
