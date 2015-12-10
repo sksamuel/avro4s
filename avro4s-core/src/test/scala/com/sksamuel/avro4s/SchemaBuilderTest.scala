@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.AvroImplicits._
 import org.scalatest.{WordSpec, Matchers}
 
 class SchemaBuilderTest extends WordSpec with Matchers {
@@ -9,6 +8,12 @@ class SchemaBuilderTest extends WordSpec with Matchers {
     "accept booleans" in {
       case class Test(booly: Boolean)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/boolean.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "accept bytes" in {
+      case class Test(bytes: Array[Byte])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bytes.avsc"))
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }

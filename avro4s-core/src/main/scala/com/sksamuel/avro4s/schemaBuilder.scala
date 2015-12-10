@@ -15,6 +15,10 @@ trait FieldWrite[T] {
 
 object FieldWrite {
 
+  implicit object ByteArrayFieldWrite extends FieldWrite[Array[Byte]] {
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BYTES))
+  }
+
   implicit object StringFieldWrite extends FieldWrite[String] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.STRING))
   }
