@@ -15,42 +15,7 @@ import shapeless.ops.record.{Fields, Keys, Values}
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-trait FieldWrite[T] {
-  def write(name: String, value: T, record: Record): Unit = record.put(name, value)
-}
 
-object FieldWrite {
-
-  implicit object StringFieldWrite extends FieldWrite[String]
-
-  implicit object BooleanFieldWrite extends FieldWrite[Boolean]
-
-  implicit object HNilFieldWrite extends FieldWrite[HNil] {
-    override def write(name: String, value: HNil, record: Record): Unit = ()
-  }
-
-  implicit def HConsFieldWrite[H, T <: HList](implicit hw: FieldWrite[H],
-                                              tw: FieldWrite[T]): FieldWrite[H :: T] = new FieldWrite[H :: T] {
-    override def write(name: String, value: H :: T, record: Record): Unit = value match {
-      case h :: t =>
-        hw.write(name, h, record)
-        tw.write(name, t, record)
-    }
-  }
-
-  implicit def GenericFieldWrite[T, Repr <: HList](implicit gen: LabelledGeneric.Aux[T, Repr],
-                                                   kk: Keys[Repr],
-                                                   vv: Values[Repr],
-                                                   ff: Fields[Repr],
-                                                   rw: Lazy[FieldWrite[Repr]],
-                                                   s: AvroSchema[T]): FieldWrite[T] = new FieldWrite[T] {
-    override def write(name: String, value: T, record: Record): Unit = {
-      val r = new org.apache.avro.generic.GenericData.Record(s.schema)
-      rw.value.write(name, gen.to(value), r)
-      record.put(name, r)
-    }
-  }
-}
 
 /**
   * AvroSerializer is a starting point to create a serialized form of a value T.
@@ -133,21 +98,6 @@ object Write extends App {
   val things = keys.map(MyFunc)
   println("things=" + things)
 
-  val fields: List[ClassTag[_]] = FieldTags[labl.Repr].apply()
-  println(fields)
-
-  import scala.reflect.classTag
-
-  val str = classOf[java.lang.String]
-  val b = classOf[java.lang.Boolean]
-  val bb = classOf[Boolean]
-
-  fields foreach { x => x.runtimeClass match {
-    case `str` => println("I am a string")
-    case `b` | `bb` => println("boolean")
-    case other => println("I am an another: " + other.getClass)
-  }
-  }
 
   import AvroImplicits._
 
