@@ -114,5 +114,12 @@ class SchemaBuilderTest extends WordSpec with Matchers {
       val schema = SchemaBuilder[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "generate map type for a scala.collection.immutable.Map of records" in {
+      case class Nested(float: Float)
+      case class Test(map: Map[String, Nested])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/maprecord.avsc"))
+      val schema = SchemaBuilder[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
