@@ -122,6 +122,10 @@ object FieldTags extends App {
 
 object Write extends App {
 
+  import shapeless._
+  import shapeless.syntax.singleton._
+
+  println("qweqw".narrow)
 
   val labl = LabelledGeneric[Foo]
   val keys = Keys[labl.Repr].apply
