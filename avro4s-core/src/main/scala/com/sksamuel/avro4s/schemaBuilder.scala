@@ -3,7 +3,6 @@ package com.sksamuel.avro4s
 import java.util
 
 import org.apache.avro.Schema
-import org.apache.avro.Schema.Field
 import shapeless.labelled._
 import shapeless._
 
@@ -11,53 +10,55 @@ import scala.reflect.ClassTag
 
 
 trait FieldWrite[T] {
-  def field(name: String): List[Field]
+  def schema: Option[Schema]
 }
 
 object FieldWrite {
 
   implicit object StringFieldWrite extends FieldWrite[String] {
-    override def field(name: String): List[Field] = List(new Schema.Field(name, Schema.create(Schema.Type.STRING), null, null))
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.STRING))
   }
 
   implicit object BooleanFieldWrite extends FieldWrite[Boolean] {
-    override def field(name: String): List[Field] = List(new Schema.Field(name, Schema.create(Schema.Type.BOOLEAN), null, null))
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BOOLEAN))
   }
 
   implicit object IntFieldWrite extends FieldWrite[Int] {
-    override def field(name: String): List[Field] = List(new Schema.Field(name, Schema.create(Schema.Type.INT), null, null))
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.INT))
   }
 
   implicit object LongFieldWrite extends FieldWrite[Long] {
-    override def field(name: String): List[Field] = List(new Schema.Field(name, Schema.create(Schema.Type.LONG), null, null))
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.LONG))
   }
 
   implicit object DoubleFieldWrite extends FieldWrite[Double] {
-    override def field(name: String): List[Field] = List(new Schema.Field(name, Schema.create(Schema.Type.DOUBLE), null, null))
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.DOUBLE))
   }
 
   implicit object FloatFieldWrite extends FieldWrite[Float] {
-    override def field(name: String): List[Field] = List(new Schema.Field(name, Schema.create(Schema.Type.FLOAT), null, null))
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.FLOAT))
   }
 
   implicit object HNilFieldWrite extends FieldWrite[HNil] {
-    override def field(name: String): List[Field] = Nil
+    override def schema: Option[Schema] = None
   }
 
   implicit def RecordFieldWrite[T](implicit builder: SchemaBuilder[T]) = new FieldWrite[T] {
-    override def field(name: String): List[Field] = List(new Schema.Field(name, builder(), null, null))
+    override def schema: Option[Schema] = Some(builder())
   }
 
   implicit def OptionFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Option[T]] = new FieldWrite[Option[T]] {
-    override def field(name: String): List[Field] = {
-      val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), write.field("dummy").head.schema))
-      List(new Schema.Field(name, schema, null, null))
+    override def schema: Option[Schema] = {
+      val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), write.schema.get))
+      Some(schema)
     }
   }
 
   implicit def OptionFieldWriteRecord[T](implicit builder: SchemaBuilder[T]): FieldWrite[Option[T]] = new FieldWrite[Option[T]] {
-    val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), builder()))
-    override def field(name: String): List[Field] = List(new Schema.Field(name, schema, null, null))
+    override def schema: Option[Schema] = {
+      val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), builder()))
+      Some(schema)
+    }
   }
 }
 
@@ -66,8 +67,6 @@ trait SchemaFields[L <: HList] extends DepFn0 with Serializable {
 }
 
 object SchemaFields {
-
-  def nested[T](implicit builder: SchemaBuilder[T]): Schema.Field = ???
 
   implicit object HNilFields extends SchemaFields[HNil] {
     def apply() = List.empty
@@ -78,7 +77,10 @@ object SchemaFields {
                                                        remaining: SchemaFields[T],
                                                        tag: ClassTag[V]): SchemaFields[FieldType[K, V] :: T] = {
     new SchemaFields[FieldType[K, V] :: T] {
-      def apply() = write.field(key.value.name) ++ remaining.apply()
+      def apply: List[Schema.Field] = {
+        val fieldFn: (Schema => Schema.Field) = schema => new Schema.Field(key.value.name, schema, null, null)
+        write.schema.map(fieldFn).toList ++ remaining()
+      }
     }
   }
 }
