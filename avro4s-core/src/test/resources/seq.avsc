@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "SeqExample",
+  "name": "Test",
   "namespace": "com.sksamuel.avro4s",
   "fields": [
     {
@@ -8,7 +8,7 @@
       "type": {
         "type": "array",
         "items": {
-          "type": "double"
+          "type": "string"
         }
       }
     }

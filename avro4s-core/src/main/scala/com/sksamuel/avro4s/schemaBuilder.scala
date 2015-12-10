@@ -49,8 +49,7 @@ object FieldWrite {
 
   implicit def OptionFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Option[T]] = new FieldWrite[Option[T]] {
     override def schema: Option[Schema] = {
-      val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), write.schema.get))
-      Some(schema)
+      write.schema.map { schema => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), schema)) }
     }
   }
 
@@ -59,6 +58,18 @@ object FieldWrite {
       val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), builder()))
       Some(schema)
     }
+  }
+
+  implicit def ListFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[List[T]] = new FieldWrite[List[T]] {
+    override def schema: Option[Schema] = write.schema.map { schema => Schema.createArray(schema) }
+  }
+
+  implicit def ArrayFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Array[T]] = new FieldWrite[Array[T]] {
+    override def schema: Option[Schema] = write.schema.map { schema => Schema.createArray(schema) }
+  }
+
+  implicit def SeqFieldWrite[T](implicit write: FieldWrite[T]): FieldWrite[Seq[T]] = new FieldWrite[Seq[T]] {
+    override def schema: Option[Schema] = write.schema.map { schema => Schema.createArray(schema) }
   }
 }
 

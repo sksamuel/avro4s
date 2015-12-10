@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "ArrayExample",
+  "name": "Test",
   "namespace": "com.sksamuel.avro4s",
   "fields": [
     {
