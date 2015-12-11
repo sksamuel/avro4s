@@ -1,6 +1,6 @@
 import java.io.FileOutputStream
 
-import com.sksamuel.avro4s.{AvroSchema2, RecordSchemaBuilder}
+import com.sksamuel.avro4s.{AvroSchema2, AvroSchema2}
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import shapeless._
@@ -63,7 +63,7 @@ object AvroSer {
 
   implicit def GenericSer[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
                                             writes: Writes[Repr],
-                                            schema: RecordSchemaBuilder[T]) = new AvroSer[T] {
+                                            schema: AvroSchema2[T]) = new AvroSer[T] {
     override def toRecord(t: T): GenericRecord = {
       val r = new org.apache.avro.generic.GenericData.Record(schema())
       writes.write(r, labl.to(t))

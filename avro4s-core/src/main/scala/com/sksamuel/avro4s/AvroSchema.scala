@@ -75,7 +75,7 @@ object SchemaBuilder {
     }
   }
 
-  implicit def RecordFieldWrite[T](implicit builder: RecordSchemaBuilder[T]) = new SchemaBuilder[T] {
+  implicit def RecordFieldWrite[T](implicit builder: AvroSchema2[T]) = new SchemaBuilder[T] {
     override def schema: Option[Schema] = Some(builder())
   }
 }
@@ -103,15 +103,15 @@ object RecordSchemaFields {
   }
 }
 
-trait RecordSchemaBuilder[T] {
+trait AvroSchema2[T] {
   def apply(): Schema
 }
 
-object RecordSchemaBuilder {
+object AvroSchema2 {
 
   implicit def schemaBuilder[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
                                                schemaFields: RecordSchemaFields[Repr],
-                                               tag: ClassTag[T]): RecordSchemaBuilder[T] = new RecordSchemaBuilder[T] {
+                                               tag: ClassTag[T]): AvroSchema2[T] = new AvroSchema2[T] {
 
     import scala.collection.JavaConverters._
 
@@ -126,8 +126,6 @@ object RecordSchemaBuilder {
       schema
     }
   }
-}
 
-object AvroSchema2 {
-  def apply[T](implicit builder: RecordSchemaBuilder[T]): Schema = builder.apply()
+  def apply[T](implicit builder: AvroSchema2[T]): Schema = builder.apply()
 }
