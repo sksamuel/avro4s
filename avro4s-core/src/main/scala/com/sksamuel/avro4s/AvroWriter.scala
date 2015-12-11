@@ -1,16 +1,8 @@
 package com.sksamuel.avro4s
 
-import java.nio.file.{Files, Paths}
-
-import org.apache.avro.file.DataFileWriter
-import org.apache.avro.generic.GenericData.Record
-import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
+import org.apache.avro.generic.GenericRecord
 import shapeless._
-import shapeless.ops.hlist.Mapper
-import shapeless.syntax._
-import shapeless.record._
 import shapeless.labelled.FieldType
-import shapeless.ops.record.{Fields, Keys, Values}
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -38,6 +30,13 @@ object Writer {
     override def apply(name: String, value: Either[T, U], record: GenericRecord): Unit = value match {
       case Left(left) => leftWriter.apply(name, left, record)
       case Right(right) => rightWriter.apply(name, right, record)
+    }
+  }
+
+  implicit def OptionWriter[T](implicit twriter: Writer[T]) = new Writer[Option[T]] {
+    override def apply(name: String, value: Option[T], record: GenericRecord): Unit = value match {
+      case Some(t) => twriter.apply(name, t, record)
+      case None => record.put(name, null)
     }
   }
 

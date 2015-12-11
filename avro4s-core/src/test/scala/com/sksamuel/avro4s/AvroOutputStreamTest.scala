@@ -1,7 +1,9 @@
 package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
+import java.nio.file.Files
 
+import com.sksamuel.avro4s.AvroOutputStream
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.scalatest.concurrent.Timeouts
@@ -107,42 +109,30 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val record = read[Test](output)
       record.get("e").toString shouldBe "45.4"
     }
-    //    "write Some as populated union" in {
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      val option = OptionWriteExample(Option("sammy"))
-    //
-    //      import AvroImplicits._
-    //      val output = AvroOutputStream[OptionWriteExample](path)
-    //      output.write(option)
-    //      output.close()
-    //
-    //      val datum = new GenericDatumReader[GenericRecord](schemaFor[OptionWriteExample].schema)
-    //      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
-    //
-    //      reader.hasNext
-    //      val rec = reader.next()
-    //      rec.get("option").toString shouldBe "sammy"
-    //    }
-    //    "write None as union null" in {
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      val option = OptionWriteExample(None)
-    //
-    //      import AvroImplicits._
-    //      val output = AvroOutputStream[OptionWriteExample](path)
-    //      output.write(option)
-    //      output.close()
-    //
-    //      val datum = new GenericDatumReader[GenericRecord](schemaFor[OptionWriteExample].schema)
-    //      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
-    //
-    //      reader.hasNext
-    //      val rec = reader.next()
-    //      rec.get("option") shouldBe null
-    //    }
+    "write a Some as populated union" in {
+
+      case class Test(opt: Option[Double])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Some(123.456d)))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("opt").toString shouldBe "123.456"
+    }
+    "write a None as union null" in {
+
+      case class Test(opt: Option[Double])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(None))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("opt") shouldBe null
+    }
     //    "supporting writing Eithers" in {
     //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
     //      path.toFile.deleteOnExit()
