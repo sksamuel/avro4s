@@ -15,16 +15,21 @@ trait SchemaBuilder[T] {
 
 object SchemaBuilder {
 
+  implicit object BooleanSchemaBuilder extends SchemaBuilder[Boolean] {
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BOOLEAN))
+  }
+
   implicit object ByteArraySchemaBuilder extends SchemaBuilder[Array[Byte]] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BYTES))
   }
 
-  implicit object StringSchemaBuilder extends SchemaBuilder[String] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.STRING))
+  implicit object DoubleSchemaBuilder extends SchemaBuilder[Double] {
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.DOUBLE))
   }
 
-  implicit object BooleanSchemaBuilder extends SchemaBuilder[Boolean] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BOOLEAN))
+
+  implicit object FloatSchemaBuilder extends SchemaBuilder[Float] {
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.FLOAT))
   }
 
   implicit object IntSchemaBuilder extends SchemaBuilder[Int] {
@@ -35,12 +40,8 @@ object SchemaBuilder {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.LONG))
   }
 
-  implicit object DoubleSchemaBuilder extends SchemaBuilder[Double] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.DOUBLE))
-  }
-
-  implicit object FloatSchemaBuilder extends SchemaBuilder[Float] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.FLOAT))
+  implicit object StringSchemaBuilder extends SchemaBuilder[String] {
+    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.STRING))
   }
 
   implicit def OptionFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[Option[T]] = new SchemaBuilder[Option[T]] {

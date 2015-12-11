@@ -14,17 +14,17 @@ trait Writer[A] {
 
 object Writer {
 
-  implicit object StringWriter extends Writer[String]
-
-  implicit object LongWriter extends Writer[Long]
-
-  implicit object IntWriter extends Writer[Int]
-
   implicit object BooleanWriter extends Writer[Boolean]
 
   implicit object DoubleWriter extends Writer[Double]
 
   implicit object FloatWriter extends Writer[Float]
+
+  implicit object IntWriter extends Writer[Int]
+
+  implicit object LongWriter extends Writer[Long]
+
+  implicit object StringWriter extends Writer[String]
 
   implicit def EitherWriter[T, U](implicit leftWriter: Writer[T], rightWriter: Writer[U]) = new Writer[Either[T, U]] {
     override def apply(name: String, value: Either[T, U], record: GenericRecord): Unit = value match {
@@ -56,6 +56,13 @@ object Writer {
 
   implicit def ListWriter[T] = new Writer[List[T]] {
     override def apply(name: String, value: List[T], record: GenericRecord): Unit = {
+      import scala.collection.JavaConverters._
+      record.put(name, value.asJava)
+    }
+  }
+
+  implicit def MapWriter[T] = new Writer[Map[String, T]] {
+    override def apply(name: String, value: Map[String, T], record: GenericRecord): Unit = {
       import scala.collection.JavaConverters._
       record.put(name, value.asJava)
     }

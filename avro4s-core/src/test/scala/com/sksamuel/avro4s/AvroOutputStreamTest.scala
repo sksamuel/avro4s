@@ -1,21 +1,15 @@
 package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
-import java.nio.file.Files
 
-import com.sksamuel.avro4s.AvroOutputStream
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.util.Utf8
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
 import scala.collection.JavaConverters._
 
 class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
-
-  val michelangelo = Artist("michelangelo", 1475, 1564, "Caprese", Seq("sculpture", "fresco"))
-  val raphael = Artist("raphael", 1483, 1520, "florence", Seq("painter", "architect"))
-
-  import AvroImplicits._
 
   def read[T: AvroSchema2](out: ByteArrayOutputStream): GenericRecord = read(out.toByteArray)
   def read[T: AvroSchema2](bytes: Array[Byte]): GenericRecord = {
@@ -111,7 +105,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record.get("e").toString shouldBe "45.4"
     }
     "write a Some as populated union" in {
-
       case class Test(opt: Option[Double])
 
       val output = new ByteArrayOutputStream
@@ -123,7 +116,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record.get("opt").toString shouldBe "123.456"
     }
     "write a None as union null" in {
-
       case class Test(opt: Option[Double])
 
       val output = new ByteArrayOutputStream
@@ -167,42 +159,18 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val record = read[Test](output)
       record.get("list").asInstanceOf[java.util.List[Double]].asScala shouldBe List(1d, 2d, 3d, 4d)
     }
-    //    "supporting writing Bytes" in {
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      val bytes = ByteWriteExample(Array[Byte](1,2,3))
-    //
-    //      import AvroImplicits._
-    //      val output = AvroOutputStream[ByteWriteExample](path)
-    //      output.write(bytes)
-    //      output.close()
-    //
-    //      val datum = new GenericDatumReader[GenericRecord](schemaFor[ByteWriteExample].schema)
-    //      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
-    //
-    //      reader.hasNext
-    //      val rec = reader.next()
-    //      rec.get("bytes").asInstanceOf[ByteBuffer].array shouldBe Array[Byte](1,2,3)
-    //    }
-    //      rec.get("left").toString.toBoolean shouldBe true
-    //      rec.get("right").toString.toBoolean shouldBe false
-    //    }
+    "write map of strings" in {
+      case class Test(map: Map[String, String])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Map("name" -> "sammy")))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("map").asInstanceOf[java.util.Map[Utf8, Utf8]].asScala.map { case (k, v) =>
+        k.toString -> v.toString
+      } shouldBe Map("name" -> "sammy")
+    }
   }
 }
-
-case class OptionWriteExample(option: Option[String])
-
-case class EitherWriteExample(either1: Either[String, Boolean], either2: Either[String, Long])
-
-case class ByteWriteExample(bytes: Array[Byte])
-
-case class DoubleWriteExample(double: Double)
-
-case class LongWriteExample(long: Long)
-
-case class BooleanWriteExample(left: Boolean, right: Boolean)
-
-case class ArrayWriteExample(strings: Array[String], booleans: Array[Boolean])
-
-case class SeqWriteExample(strings: Seq[String], booleans: Seq[Boolean])
