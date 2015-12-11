@@ -54,6 +54,13 @@ object Writer {
     }
   }
 
+  implicit def ListWriter[T] = new Writer[List[T]] {
+    override def apply(name: String, value: List[T], record: GenericRecord): Unit = {
+      import scala.collection.JavaConverters._
+      record.put(name, value.asJava)
+    }
+  }
+
   implicit object HNilWriter extends Writer[HNil] {
     override def apply(name: String, value: HNil, record: GenericRecord): Unit = ()
   }

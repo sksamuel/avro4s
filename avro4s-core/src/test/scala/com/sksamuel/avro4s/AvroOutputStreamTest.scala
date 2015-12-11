@@ -156,6 +156,17 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val record = read[Test](output)
       record.get("sequence").asInstanceOf[java.util.List[Double]].asScala shouldBe Seq(1d, 2d, 3d, 4d)
     }
+    "write list of primitives" in {
+      case class Test(list: List[Double])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(List(1d, 2d, 3d, 4d)))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("list").asInstanceOf[java.util.List[Double]].asScala shouldBe List(1d, 2d, 3d, 4d)
+    }
     //    "supporting writing Bytes" in {
     //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
     //      path.toFile.deleteOnExit()
@@ -176,44 +187,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     //    }
     //      rec.get("left").toString.toBoolean shouldBe true
     //      rec.get("right").toString.toBoolean shouldBe false
-    //    }
-    //    "support writing Arrays of primitives" in {
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      val example = ArrayWriteExample(Array("elton", "john"), Array(true, false, true))
-    //
-    //      import AvroImplicits._
-    //      val output = AvroOutputStream[ArrayWriteExample](path)
-    //      output.write(example)
-    //      output.close()
-    //
-    //      val datum = new GenericDatumReader[GenericRecord](schemaFor[ArrayWriteExample].schema)
-    //      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
-    //
-    //      reader.hasNext
-    //      val rec = reader.next()
-    //      rec.get("strings").asInstanceOf[org.apache.avro.generic.GenericData.Array[Utf8]].asScala.map(_.toString).toSet shouldBe Set("elton", "john")
-    //      rec.get("booleans").asInstanceOf[org.apache.avro.generic.GenericData.Array[Boolean]].asScala.toSet shouldBe Set(true, false, true)
-    //    }
-    //    "support writing Seqs of primitives" in {
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      val example = SeqWriteExample(Seq("elton", "john"), Seq(true, false, true))
-    //
-    //      import AvroImplicits._
-    //      val output = AvroOutputStream[SeqWriteExample](path)
-    //      output.write(example)
-    //      output.close()
-    //
-    //      val datum = new GenericDatumReader[GenericRecord](schemaFor[SeqWriteExample].schema)
-    //      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
-    //
-    //      reader.hasNext
-    //      val rec = reader.next()
-    //      rec.get("strings").asInstanceOf[org.apache.avro.generic.GenericData.Array[Utf8]].asScala.map(_.toString).toSet shouldBe Set("elton", "john")
-    //      rec.get("booleans").asInstanceOf[org.apache.avro.generic.GenericData.Array[Boolean]].asScala.toSet shouldBe Set(true, false, true)
     //    }
   }
 }
