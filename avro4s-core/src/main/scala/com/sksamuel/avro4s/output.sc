@@ -1,49 +1,55 @@
 import java.io.FileOutputStream
 
-import com.sksamuel.avro4s.{RecordSchemaFields, AvroSchema2, RecordSchemaBuilder}
+import com.sksamuel.avro4s.{AvroSchema2, RecordSchemaBuilder}
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import shapeless._
 import shapeless.labelled._
+
 import scala.reflect.ClassTag
 
 trait Writer[A] {
-  def apply(name: String, value: A, record: GenericRecord): Unit = record.put(name, value.toString)
+  def apply(name: String, value: A, record: GenericRecord): Unit = record.put(name, value)
 }
 
 object Writer {
 
-  implicit object StringParser extends Writer[String]
+  implicit object StringWriter extends Writer[String]
 
-  implicit object LongParser extends Writer[Long]
+  implicit object LongWriter extends Writer[Long]
 
-  implicit object IntParser extends Writer[Int]
+  implicit object IntWriter extends Writer[Int]
 
-  implicit object BooleanParser extends Writer[Boolean]
+  implicit object BooleanWriter extends Writer[Boolean]
 
-  implicit object HNilParser extends Writer[HNil] {
+  implicit object DoubleWriter extends Writer[Double]
+
+  implicit object FloatWriter extends Writer[Float]
+
+  implicit object HNilWriter extends Writer[HNil] {
     override def apply(name: String, value: HNil, record: GenericRecord): Unit = ()
   }
 }
 
-trait FieldWrites[L <: HList] extends DepFn0 with Serializable {
-  type Out = Unit
+trait Writes[L <: HList] extends Serializable {
+  def write(record: GenericRecord, value: L): Unit
 }
 
-object FieldWrites {
+object Writes {
 
-  implicit object HNilFields extends RecordSchemaFields[HNil] {
-    def apply() = List.empty
+  implicit object HNilFields extends Writes[HNil] {
+    override def write(record: GenericRecord, value: HNil): Unit = ()
   }
 
-  implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
-                                                       writer: Writer[V],
-                                                       remaining: RecordSchemaFields[T],
-                                                       tag: ClassTag[V]): FieldWrites[FieldType[K, V] :: T] = {
-    new FieldWrites[FieldType[K, V] :: T] {
-      def apply: Unit = {
-        writer(key.value.name, value, record)
-        Nil
+  implicit def HConsFields[Key <: Symbol, V, T <: HList](implicit key: Witness.Aux[Key],
+                                                         writer: Writer[V],
+                                                         remaining: Writes[T],
+                                                         tag: ClassTag[V]): Writes[FieldType[Key, V] :: T] = {
+    new Writes[FieldType[Key, V] :: T] {
+      override def write(record: GenericRecord, value: FieldType[Key, V] :: T): Unit = value match {
+        case h :: t =>
+          writer(key.value.name, h, record)
+          remaining.write(record, t)
       }
     }
   }
@@ -56,24 +62,29 @@ trait AvroSer[T] {
 object AvroSer {
 
   implicit def GenericSer[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
+                                            writes: Writes[Repr],
                                             schema: RecordSchemaBuilder[T]) = new AvroSer[T] {
     override def toRecord(t: T): GenericRecord = {
       val r = new org.apache.avro.generic.GenericData.Record(schema())
-      writer(t)
+      writes.write(r, labl.to(t))
       r
     }
   }
+}
+
+object Serializer {
   def apply[T](t: T)(implicit ser: AvroSer[T]): GenericRecord = ser.toRecord(t)
 }
 
-case class Fibble(boo: String)
+case class Fibble(boo: String, goo: String, moo: Boolean)
 
-val fibble = Fibble("sam")
+val fibble = Fibble("sam", "ham", true)
 val out = new FileOutputStream("test.avro")
 val datumWriter = new GenericDatumWriter[GenericRecord](AvroSchema2[Fibble])
 val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
 dataFileWriter.create(AvroSchema2[Fibble], out)
-val r = AvroSer(fibble)
+val r = Serializer(fibble)
+
 dataFileWriter.append(r)
 dataFileWriter.flush()
 dataFileWriter.close()
