@@ -16,101 +16,78 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 
-
-/**
-  * AvroSerializer is a starting point to create a serialized form of a value T.
-  * It is the helper that will invoke the recursive FieldWrite typeclasses.
-  */
-trait AvroSerializer2[T] {
-  def serialize(t: T): GenericRecord
+trait Writer[A] {
+  def apply(name: String, value: A, record: GenericRecord): Unit = record.put(name, value)
 }
 
-object ToName extends Poly1 {
-  implicit def all[A] = at[Symbol with A](_.name)
+object Writer {
+
+  implicit object StringWriter extends Writer[String]
+
+  implicit object LongWriter extends Writer[Long]
+
+  implicit object IntWriter extends Writer[Int]
+
+  implicit object BooleanWriter extends Writer[Boolean]
+
+  implicit object DoubleWriter extends Writer[Double]
+
+  implicit object FloatWriter extends Writer[Float]
+
+  implicit def EitherWriter[T, U](implicit leftWriter: Writer[T], rightWriter: Writer[U]) = new Writer[Either[T, U]] {
+    override def apply(name: String, value: Either[T, U], record: GenericRecord): Unit = value match {
+      case Left(left) => leftWriter.apply(name, left, record)
+      case Right(right) => rightWriter.apply(name, right, record)
+    }
+  }
+
+  implicit object HNilWriter extends Writer[HNil] {
+    override def apply(name: String, value: HNil, record: GenericRecord): Unit = ()
+  }
+
 }
 
-object FieldMappings extends Poly1 {
-  implicit def all[A] = at[Symbol with A](x => println(x))
+trait Writes[L <: HList] extends Serializable {
+  def write(record: GenericRecord, value: L): Unit
 }
 
-object AvroSerializer2 {
-  implicit def serializer[T, Repr <: HList](implicit s: AvroSchema[T],
-                                            labl: LabelledGeneric.Aux[T, Repr],
-                                            kk: Keys[Repr],
-                                            vv: Values[Repr],
-                                            ff: Fields[Repr]): AvroSerializer2[T] = new AvroSerializer2[T] {
-    override def serialize(t: T): GenericRecord = {
+object Writes {
 
-      val r = new org.apache.avro.generic.GenericData.Record(s.schema)
+  implicit object HNilFields extends Writes[HNil] {
+    override def write(record: GenericRecord, value: HNil): Unit = ()
+  }
 
-      val keys = kk.apply()
-      val values = vv.apply(labl.to(t))
-      val fields = ff.apply(labl.to(t))
+  implicit def HConsFields[Key <: Symbol, V, T <: HList](implicit key: Witness.Aux[Key],
+                                                         writer: Writer[V],
+                                                         remaining: Writes[T],
+                                                         tag: ClassTag[V]): Writes[FieldType[Key, V] :: T] = {
+    new Writes[FieldType[Key, V] :: T] {
+      override def write(record: GenericRecord, value: FieldType[Key, V] :: T): Unit = value match {
+        case h :: t =>
+          writer(key.value.name, h, record)
+          remaining.write(record, t)
+      }
+    }
+  }
+}
 
-      println(keys)
-      println(values)
-      println(fields)
+trait AvroSer[T] {
+  def toRecord(t: T): GenericRecord
+}
 
-      r.put("name", "sammy")
-      r.put("cool", true)
+object AvroSer {
+
+  implicit def GenericSer[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
+                                            writes: Writes[Repr],
+                                            schema: AvroSchema2[T]) = new AvroSer[T] {
+    override def toRecord(t: T): GenericRecord = {
+      val r = new org.apache.avro.generic.GenericData.Record(schema())
+      writes.write(r, labl.to(t))
       r
     }
   }
 }
 
-
-trait FieldTags[L <: HList] extends DepFn0 with Serializable {
-  type Out = List[ClassTag[_]]
+object Serializer {
+  def apply[T](t: T)(implicit ser: AvroSer[T]): GenericRecord = ser.toRecord(t)
 }
-
-object FieldTags extends App {
-
-  def apply[L <: HList](implicit fields: FieldTags[L]): FieldTags[L] = fields
-
-  implicit def hnilFields[L <: HNil]: FieldTags[L] = new FieldTags[L] {
-    def apply() = List.empty
-  }
-
-  implicit def hconsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
-                                                       tailFields: FieldTags[T],
-                                                       write: SchemaBuilder[V],
-                                                       tag: ClassTag[V]): FieldTags[FieldType[K, V] :: T] = {
-    new FieldTags[FieldType[K, V] :: T] {
-      def apply() = {
-        tag :: tailFields.apply()
-      }
-    }
-  }
-
-}
-
-
-object Write extends App {
-
-  import shapeless._
-  import shapeless.syntax.singleton._
-
-  println("qweqw".narrow)
-
-  import AvroImplicits._
-
-  def write[T](t: T)(implicit s: AvroSchema[T], serializer: AvroSerializer2[T]): Unit = {
-
-    val os = Files.newOutputStream(Paths.get("test.avro"))
-
-    val datumWriter = new GenericDatumWriter[GenericRecord](s.schema)
-    val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
-    dataFileWriter.create(s.schema, os)
-
-    val record = serializer.serialize(t)
-    println(record)
-    dataFileWriter.append(record)
-
-    dataFileWriter.flush()
-    dataFileWriter.close()
-  }
-
-  write(Bibble("sammy", true))
-}
-
-case class Bibble(name: String, cool: Boolean)

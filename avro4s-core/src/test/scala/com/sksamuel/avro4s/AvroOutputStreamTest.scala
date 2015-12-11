@@ -71,37 +71,42 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val record = read[Test](output)
       record.get("i").toString shouldBe "666"
     }
-    //    "write out simple records" in {
-    //
-    //      val painters = Seq(michelangelo, raphael)
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      implicit val s = schemaFor[Artist]
-    //
-    //      val writer = AvroOutputStream[Artist](path)
-    //      writer.write(painters)
-    //      writer.close()
-    //
-    //      val datumReader = new GenericDatumReader[GenericRecord](s.schema)
-    //      val dataFileReader = new DataFileReader[GenericRecord](path.toFile, datumReader)
-    //
-    //      dataFileReader.hasNext
-    //      val rec1 = dataFileReader.next(new GenericData.Record(s.schema))
-    //      rec1.get("name").toString shouldBe michelangelo.name
-    //      rec1.get("yearOfBirth").toString.toInt shouldBe michelangelo.yearOfBirth
-    //      rec1.get("yearOfDeath").toString.toInt shouldBe michelangelo.yearOfDeath
-    //      val styles1 = rec1.get("styles").asInstanceOf[GenericData.Array[Utf8]].asScala.toSet
-    //      styles1.map(_.toString) shouldBe michelangelo.styles.toSet
-    //
-    //      dataFileReader.hasNext
-    //      val rec2 = dataFileReader.next(new GenericData.Record(s.schema))
-    //      rec2.get("name").toString shouldBe raphael.name
-    //      rec2.get("yearOfBirth").toString.toInt shouldBe raphael.yearOfBirth
-    //      rec2.get("yearOfDeath").toString.toInt shouldBe raphael.yearOfDeath
-    //      val styles2 = rec2.get("styles").asInstanceOf[GenericData.Array[Utf8]].asScala.toSet
-    //      styles2.map(_.toString) shouldBe raphael.styles.toSet
-    //    }
+    "write out doubles" in {
+
+      case class Test(d: Double)
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(123.456))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("d").toString shouldBe "123.456"
+    }
+    "write out eithers of primitives for lefts" in {
+
+      case class Test(e: Either[String, Double])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Left("sam")))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("e").toString shouldBe "sam"
+    }
+    "write out eithers of primitives for rights" in {
+
+      case class Test(e: Either[String, Double])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Right(45.4d)))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("e").toString shouldBe "45.4"
+    }
     //    "write Some as populated union" in {
     //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
     //      path.toFile.deleteOnExit()

@@ -6,16 +6,16 @@ import java.nio.file.{Files, Path}
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.generic.{GenericRecord, GenericDatumWriter}
 
-class AvroOutputStream[T](os: OutputStream)(implicit s: AvroSchema[T], w: AvroSerializer[T]) {
+class AvroOutputStream[T](os: OutputStream)(implicit schema: AvroSchema2[T], ser: AvroSer[T]) {
 
-  val datumWriter = new GenericDatumWriter[GenericRecord](s.schema)
+  val datumWriter = new GenericDatumWriter[GenericRecord](schema())
   val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
-  dataFileWriter.create(s.schema, os)
+  dataFileWriter.create(schema(), os)
 
   def write(ts: Seq[T]): Unit = ts.foreach(write)
 
   def write(t: T): Unit = {
-    val record = w.write(t)
+    val record = ser.toRecord(t)
     println(record)
     dataFileWriter.append(record)
   }
@@ -29,7 +29,7 @@ class AvroOutputStream[T](os: OutputStream)(implicit s: AvroSchema[T], w: AvroSe
 }
 
 object AvroOutputStream {
-  def apply[T: AvroSchema : AvroSerializer](file: File): AvroOutputStream[T] = apply(file.toPath)
-  def apply[T: AvroSchema : AvroSerializer](path: Path): AvroOutputStream[T] = apply(Files.newOutputStream(path))
-  def apply[T: AvroSchema : AvroSerializer](os: OutputStream): AvroOutputStream[T] = new AvroOutputStream[T](os)
+  def apply[T: AvroSchema2 : AvroSer](file: File): AvroOutputStream[T] = apply(file.toPath)
+  def apply[T: AvroSchema2 : AvroSer](path: Path): AvroOutputStream[T] = apply(Files.newOutputStream(path))
+  def apply[T: AvroSchema2 : AvroSer](os: OutputStream): AvroOutputStream[T] = new AvroOutputStream[T](os)
 }
