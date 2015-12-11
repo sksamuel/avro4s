@@ -98,23 +98,21 @@ object Writes {
   }
 }
 
-trait AvroSer[T] {
+trait AvroSerializer[T] {
   def toRecord(t: T): GenericRecord
 }
 
-object AvroSer {
+object AvroSerializer {
 
   implicit def GenericSer[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
                                             writes: Writes[Repr],
-                                            schema: AvroSchema2[T]) = new AvroSer[T] {
+                                            schema: AvroSchema2[T]) = new AvroSerializer[T] {
     override def toRecord(t: T): GenericRecord = {
       val r = new org.apache.avro.generic.GenericData.Record(schema())
       writes.write(r, labl.to(t))
       r
     }
   }
-}
 
-object Serializer {
-  def apply[T](t: T)(implicit ser: AvroSer[T]): GenericRecord = ser.toRecord(t)
+  def apply[T](t: T)(implicit ser: AvroSerializer[T]): GenericRecord = ser.toRecord(t)
 }

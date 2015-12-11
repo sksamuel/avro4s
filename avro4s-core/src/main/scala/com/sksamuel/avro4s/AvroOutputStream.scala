@@ -6,7 +6,7 @@ import java.nio.file.{Files, Path}
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.generic.{GenericRecord, GenericDatumWriter}
 
-class AvroOutputStream[T](os: OutputStream)(implicit schema: AvroSchema2[T], ser: AvroSer[T]) {
+class AvroOutputStream[T](os: OutputStream)(implicit schema: AvroSchema2[T], ser: AvroSerializer[T]) {
 
   val datumWriter = new GenericDatumWriter[GenericRecord](schema())
   val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
@@ -29,7 +29,7 @@ class AvroOutputStream[T](os: OutputStream)(implicit schema: AvroSchema2[T], ser
 }
 
 object AvroOutputStream {
-  def apply[T: AvroSchema2 : AvroSer](file: File): AvroOutputStream[T] = apply(file.toPath)
-  def apply[T: AvroSchema2 : AvroSer](path: Path): AvroOutputStream[T] = apply(Files.newOutputStream(path))
-  def apply[T: AvroSchema2 : AvroSer](os: OutputStream): AvroOutputStream[T] = new AvroOutputStream[T](os)
+  def apply[T: AvroSchema2 : AvroSerializer](file: File): AvroOutputStream[T] = apply(file.toPath)
+  def apply[T: AvroSchema2 : AvroSerializer](path: Path): AvroOutputStream[T] = apply(Files.newOutputStream(path))
+  def apply[T: AvroSchema2 : AvroSerializer](os: OutputStream): AvroOutputStream[T] = new AvroOutputStream[T](os)
 }
