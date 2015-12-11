@@ -22,6 +22,8 @@ class AvroOutputStream[T](os: OutputStream)(implicit schema: AvroSchema2[T], ser
 
   def flush(): Unit = dataFileWriter.flush()
 
+  def fSync(): Unit = dataFileWriter.fSync()
+
   def close(): Unit = {
     dataFileWriter.flush()
     dataFileWriter.close()

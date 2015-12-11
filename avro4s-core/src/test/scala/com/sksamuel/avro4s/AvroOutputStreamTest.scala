@@ -172,5 +172,31 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
         k.toString -> v.toString
       } shouldBe Map("name" -> "sammy")
     }
+    "write map of doubles" in {
+      case class Test(map: Map[String, Double])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Map("name" -> 12.3d)))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("map").asInstanceOf[java.util.Map[Utf8, java.lang.Double]].asScala.map { case (k, v) =>
+        k.toString -> v.toString.toDouble
+      } shouldBe Map("name" -> 12.3d)
+    }
+    "write map of booleans" in {
+      case class Test(map: Map[String, Boolean])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Map("name" -> true)))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("map").asInstanceOf[java.util.Map[Utf8, java.lang.Boolean]].asScala.map { case (k, v) =>
+        k.toString -> v.toString.toBoolean
+      } shouldBe Map("name" -> true)
+    }
   }
 }
