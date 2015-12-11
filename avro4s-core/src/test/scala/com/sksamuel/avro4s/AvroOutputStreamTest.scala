@@ -8,6 +8,7 @@ import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
+import scala.collection.JavaConverters._
 
 class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
@@ -133,25 +134,28 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val record = read[Test](output)
       record.get("opt") shouldBe null
     }
-    //    "supporting writing Eithers" in {
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      val either = EitherWriteExample(Left("sammy"), Right(123l))
-    //
-    //      import AvroImplicits._
-    //      val output = AvroOutputStream[EitherWriteExample](path)
-    //      output.write(either)
-    //      output.close()
-    //
-    //      val datum = new GenericDatumReader[GenericRecord](schemaFor[EitherWriteExample].schema)
-    //      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
-    //
-    //      reader.hasNext
-    //      val rec = reader.next()
-    //      rec.get("either1").toString shouldBe "sammy"
-    //      rec.get("either2").toString.toLong shouldBe 123l
-    //    }
+    "write Array of primitives" in {
+      case class Test(array: Array[Double])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Array(1d, 2d, 3d, 4d)))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("array").asInstanceOf[java.util.List[Double]].asScala shouldBe Seq(1d, 2d, 3d, 4d)
+    }
+    "write Seq of primitives" in {
+      case class Test(sequence: Seq[Double])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Seq(1d, 2d, 3d, 4d)))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("sequence").asInstanceOf[java.util.List[Double]].asScala shouldBe Seq(1d, 2d, 3d, 4d)
+    }
     //    "supporting writing Bytes" in {
     //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
     //      path.toFile.deleteOnExit()
@@ -170,58 +174,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     //      val rec = reader.next()
     //      rec.get("bytes").asInstanceOf[ByteBuffer].array shouldBe Array[Byte](1,2,3)
     //    }
-    //    "supporting writing Longs" in {
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      val bytes = LongWriteExample(3453453l)
-    //
-    //      import AvroImplicits._
-    //      val output = AvroOutputStream[LongWriteExample](path)
-    //      output.write(bytes)
-    //      output.close()
-    //
-    //      val datum = new GenericDatumReader[GenericRecord](schemaFor[LongWriteExample].schema)
-    //      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
-    //
-    //      reader.hasNext
-    //      val rec = reader.next()
-    //      rec.get("long").toString.toLong shouldBe 3453453l
-    //    }
-    //    "supporting writing Doubles" in {
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      val bytes = DoubleWriteExample(123412.522)
-    //
-    //      import AvroImplicits._
-    //      val output = AvroOutputStream[DoubleWriteExample](path)
-    //      output.write(bytes)
-    //      output.close()
-    //
-    //      val datum = new GenericDatumReader[GenericRecord](schemaFor[DoubleWriteExample].schema)
-    //      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
-    //
-    //      reader.hasNext
-    //      val rec = reader.next()
-    //      rec.get("double").toString.toDouble shouldBe 123412.522
-    //    }
-    //    "supporting writing Booleans" in {
-    //      val path = Files.createTempFile("AvroSerializerTest", ".avro")
-    //      path.toFile.deleteOnExit()
-    //
-    //      val example = BooleanWriteExample(true, false)
-    //
-    //      import AvroImplicits._
-    //      val output = AvroOutputStream[BooleanWriteExample](path)
-    //      output.write(example)
-    //      output.close()
-    //
-    //      val datum = new GenericDatumReader[GenericRecord](schemaFor[BooleanWriteExample].schema)
-    //      val reader = new DataFileReader[GenericRecord](path.toFile, datum)
-    //
-    //      reader.hasNext
-    //      val rec = reader.next()
     //      rec.get("left").toString.toBoolean shouldBe true
     //      rec.get("right").toString.toBoolean shouldBe false
     //    }

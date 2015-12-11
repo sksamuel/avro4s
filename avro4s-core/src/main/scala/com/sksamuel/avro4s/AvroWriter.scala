@@ -40,6 +40,20 @@ object Writer {
     }
   }
 
+  implicit def ArrayWriter[T] = new Writer[Array[T]] {
+    override def apply(name: String, value: Array[T], record: GenericRecord): Unit = {
+      import scala.collection.JavaConverters._
+      record.put(name, value.toSeq.asJava)
+    }
+  }
+
+  implicit def SeqWriter[T] = new Writer[Seq[T]] {
+    override def apply(name: String, value: Seq[T], record: GenericRecord): Unit = {
+      import scala.collection.JavaConverters._
+      record.put(name, value.asJava)
+    }
+  }
+
   implicit object HNilWriter extends Writer[HNil] {
     override def apply(name: String, value: HNil, record: GenericRecord): Unit = ()
   }
