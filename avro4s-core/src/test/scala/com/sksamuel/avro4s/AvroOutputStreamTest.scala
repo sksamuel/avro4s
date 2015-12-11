@@ -19,7 +19,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     reader.next()
   }
 
-  "AvroSerializer" should {
+  "AvroOutputStream" should {
     "write out strings" in {
 
       case class Test(str: String)
