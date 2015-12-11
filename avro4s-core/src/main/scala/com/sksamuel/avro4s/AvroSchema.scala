@@ -91,13 +91,13 @@ object RecordSchemaFields {
   }
 
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
-                                                       write: SchemaBuilder[V],
+                                                       builder: SchemaBuilder[V],
                                                        remaining: RecordSchemaFields[T],
                                                        tag: ClassTag[V]): RecordSchemaFields[FieldType[K, V] :: T] = {
     new RecordSchemaFields[FieldType[K, V] :: T] {
       def apply: List[Schema.Field] = {
         val fieldFn: (Schema => Schema.Field) = schema => new Schema.Field(key.value.name, schema, null, null)
-        write.schema.map(fieldFn).toList ++ remaining()
+        builder.schema.map(fieldFn).toList ++ remaining()
       }
     }
   }
@@ -109,7 +109,7 @@ trait RecordSchemaBuilder[T] {
 
 object RecordSchemaBuilder {
 
-  implicit def schemaBuilder[T, Repr <: HList](implicit label: LabelledGeneric.Aux[T, Repr],
+  implicit def schemaBuilder[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
                                                schemaFields: RecordSchemaFields[Repr],
                                                tag: ClassTag[T]): RecordSchemaBuilder[T] = new RecordSchemaBuilder[T] {
 
