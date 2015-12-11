@@ -148,6 +148,18 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val record = read[Test](output)
       record.get("sequence").asInstanceOf[java.util.List[Double]].asScala shouldBe Seq(1d, 2d, 3d, 4d)
     }
+    "write Seq of nested classes" in {
+      case class Nested(str: String)
+      case class Test(seq: Seq[Nested])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(List(Nested("sam"), Nested("sam"))))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("seq").asInstanceOf[java.util.List[Double]].asScala shouldBe Seq(1d, 2d, 3d, 4d)
+    }
     "write list of primitives" in {
       case class Test(list: List[Double])
 
@@ -198,5 +210,19 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
         k.toString -> v.toString.toBoolean
       } shouldBe Map("name" -> true)
     }
+    //    "write map of nested classes" in {
+    //      case class Nested(str: String, bool: Boolean)
+    //      case class Test(map: Map[String, Nested])
+    //
+    //      val output = new ByteArrayOutputStream
+    //      val avro = AvroOutputStream[Test](output)
+    //      avro.write(Test(Map("foo" -> Nested("sam", true))))
+    //      avro.close()
+    //
+    //      val record = read[Test](output)
+    //      record.get("map").asInstanceOf[java.util.Map[Utf8, GenericRecord]].asScala.map { case (k, v) =>
+    //        k.toString -> v.toString
+    //      } shouldBe Map("foo" -> "")
+    //    }
   }
 }

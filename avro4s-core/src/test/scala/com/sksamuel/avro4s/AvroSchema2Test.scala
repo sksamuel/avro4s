@@ -94,14 +94,14 @@ class AvroSchema2Test extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for an Array of records" in {
-      case class Nested(nested: String)
+      case class Nested(str: String, bool: Boolean)
       case class Test(array: Array[Nested])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/arrayrecords.avsc"))
       val schema = AvroSchema2[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a List of records" in {
-      case class Nested(nested: String)
+      case class Nested(nested: String, double: Double)
       case class Test(list: List[Nested])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/listrecords.avsc"))
       val schema = AvroSchema2[Test]

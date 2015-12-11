@@ -14,7 +14,11 @@
                {
                  "name" : "nested",
                  "type" : "string"
-               }
+               },
+                {
+                                "name" : "double",
+                                "type" : "double"
+                              }
              ]
           }
       }

@@ -12,8 +12,12 @@
            "name" : "Nested",
              "fields" : [
                {
-                 "name" : "nested",
+                 "name" : "str",
                  "type" : "string"
+               },
+               {
+                 "name" : "bool",
+                 "type" : "boolean"
                }
              ]
           }

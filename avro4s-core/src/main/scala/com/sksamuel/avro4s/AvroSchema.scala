@@ -9,96 +9,94 @@ import shapeless._
 import scala.reflect.ClassTag
 
 
-trait SchemaBuilder[T] {
+trait ToSchema[T] {
   def schema: Option[Schema]
 }
 
-object SchemaBuilder {
+object ToSchema {
 
-  implicit object BooleanSchemaBuilder extends SchemaBuilder[Boolean] {
+  implicit object BooleanToSchema extends ToSchema[Boolean] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BOOLEAN))
   }
 
-  implicit object ByteArraySchemaBuilder extends SchemaBuilder[Array[Byte]] {
+  implicit object ByteArrayToSchema extends ToSchema[Array[Byte]] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BYTES))
   }
 
-  implicit object DoubleSchemaBuilder extends SchemaBuilder[Double] {
+  implicit object DoubleToSchema extends ToSchema[Double] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.DOUBLE))
   }
 
-
-  implicit object FloatSchemaBuilder extends SchemaBuilder[Float] {
+  implicit object FloatToSchema extends ToSchema[Float] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.FLOAT))
   }
 
-  implicit object IntSchemaBuilder extends SchemaBuilder[Int] {
+  implicit object IntToSchema extends ToSchema[Int] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.INT))
   }
 
-  implicit object LongSchemaBuilder extends SchemaBuilder[Long] {
+  implicit object LongToSchema extends ToSchema[Long] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.LONG))
   }
 
-  implicit object StringSchemaBuilder extends SchemaBuilder[String] {
+  implicit object StringToSchema extends ToSchema[String] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.STRING))
   }
 
-  implicit def OptionFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[Option[T]] = new SchemaBuilder[Option[T]] {
+  implicit def OptionToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Option[T]] = new ToSchema[Option[T]] {
     override def schema: Option[Schema] = {
-      builder.schema.map { schema => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), schema)) }
+      scheme.schema.map { schema => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), schema)) }
     }
   }
 
-  implicit def MapFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[Map[String, T]] = new SchemaBuilder[Map[String, T]] {
-    override def schema: Option[Schema] = builder.schema.map { schema => Schema.createMap(schema) }
+  implicit def MapToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Map[String, T]] = new ToSchema[Map[String, T]] {
+    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createMap(schema) }
   }
 
-  implicit def ListFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[List[T]] = new SchemaBuilder[List[T]] {
-    override def schema: Option[Schema] = builder.schema.map { schema => Schema.createArray(schema) }
+  implicit def ListToSchema[T](implicit scheme: ToSchema[T]): ToSchema[List[T]] = new ToSchema[List[T]] {
+    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
   }
 
-  implicit def ArrayFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[Array[T]] = new SchemaBuilder[Array[T]] {
-    override def schema: Option[Schema] = builder.schema.map { schema => Schema.createArray(schema) }
+  implicit def ArrayToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Array[T]] = new ToSchema[Array[T]] {
+    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
   }
 
-  implicit def SeqFieldWrite[T](implicit builder: SchemaBuilder[T]): SchemaBuilder[Seq[T]] = new SchemaBuilder[Seq[T]] {
-    override def schema: Option[Schema] = builder.schema.map { schema => Schema.createArray(schema) }
+  implicit def SeqToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Seq[T]] = new ToSchema[Seq[T]] {
+    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
   }
 
-  implicit def EitherFieldWrite[T, U](implicit twrite: SchemaBuilder[T],
-                                      uwrite: SchemaBuilder[U]): SchemaBuilder[Either[T, U]] = new SchemaBuilder[Either[T, U]] {
+  implicit def EitherToSchema[A: ToSchema, B: ToSchema]: ToSchema[Either[A, B]] = new ToSchema[Either[A, B]] {
     override def schema: Option[Schema] = {
-      for (t <- twrite.schema;
-           u <- uwrite.schema) yield {
+      for (t <- implicitly[ToSchema[A]].schema;
+           u <- implicitly[ToSchema[B]].schema) yield {
         Schema.createUnion(util.Arrays.asList(t, u))
       }
     }
   }
 
-  implicit def RecordFieldWrite[T](implicit builder: AvroSchema2[T]) = new SchemaBuilder[T] {
-    override def schema: Option[Schema] = Some(builder())
+  implicit def GenericToSchema[T](implicit scheme: AvroSchema2[T]) = new ToSchema[T] {
+    override def schema: Option[Schema] = Some(scheme.apply)
   }
 }
 
-trait RecordSchemaFields[L <: HList] extends DepFn0 with Serializable {
+trait AvroSchemaFields[L <: HList] extends DepFn0 with Serializable {
   type Out = List[Schema.Field]
 }
 
-object RecordSchemaFields {
+object AvroSchemaFields {
 
-  implicit object HNilFields extends RecordSchemaFields[HNil] {
+  implicit object HNilFields extends AvroSchemaFields[HNil] {
     def apply() = List.empty
   }
 
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
-                                                       builder: SchemaBuilder[V],
-                                                       remaining: RecordSchemaFields[T],
-                                                       tag: ClassTag[V]): RecordSchemaFields[FieldType[K, V] :: T] = {
-    new RecordSchemaFields[FieldType[K, V] :: T] {
+                                                       builder: Lazy[ToSchema[V]],
+                                                       remaining: AvroSchemaFields[T],
+                                                       tag: ClassTag[V]): AvroSchemaFields[FieldType[K, V] :: T] = {
+    new AvroSchemaFields[FieldType[K, V] :: T] {
       def apply: List[Schema.Field] = {
         val fieldFn: (Schema => Schema.Field) = schema => new Schema.Field(key.value.name, schema, null, null)
-        builder.schema.map(fieldFn).toList ++ remaining()
+        builder.value.schema.map(fieldFn).toList ++ remaining()
       }
     }
   }
@@ -111,7 +109,7 @@ trait AvroSchema2[T] {
 object AvroSchema2 {
 
   implicit def schemaBuilder[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
-                                               schemaFields: RecordSchemaFields[Repr],
+                                               schemaFields: AvroSchemaFields[Repr],
                                                tag: ClassTag[T]): AvroSchema2[T] = new AvroSchema2[T] {
 
     import scala.collection.JavaConverters._
@@ -128,5 +126,5 @@ object AvroSchema2 {
     }
   }
 
-  def apply[T](implicit builder: AvroSchema2[T]): Schema = builder.apply()
+  def apply[T](implicit builder: Lazy[AvroSchema2[T]]): Schema = builder.value.apply()
 }
