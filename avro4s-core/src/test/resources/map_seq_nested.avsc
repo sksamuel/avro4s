@@ -8,16 +8,22 @@
       "type": {
         "type": "map",
         "values": {
-                          "type" : "array",
-                          "items" : {
-                            "type" : "record",
-                            "name" : "Nested",
-                            "fields" : [ {
-                              "name" : "float",
-                              "type" : "float"
-                            } ]
-                          }
-                        }
+           "type" : "array",
+           "items" : {
+             "type" : "record",
+             "name" : "Nested",
+             "fields" : [
+                 {
+                   "name" : "float",
+                   "type" : "float"
+                 },
+                 {
+                   "name" : "double",
+                   "type" : "double"
+                 }
+               ]
+             }
+          }
       }
     }
   ]

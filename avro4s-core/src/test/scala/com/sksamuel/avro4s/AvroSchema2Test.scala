@@ -141,7 +141,7 @@ class AvroSchema2Test extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support maps of seqs of records" in {
-      case class Nested(float: Float)
+      case class Nested(float: Float, double: Double)
       case class Test(map: Map[String, Seq[Nested]])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map_seq_nested.avsc"))
       val schema = AvroSchema2[Test]
