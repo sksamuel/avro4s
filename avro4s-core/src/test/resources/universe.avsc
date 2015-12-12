@@ -15,24 +15,21 @@
         }, {
           "name" : "playable",
           "type" : "boolean"
-        } ]
-      }
-    }
-  }, {
-    "name" : "manufacturers",
-    "type" : {
-      "type" : "array",
-      "items" : {
-        "type" : "record",
-        "name" : "Manufacturer",
-        "fields" : [ {
-          "name" : "name",
-          "type" : "string"
         }, {
-          "name" : "ships",
+          "name" : "homeworld",
+          "type" : [ "null", {
+            "type" : "record",
+            "name" : "Planet",
+            "fields" : [ {
+              "name" : "name",
+              "type" : "string"
+            } ]
+          } ]
+        }, {
+          "name" : "shipRanks",
           "type" : {
-            "type" : "array",
-            "items" : {
+            "type" : "map",
+            "values" : {
               "type" : "record",
               "name" : "Ship",
               "fields" : [ {
@@ -53,11 +50,53 @@
                   "type" : "map",
                   "values" : "int"
                 }
+              }, {
+                "name" : "defaultWeapon",
+                "type" : [ "null", "string" ]
               } ]
             }
           }
         } ]
       }
+    }
+  }, {
+    "name" : "manufacturers",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "Manufacturer",
+        "fields" : [ {
+          "name" : "name",
+          "type" : "string"
+        }, {
+          "name" : "ships",
+          "type" : {
+            "type" : "array",
+            "items" : "Ship"
+          }
+        } ]
+      }
+    }
+  }, {
+    "name" : "cqc",
+    "type" : {
+      "type" : "record",
+      "name" : "CQC",
+      "fields" : [ {
+        "name" : "maps",
+        "type" : {
+          "type" : "array",
+          "items" : {
+            "type" : "record",
+            "name" : "PlayableMap",
+            "fields" : [ {
+              "name" : "name",
+              "type" : "string"
+            } ]
+          }
+        }
+      } ]
     }
   } ]
 }

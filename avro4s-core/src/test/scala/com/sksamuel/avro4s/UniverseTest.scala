@@ -17,29 +17,33 @@ import org.scalatest.{Matchers, WordSpec}
   * - seqs of case classes
   * - arrays of case classes
   * - Maps of Strings to Ints
-  * -
+  * - Maps of Strings to Case Classes
+  * - Options of Strings
+  * - Options of Case classes
   */
 class UniverseTest extends WordSpec with Matchers {
 
+  val clipper = Ship(name = "Imperial Clipper", role = "fighter escort", maxSpeed = 430, jumpRange = 8.67, hardpoints = Map("medium" -> 4, "large" -> 2), defaultWeapon = Some("pulse laser"))
+  val eagle = Ship(name = "Eagle", role = "fighter", maxSpeed = 350, jumpRange = 15.4, hardpoints = Map("small" -> 3), defaultWeapon = None)
+
   val g = Universe(
     factions = Seq(
-      Faction("Imperial", true),
-      Faction("Federation", true),
-      Faction("Independant", false)
+      Faction("Imperial", true, homeworld = Option(Planet("Earth")), shipRanks = Map("baron" -> clipper)),
+      Faction("Federation", true, homeworld = Option(Planet("Earth"))),
+      Faction("Independant", false, homeworld = None)
     ),
     manufacturers = Array(
       Manufacturer(
         name = "Gutamaya",
-        ships = Seq(
-          Ship(name = "Imperial Clipper", role = "fighter escort", maxSpeed = 430, jumpRange = 8.67, hardpoints = Map("medium" -> 4, "large" -> 2))
-        )
+        ships = Seq(clipper)
       ),
       Manufacturer(
         name = "Core Dynamics",
-        ships = Seq(
-          Ship(name = "Eagle", role = "fighter", maxSpeed = 350, jumpRange = 15.4, hardpoints = Map("small" -> 3))
-        )
+        ships = Seq(eagle)
       )
+    ),
+    cqc = CQC(
+      maps = Nil
     )
   )
 
@@ -59,14 +63,16 @@ class UniverseTest extends WordSpec with Matchers {
   }
 }
 
-case class Universe(factions: Seq[Faction], manufacturers: Array[Manufacturer])
+case class Universe(factions: Seq[Faction], manufacturers: Array[Manufacturer], cqc: CQC)
 
-case class Faction(name: String, playable: Boolean)
+case class Faction(name: String, playable: Boolean, homeworld: Option[Planet], shipRanks: Map[String, Ship] = Map.empty)
+
+case class Planet(name: String)
 
 case class Manufacturer(name: String, ships: Seq[Ship])
 
-case class Ship(name: String, role: String, maxSpeed: Int, jumpRange: Double, hardpoints: Map[String, Int])
+case class Ship(name: String, role: String, maxSpeed: Int, jumpRange: Double, hardpoints: Map[String, Int], defaultWeapon: Option[String])
 
 case class CQC(maps: Seq[PlayableMap])
 
-case class PlayableMap()
+case class PlayableMap(name: String)
