@@ -1,5 +1,7 @@
 package com.sksamuel.avro4s
 
+import java.nio.ByteBuffer
+
 import org.apache.avro.generic.GenericRecord
 import shapeless._
 import shapeless.labelled.FieldType
@@ -26,10 +28,6 @@ object ToValue {
 
   implicit object LongToValue extends ToValue[Long]
 
-  implicit object HNilToValue extends ToValue[HNil] {
-    override def apply(value: HNil): Option[AnyRef] = None
-  }
-
   implicit def EitherWriter[T, U](implicit leftWriter: ToValue[T], rightWriter: ToValue[U]) = new ToValue[Either[T, U]] {
     override def apply(value: Either[T, U]): Option[Any] = value match {
       case Left(left) => leftWriter.apply(left)
@@ -41,16 +39,23 @@ object ToValue {
     override def apply(value: Option[T]): Option[Any] = value.flatMap(tovalue.apply)
   }
 
-  implicit def ArrayToValue[T] = new ToValue[Array[T]] {
-    override def apply(value: Array[T]): Option[Any] = Some(value.toSeq.asJava)
+  implicit def ArrayToValue[T](implicit writer: Lazy[ToValue[T]]): ToValue[Array[T]] = new ToValue[Array[T]] {
+    override def apply(value: Array[T]): Option[Any] = value.headOption match {
+      case Some(b: Byte) => Some(ByteBuffer.wrap(value.asInstanceOf[Array[Byte]]))
+      case _ => Some(value.flatMap(writer.value.apply).toSeq.asJavaCollection)
+    }
+  }
+
+  implicit object ByteArrayToValue extends ToValue[Array[Byte]] {
+    override def apply(value: Array[Byte]): Option[Any] = Some(ByteBuffer.wrap(value))
   }
 
   implicit def SeqWriter[T](implicit writer: Lazy[ToValue[T]]): ToValue[Seq[T]] = new ToValue[Seq[T]] {
     override def apply(values: Seq[T]): Option[Any] = Some(values.flatMap(writer.value.apply).asJava)
   }
 
-  implicit def ListWriter[T] = new ToValue[List[T]] {
-    override def apply(value: List[T]): Option[java.util.List[T]] = Some(value.asJava)
+  implicit def ListWriter[T]: ToValue[List[T]] = new ToValue[List[T]] {
+    override def apply(values: List[T]): Option[Any] = None
   }
 
   implicit def MapWriter[T](implicit writer: Lazy[ToValue[T]]) = new ToValue[Map[String, T]] {
