@@ -17,7 +17,6 @@ class AvroOutputStream[T](os: OutputStream)(implicit schema: Lazy[AvroSchema[T]]
 
   def write(t: T): Unit = {
     val record = ser.value.toRecord(t)
-    println(record)
     dataFileWriter.append(record)
   }
 

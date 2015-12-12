@@ -16,8 +16,37 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   }
 
   "AvroDeserializer" should {
-    "read strings" in {
+    "read options of strings" in {
+      case class Test(opt: Option[String])
 
+      val data = Seq(Test(Option("sammy")), Test(None))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read options of booleans" in {
+      case class Test(opt: Option[Boolean])
+
+      val data = Seq(Test(Option(true)), Test(None))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read options of longs" in {
+      case class Test(opt: Option[Long])
+
+      val data = Seq(Test(Option(4)), Test(None))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read strings" in {
       case class Test(str: String)
 
       val data = Seq(Test("sammy"), Test("hammy"))
@@ -28,7 +57,6 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       in.close()
     }
     "read booleans" in {
-
       case class Test(bool: Boolean)
 
       val data = Seq(Test(true), Test(false))
@@ -39,7 +67,6 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       in.close()
     }
     "read doubles" in {
-
       case class Test(double: Double)
 
       val data = Seq(Test(1.2d), Test(2.3d))
@@ -50,7 +77,6 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       in.close()
     }
     "read floats" in {
-
       case class Test(float: Float)
 
       val data = Seq(Test(1.2f), Test(3.4f))
@@ -61,7 +87,6 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       in.close()
     }
     "read ints" in {
-
       case class Test(int: Int)
 
       val data = Seq(Test(1), Test(2))
@@ -72,7 +97,6 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       in.close()
     }
     "read longs" in {
-
       case class Test(long: Long)
 
       val data = Seq(Test(1l), Test(2l))

@@ -3,7 +3,7 @@ package com.sksamuel.avro4s
 import java.io.File
 import java.nio.file.Path
 
-import org.apache.avro.file.{SeekableByteArrayInput, DataFileReader, SeekableFileInput, SeekableInput}
+import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput, SeekableFileInput, SeekableInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 
 class AvroInputStream[T](in: SeekableInput)(implicit schema: AvroSchema[T], deser: AvroDeserializer[T]) {

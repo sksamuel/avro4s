@@ -5,40 +5,42 @@ import shapeless._
 import shapeless.labelled._
 
 trait Reader[T] {
-  def read(name: String, record: GenericRecord): T
+  def read(value: Any): T
 }
 
 object Reader {
 
+  implicit object HNilReader extends Reader[HNil] {
+    override def read(value: Any): HNil = HNil
+  }
+
   implicit object StringReader extends Reader[String] {
-    override def read(name: String, record: GenericRecord): String = record.get(name).toString
+    override def read(value: Any): String = value.toString
   }
 
   implicit object BooleanConverter extends Reader[Boolean] {
-    override def read(name: String, record: GenericRecord): Boolean = record.get(name).toString.toBoolean
+    override def read(value: Any): Boolean = value.toString.toBoolean
   }
 
   implicit object FloatConverter extends Reader[Float] {
-    override def read(name: String, record: GenericRecord): Float = record.get(name).toString.toFloat
+    override def read(value: Any): Float = value.toString.toFloat
   }
 
   implicit object LongConverter extends Reader[Long] {
-    override def read(name: String, record: GenericRecord): Long = record.get(name).toString.toLong
+    override def read(value: Any): Long = value.toString.toLong
   }
 
   implicit object IntConverter extends Reader[Int] {
-    override def read(name: String, record: GenericRecord): Int = record.get(name).toString.toInt
+    override def read(value: Any): Int = value.toString.toInt
   }
 
   implicit object DoubleConverter extends Reader[Double] {
-    override def read(name: String, record: GenericRecord): Double = record.get(name).toString.toDouble
+    override def read(value: Any): Double = value.toString.toDouble
   }
 
-  //  implicit def OptionConverter[T](implicit converter: AvroConverter[T]) = new AvroConverter[Option[T]] {
-  //    override def convert(value: Any): Option[T] = {
-  //      Option(value).map(converter.convert)
-  //    }
-  //  }
+  implicit def OptionConverter[T](implicit reader: Reader[T]) = new Reader[Option[T]] {
+    override def read(value: Any): Option[T] = Option(value).map(reader.read)
+  }
 
   //  implicit def EitherConverter[L, R](implicit leftConverter: AvroConverter[L],
   //                                     rightConverter: AvroConverter[R],
@@ -61,9 +63,6 @@ object Reader {
   //    }
   //  }
 
-  implicit object HNilReader extends Reader[HNil] {
-    override def read(name: String, record: GenericRecord): HNil = HNil
-  }
 
 }
 
@@ -80,14 +79,12 @@ object AvroDeserializer {
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
                                                        reader: Lazy[Reader[V]],
                                                        remaining: AvroDeserializer[T]): AvroDeserializer[FieldType[K, V] :: T] = {
-
-
     new AvroDeserializer[FieldType[K, V] :: T] {
 
       val fieldName = key.value.name
 
       override def apply(record: GenericRecord): FieldType[K, V] :: T = {
-        val v = reader.value.read(key.value.name, record)
+        val v = reader.value.read(record.get(key.value.name))
         field[K](v) :: remaining(record)
       }
     }
