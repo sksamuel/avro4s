@@ -54,6 +54,16 @@ object Reader {
     }
   }
 
+  implicit def ListReader[T](implicit reader: Reader[T]) = new Reader[List[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def read(value: Any): List[T] = value match {
+      case array: Array[T] => array.map(reader.read).toList
+      case list: java.util.Collection[T] => list.asScala.map(reader.read).toList
+    }
+  }
+
   implicit def SeqReader[T](implicit reader: Reader[T]) = new Reader[Seq[T]] {
 
     import scala.collection.JavaConverters._
