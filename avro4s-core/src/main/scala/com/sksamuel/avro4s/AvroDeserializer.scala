@@ -4,6 +4,8 @@ import org.apache.avro.generic.GenericRecord
 import shapeless._
 import shapeless.labelled._
 
+import scala.reflect.ClassTag
+
 trait Reader[T] {
   def read(value: Any): T
 }
@@ -40,6 +42,16 @@ object Reader {
 
   implicit def OptionReader[T](implicit reader: Reader[T]) = new Reader[Option[T]] {
     override def read(value: Any): Option[T] = Option(value).map(reader.read)
+  }
+
+  implicit def ArrayReader[T](implicit reader: Reader[T], tag: ClassTag[T]) = new Reader[Array[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def read(value: Any): Array[T] = value match {
+      case array: Array[T] => array.map(reader.read)
+      case list: java.util.Collection[T] => list.asScala.map(reader.read).toArray
+    }
   }
 
   implicit def SeqReader[T](implicit reader: Reader[T]) = new Reader[Seq[T]] {

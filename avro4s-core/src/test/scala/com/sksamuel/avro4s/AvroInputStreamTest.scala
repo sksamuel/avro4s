@@ -16,6 +16,47 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   }
 
   "AvroDeserializer" should {
+    "read array of ints" in {
+      case class Test(array: Array[Int])
+
+      val data = Seq(Test(Array(1, 2, 3, 4)))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList.head.array.toList shouldBe data.toList.head.array.toList
+      in.close()
+    }
+    "read array of doubles" in {
+      case class Test(array: Array[Double])
+
+      val data = Seq(Test(Array(0.1, 0.2, 0.3)))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList.head.array.toList shouldBe data.toList.head.array.toList
+      in.close()
+    }
+    "read array of strings" in {
+      case class Test(array: Array[String])
+
+      val data = Seq(Test(Array("sammy", "hammy")))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList.head.array.toList shouldBe data.toList.head.array.toList
+      in.close()
+    }
+    "read array of case classes" in {
+      case class Nested(str: String)
+      case class Test(array: Array[Nested])
+
+      val data = Seq(Test(Array(Nested("sammy"), Nested("hammy"))))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList.head.array.toList shouldBe data.toList.head.array.toList
+      in.close()
+    }
     "read seq of ints" in {
       case class Test(opt: Seq[Int])
 
