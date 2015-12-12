@@ -14,12 +14,15 @@ import org.scalatest.{Matchers, WordSpec}
   * - doubles
   * - booleans
   * - byte arrays
+  * - longs
   * - seqs of case classes
   * - arrays of case classes
   * - Maps of Strings to Ints
   * - Maps of Strings to Case Classes
   * - Options of Strings
   * - Options of Case classes
+  * - Either[A,B] where A and B are both case classes
+  * - Either[A,B] where A and B are both primitives
   */
 class UniverseTest extends WordSpec with Matchers {
 

@@ -54,8 +54,8 @@ object ToValue {
     override def apply(values: Seq[T]): Option[Any] = Some(values.flatMap(writer.value.apply).asJava)
   }
 
-  implicit def ListWriter[T]: ToValue[List[T]] = new ToValue[List[T]] {
-    override def apply(values: List[T]): Option[Any] = None
+  implicit def ListWriter[T](implicit writer: Lazy[ToValue[T]]): ToValue[List[T]] = new ToValue[List[T]] {
+    override def apply(values: List[T]): Option[Any] = Some(values.flatMap(writer.value.apply).asJava)
   }
 
   implicit def MapWriter[T](implicit writer: Lazy[ToValue[T]]) = new ToValue[Map[String, T]] {
