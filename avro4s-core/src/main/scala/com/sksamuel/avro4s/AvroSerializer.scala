@@ -28,6 +28,10 @@ object Writer {
 
   implicit object LongWriter extends Writer[Long]
 
+  implicit object BigDecimalWriter extends Writer[BigDecimal] {
+    override def apply(value: BigDecimal): Option[Any] = Some(ByteBuffer.wrap(value.toString.getBytes))
+  }
+
   implicit def EitherWriter[T, U](implicit leftWriter: Writer[T], rightWriter: Writer[U]) = new Writer[Either[T, U]] {
     override def apply(value: Either[T, U]): Option[Any] = value match {
       case Left(left) => leftWriter.apply(left)

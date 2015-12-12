@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import org.scalatest.{WordSpec, Matchers}
+import org.scalatest.{Matchers, WordSpec}
 
 class AvroSchemaTest extends WordSpec with Matchers {
 
@@ -44,6 +44,12 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "accept float" in {
       case class Test(float: Float)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/float.avsc"))
+      val schema = AvroSchema[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "accept big decimal" in {
+      case class Test(decimal: BigDecimal)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal.avsc"))
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
@@ -148,6 +154,7 @@ class AvroSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support doc annotation on class" in {
+      @AvroDoc("hello its me") case class Annotated(str: String)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation.avsc"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
@@ -155,4 +162,3 @@ class AvroSchemaTest extends WordSpec with Matchers {
   }
 }
 
-@AvroDoc("hello its me") case class Annotated(str: String)

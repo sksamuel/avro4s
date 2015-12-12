@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
@@ -21,8 +22,18 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
   }
 
   "AvroOutputStream" should {
-    "write out strings" in {
+    "write out big decimal" in {
+      case class Test(dec: BigDecimal)
 
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(123.456789))
+      avro.close()
+
+      val record = read[Test](output)
+      new String(record.get("dec").asInstanceOf[ByteBuffer].array) shouldBe "123.456789"
+    }
+    "write out strings" in {
       case class Test(str: String)
 
       val output = new ByteArrayOutputStream
@@ -34,7 +45,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record.get("str").toString shouldBe "sammy"
     }
     "write out booleans" in {
-
       case class Test(bool: Boolean)
 
       val output = new ByteArrayOutputStream
@@ -46,7 +56,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record.get("bool").toString shouldBe "true"
     }
     "write out longs" in {
-
       case class Test(l: Long)
 
       val output = new ByteArrayOutputStream
@@ -58,7 +67,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record.get("l").toString shouldBe "56"
     }
     "write out ints" in {
-
       case class Test(i: Int)
 
       val output = new ByteArrayOutputStream
@@ -70,7 +78,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record.get("i").toString shouldBe "666"
     }
     "write out doubles" in {
-
       case class Test(d: Double)
 
       val output = new ByteArrayOutputStream
@@ -82,7 +89,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record.get("d").toString shouldBe "123.456"
     }
     "write out eithers of primitives for lefts" in {
-
       case class Test(e: Either[String, Double])
 
       val output = new ByteArrayOutputStream
@@ -94,7 +100,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record.get("e").toString shouldBe "sam"
     }
     "write out eithers of primitives for rights" in {
-
       case class Test(e: Either[String, Double])
 
       val output = new ByteArrayOutputStream

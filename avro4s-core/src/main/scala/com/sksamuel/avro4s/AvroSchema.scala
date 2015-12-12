@@ -12,6 +12,16 @@ trait ToSchema[T] {
 
 object ToSchema {
 
+  implicit object BigDecimalToSchema extends ToSchema[BigDecimal] {
+    override def schema: Option[Schema] = {
+      val schema = Schema.create(Schema.Type.BYTES)
+      schema.addProp("logicalType", "decimal")
+      schema.addProp("scale", "2")
+      schema.addProp("precision", "8")
+      Some(schema)
+    }
+  }
+
   implicit object BooleanToSchema extends ToSchema[Boolean] {
     override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BOOLEAN))
   }
@@ -91,7 +101,10 @@ object AvroSchemaFields {
                                                        remaining: AvroSchemaFields[T]): AvroSchemaFields[FieldType[K, V] :: T] = {
     new AvroSchemaFields[FieldType[K, V] :: T] {
       def apply: List[Schema.Field] = {
-        val fieldFn: (Schema => Schema.Field) = schema => new Schema.Field(key.value.name, schema, null, null)
+        val fieldFn: (Schema => Schema.Field) = schema => {
+          val field = new Schema.Field(key.value.name, schema, null, null)
+          field
+        }
         builder.value.schema.map(fieldFn).toList ++ remaining()
       }
     }

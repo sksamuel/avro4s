@@ -6,4 +6,3 @@ case class AvroDoc(doc: String) extends StaticAnnotation
 
 case class AvroFixed(size: Int) extends StaticAnnotation
 
-case class AvroAlias(aliases: String*) extends StaticAnnotation
