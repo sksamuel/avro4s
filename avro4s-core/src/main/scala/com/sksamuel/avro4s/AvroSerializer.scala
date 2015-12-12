@@ -113,5 +113,5 @@ object AvroSerializer {
     }
   }
 
-  def apply[T](t: T)(implicit ser: Lazy[AvroSerializer[T]]): GenericRecord = ser.value.toRecord(t)
+  def apply[T](t: T)(implicit ser: AvroSerializer[T]): AvroSerializer[T] = ser
 }
