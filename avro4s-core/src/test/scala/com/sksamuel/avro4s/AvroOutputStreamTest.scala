@@ -7,13 +7,14 @@ import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
+import shapeless.Lazy
 import scala.collection.JavaConverters._
 
 class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
-  def read[T: AvroSchema2](out: ByteArrayOutputStream): GenericRecord = read(out.toByteArray)
-  def read[T: AvroSchema2](bytes: Array[Byte]): GenericRecord = {
-    val datum = new GenericDatumReader[GenericRecord](implicitly[AvroSchema2[T]].apply())
+  def read[T](out: ByteArrayOutputStream)(implicit schema: Lazy[AvroSchema2[T]]): GenericRecord = read(out.toByteArray)
+  def read[T](bytes: Array[Byte])(implicit schema: Lazy[AvroSchema2[T]]): GenericRecord = {
+    val datum = new GenericDatumReader[GenericRecord](schema.value.apply)
     val reader = new DataFileReader[GenericRecord](new SeekableByteArrayInput(bytes), datum)
     reader.hasNext
     reader.next()
@@ -149,12 +150,12 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record.get("sequence").asInstanceOf[java.util.List[Double]].asScala shouldBe Seq(1d, 2d, 3d, 4d)
     }
     "write Seq of nested classes" in {
-      case class Nested(str: String)
+      case class Nested(str: String, boolean: Boolean)
       case class Test(seq: Seq[Nested])
 
       val output = new ByteArrayOutputStream
       val avro = AvroOutputStream[Test](output)
-      avro.write(Test(List(Nested("sam"), Nested("ham"))))
+      avro.write(Test(List(Nested("sam", true), Nested("ham", false))))
       avro.close()
 
       val record = read[Test](output)

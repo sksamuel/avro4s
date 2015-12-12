@@ -45,8 +45,8 @@ object ToValue {
     override def apply(value: Array[T]): Option[Any] = Some(value.toSeq.asJava)
   }
 
-  implicit def SeqWriter[T](implicit writer: ToValue[T]): ToValue[Seq[T]] = new ToValue[Seq[T]] {
-    override def apply(values: Seq[T]): Option[Any] = Some(values.flatMap(writer.apply).asJava)
+  implicit def SeqWriter[T](implicit writer: Lazy[ToValue[T]]): ToValue[Seq[T]] = new ToValue[Seq[T]] {
+    override def apply(values: Seq[T]): Option[Any] = Some(values.flatMap(writer.value.apply).asJava)
   }
 
   implicit def ListWriter[T] = new ToValue[List[T]] {
@@ -63,8 +63,8 @@ object ToValue {
     }
   }
 
-  implicit def GenericToValue[T](implicit ser: AvroSerializer[T]): ToValue[T] = new ToValue[T] {
-    override def apply(value: T): Option[GenericRecord] = Some(ser.toRecord(value))
+  implicit def GenericToValue[T](implicit ser: Lazy[AvroSerializer[T]]): ToValue[T] = new ToValue[T] {
+    override def apply(value: T): Option[GenericRecord] = Some(ser.value.toRecord(value))
   }
 }
 
@@ -79,13 +79,13 @@ object Writes {
   }
 
   implicit def HConsFields[Key <: Symbol, V, T <: HList](implicit key: Witness.Aux[Key],
-                                                         writer: ToValue[V],
+                                                         writer: Lazy[ToValue[V]],
                                                          remaining: Writes[T],
                                                          tag: ClassTag[V]): Writes[FieldType[Key, V] :: T] = {
     new Writes[FieldType[Key, V] :: T] {
       override def write(record: GenericRecord, value: FieldType[Key, V] :: T): Unit = value match {
         case h :: t =>
-          writer.apply(h).foreach(record.put(key.value.name, _))
+          writer.value.apply(h).foreach(record.put(key.value.name, _))
           remaining.write(record, t)
       }
     }
@@ -99,14 +99,14 @@ trait AvroSerializer[T] {
 object AvroSerializer {
 
   implicit def GenericSer[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
-                                            writes: Lazy[Writes[Repr]],
-                                            schema: AvroSchema2[T]) = new AvroSerializer[T] {
+                                            writes: Writes[Repr],
+                                            schema: Lazy[AvroSchema2[T]]) = new AvroSerializer[T] {
     override def toRecord(t: T): GenericRecord = {
-      val r = new org.apache.avro.generic.GenericData.Record(schema())
-      writes.value.write(r, labl.to(t))
+      val r = new org.apache.avro.generic.GenericData.Record(schema.value.apply)
+      writes.write(r, labl.to(t))
       r
     }
   }
 
-  def apply[T](t: T)(implicit ser: AvroSerializer[T]): GenericRecord = ser.toRecord(t)
+  def apply[T](t: T)(implicit ser: Lazy[AvroSerializer[T]]): GenericRecord = ser.value.toRecord(t)
 }
