@@ -7,7 +7,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
 
-  def write[T](ts: Seq[T])(implicit schema: AvroSchema2[T], ser: AvroSerializer[T]): Array[Byte] = {
+  def write[T](ts: Seq[T])(implicit schema: AvroSchema[T], ser: AvroSerializer[T]): Array[Byte] = {
     val output = new ByteArrayOutputStream
     val avro = AvroOutputStream[T](output)
     avro.write(ts)

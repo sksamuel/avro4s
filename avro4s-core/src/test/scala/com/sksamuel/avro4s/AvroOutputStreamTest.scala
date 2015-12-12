@@ -12,8 +12,8 @@ import scala.collection.JavaConverters._
 
 class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
-  def read[T](out: ByteArrayOutputStream)(implicit schema: Lazy[AvroSchema2[T]]): GenericRecord = read(out.toByteArray)
-  def read[T](bytes: Array[Byte])(implicit schema: Lazy[AvroSchema2[T]]): GenericRecord = {
+  def read[T](out: ByteArrayOutputStream)(implicit schema: Lazy[AvroSchema[T]]): GenericRecord = read(out.toByteArray)
+  def read[T](bytes: Array[Byte])(implicit schema: Lazy[AvroSchema[T]]): GenericRecord = {
     val datum = new GenericDatumReader[GenericRecord](schema.value.apply)
     val reader = new DataFileReader[GenericRecord](new SeekableByteArrayInput(bytes), datum)
     reader.hasNext

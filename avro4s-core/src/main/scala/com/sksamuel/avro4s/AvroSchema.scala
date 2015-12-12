@@ -71,7 +71,7 @@ object ToSchema {
     }
   }
 
-  implicit def GenericToSchema[T](implicit scheme: AvroSchema2[T]) = new ToSchema[T] {
+  implicit def GenericToSchema[T](implicit scheme: AvroSchema[T]) = new ToSchema[T] {
     override def schema: Option[Schema] = Some(scheme.apply)
   }
 }
@@ -98,11 +98,11 @@ object AvroSchemaFields {
   }
 }
 
-trait AvroSchema2[T] {
+trait AvroSchema[T] {
   def apply(): Schema
 }
 
-object AvroSchema2 {
+object AvroSchema {
 
   import scala.reflect.ClassTag
   import scala.reflect.runtime.universe.typeOf
@@ -111,7 +111,7 @@ object AvroSchema2 {
   implicit def schemaBuilder[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
                                                schemaFields: AvroSchemaFields[Repr],
                                                typeTag: WeakTypeTag[T],
-                                               tag: ClassTag[T]): AvroSchema2[T] = new AvroSchema2[T] {
+                                               tag: ClassTag[T]): AvroSchema[T] = new AvroSchema[T] {
 
     import scala.collection.JavaConverters._
 
@@ -129,5 +129,5 @@ object AvroSchema2 {
     }
   }
 
-  def apply[T](implicit builder: Lazy[AvroSchema2[T]]): Schema = builder.value.apply()
+  def apply[T](implicit builder: Lazy[AvroSchema[T]]): Schema = builder.value.apply()
 }

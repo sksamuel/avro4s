@@ -1,11 +1,8 @@
 package com.sksamuel.avro4s
 
 import org.apache.avro.generic.GenericRecord
-import org.apache.avro.util.Utf8
 import shapeless._
 import shapeless.labelled._
-
-import scala.reflect.ClassTag
 
 trait Reader[T] {
   def read(name: String, record: GenericRecord): T
