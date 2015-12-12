@@ -18,31 +18,41 @@ object Reader {
     override def read(value: Any): String = value.toString
   }
 
-  implicit object BooleanConverter extends Reader[Boolean] {
+  implicit object BooleanReader extends Reader[Boolean] {
     override def read(value: Any): Boolean = value.toString.toBoolean
   }
 
-  implicit object FloatConverter extends Reader[Float] {
+  implicit object FloatReader extends Reader[Float] {
     override def read(value: Any): Float = value.toString.toFloat
   }
 
-  implicit object LongConverter extends Reader[Long] {
+  implicit object LongReader extends Reader[Long] {
     override def read(value: Any): Long = value.toString.toLong
   }
 
-  implicit object IntConverter extends Reader[Int] {
+  implicit object IntReader extends Reader[Int] {
     override def read(value: Any): Int = value.toString.toInt
   }
 
-  implicit object DoubleConverter extends Reader[Double] {
+  implicit object DoubleReader extends Reader[Double] {
     override def read(value: Any): Double = value.toString.toDouble
   }
 
-  implicit def OptionConverter[T](implicit reader: Reader[T]) = new Reader[Option[T]] {
+  implicit def OptionReader[T](implicit reader: Reader[T]) = new Reader[Option[T]] {
     override def read(value: Any): Option[T] = Option(value).map(reader.read)
   }
 
-  implicit def GenericConverter[T](implicit deser: AvroDeserializer[T]) = new Reader[T] {
+  implicit def SeqReader[T](implicit reader: Reader[T]) = new Reader[Seq[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def read(value: Any): Seq[T] = value match {
+      case array: Array[T] => array.map(reader.read)
+      case list: java.util.Collection[T] => list.asScala.toSeq.map(reader.read)
+    }
+  }
+
+  implicit def GenericReader[T](implicit deser: AvroDeserializer[T]) = new Reader[T] {
     override def read(value: Any): T = value match {
       case record: GenericRecord => deser(record)
     }
