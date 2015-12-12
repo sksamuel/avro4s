@@ -6,9 +6,6 @@ import org.apache.avro.Schema
 import shapeless.labelled._
 import shapeless._
 
-import scala.reflect.ClassTag
-
-
 trait ToSchema[T] {
   def schema: Option[Schema]
 }
@@ -91,8 +88,7 @@ object AvroSchemaFields {
 
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
                                                        builder: Lazy[ToSchema[V]],
-                                                       remaining: AvroSchemaFields[T],
-                                                       tag: ClassTag[V]): AvroSchemaFields[FieldType[K, V] :: T] = {
+                                                       remaining: AvroSchemaFields[T]): AvroSchemaFields[FieldType[K, V] :: T] = {
     new AvroSchemaFields[FieldType[K, V] :: T] {
       def apply: List[Schema.Field] = {
         val fieldFn: (Schema => Schema.Field) = schema => new Schema.Field(key.value.name, schema, null, null)
@@ -108,16 +104,23 @@ trait AvroSchema2[T] {
 
 object AvroSchema2 {
 
+  import scala.reflect.ClassTag
+  import scala.reflect.runtime.universe.typeOf
+  import scala.reflect.runtime.universe.WeakTypeTag
+
   implicit def schemaBuilder[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
                                                schemaFields: AvroSchemaFields[Repr],
+                                               typeTag: WeakTypeTag[T],
                                                tag: ClassTag[T]): AvroSchema2[T] = new AvroSchema2[T] {
 
     import scala.collection.JavaConverters._
 
     def apply(): Schema = {
       val schema = org.apache.avro.Schema.createRecord(
-        tag.runtimeClass.getSimpleName.takeWhile(_ != '$'),
-        null,
+        typeTag.tpe.typeSymbol.name.toString,
+        typeTag.tpe.typeSymbol.annotations.collectFirst {
+          case a if a.tree.tpe.<:<(typeOf[AvroDoc]) => a.tree.children.tail.head.toString.drop(1).dropRight(1)
+        }.orNull,
         tag.runtimeClass.getPackage.getName,
         false
       )

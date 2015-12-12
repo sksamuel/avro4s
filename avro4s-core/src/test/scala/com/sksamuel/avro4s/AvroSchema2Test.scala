@@ -147,5 +147,12 @@ class AvroSchema2Test extends WordSpec with Matchers {
       val schema = AvroSchema2[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support doc annotation on class" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation.avsc"))
+      val schema = AvroSchema2[Annotated]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
+
+@AvroDoc("hello its me") case class Annotated(str: String)
