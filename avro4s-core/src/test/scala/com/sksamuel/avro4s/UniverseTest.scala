@@ -43,7 +43,10 @@ class UniverseTest extends WordSpec with Matchers {
       )
     ),
     cqc = CQC(
-      maps = Nil
+      maps = Seq(
+        PlayableMap(name = "level1", bonus = Left("weapon"), stationOrPlanet = Left(Station("orbis"))),
+        PlayableMap(name = "level2", bonus = Right(123l), stationOrPlanet = Right(Planet("earth")))
+      )
     )
   )
 
@@ -69,10 +72,12 @@ case class Faction(name: String, playable: Boolean, homeworld: Option[Planet], s
 
 case class Planet(name: String)
 
+case class Station(name: String)
+
 case class Manufacturer(name: String, ships: Seq[Ship])
 
 case class Ship(name: String, role: String, maxSpeed: Int, jumpRange: Double, hardpoints: Map[String, Int], defaultWeapon: Option[String])
 
 case class CQC(maps: Seq[PlayableMap])
 
-case class PlayableMap(name: String)
+case class PlayableMap(name: String, bonus: Either[String, Long], stationOrPlanet: Either[Station, Planet])

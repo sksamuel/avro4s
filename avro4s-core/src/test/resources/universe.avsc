@@ -93,6 +93,19 @@
             "fields" : [ {
               "name" : "name",
               "type" : "string"
+            }, {
+              "name" : "bonus",
+              "type" : [ "string", "long" ]
+            }, {
+              "name" : "stationOrPlanet",
+              "type" : [ {
+                "type" : "record",
+                "name" : "Station",
+                "fields" : [ {
+                  "name" : "name",
+                  "type" : "string"
+                } ]
+              }, "Planet" ]
             } ]
           }
         }
