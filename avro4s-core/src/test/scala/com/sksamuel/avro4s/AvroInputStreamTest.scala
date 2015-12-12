@@ -16,6 +16,17 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   }
 
   "AvroDeserializer" should {
+    "read options of case classes" in {
+      case class Nested(str: String)
+      case class Test(opt: Option[Nested])
+
+      val data = Seq(Test(Option(Nested("sammy"))), Test(None))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
     "read options of strings" in {
       case class Test(opt: Option[String])
 

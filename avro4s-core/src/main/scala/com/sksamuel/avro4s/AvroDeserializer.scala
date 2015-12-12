@@ -42,6 +42,12 @@ object Reader {
     override def read(value: Any): Option[T] = Option(value).map(reader.read)
   }
 
+  implicit def GenericConverter[T](implicit deser: AvroDeserializer[T]) = new Reader[T] {
+    override def read(value: Any): T = value match {
+      case record: GenericRecord => deser(record)
+    }
+  }
+
   //  implicit def EitherConverter[L, R](implicit leftConverter: AvroConverter[L],
   //                                     rightConverter: AvroConverter[R],
   //                                     leftType: ClassTag[L],
