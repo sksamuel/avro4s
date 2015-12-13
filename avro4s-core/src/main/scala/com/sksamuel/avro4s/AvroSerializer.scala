@@ -10,92 +10,90 @@ import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-trait Writer[A] {
+trait ToValue[A] {
   def apply(value: A): Any = value
 }
 
-object Writer {
+object ToValue {
 
-  implicit object BooleanWriter extends Writer[Boolean]
+  implicit object BooleanToValue extends ToValue[Boolean]
 
-  implicit object StringWriter extends Writer[String]
+  implicit object StringToValue extends ToValue[String]
 
-  implicit object DoubleWriter extends Writer[Double]
+  implicit object DoubleToValue extends ToValue[Double]
 
-  implicit object FloatWriter extends Writer[Float]
+  implicit object FloatToValue extends ToValue[Float]
 
-  implicit object IntWriter extends Writer[Int]
+  implicit object IntToValue extends ToValue[Int]
 
-  implicit object LongWriter extends Writer[Long]
+  implicit object LongToValue extends ToValue[Long]
 
-  implicit object BigDecimalWriter extends Writer[BigDecimal] {
+  implicit object BigDecimalToValue extends ToValue[BigDecimal] {
     override def apply(value: BigDecimal): ByteBuffer = ByteBuffer.wrap(value.toString.getBytes)
   }
 
-  implicit def EitherWriter[T, U](implicit leftWriter: Writer[T], rightWriter: Writer[U]) = new Writer[Either[T, U]] {
+  implicit def EitherWriter[T, U](implicit leftWriter: ToValue[T], rightWriter: ToValue[U]) = new ToValue[Either[T, U]] {
     override def apply(value: Either[T, U]): Any = value match {
       case Left(left) => leftWriter.apply(left)
       case Right(right) => rightWriter.apply(right)
     }
   }
 
-  implicit def OptionWriter[T](implicit tovalue: Writer[T]) = new Writer[Option[T]] {
+  implicit def OptionWriter[T](implicit tovalue: ToValue[T]) = new ToValue[Option[T]] {
     override def apply(value: Option[T]): Any = value.map(tovalue.apply).orNull
   }
 
-  implicit def ArrayWriter[T](implicit writer: Lazy[Writer[T]]): Writer[Array[T]] = new Writer[Array[T]] {
+  implicit def ArrayWriter[T](implicit writer: Lazy[ToValue[T]]): ToValue[Array[T]] = new ToValue[Array[T]] {
     override def apply(value: Array[T]): Any = value.headOption match {
       case Some(b: Byte) => ByteBuffer.wrap(value.asInstanceOf[Array[Byte]])
       case _ => value.map(writer.value.apply).toSeq.asJavaCollection
     }
   }
 
-  implicit object ByteArrayWriter extends Writer[Array[Byte]] {
+  implicit object ByteArrayToValue$ extends ToValue[Array[Byte]] {
     override def apply(value: Array[Byte]): ByteBuffer = ByteBuffer.wrap(value)
   }
 
-  implicit def SetWriter[T](implicit writer: Lazy[Writer[T]]): Writer[Set[T]] = new Writer[Set[T]] {
+  implicit def SetWriter[T](implicit writer: Lazy[ToValue[T]]): ToValue[Set[T]] = new ToValue[Set[T]] {
     override def apply(values: Set[T]): java.util.Collection[Any] = values.map(writer.value.apply).asJavaCollection
   }
 
-  implicit def SeqWriter[T](implicit writer: Lazy[Writer[T]]): Writer[Seq[T]] = new Writer[Seq[T]] {
+  implicit def SeqWriter[T](implicit writer: Lazy[ToValue[T]]): ToValue[Seq[T]] = new ToValue[Seq[T]] {
     override def apply(values: Seq[T]): Any = values.map(writer.value.apply).asJava
   }
 
-  implicit def ListWriter[T](implicit writer: Lazy[Writer[T]]): Writer[List[T]] = new Writer[List[T]] {
+  implicit def ListWriter[T](implicit writer: Lazy[ToValue[T]]): ToValue[List[T]] = new ToValue[List[T]] {
     override def apply(values: List[T]): Any = values.map(writer.value.apply).asJava
   }
 
-  implicit def MapWriter[T](implicit writer: Lazy[Writer[T]]) = new Writer[Map[String, T]] {
+  implicit def MapWriter[T](implicit writer: Lazy[ToValue[T]]) = new ToValue[Map[String, T]] {
     override def apply(value: Map[String, T]): java.util.Map[String, T] = {
       value.mapValues(writer.value.apply).asInstanceOf[Map[String, T]].asJava
     }
   }
 
-  implicit def GenericWriter[T](implicit ser: Lazy[AvroSerializer[T]]): Writer[T] = new Writer[T] {
+  implicit def GenericWriter[T](implicit ser: Lazy[AvroSerializer[T]]): ToValue[T] = new ToValue[T] {
     override def apply(value: T): GenericRecord = ser.value.toRecord(value)
   }
 }
 
-trait Writes[L <: HList] extends Serializable {
-  def write(record: GenericRecord, value: L): Unit
+trait AvroMapper[T] {
+  def apply(t: T): Map[String, Any]
 }
 
-object Writes {
+object AvroMapper {
 
-  implicit object HNilFields extends Writes[HNil] {
-    override def write(record: GenericRecord, value: HNil): Unit = ()
+  implicit object HNilFields extends AvroMapper[HNil] {
+    override def apply(value: HNil): Map[String, Any] = Map.empty
   }
 
   implicit def HConsFields[Key <: Symbol, V, T <: HList](implicit key: Witness.Aux[Key],
-                                                         writer: Lazy[Writer[V]],
-                                                         remaining: Writes[T],
-                                                         tag: ClassTag[V]): Writes[FieldType[Key, V] :: T] = {
-    new Writes[FieldType[Key, V] :: T] {
-      override def write(record: GenericRecord, value: FieldType[Key, V] :: T): Unit = value match {
-        case h :: t =>
-          record.put(key.value.name, writer.value(h))
-          remaining.write(record, t)
+                                                         writer: Lazy[ToValue[V]],
+                                                         remaining: AvroMapper[T],
+                                                         tag: ClassTag[V]): AvroMapper[FieldType[Key, V] :: T] = {
+    new AvroMapper[FieldType[Key, V] :: T] {
+      override def apply(value: FieldType[Key, V] :: T): Map[String, Any] = value match {
+        case h :: t => remaining(t) + (key.value.name -> writer.value(h))
       }
     }
   }
@@ -108,11 +106,12 @@ trait AvroSerializer[T] {
 object AvroSerializer {
 
   implicit def GenericSer[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
-                                            writes: Writes[Repr],
+                                            writes: AvroMapper[Repr],
                                             schema: Lazy[AvroSchema[T]]) = new AvroSerializer[T] {
     override def toRecord(t: T): GenericRecord = {
+      val map = writes(labl.to(t))
       val r = new org.apache.avro.generic.GenericData.Record(schema.value.apply)
-      writes.write(r, labl.to(t))
+      map.foreach { case (k, v) => r.put(k, v) }
       r
     }
   }

@@ -9,49 +9,49 @@ import shapeless.labelled._
 
 import scala.reflect.ClassTag
 
-trait Reader[T] {
+trait FromValue[T] {
   def read(value: Any): T
 }
 
-object Reader {
+object FromValue {
 
-  implicit object HNilReader extends Reader[HNil] {
+  implicit object HNilFromValue extends FromValue[HNil] {
     override def read(value: Any): HNil = HNil
   }
 
-  implicit object BigDecimalReader extends Reader[BigDecimal] {
+  implicit object BigDecimalFromValue extends FromValue[BigDecimal] {
     override def read(value: Any): BigDecimal = BigDecimal(new String(value.asInstanceOf[ByteBuffer].array))
   }
 
-  implicit object BooleanReader extends Reader[Boolean] {
+  implicit object BooleanFromValue extends FromValue[Boolean] {
     override def read(value: Any): Boolean = value.toString.toBoolean
   }
 
-  implicit object DoubleReader extends Reader[Double] {
+  implicit object DoubleFromValue extends FromValue[Double] {
     override def read(value: Any): Double = value.toString.toDouble
   }
 
-  implicit object FloatReader extends Reader[Float] {
+  implicit object FloatFromValue extends FromValue[Float] {
     override def read(value: Any): Float = value.toString.toFloat
   }
 
-  implicit object IntReader extends Reader[Int] {
+  implicit object IntFromValue extends FromValue[Int] {
     override def read(value: Any): Int = value.toString.toInt
   }
 
-  implicit object LongReader extends Reader[Long] {
+  implicit object LongFromValue extends FromValue[Long] {
     override def read(value: Any): Long = value.toString.toLong
   }
 
-  implicit object StringReader extends Reader[String] {
+  implicit object StringFromValue extends FromValue[String] {
     override def read(value: Any): String = value.toString
   }
 
-  implicit def OptionReader[T](implicit reader: Reader[T]) = new Reader[Option[T]] {
+  implicit def OptionReader[T](implicit reader: FromValue[T]) = new FromValue[Option[T]] {
     override def read(value: Any): Option[T] = Option(value).map(reader.read)
   }
 
-  implicit def ArrayReader[T](implicit reader: Reader[T], tag: ClassTag[T]): Reader[Array[T]] = new Reader[Array[T]] {
+  implicit def ArrayReader[T](implicit reader: FromValue[T], tag: ClassTag[T]): FromValue[Array[T]] = new FromValue[Array[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -61,7 +61,7 @@ object Reader {
     }
   }
 
-  implicit def SetReader[T](implicit reader: Reader[T]): Reader[Set[T]] = new Reader[Set[T]] {
+  implicit def SetReader[T](implicit reader: FromValue[T]): FromValue[Set[T]] = new FromValue[Set[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -71,7 +71,7 @@ object Reader {
     }
   }
 
-  implicit def ListReader[T](implicit reader: Reader[T]): Reader[List[T]] = new Reader[List[T]] {
+  implicit def ListReader[T](implicit reader: FromValue[T]): FromValue[List[T]] = new FromValue[List[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -81,7 +81,7 @@ object Reader {
     }
   }
 
-  implicit def SeqReader[T](implicit reader: Reader[T]): Reader[Seq[T]] = new Reader[Seq[T]] {
+  implicit def SeqReader[T](implicit reader: FromValue[T]): FromValue[Seq[T]] = new FromValue[Seq[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -91,7 +91,7 @@ object Reader {
     }
   }
 
-  implicit def MapReader[T](implicit reader: Reader[T]): Reader[Map[String, T]] = new Reader[Map[String, T]] {
+  implicit def MapReader[T](implicit reader: FromValue[T]): FromValue[Map[String, T]] = new FromValue[Map[String, T]] {
 
     import scala.collection.JavaConverters._
 
@@ -101,7 +101,7 @@ object Reader {
     }
   }
 
-  implicit def GenericReader[T](implicit deser: Lazy[AvroDeserializer[T]]): Reader[T] = new Reader[T] {
+  implicit def GenericReader[T](implicit deser: Lazy[AvroDeserializer[T]]): FromValue[T] = new FromValue[T] {
     override def read(value: Any): T = value match {
       case record: GenericRecord => deser.value.apply(record)
     }
@@ -110,10 +110,10 @@ object Reader {
   import scala.reflect.runtime.universe.WeakTypeTag
 
   implicit def EitherReader[A, B](implicit
-                                  leftReader: Reader[A],
-                                  rightReader: Reader[B],
+                                  leftReader: FromValue[A],
+                                  rightReader: FromValue[B],
                                   leftType: WeakTypeTag[A],
-                                  rightType: WeakTypeTag[B]): Reader[Either[A, B]] = new Reader[Either[A, B]] {
+                                  rightType: WeakTypeTag[B]): FromValue[Either[A, B]] = new FromValue[Either[A, B]] {
     override def read(value: Any): Either[A, B] = {
 
       import scala.reflect.runtime.universe.typeOf
@@ -163,7 +163,7 @@ object AvroDeserializer {
   }
 
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
-                                                       reader: Lazy[Reader[V]],
+                                                       reader: Lazy[FromValue[V]],
                                                        remaining: AvroDeserializer[T]): AvroDeserializer[FieldType[K, V] :: T] = {
     new AvroDeserializer[FieldType[K, V] :: T] {
 
