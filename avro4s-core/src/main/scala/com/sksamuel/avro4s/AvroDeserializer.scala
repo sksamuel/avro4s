@@ -1,8 +1,10 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.generic.GenericRecord
+import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.util.Utf8
 import shapeless._
 import shapeless.labelled._
+import shapeless.ops.record.Keys
 
 import scala.reflect.ClassTag
 
@@ -44,7 +46,7 @@ object Reader {
     override def read(value: Any): Option[T] = Option(value).map(reader.read)
   }
 
-  implicit def ArrayReader[T](implicit reader: Reader[T], tag: ClassTag[T]) = new Reader[Array[T]] {
+  implicit def ArrayReader[T](implicit reader: Reader[T], tag: ClassTag[T]): Reader[Array[T]] = new Reader[Array[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -54,7 +56,7 @@ object Reader {
     }
   }
 
-  implicit def ListReader[T](implicit reader: Reader[T]) = new Reader[List[T]] {
+  implicit def ListReader[T](implicit reader: Reader[T]): Reader[List[T]] = new Reader[List[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -64,7 +66,7 @@ object Reader {
     }
   }
 
-  implicit def SeqReader[T](implicit reader: Reader[T]) = new Reader[Seq[T]] {
+  implicit def SeqReader[T](implicit reader: Reader[T]): Reader[Seq[T]] = new Reader[Seq[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -74,7 +76,7 @@ object Reader {
     }
   }
 
-  implicit def MapReader[T](implicit reader: Reader[T]) = new Reader[Map[String, T]] {
+  implicit def MapReader[T](implicit reader: Reader[T]): Reader[Map[String, T]] = new Reader[Map[String, T]] {
 
     import scala.collection.JavaConverters._
 
@@ -84,34 +86,55 @@ object Reader {
     }
   }
 
-  implicit def GenericReader[T](implicit deser: Lazy[AvroDeserializer[T]]) = new Reader[T] {
+  implicit def GenericReader[T](implicit deser: Lazy[AvroDeserializer[T]]): Reader[T] = new Reader[T] {
     override def read(value: Any): T = value match {
-      case record: GenericRecord => deser.value.apply(record).asInstanceOf[T]
+      case record: GenericRecord => deser.value.apply(record)
     }
   }
 
-  //  implicit def EitherConverter[L, R](implicit leftConverter: AvroConverter[L],
-  //                                     rightConverter: AvroConverter[R],
-  //                                     leftType: ClassTag[L],
-  //                                     rightType: ClassTag[R]) = new AvroConverter[Either[L, R]] {
-  //    def isMatch[T](tag: ClassTag[T], value: Any) = false
-  //    override def convert(value: Any): Either[L, R] = {
-  //      val name = value match {
-  //        case utf8: Utf8 => classOf[String].getCanonicalName
-  //        case true | false => classOf[Boolean].getCanonicalName
-  //        case _: Int => classOf[Int].getCanonicalName
-  //        case _: Long => classOf[Long].getCanonicalName
-  //        case _: Double => classOf[Double].getCanonicalName
-  //        case _: Float => classOf[Float].getCanonicalName
-  //        case _ => value.getClass.getCanonicalName
-  //      }
-  //      if (leftType.runtimeClass.getCanonicalName == name) Left(leftConverter.convert(value))
-  //      else if (rightType.runtimeClass.getCanonicalName == name) Right(rightConverter.convert(value))
-  //      else throw new IllegalArgumentException(s"Value $value of type ${value.getClass} is not compatible with the defined either types")
-  //    }
-  //  }
+  import scala.reflect.runtime.universe.WeakTypeTag
 
+  implicit def EitherReader[A, B](implicit
+                                  leftReader: Reader[A],
+                                  rightReader: Reader[B],
+                                  leftType: WeakTypeTag[A],
+                                  rightType: WeakTypeTag[B]): Reader[Either[A, B]] = new Reader[Either[A, B]] {
+    override def read(value: Any): Either[A, B] = {
 
+      import scala.reflect.runtime.universe.typeOf
+
+      def convert[C](tpe: scala.reflect.runtime.universe.Type): Either[A, B] = {
+        if (leftType.tpe <:< tpe) Left(leftReader.read(value))
+        else if (rightType.tpe <:< tpe) Right(rightReader.read(value))
+        else sys.error(s"Value $value of type ${value.getClass} is not compatible with the defined either types")
+      }
+
+      def typeVals(tpe: scala.reflect.runtime.universe.Type): List[String] = {
+        tpe.members.filter(_.isTerm).map(_.asTerm).filter(_.isVal).map(_.name.decodedName.toString.trim).toList
+      }
+
+      // if we have a generic record, we can't use the type to work out which one it matches,
+      // so we have to compare field names
+      def fromRecord(record: GenericRecord): Either[A, B] = {
+        import scala.collection.JavaConverters._
+        val fieldNames = record.getSchema.getFields.asScala.map(_.name).toList
+        if (typeVals(leftType.tpe).toSet == fieldNames.toSet) Left(leftReader.read(value))
+        else if (typeVals(rightType.tpe).toSet == fieldNames.toSet) Right(rightReader.read(value))
+        else sys.error(s"Value $value of type ${value.getClass} is not compatible with the defined either types")
+      }
+
+      value match {
+        case utf8: Utf8 => convert(typeOf[String])
+        case true | false => convert(typeOf[Boolean])
+        case _: Int => convert(typeOf[Int])
+        case _: Long => convert(typeOf[Long])
+        case _: Double => convert(typeOf[Double])
+        case _: Float => convert(typeOf[Float])
+        case record: GenericData.Record => fromRecord(record)
+        case _ => sys.error(s"Value $value of type ${value.getClass} is not compatible with the defined either types")
+      }
+    }
+  }
 }
 
 trait AvroDeserializer[T] {
