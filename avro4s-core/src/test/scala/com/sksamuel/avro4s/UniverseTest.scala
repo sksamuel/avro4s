@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import java.io.{FileInputStream, FileOutputStream, ByteArrayOutputStream}
+import java.io.FileOutputStream
 import java.nio.file.Paths
 
 import org.scalatest.{Matchers, WordSpec}
@@ -35,17 +35,17 @@ class UniverseTest extends WordSpec with Matchers {
       Faction("Imperial", true, homeworld = Option(Planet("Earth")), shipRanks = Map("baron" -> clipper)),
       Faction("Federation", true, homeworld = Option(Planet("Earth"))),
       Faction("Independant", false, homeworld = None)
+    ),
+    manufacturers = List(
+      Manufacturer(
+        name = "Gutamaya",
+        ships = Seq(clipper)
+      ),
+      Manufacturer(
+        name = "Core Dynamics",
+        ships = Seq(eagle)
+      )
     )
-//    manufacturers = Array(
-//      Manufacturer(
-//        name = "Gutamaya",
-//        ships = Seq(clipper)
-//      ),
-//      Manufacturer(
-//        name = "Core Dynamics",
-//        ships = Seq(eagle)
-//      )
-//    )
     //    cqc = CQC(
     //      maps = Seq(
     //        PlayableMap(name = "level1", bonus = Left("weapon"), stationOrPlanet = Left(Station("orbis"))),
@@ -68,14 +68,14 @@ class UniverseTest extends WordSpec with Matchers {
       avro.close()
     }
     "support complex read" in {
-      val avro = AvroInputStream[Ship](Paths.get("universe.avro"))
+      val avro = AvroInputStream[Universe](Paths.get("universe.avro"))
       val universe = avro.iterator.next()
       universe shouldBe g
     }
   }
 }
 
-case class Universe(factions: Seq[Faction])//, manufacturers: Array[Manufacturer])
+case class Universe(factions: Seq[Faction], manufacturers: List[Manufacturer])
 
 case class Faction(name: String, playable: Boolean, homeworld: Option[Planet], shipRanks: Map[String, Ship] = Map.empty)
 

@@ -70,7 +70,7 @@ object Reader {
 
     override def read(value: Any): Seq[T] = value match {
       case array: Array[T] => array.map(reader.read)
-      case list: java.util.Collection[T] => list.asScala.toSeq.map(reader.read)
+      case list: java.util.Collection[T] => list.asScala.map(reader.read).toList
     }
   }
 
