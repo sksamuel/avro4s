@@ -4,10 +4,11 @@ import java.io.ByteArrayOutputStream
 
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
+import shapeless.Lazy
 
 class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
 
-  def write[T](ts: Seq[T])(implicit schema: AvroSchema[T], ser: AvroSerializer[T]): Array[Byte] = {
+  def write[T](ts: Seq[T])(implicit schema: Lazy[AvroSchema[T]], ser: Lazy[AvroSerializer[T]]): Array[Byte] = {
     val output = new ByteArrayOutputStream
     val avro = AvroOutputStream[T](output)
     avro.write(ts)
@@ -108,10 +109,10 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       in.close()
     }
     "read list of case classes" in {
-      case class Nested(str: String)
+      case class Nested(str: String, double: Double)
       case class Test(list: List[Nested])
 
-      val data = Seq(Test(List(Nested("sammy"), Nested("hammy"))))
+      val data = Seq(Test(List(Nested("sammy", 45), Nested("hammy", 12.3d))))
       val bytes = write(data)
 
       val in = AvroInputStream[Test](bytes)

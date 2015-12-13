@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
-import java.io.ByteArrayOutputStream
+import java.io.{FileInputStream, FileOutputStream, ByteArrayOutputStream}
+import java.nio.file.Paths
 
 import org.scalatest.{Matchers, WordSpec}
 
@@ -34,23 +35,23 @@ class UniverseTest extends WordSpec with Matchers {
       Faction("Imperial", true, homeworld = Option(Planet("Earth")), shipRanks = Map("baron" -> clipper)),
       Faction("Federation", true, homeworld = Option(Planet("Earth"))),
       Faction("Independant", false, homeworld = None)
-    ),
-    manufacturers = Array(
-      Manufacturer(
-        name = "Gutamaya",
-        ships = Seq(clipper)
-      ),
-      Manufacturer(
-        name = "Core Dynamics",
-        ships = Seq(eagle)
-      )
-    ),
-    cqc = CQC(
-      maps = Seq(
-        PlayableMap(name = "level1", bonus = Left("weapon"), stationOrPlanet = Left(Station("orbis"))),
-        PlayableMap(name = "level2", bonus = Right(123l), stationOrPlanet = Right(Planet("earth")))
-      )
     )
+//    manufacturers = Array(
+//      Manufacturer(
+//        name = "Gutamaya",
+//        ships = Seq(clipper)
+//      ),
+//      Manufacturer(
+//        name = "Core Dynamics",
+//        ships = Seq(eagle)
+//      )
+//    )
+    //    cqc = CQC(
+    //      maps = Seq(
+    //        PlayableMap(name = "level1", bonus = Left("weapon"), stationOrPlanet = Left(Station("orbis"))),
+    //        PlayableMap(name = "level2", bonus = Right(123l), stationOrPlanet = Right(Planet("earth")))
+    //      )
+    //   )
   )
 
   "Avro4s" should {
@@ -61,15 +62,20 @@ class UniverseTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support complex write" in {
-      val output = new ByteArrayOutputStream
+      val output = new FileOutputStream("universe.avro")
       val avro = AvroOutputStream[Universe](output)
       avro.write(g)
       avro.close()
     }
+    "support complex read" in {
+      val avro = AvroInputStream[Ship](Paths.get("universe.avro"))
+      val universe = avro.iterator.next()
+      universe shouldBe g
+    }
   }
 }
 
-case class Universe(factions: Seq[Faction], manufacturers: Array[Manufacturer], cqc: CQC)
+case class Universe(factions: Seq[Faction])//, manufacturers: Array[Manufacturer])
 
 case class Faction(name: String, playable: Boolean, homeworld: Option[Planet], shipRanks: Map[String, Ship] = Map.empty)
 
@@ -81,6 +87,6 @@ case class Manufacturer(name: String, ships: Seq[Ship])
 
 case class Ship(name: String, role: String, maxSpeed: Int, jumpRange: Double, hardpoints: Map[String, Int], defaultWeapon: Option[String])
 
-case class CQC(maps: Seq[PlayableMap])
-
-case class PlayableMap(name: String, bonus: Either[String, Long], stationOrPlanet: Either[Station, Planet])
+//case class CQC(maps: Seq[PlayableMap])
+//
+//case class PlayableMap(name: String, bonus: Either[String, Long], stationOrPlanet: Either[Station, Planet])

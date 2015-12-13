@@ -79,13 +79,14 @@ object Reader {
     import scala.collection.JavaConverters._
 
     override def read(value: Any): Map[String, T] = value match {
-      case map: java.util.Map[Any, Any] => map.asScala.toMap.map { case (k, v) => k.toString -> reader.read(v) }
+      case map: java.util.Map[Any, Any] =>
+        map.asScala.toMap.map { case (k, v) => k.toString -> reader.read(v) }
     }
   }
 
-  implicit def GenericReader[T](implicit deser: AvroDeserializer[T]) = new Reader[T] {
+  implicit def GenericReader[T](implicit deser: Lazy[AvroDeserializer[T]]) = new Reader[T] {
     override def read(value: Any): T = value match {
-      case record: GenericRecord => deser(record)
+      case record: GenericRecord => deser.value.apply(record).asInstanceOf[T]
     }
   }
 
@@ -138,7 +139,7 @@ object AvroDeserializer {
   }
 
   implicit def GenericSer[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
-                                            deser: AvroDeserializer[Repr]) = new AvroDeserializer[T] {
-    override def apply(record: GenericRecord): T = labl.from(deser.apply(record))
+                                            deser: Lazy[AvroDeserializer[Repr]]) = new AvroDeserializer[T] {
+    override def apply(record: GenericRecord): T = labl.from(deser.value.apply(record))
   }
 }
