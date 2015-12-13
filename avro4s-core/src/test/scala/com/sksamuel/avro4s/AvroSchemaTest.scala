@@ -107,9 +107,22 @@ class AvroSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a List of records" in {
-      case class Nested(nested: String, double: Double)
+      case class Nested(str: String, double: Double)
       case class Test(list: List[Nested])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/listrecords.avsc"))
+      val schema = AvroSchema[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for a Set of records" in {
+      case class Nested(str: String, double: Double)
+      case class Test(set: Set[Nested])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setrecords.avsc"))
+      val schema = AvroSchema[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for a Set of strings" in {
+      case class Test(set: Set[String])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setstrings.avsc"))
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }

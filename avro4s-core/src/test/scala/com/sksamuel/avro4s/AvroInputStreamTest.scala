@@ -110,6 +110,27 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       in.iterator.toList shouldBe data.toList
       in.close()
     }
+    "read set of strings" in {
+      case class Test(set: Set[String])
+
+      val data = Seq(Test(Set("sammy", "hammy")))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read set of case classes" in {
+      case class Nested(str: String, double: Double)
+      case class Test(set: Set[Nested])
+
+      val data = Seq(Test(Set(Nested("sammy", 45), Nested("hammy", 12.3d))))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
     "read list of ints" in {
       case class Test(list: List[Int])
 

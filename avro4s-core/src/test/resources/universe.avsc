@@ -23,6 +23,9 @@
             "fields" : [ {
               "name" : "name",
               "type" : "string"
+            }, {
+              "name" : "system",
+              "type" : "string"
             } ]
           } ]
         }, {
@@ -56,8 +59,22 @@
               } ]
             }
           }
+        }, {
+          "name" : "area",
+          "type" : {
+            "type" : "bytes",
+            "logicalType" : "decimal",
+            "scale" : "2",
+            "precision" : "8"
+          }
         } ]
       }
+    }
+  }, {
+    "name" : "rankings",
+    "type" : {
+      "type" : "array",
+      "items" : "string"
     }
   }, {
     "name" : "manufacturers",
@@ -110,6 +127,12 @@
           }
         }
       } ]
+    }
+  }, {
+    "name" : "nebulae",
+    "type" : {
+      "type" : "array",
+      "items" : "string"
     }
   } ]
 }

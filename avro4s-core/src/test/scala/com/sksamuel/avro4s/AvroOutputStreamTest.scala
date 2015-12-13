@@ -168,6 +168,33 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       data.head.get("str").toString shouldBe "sam"
       data.last.get("str").toString shouldBe "ham"
     }
+    "write Set of primitives" in {
+      case class Test(set: Set[Double])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Set(1d, 9d, 9d, 9d, 9d)))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("set").asInstanceOf[java.util.List[Double]].asScala.toSet shouldBe Set(1d, 9d)
+    }
+    "write Set of nested classes" in {
+      case class Nested(str: String, boolean: Boolean)
+      case class Test(set: Set[Nested])
+
+      val set = Set(Nested("sam", true), Nested("ham", false))
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(set))
+      avro.close()
+
+      val record = read[Test](output)
+      val actual = record.get("set").asInstanceOf[java.util.List[GenericRecord]].asScala.toSet
+      actual.map(_.get("str").toString) shouldBe Set("sam", "ham")
+      actual.map(_.get("boolean").toString.toBoolean) shouldBe Set(true, false)
+    }
     "write list of primitives" in {
       case class Test(list: List[Double])
 

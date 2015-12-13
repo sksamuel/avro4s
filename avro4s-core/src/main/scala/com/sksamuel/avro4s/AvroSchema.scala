@@ -64,6 +64,10 @@ object ToSchema {
     override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
   }
 
+  implicit def SetToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Set[T]] = new ToSchema[Set[T]] {
+    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
+  }
+
   implicit def ArrayToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Array[T]] = new ToSchema[Array[T]] {
     override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
   }

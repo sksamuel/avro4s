@@ -54,6 +54,10 @@ object Writer {
     override def apply(value: Array[Byte]): ByteBuffer = ByteBuffer.wrap(value)
   }
 
+  implicit def SetWriter[T](implicit writer: Lazy[Writer[T]]): Writer[Set[T]] = new Writer[Set[T]] {
+    override def apply(values: Set[T]): java.util.Collection[Any] = values.map(writer.value.apply).asJavaCollection
+  }
+
   implicit def SeqWriter[T](implicit writer: Lazy[Writer[T]]): Writer[Seq[T]] = new Writer[Seq[T]] {
     override def apply(values: Seq[T]): Any = values.map(writer.value.apply).asJava
   }

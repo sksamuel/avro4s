@@ -61,6 +61,16 @@ object Reader {
     }
   }
 
+  implicit def SetReader[T](implicit reader: Reader[T]): Reader[Set[T]] = new Reader[Set[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def read(value: Any): Set[T] = value match {
+      case array: Array[T] => array.map(reader.read).toSet
+      case list: java.util.Collection[T] => list.asScala.map(reader.read).toSet
+    }
+  }
+
   implicit def ListReader[T](implicit reader: Reader[T]): Reader[List[T]] = new Reader[List[T]] {
 
     import scala.collection.JavaConverters._

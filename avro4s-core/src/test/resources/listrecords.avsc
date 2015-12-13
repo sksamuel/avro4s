@@ -12,13 +12,13 @@
            "name" : "Nested",
              "fields" : [
                {
-                 "name" : "nested",
+                 "name" : "str",
                  "type" : "string"
                },
-                {
-                                "name" : "double",
-                                "type" : "double"
-                              }
+               {
+                 "name" : "double",
+                 "type" : "double"
+               }
              ]
           }
       }

@@ -11,15 +11,17 @@ import org.scalatest.{Matchers, WordSpec}
   * Currently tests:
   *
   * - Strings,
-  * - Ints
+  * - ints
+  * - longs
   * - doubles
   * - booleans
-  * - byte arrays
-  * - longs
+  * - big decimals
+  * - seqs of Strings
   * - seqs of case classes
-  * - arrays of case classes
+  * - lists of case classes
   * - Maps of Strings to Ints
   * - Maps of Strings to Case Classes
+  * - Sets of Strings
   * - Options of Strings
   * - Options of Case classes
   * - Either[A,B] where A and B are both case classes
@@ -29,13 +31,16 @@ class UniverseTest extends WordSpec with Matchers {
 
   val clipper = Ship(name = "Imperial Clipper", role = "fighter escort", maxSpeed = 430, jumpRange = 8.67, hardpoints = Map("medium" -> 4, "large" -> 2), defaultWeapon = Some("pulse laser"))
   val eagle = Ship(name = "Eagle", role = "fighter", maxSpeed = 350, jumpRange = 15.4, hardpoints = Map("small" -> 3), defaultWeapon = None)
+  val earth = Planet("Earth", "Sol")
 
   val g = Universe(
     factions = Seq(
-      Faction("Imperial", true, homeworld = Option(Planet("Earth")), shipRanks = Map("baron" -> clipper)),
-      Faction("Federation", true, homeworld = Option(Planet("Earth"))),
-      Faction("Independant", false, homeworld = None)
+      Faction("Imperial", true, homeworld = Option(earth), shipRanks = Map("baron" -> clipper), area = 4461244.553),
+      Faction("Federation", true, homeworld = Option(earth), area = 3969244.184),
+      Faction("Independant", false, homeworld = None, area = 15662.186)
     ),
+    rankings = Seq("harmless", "competent", "deadly", "dangerous", "elite"),
+    nebulae = Set("horsehead", "orion", "barnards loop"),
     manufacturers = List(
       Manufacturer(
         name = "Gutamaya",
@@ -45,13 +50,13 @@ class UniverseTest extends WordSpec with Matchers {
         name = "Core Dynamics",
         ships = Seq(eagle)
       )
+    ),
+    cqc = CQC(
+      maps = Seq(
+        PlayableMap(name = "level1", bonus = Left("weapon"), stationOrPlanet = Left(Station("orbis"))),
+        PlayableMap(name = "level2", bonus = Right(123l), stationOrPlanet = Right(earth))
+      )
     )
-    //    cqc = CQC(
-    //      maps = Seq(
-    //        PlayableMap(name = "level1", bonus = Left("weapon"), stationOrPlanet = Left(Station("orbis"))),
-    //        PlayableMap(name = "level2", bonus = Right(123l), stationOrPlanet = Right(Planet("earth")))
-    //      )
-    //   )
   )
 
   "Avro4s" should {
@@ -75,11 +80,11 @@ class UniverseTest extends WordSpec with Matchers {
   }
 }
 
-case class Universe(factions: Seq[Faction], manufacturers: List[Manufacturer])
+case class Universe(factions: Seq[Faction], rankings: Seq[String], manufacturers: List[Manufacturer], cqc: CQC, nebulae: Set[String])
 
-case class Faction(name: String, playable: Boolean, homeworld: Option[Planet], shipRanks: Map[String, Ship] = Map.empty)
+case class Faction(name: String, playable: Boolean, homeworld: Option[Planet], shipRanks: Map[String, Ship] = Map.empty, area: BigDecimal)
 
-case class Planet(name: String)
+case class Planet(name: String, system: String)
 
 case class Station(name: String)
 
@@ -87,6 +92,6 @@ case class Manufacturer(name: String, ships: Seq[Ship])
 
 case class Ship(name: String, role: String, maxSpeed: Int, jumpRange: Double, hardpoints: Map[String, Int], defaultWeapon: Option[String])
 
-//case class CQC(maps: Seq[PlayableMap])
-//
-//case class PlayableMap(name: String, bonus: Either[String, Long], stationOrPlanet: Either[Station, Planet])
+case class CQC(maps: Seq[PlayableMap])
+
+case class PlayableMap(name: String, bonus: Either[String, Long], stationOrPlanet: Either[Station, Planet])
