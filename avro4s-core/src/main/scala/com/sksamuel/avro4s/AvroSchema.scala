@@ -102,7 +102,7 @@ object AvroSchemaFields {
   }
 
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
-                                                       builder: Lazy[ToSchema[V]],
+                                                       toschema: Lazy[ToSchema[V]],
                                                        remaining: AvroSchemaFields[T]): AvroSchemaFields[FieldType[K, V] :: T] = {
     new AvroSchemaFields[FieldType[K, V] :: T] {
       def apply: List[Schema.Field] = {
@@ -110,7 +110,7 @@ object AvroSchemaFields {
           val field = new Schema.Field(key.value.name, schema, null, null)
           field
         }
-        builder.value.schema.map(fieldFn).toList ++ remaining()
+        toschema.value.schema.map(fieldFn).toList ++ remaining()
       }
     }
   }

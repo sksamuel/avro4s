@@ -6,7 +6,6 @@ object Build extends Build {
   val org = "com.sksamuel.avro4s"
   val appVersion = "1.0.0-SNAPSHOT"
 
-  val paradiseVersion = "2.1.0-M5"
   val ScalaVersion = "2.11.7"
   val ScalatestVersion = "2.2.5"
   val Slf4jVersion = "1.7.12"

@@ -7,16 +7,21 @@ import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput, SeekableFil
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import shapeless.Lazy
 
+import scala.util.Try
+
 class AvroInputStream[T](in: SeekableInput)(implicit schema: Lazy[AvroSchema[T]], deser: Lazy[AvroReader[T]]) {
 
   val datumReader = new GenericDatumReader[GenericRecord](schema.value())
   val dataFileReader = new DataFileReader[GenericRecord](in: SeekableInput, datumReader)
 
-  def iterator: Iterator[T] = {
-    new Iterator[T] {
-      override def hasNext: Boolean = dataFileReader.hasNext
-      override def next(): T = deser.value(dataFileReader.next)
-    }
+  def iterator: Iterator[T] = new Iterator[T] {
+    override def hasNext: Boolean = dataFileReader.hasNext
+    override def next(): T = deser.value(dataFileReader.next)
+  }
+
+  def tryIterator: Iterator[Try[T]] = new Iterator[Try[T]] {
+    override def hasNext: Boolean = dataFileReader.hasNext
+    override def next(): Try[T] = Try(deser.value(dataFileReader.next))
   }
 
   def close(): Unit = in.close()
