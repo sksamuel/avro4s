@@ -74,6 +74,15 @@ object Reader {
     }
   }
 
+  implicit def MapReader[T](implicit reader: Reader[T]) = new Reader[Map[String, T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def read(value: Any): Map[String, T] = value match {
+      case map: java.util.Map[Any, Any] => map.asScala.toMap.map { case (k, v) => k.toString -> reader.read(v) }
+    }
+  }
+
   implicit def GenericReader[T](implicit deser: AvroDeserializer[T]) = new Reader[T] {
     override def read(value: Any): T = value match {
       case record: GenericRecord => deser(record)

@@ -16,6 +16,67 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   }
 
   "AvroDeserializer" should {
+    "read maps of booleans" in {
+      case class Test(map: Map[String, Boolean])
+
+      val data = Seq(Test(Map("sammy" -> true, "hammy" -> false)))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read maps of seqs of strings" in {
+      case class Test(map: Map[String, Seq[String]])
+
+      val data = Seq(Test(Map("sammy" -> Seq("foo", "moo"), "hammy" -> Seq("boo", "goo"))))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read maps of options" in {
+      case class Test(map: Map[String, Option[String]])
+
+      val data = Seq(Test(Map("sammy" -> None, "hammy" -> Some("foo"))))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read maps of case classes" in {
+      case class Nested(double: Double)
+      case class Test(map: Map[String, Nested])
+
+      val data = Seq(Test(Map("sammy" -> Nested(124.5), "hammy" -> Nested(9))))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read maps of strings" in {
+      case class Test(map: Map[String, String])
+
+      val data = Seq(Test(Map("sammy" -> "foo", "hammy" -> "boo")))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read maps of ints" in {
+      case class Test(map: Map[String, Int])
+
+      val data = Seq(Test(Map("sammy" -> 1, "hammy" -> 2)))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
     "read list of ints" in {
       case class Test(list: List[Int])
 
