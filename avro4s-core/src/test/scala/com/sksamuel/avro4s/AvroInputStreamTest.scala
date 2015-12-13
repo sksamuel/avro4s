@@ -17,6 +17,16 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   }
 
   "AvroDeserializer" should {
+    "read big decimals" in {
+      case class Test(decimal: BigDecimal)
+
+      val data = Seq(Test(1235.52344), Test(1234))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
     "read eithers of nested case classes" in {
       case class Foo(long: Long)
       case class Goo(double: Double)

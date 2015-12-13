@@ -1,10 +1,11 @@
 package com.sksamuel.avro4s
 
+import java.nio.ByteBuffer
+
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import shapeless._
 import shapeless.labelled._
-import shapeless.ops.record.Keys
 
 import scala.reflect.ClassTag
 
@@ -18,28 +19,32 @@ object Reader {
     override def read(value: Any): HNil = HNil
   }
 
-  implicit object StringReader extends Reader[String] {
-    override def read(value: Any): String = value.toString
+  implicit object BigDecimalReader extends Reader[BigDecimal] {
+    override def read(value: Any): BigDecimal = BigDecimal(new String(value.asInstanceOf[ByteBuffer].array))
   }
 
   implicit object BooleanReader extends Reader[Boolean] {
     override def read(value: Any): Boolean = value.toString.toBoolean
   }
 
-  implicit object FloatReader extends Reader[Float] {
-    override def read(value: Any): Float = value.toString.toFloat
+  implicit object DoubleReader extends Reader[Double] {
+    override def read(value: Any): Double = value.toString.toDouble
   }
 
-  implicit object LongReader extends Reader[Long] {
-    override def read(value: Any): Long = value.toString.toLong
+  implicit object FloatReader extends Reader[Float] {
+    override def read(value: Any): Float = value.toString.toFloat
   }
 
   implicit object IntReader extends Reader[Int] {
     override def read(value: Any): Int = value.toString.toInt
   }
 
-  implicit object DoubleReader extends Reader[Double] {
-    override def read(value: Any): Double = value.toString.toDouble
+  implicit object LongReader extends Reader[Long] {
+    override def read(value: Any): Long = value.toString.toLong
+  }
+
+  implicit object StringReader extends Reader[String] {
+    override def read(value: Any): String = value.toString
   }
 
   implicit def OptionReader[T](implicit reader: Reader[T]) = new Reader[Option[T]] {
