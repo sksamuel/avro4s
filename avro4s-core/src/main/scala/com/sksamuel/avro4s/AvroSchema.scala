@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import java.io.{InputStream, File}
 import java.util
 
 import org.apache.avro.Schema
@@ -147,4 +148,8 @@ object AvroSchema {
   }
 
   def apply[T](implicit builder: Lazy[AvroSchema[T]]): Schema = builder.value.apply()
+
+  def apply(str: String): Schema = new Schema.Parser().parse(str)
+  def apply(is: InputStream): Schema = new Schema.Parser().parse(is)
+  def apply(file: File): Schema = new Schema.Parser().parse(file)
 }
