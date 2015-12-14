@@ -13,6 +13,7 @@ The features of the library are:
 * Boilerplate free deserialization of avro to classes
 
 ## Changelog
+* 1.0.0 - Migrated all macros to use Shapeless. Fixed some trickier nested case class issues. Simplified API. Added support for java enums.
 * 0.94.0 - Added support for writing/reading Either and Option in serializer/deserializer. Fixed bug with array serialization.
 * 0.93.0 - Added support for either and options in schema generator. Added support for aliases via scala annotation.
 * 0.92.0 - Added support for unions (and unions of nulls to Options) and enums to class generator.
