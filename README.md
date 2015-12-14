@@ -34,6 +34,47 @@ import com.sksamuel.avro4s.AvroSchema
 val schema = AvroSchema[Pizza]
 ```
 
+Which will output the following schema:
+
+```json
+{
+  "type" : "record",
+  "name" : "Pizza",
+  "namespace" : "com.sksamuel.avro4s.json",
+  "fields" : [ {
+    "name" : "name",
+    "type" : "string"
+  }, {
+    "name" : "ingredients",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "Ingredient",
+        "fields" : [ {
+          "name" : "name",
+          "type" : "string"
+        }, {
+          "name" : "sugar",
+          "type" : "double"
+        }, {
+          "name" : "fat",
+          "type" : "double"
+        } ]
+      }
+    }
+  }, {
+    "name" : "vegetarian",
+    "type" : "boolean"
+  }, {
+    "name" : "vegan",
+    "type" : "boolean"
+  }, {
+    "name" : "calories",
+    "type" : "int"
+  } ]
+}
+```
 You can see that the schema generator handles nested case classes, sequences, primitives, etc. For a full list of supported object types, see the table later.
 
 ## Serializing
