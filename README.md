@@ -18,6 +18,23 @@ The features of the library are:
 * 0.93.0 - Added support for either and options in schema generator. Added support for aliases via scala annotation.
 * 0.92.0 - Added support for unions (and unions of nulls to Options) and enums to class generator.
 
+## Schemas
+
+Avro4s allows us to generate schemas directly from classes in a totally straightforward way. Let's define some classes.
+
+`scala
+case class Pizza(name: String, ingredients: Seq[Ingredient], vegetarian: Boolean, vegan: Boolean, calories: Int)
+case class Ingredient(name: String, sugar: Double, fat: Double)
+`
+
+Next is to invoke the apply method of AvroSchema passing in the top level type. This will return an `org.apache.avro.Schema` instance, from which you can output, write to a file etc.
+
+`scala
+val schema = AvroSchema[Pizza]
+`
+
+You can see that the schema generator handles nested case classes, sequences, primitives, etc. For a full list of supported object types, see the table later.
+
 ## Serializing
 
 Avro4s allows us to easily serialize Scala case classes into an avro stream. 
