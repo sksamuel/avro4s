@@ -122,7 +122,7 @@ Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4))
 |String|string or fixed|
 |Int|int|
 |Long|long|
-|BigDecimal|[decimal](https://avro.apache.org/docs/1.7.7/spec.html#Decimal)|
+|BigDecimal|[decimal](https://avro.apache.org/docs/1.7.7/spec.html#Decimal) with scale 2 and precision 8|
 |Double|double|
 |Float|float|
 |sealed trait T|enum|
