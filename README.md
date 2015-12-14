@@ -37,27 +37,15 @@ You can see that the schema generator handles nested case classes, sequences, pr
 
 ## Serializing
 
-Avro4s allows us to easily serialize Scala case classes into an avro stream. 
-
-Lets first create some instances to serializer:
+Avro4s allows us to easily serialize objects using an instance of `AvroOutputStream` which we write to, and close, just like you would any regular output stream. An `AvroOutputStream` can be created from a `File`, `Path`, or by wrapping another `OutputStream`. When we create one, we specify the type of objects that we will be serializing. Eg, to serialize instances of our Pizza class:
 
 ```scala
-case class Artist(name: String, yearOfBirth: Int, yearOfDeath: Int, birthplace: String, methods: Seq[String])
-val michelangelo = Artist("michelangelo", 1475, 1564, "Caprese", Seq("sculpture", "fresco"))
-val raphael = Artist("raphael", 1483, 1520, "Florence", Seq("painter", "architect"))
-```
-
-Then we can create an `AvroOutputStream` which we write to, and close, just like you would any regular output stream. Note that when we create the output stream we must specify the type it will accept. We first include the `import AvroImplicits._` line as the macros that generate the writers and schemas are located there.
-
-```scala
-import AvroImplicits._ // contains the macros that do the magic
-import java.nio.file.Paths
-import com.sksamuel.avro4s.AvroOutputStream 
-
-val path = Paths.get("artists.avro")
-val out = AvroOutputStream[Artist](path)
-out.write(painters)
-out.close()
+val pepperoni = Pizza("pepperoni", ...)
+val hawaiian = Pizza("hawaiian", ...)
+val os = AvroOutputStream[Pizza](new File("pizzas.avro"))
+os.write(Seq(pepperoni, hawaiian))
+os.flush()
+os.close()
 ```
 
 ## Deserializing
