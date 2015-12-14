@@ -1,0 +1,9 @@
+{
+  "type" : "record",
+  "name" : "MyClass",
+  "namespace" : "com.test.avro",
+  "fields" : [ {
+    "name" : "foo",
+    "type" : [ "string", "null" ]
+  } ]
+}
