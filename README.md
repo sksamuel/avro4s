@@ -152,9 +152,9 @@ Features to be added before 1.0 release
 
 ## Using avro4s in your project
 
-Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:0.93.0'`
+Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.0.0'`
 
-SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "0.93.0"`
+SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.0.0"`
 
 Maven:
 
@@ -162,7 +162,7 @@ Maven:
 <dependency>
     <groupId>com.sksamuel.avro4s</groupId>
     <artifactId>avro4s-core_2.11</artifactId>
-    <version>0.93.0</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
