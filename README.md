@@ -61,51 +61,6 @@ println(painters) //
 in.close()
 ```
 
-## Schemas
-
-To generate a schema for a given case class, we need to import a schema implicit and that's all.
-
-```scala
-implicit val s = AvroImplicits.schemaFor[Artist]
-println(s.schema)
-```
-
-would output
-
-```json
-{  
-   "type":"record",
-   "name":"Artist",
-   "namespace":"com.sksamuel.avro4s",
-   "fields":[  
-      {  
-         "name":"name",
-         "type":"string"
-      },
-      {  
-         "name":"yearOfBirth",
-         "type":"int"
-      },
-      {  
-         "name":"yearOfDeath",
-         "type":"int"
-      },
-      {  
-         "name":"birthplace",
-         "type":"string"
-      },
-      {  
-         "name":"styles",
-         "type":{  
-            "type":"array",
-            "items":"string"
-         }
-      }
-   ]
-}
-```
-
-
 ## Type Mappings
 
 |Scala Type|Avro Type|
