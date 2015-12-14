@@ -82,16 +82,16 @@ You can see that the schema generator handles nested case classes, sequences, pr
 Avro4s allows us to easily serialize case classes using an instance of `AvroOutputStream` which we write to, and close, just like you would any regular output stream. An `AvroOutputStream` can be created from a `File`, `Path`, or by wrapping another `OutputStream`. When we create one, we specify the type of objects that we will be serializing. Eg, to serialize instances of our Pizza class:
 
 ```scala
-  import java.io.File
-  import com.sksamuel.avro4s.AvroOutputStream
+import java.io.File
+import com.sksamuel.avro4s.AvroOutputStream
 
-  val pepperoni = Pizza("pepperoni", Seq(Ingredient("pepperoni", 12, 4.4), Ingredient("onions", 1, 0.4)), false, false, 98)
-  val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pineapple", 5.2, 0.2)), false, false, 91)
-  
-  val os = AvroOutputStream[Pizza](new File("pizzas.avro"))
-  os.write(Seq(pepperoni, hawaiian))
-  os.flush()
-  os.close()
+val pepperoni = Pizza("pepperoni", Seq(Ingredient("pepperoni", 12, 4.4), Ingredient("onions", 1, 0.4)), false, false, 98)
+val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pineapple", 5.2, 0.2)), false, false, 91)
+
+val os = AvroOutputStream[Pizza](new File("pizzas.avro"))
+os.write(Seq(pepperoni, hawaiian))
+os.flush()
+os.close()
 ```
 
 ## Deserializing
@@ -99,10 +99,18 @@ Avro4s allows us to easily serialize case classes using an instance of `AvroOutp
 With avro4s we can easily deserialize a file back into Scala case classes. Given the pizzas.avro file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class. We first create an instance of the input stream specifying the types we will read back, and the file. Then we call iterator which will return a lazy iterator (reads on demand) of the data in the file. In this example, we'll load all data at once from the iterator via `toSet`.
 
 ```scala
+import com.sksamuel.avro4s.AvroInputStream
+
 val is = AvroInputStream[Pizza](new File("pizzas.avro"))
 val pizzas = is.iterator.toSet
-println(painters) // should print out pepperoni and hawaiian
 is.close()
+println(pizzas.mkString("\n"))
+```
+
+Will print out:
+
+```scala
+Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4)),false,false,500) Pizza(hawaiian,List(Ingredient(ham,1.5,5.6), Ingredient(pineapple,5.2,0.2)),false,false,500)
 ```
 
 ## Type Mappings
