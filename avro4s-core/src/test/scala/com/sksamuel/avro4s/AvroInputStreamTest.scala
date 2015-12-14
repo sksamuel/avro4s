@@ -16,7 +16,17 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
     output.toByteArray
   }
 
-  "AvroDeserializer" should {
+  "AvroInputStream" should {
+    "read enums" in {
+      case class Test(wine: Wine)
+
+      val data = Seq(Test(Wine.Malbec), Test(Wine.Shiraz))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Test](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
     "read big decimals" in {
       case class Test(decimal: BigDecimal)
 

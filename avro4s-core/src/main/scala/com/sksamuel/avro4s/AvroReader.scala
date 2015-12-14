@@ -51,6 +51,10 @@ object FromValue {
     override def apply(value: Any): Option[T] = Option(value).map(fromvalue.apply)
   }
 
+  implicit def EnumReader[E <: Enum[E]](implicit tag: ClassTag[E]) = new FromValue[E] {
+    override def apply(value: Any): E = Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], value.toString)
+  }
+
   implicit def ArrayReader[T](implicit fromvalue: FromValue[T],
                               tag: ClassTag[T]): FromValue[Array[T]] = new FromValue[Array[T]] {
 

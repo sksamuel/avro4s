@@ -4,7 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 class AvroSchemaTest extends WordSpec with Matchers {
 
-  "SchemaGenerator.schemaFor" should {
+  "AvroSchema" should {
     "accept java enums" in {
       case class Test(wine: Wine)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/enum.avsc"))
