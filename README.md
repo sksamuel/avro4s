@@ -52,7 +52,7 @@ os.close()
 With avro4s we can easily deserialize a file back into Scala case classes. Given the pizzas.avro file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class. We first create an instance of the input stream specifying the types we will read back, and the file. Then we call iterator which will return a lazy iterator (reads on demand) of the data in the file. In this example, we'll load all data at once from the iterator via `toSet`.
 
 ```scala
-val is = AvroInputStream[Artist](new File("pizzas.avro"))
+val is = AvroInputStream[Pizza](new File("pizzas.avro"))
 val pizzas = is.iterator.toSet
 println(painters) // should print out pepperoni and hawaiian
 is.close()
