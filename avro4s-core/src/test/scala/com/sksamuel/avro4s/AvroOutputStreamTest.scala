@@ -22,7 +22,18 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
   }
 
   "AvroOutputStream" should {
-    "write out big decimal" in {
+    "support java enums" in {
+      case class Test(wine: Wine)
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Test](output)
+      avro.write(Test(Wine.Malbec))
+      avro.close()
+
+      val record = read[Test](output)
+      record.get("wine").toString shouldBe Wine.Malbec.name
+    }
+    "write big decimal" in {
       case class Test(dec: BigDecimal)
 
       val output = new ByteArrayOutputStream

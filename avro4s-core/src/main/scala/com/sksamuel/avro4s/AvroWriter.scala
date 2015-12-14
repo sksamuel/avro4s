@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-trait ToValue[A] {
+trait ToValue[-A] {
   def apply(value: A): Any = value
 }
 
@@ -62,14 +62,14 @@ object ToValue {
     override def apply(values: Seq[T]): Any = values.map(tovalue.value.apply).asJava
   }
 
-  implicit def ListWriter[T](implicit tovalue: Lazy[ToValue[T]]): ToValue[List[T]] = new ToValue[List[T]] {
-    override def apply(values: List[T]): Any = values.map(tovalue.value.apply).asJava
-  }
-
   implicit def MapWriter[T](implicit tovalue: Lazy[ToValue[T]]) = new ToValue[Map[String, T]] {
     override def apply(value: Map[String, T]): java.util.Map[String, T] = {
       value.mapValues(tovalue.value.apply).asInstanceOf[Map[String, T]].asJava
     }
+  }
+
+  implicit def EnumWriter[E <: Enum[E]]: ToValue[Enum[E]] = new ToValue[Enum[E]] {
+    override def apply(value: Enum[E]): Any = value.name
   }
 
   implicit def GenericWriter[T](implicit writer: Lazy[AvroWriter[T]]): ToValue[T] = new ToValue[T] {
