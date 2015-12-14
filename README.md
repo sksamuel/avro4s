@@ -82,12 +82,16 @@ You can see that the schema generator handles nested case classes, sequences, pr
 Avro4s allows us to easily serialize case classes using an instance of `AvroOutputStream` which we write to, and close, just like you would any regular output stream. An `AvroOutputStream` can be created from a `File`, `Path`, or by wrapping another `OutputStream`. When we create one, we specify the type of objects that we will be serializing. Eg, to serialize instances of our Pizza class:
 
 ```scala
-val pepperoni = Pizza("pepperoni", ...)
-val hawaiian = Pizza("hawaiian", ...)
-val os = AvroOutputStream[Pizza](new File("pizzas.avro"))
-os.write(Seq(pepperoni, hawaiian))
-os.flush()
-os.close()
+  import java.io.File
+  import com.sksamuel.avro4s.AvroOutputStream
+
+  val pepperoni = Pizza("pepperoni", Seq(Ingredient("pepperoni", 12, 4.4), Ingredient("onions", 1, 0.4)), false, false, 98)
+  val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pineapple", 5.2, 0.2)), false, false, 91)
+  
+  val os = AvroOutputStream[Pizza](new File("pizzas.avro"))
+  os.write(Seq(pepperoni, hawaiian))
+  os.flush()
+  os.close()
 ```
 
 ## Deserializing
