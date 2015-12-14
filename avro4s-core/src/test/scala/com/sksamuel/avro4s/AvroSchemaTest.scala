@@ -5,6 +5,12 @@ import org.scalatest.{Matchers, WordSpec}
 class AvroSchemaTest extends WordSpec with Matchers {
 
   "SchemaGenerator.schemaFor" should {
+    "accept java enums" in {
+      case class Test(wine: Wine)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/enum.avsc"))
+      val schema = AvroSchema[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
     "accept booleans" in {
       case class Test(booly: Boolean)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/boolean.avsc"))
@@ -174,4 +180,3 @@ class AvroSchemaTest extends WordSpec with Matchers {
     }
   }
 }
-

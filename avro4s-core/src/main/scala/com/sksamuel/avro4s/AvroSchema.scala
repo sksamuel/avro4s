@@ -7,87 +7,91 @@ import org.apache.avro.Schema
 import shapeless.labelled._
 import shapeless._
 
-trait ToSchema[T] {
-  def schema: Option[Schema]
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
+
+trait ToSchema[-T] {
+  def apply(): Schema
 }
 
 object ToSchema {
 
   implicit object BigDecimalToSchema extends ToSchema[BigDecimal] {
-    override def schema: Option[Schema] = {
+    override def apply(): Schema = {
       val schema = Schema.create(Schema.Type.BYTES)
       schema.addProp("logicalType", "decimal")
       schema.addProp("scale", "2")
       schema.addProp("precision", "8")
-      Some(schema)
+      schema
     }
   }
 
   implicit object BooleanToSchema extends ToSchema[Boolean] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BOOLEAN))
+    override def apply(): Schema = Schema.create(Schema.Type.BOOLEAN)
   }
 
   implicit object ByteArrayToSchema extends ToSchema[Array[Byte]] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.BYTES))
+    override def apply(): Schema = Schema.create(Schema.Type.BYTES)
   }
 
   implicit object DoubleToSchema extends ToSchema[Double] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.DOUBLE))
+    override def apply(): Schema = Schema.create(Schema.Type.DOUBLE)
   }
 
   implicit object FloatToSchema extends ToSchema[Float] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.FLOAT))
+    override def apply(): Schema = Schema.create(Schema.Type.FLOAT)
   }
 
   implicit object IntToSchema extends ToSchema[Int] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.INT))
+    override def apply(): Schema = Schema.create(Schema.Type.INT)
   }
 
   implicit object LongToSchema extends ToSchema[Long] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.LONG))
+    override def apply(): Schema = Schema.create(Schema.Type.LONG)
   }
 
   implicit object StringToSchema extends ToSchema[String] {
-    override def schema: Option[Schema] = Some(Schema.create(Schema.Type.STRING))
+    override def apply(): Schema = Schema.create(Schema.Type.STRING)
   }
 
   implicit def OptionToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Option[T]] = new ToSchema[Option[T]] {
-    override def schema: Option[Schema] = {
-      scheme.schema.map { schema => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), schema)) }
+    override def apply(): Schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), scheme()))
+  }
+
+  implicit def MapToSchema[T](implicit tschema: ToSchema[T]): ToSchema[Map[String, T]] = new ToSchema[Map[String, T]] {
+    override def apply(): Schema = Schema.createMap(tschema())
+  }
+
+  implicit def SetToSchema[T](implicit tschema: ToSchema[T]): ToSchema[Set[T]] = new ToSchema[Set[T]] {
+    override def apply(): Schema = Schema.createArray(tschema())
+  }
+
+  implicit def EnumToSchema[E <: Enum[E]](implicit tag: ClassTag[E]): ToSchema[Enum[E]] = new ToSchema[Enum[E]] {
+    override def apply(): Schema = {
+      import scala.collection.JavaConverters._
+      val values = tag.runtimeClass.getEnumConstants.map(_.toString)
+      Schema.createEnum(tag.runtimeClass.getSimpleName, null, tag.runtimeClass.getPackage.getName, values.toList.asJava)
     }
   }
 
-  implicit def MapToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Map[String, T]] = new ToSchema[Map[String, T]] {
-    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createMap(schema) }
+  implicit def ArrayToSchema[T](implicit tschema: ToSchema[T]): ToSchema[Array[T]] = new ToSchema[Array[T]] {
+    override def apply(): Schema = Schema.createArray(tschema())
   }
 
-  implicit def ListToSchema[T](implicit scheme: ToSchema[T]): ToSchema[List[T]] = new ToSchema[List[T]] {
-    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
-  }
-
-  implicit def SetToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Set[T]] = new ToSchema[Set[T]] {
-    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
-  }
-
-  implicit def ArrayToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Array[T]] = new ToSchema[Array[T]] {
-    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
-  }
-
-  implicit def SeqToSchema[T](implicit scheme: ToSchema[T]): ToSchema[Seq[T]] = new ToSchema[Seq[T]] {
-    override def schema: Option[Schema] = scheme.schema.map { schema => Schema.createArray(schema) }
+  implicit def SeqToSchema[T](implicit tschema: ToSchema[T]): ToSchema[Seq[T]] = new ToSchema[Seq[T]] {
+    override def apply(): Schema = Schema.createArray(tschema())
   }
 
   implicit def EitherToSchema[A: ToSchema, B: ToSchema]: ToSchema[Either[A, B]] = new ToSchema[Either[A, B]] {
-    override def schema: Option[Schema] = {
-      for (t <- implicitly[ToSchema[A]].schema;
-           u <- implicitly[ToSchema[B]].schema) yield {
-        Schema.createUnion(util.Arrays.asList(t, u))
-      }
+    override def apply(): Schema = {
+      val t = implicitly[ToSchema[A]].apply()
+      val u = implicitly[ToSchema[B]].apply()
+      Schema.createUnion(util.Arrays.asList(t, u))
     }
   }
 
-  implicit def GenericToSchema[T](implicit scheme: AvroSchema[T]) = new ToSchema[T] {
-    override def schema: Option[Schema] = Some(scheme.apply)
+  implicit def GenericToSchema[T](implicit tschema: AvroSchema[T]) = new ToSchema[T] {
+    override def apply(): Schema = tschema()
   }
 }
 
@@ -105,12 +109,9 @@ object AvroSchemaFields {
                                                        toschema: Lazy[ToSchema[V]],
                                                        remaining: AvroSchemaFields[T]): AvroSchemaFields[FieldType[K, V] :: T] = {
     new AvroSchemaFields[FieldType[K, V] :: T] {
-      def apply: List[Schema.Field] = {
-        val fieldFn: (Schema => Schema.Field) = schema => {
-          val field = new Schema.Field(key.value.name, schema, null, null)
-          field
-        }
-        toschema.value.schema.map(fieldFn).toList ++ remaining()
+      def apply(): List[Schema.Field] = {
+        val field = new Schema.Field(key.value.name, toschema.value(), null, null)
+        field +: remaining()
       }
     }
   }
