@@ -5,5 +5,4 @@ script:
 - sbt clean test
 jdk:
 - oraclejdk8
-- openjdk7
 sudo: false
