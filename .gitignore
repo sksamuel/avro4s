@@ -19,3 +19,5 @@ project/plugins/project/
 credentials.sbt
 .idea
 *.iml
+
+universe.avro

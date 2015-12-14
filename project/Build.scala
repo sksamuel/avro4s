@@ -1,3 +1,4 @@
+import com.typesafe.sbt.pgp.PgpKeys
 import sbt._
 import sbt.Keys._
 
@@ -14,7 +15,6 @@ object Build extends Build {
   val ShapelessVersion = "2.2.5"
 
   val rootSettings = Seq(
-    version := appVersion,
     organization := org,
     scalaVersion := ScalaVersion,
     crossScalaVersions := Seq(ScalaVersion, "2.12.0-M3"),
@@ -24,6 +24,8 @@ object Build extends Build {
     parallelExecution in Test := false,
     scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8"),
     javacOptions := Seq("-source", "1.7", "-target", "1.7"),
+    sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+    sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
     libraryDependencies ++= Seq(
       "org.scala-lang"    % "scala-reflect"     % ScalaVersion,
       "com.chuusai"       %% "shapeless"        % ShapelessVersion,
