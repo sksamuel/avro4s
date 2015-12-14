@@ -36,7 +36,7 @@ You can see that the schema generator handles nested case classes, sequences, pr
 
 ## Serializing
 
-Avro4s allows us to easily serialize objects using an instance of `AvroOutputStream` which we write to, and close, just like you would any regular output stream. An `AvroOutputStream` can be created from a `File`, `Path`, or by wrapping another `OutputStream`. When we create one, we specify the type of objects that we will be serializing. Eg, to serialize instances of our Pizza class:
+Avro4s allows us to easily serialize case classes using an instance of `AvroOutputStream` which we write to, and close, just like you would any regular output stream. An `AvroOutputStream` can be created from a `File`, `Path`, or by wrapping another `OutputStream`. When we create one, we specify the type of objects that we will be serializing. Eg, to serialize instances of our Pizza class:
 
 ```scala
 val pepperoni = Pizza("pepperoni", ...)
@@ -49,16 +49,13 @@ os.close()
 
 ## Deserializing
 
-With avro4s we can easily deserialize a file back into Scala case classes. Given the `artists.avro` file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class. We first include the `import AvroImplicits._` line as the macros that generate the readers and schemas are located there.
+With avro4s we can easily deserialize a file back into Scala case classes. Given the pizzas.avro file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class. We first create an instance of the input stream specifying the types we will read back, and the file. Then we call iterator which will return a lazy iterator (reads on demand) of the data in the file. In this example, we'll load all data at once from the iterator via `toSet`.
 
 ```scala
-import AvroImplicits._ // contains the macros that do the magic
-
-val path = Paths.get("artists.avro")
-val in = AvroInputStream[Artist](path)
-val painters = in.iterator.toSet
-println(painters) // 
-in.close()
+val is = AvroInputStream[Artist](new File("pizzas.avro"))
+val pizzas = is.iterator.toSet
+println(painters) // should print out pepperoni and hawaiian
+is.close()
 ```
 
 ## Type Mappings
@@ -83,14 +80,6 @@ in.close()
 |scala.collection.Option[T]|union:null,T|
 |scala.collection.Either[L, R]|union:L,R|
 |T|record|
-
-## Todo
-
-Features to be added before 1.0 release
-
-* Annotation for Avro properties 
-* Annotation for aliases
-* Error handling during deserialization
 
 ## Using avro4s in your project
 
