@@ -1,0 +1,88 @@
+{
+  "type" : "record",
+  "name" : "MyClass",
+  "namespace" : "com.test.avro",
+  "fields" : [ {
+    "name" : "data",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "data",
+        "fields" : [ {
+          "name" : "type",
+          "type" : "string"
+        }, {
+          "name" : "id",
+          "type" : "string"
+        }, {
+          "name" : "attributes",
+          "type" : {
+            "type" : "record",
+            "name" : "attributes",
+            "fields" : [ {
+              "name" : "title",
+              "type" : "string"
+            }, {
+              "name" : "body",
+              "type" : "string"
+            } ]
+          }
+        }, {
+          "name" : "relationships",
+          "type" : {
+            "type" : "record",
+            "name" : "relationships",
+            "fields" : [ {
+              "name" : "author",
+              "type" : {
+                "type" : "record",
+                "name" : "author",
+                "fields" : [ {
+                  "name" : "nested",
+                  "type" : {
+                    "type" : "record",
+                    "name" : "nested",
+                    "fields" : [ {
+                      "name" : "id",
+                      "type" : "string"
+                    }, {
+                      "name" : "type",
+                      "type" : "string"
+                    } ]
+                  }
+                } ]
+              }
+            } ]
+          }
+        } ]
+      }
+    }
+  }, {
+    "name" : "included",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "included",
+        "fields" : [ {
+          "name" : "type",
+          "type" : "string"
+        }, {
+          "name" : "id",
+          "type" : "string"
+        }, {
+          "name" : "details",
+          "type" : {
+            "type" : "record",
+            "name" : "details",
+            "fields" : [ {
+              "name" : "name",
+              "type" : "string"
+            } ]
+          }
+        } ]
+      }
+    }
+  } ]
+}

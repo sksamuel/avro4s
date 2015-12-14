@@ -88,4 +88,5 @@ object Build extends Build {
     .settings(publish := {})
     .settings(libraryDependencies += "org.json4s" %% "json4s-native" % "3.3.0")
     .settings(name := "avro4s-json")
+    .dependsOn(core)
 }
