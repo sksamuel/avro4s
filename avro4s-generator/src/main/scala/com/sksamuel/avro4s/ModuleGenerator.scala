@@ -6,11 +6,15 @@ import java.nio.file.{Files, Path, Paths}
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Parser
 
-class ClassGenerator(schema: Schema) {
+object ModuleGenerator {
 
   import scala.collection.JavaConverters._
 
-  def records: Seq[Module] = {
+  def apply(in: InputStream): Seq[Module] = ModuleGenerator(new Parser().parse(in))
+  def apply(file: File): Seq[Module] = ModuleGenerator(new Parser().parse(file))
+  def apply(path: Path): Seq[Module] = apply(path.toFile)
+
+  def apply(schema: Schema): Seq[Module] = {
 
     val types = scala.collection.mutable.Map.empty[String, Module]
 
@@ -21,7 +25,7 @@ class ClassGenerator(schema: Schema) {
         case Schema.Type.BYTES if schema.getProp("logicalType") == "decimal" => PrimitiveType("BigDecimal")
         case Schema.Type.BYTES => PrimitiveType("Array[Byte]")
         case Schema.Type.DOUBLE => PrimitiveType("Double")
-        case Schema.Type.ENUM =>  types.getOrElse(schema.getFullName, enumFor(schema))
+        case Schema.Type.ENUM => types.getOrElse(schema.getFullName, enumFor(schema))
         case Schema.Type.FIXED => PrimitiveType("String")
         case Schema.Type.FLOAT => PrimitiveType("Float")
         case Schema.Type.INT => PrimitiveType("Int")
@@ -57,14 +61,9 @@ class ClassGenerator(schema: Schema) {
   }
 }
 
-object ClassGenerator {
-  def apply(in: InputStream): Seq[Module] = new ClassGenerator(new Parser().parse(in)).records
-  def apply(file: File): Seq[Module] = new ClassGenerator(new Parser().parse(file)).records
-  def apply(path: Path): Seq[Module] = apply(path.toFile)
-}
-
 sealed trait Type
 
+// a module is a case class (avro record) or java enum (avro enum); always needs a name + package (namespace)
 sealed trait Module extends Type {
   def namespace: String
   def name: String

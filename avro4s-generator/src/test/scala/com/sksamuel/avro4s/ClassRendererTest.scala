@@ -4,7 +4,7 @@ import org.scalatest.{WordSpec, Matchers}
 
 class ClassRendererTest extends WordSpec with Matchers {
 
-  val types = ClassGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
+  val types = ModuleGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
   val fields = types.collect {
     case record: Record => record.fields
   }.flatten
