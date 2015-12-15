@@ -40,7 +40,7 @@ object ModuleGenerator {
     }
 
     def enumFor(schema: Schema): EnumType = {
-      val enum = EnumType(schema.getNamespace, schema.getName, schema.getEnumSymbols.asScala)
+      val enum = EnumType(schema.getNamespace, schema.getName, schema.getEnumSymbols.asScala.toList)
       types.put(schema.getFullName, enum)
       enum
     }

@@ -27,7 +27,7 @@ class ClassRendererTest extends WordSpec with Matchers {
     }
     "generate definition for enums" in {
       val enum = ModuleGenerator(getClass.getResourceAsStream("/enum.avsc")).head
-      enum shouldBe EnumType("", "", Seq("ACTIVE", "EXPIRED", "REVOKED", "PENDING", "DENIED"))
+      enum shouldBe EnumType("com.example.avro", "MyEnum", List("DONE", "ARCHIVED", "DELETED"))
     }
   }
 }
