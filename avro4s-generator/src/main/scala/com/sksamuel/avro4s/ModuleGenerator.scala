@@ -21,15 +21,15 @@ object ModuleGenerator {
     def schemaToType(schema: Schema): Type = {
       schema.getType match {
         case Schema.Type.ARRAY => ArrayType(schemaToType(schema.getElementType))
-        case Schema.Type.BOOLEAN => PrimitiveType("Boolean")
-        case Schema.Type.BYTES if schema.getProp("logicalType") == "decimal" => PrimitiveType("BigDecimal")
-        case Schema.Type.BYTES => PrimitiveType("Array[Byte]")
-        case Schema.Type.DOUBLE => PrimitiveType("Double")
+        case Schema.Type.BOOLEAN => PrimitiveType.Boolean
+        case Schema.Type.BYTES if schema.getProp("logicalType") == "decimal" => PrimitiveType.BigDecimal
+        case Schema.Type.BYTES => PrimitiveType.Bytes
+        case Schema.Type.DOUBLE => PrimitiveType.Double
         case Schema.Type.ENUM => types.getOrElse(schema.getFullName, enumFor(schema))
-        case Schema.Type.FIXED => PrimitiveType("String")
-        case Schema.Type.FLOAT => PrimitiveType("Float")
-        case Schema.Type.INT => PrimitiveType("Int")
-        case Schema.Type.LONG => PrimitiveType("Long")
+        case Schema.Type.FIXED => PrimitiveType.String
+        case Schema.Type.FLOAT => PrimitiveType.Float
+        case Schema.Type.INT => PrimitiveType.Int
+        case Schema.Type.LONG => PrimitiveType.Long
         case Schema.Type.MAP => MapType(schemaToType(schema.getValueType))
         case Schema.Type.NULL => NullType
         case Schema.Type.RECORD => types.getOrElse(schema.getFullName, recordFor(schema))
@@ -45,8 +45,8 @@ object ModuleGenerator {
       enum
     }
 
-    def recordFor(schema: Schema): Record = {
-      val record = Record(schema.getNamespace, schema.getName, Nil)
+    def recordFor(schema: Schema): RecordType = {
+      val record = RecordType(schema.getNamespace, schema.getName, Nil)
       types.put(schema.getFullName, record)
       val updated = record.copy(fields = schema.getFields.asScala.map { field =>
         FieldDef(field.name, schemaToType(field.schema))
@@ -69,13 +69,24 @@ sealed trait Module extends Type {
   def name: String
 }
 
-case class Record(namespace: String, name: String, fields: Seq[FieldDef]) extends Module
+case class RecordType(namespace: String, name: String, fields: Seq[FieldDef]) extends Module
 
 case class EnumType(namespace: String, name: String, symbols: Seq[String]) extends Module
 
 case class MapType(valueType: Type) extends Type
 
 case class PrimitiveType(baseType: String) extends Type
+
+object PrimitiveType {
+  val Bytes = PrimitiveType("Array[Byte]")
+  val BigDecimal = PrimitiveType("BigDecimal")
+  val Float = PrimitiveType("Float")
+  val Double = PrimitiveType("Double")
+  val Long = PrimitiveType("Long")
+  val String = PrimitiveType("String")
+  val Int = PrimitiveType("Int")
+  val Boolean = PrimitiveType("Boolean")
+}
 
 case class ArrayType(arrayType: Type) extends Type
 
@@ -91,7 +102,7 @@ object TypeRenderer {
     t match {
       case PrimitiveType(base) => base
       case ArrayType(arrayType) => s"Seq[${renderType(arrayType)}]"
-      case Record(namespace, name, _) => namespace + "." + name
+      case RecordType(namespace, name, _) => namespace + "." + name
       case EnumType(namespace, name, _) => namespace + "." + name
       case MapType(valueType) => s"Map[String, ${renderType(valueType)}]"
       case UnionType(NullType, right) => s"Option[${renderType(right)}]"
@@ -101,49 +112,9 @@ object TypeRenderer {
   }
 }
 
-object ModuleRenderer {
-
-  def render(modules: Seq[Module]): String = modules map {
-    case record: Record => render(record)
-    case enum: EnumType => render(enum)
-  } mkString "\n\n"
-
-  def renderRecords(records: Seq[Record]): String = {
-    require(records.nonEmpty)
-    s"package ${records.head.namespace}\n\n" + records.map(render).mkString("\n\n")
-  }
-
-  def render(record: Record): String = {
-    "// auto generated code by avro4s\n" +
-      s"case class ${record.name}(\n" + record.fields.map(TypeRenderer.render).mkString(",\n") + "\n)"
-  }
-
-  def render(enum: EnumType): String = {
-    s"package ${enum.namespace}\n\n" + "// auto generated code by avro4s\n" + s"public enum ${enum.name}" + enum.symbols.mkString("{\n    ", ", ", "\n}")
-  }
-}
 
 // templates contains all generated definitions grouped by file
 case class Template(file: String, definition: String)
-
-object TemplateRenderer {
-
-  def render(modules: Seq[Module]): Seq[Template] = {
-    val enums = modules.collect {
-      case enum: EnumType => enum
-    }
-
-    val records = modules.collect {
-      case record: Record => record
-    }
-
-    enums.map { enum =>
-      Template(enum.namespace + "." + enum.name + ".java", ModuleRenderer.render(enum))
-    } ++ records.groupBy(_.namespace).map { case (namespace, packageClasses) =>
-      Template(namespace + "." + packageClasses.head.name + ".scala", ModuleRenderer.renderRecords(packageClasses))
-    }
-  }
-}
 
 
 object FileRenderer {

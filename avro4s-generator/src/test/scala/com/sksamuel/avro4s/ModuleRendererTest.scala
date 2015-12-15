@@ -4,82 +4,54 @@ import org.scalatest.{Matchers, WordSpec}
 
 class ModuleRendererTest extends WordSpec with Matchers {
 
-  "ModuleRenderer" should {
-    "generate class name" in {
-      val defs = ModuleGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
-      ModuleRenderer.render(defs) should include("GameOfThrones")
+  "new ModuleRenderer()" should {
+    "write field for Int" in {
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("foo", PrimitiveType.String)))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  foo: String\n)"
     }
-    "generate case class for records" in {
-      val defs = ModuleGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
-      ModuleRenderer.render(defs) should include("case class GameOfThrones")
+    "write field for String" in {
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("foo", PrimitiveType.Int)))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  foo: Int\n)"
     }
-    "generate field for Int fields" in {
-      val defs = ModuleGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
-      ModuleRenderer.render(defs) should include("kingdoms: Int")
+    "write field for Boolean" in {
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("foo", PrimitiveType.Boolean)))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  foo: Boolean\n)"
     }
-    "generate field for Boolean fields" in {
-      val defs = ModuleGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
-      ModuleRenderer.render(defs) should include("aired: Boolean")
+    "write field for doubles" in {
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("foo", PrimitiveType.Double)))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  foo: Double\n)"
     }
-    "generate field for Double fields" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
-      ModuleRenderer.render(types) should include("temperature: Double")
+    "write field for longs" in {
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("foo", PrimitiveType.Long)))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  foo: Long\n)"
     }
-    "generate field for String fields" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
-      ModuleRenderer.render(types) should include("id: String")
+    "generate field for Maps with strings" in {
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", MapType(PrimitiveType.String))))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: Map[String, String]\n)"
     }
-    "generate field for Long fields" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
-      ModuleRenderer.render(types) should include("deathCount: Long")
-    }
-    "generate field for Maps with primitives" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/map.avsc"))
-      ModuleRenderer.render(types) should include("mymap: Map[String, Long]")
+    "generate field for Maps with doubles" in {
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", MapType(PrimitiveType.Double))))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: Map[String, Double]\n)"
     }
     "generate field for arrays of strings" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/array.avsc"))
-      ModuleRenderer.render(types) should include("myarray: Seq[String]")
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", ArrayType(PrimitiveType.String))))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: Seq[String]\n)"
     }
     "generate field for arrays of doubles" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/arraydouble.avsc"))
-      ModuleRenderer.render(types) should include("myarray: Seq[Double]")
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", ArrayType(PrimitiveType.Double))))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: Seq[Double]\n)"
     }
     "generate field for arrays of longs" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/arraylong.avsc"))
-      ModuleRenderer.render(types) should include("myarray: Seq[Long]")
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", ArrayType(PrimitiveType.Long))))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: Seq[Long]\n)"
     }
     "generate field for arrays of records" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/arrayrec.avsc"))
-      ModuleRenderer.render(types) should include("bibble: com.example.avro.NestedRecord")
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", ArrayType(RecordType("com.sammy", "NestedClass", Seq(FieldDef("name", PrimitiveType.String)))))))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: Seq[com.sammy.NestedClass]\n)"
     }
     "generate field for bytes" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/user.avsc"))
-      ModuleRenderer.render(types) should include("photo: Array[Byte]")
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", PrimitiveType.Bytes)))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: Array[Byte]\n)"
     }
-    "generate BigDecimal field for decimal logical type" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/decimal.avsc"))
-      ModuleRenderer.render(types) should include("decimal: BigDecimal")
-    }
-    "generate definition for enums" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/user.avsc"))
-      println(ModuleRenderer.render(types))
-      types.find(_.name == "TwitterAccount").get.asInstanceOf[Record].fields
-        .find(_.name == "status").get.`type`.asInstanceOf[EnumType].symbols.toSet shouldBe
-        Set("ACTIVE", "EXPIRED", "REVOKED", "PENDING", "DENIED")
+    "generate BigDecimal field" in {
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", PrimitiveType.BigDecimal)))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: BigDecimal\n)"
     }
     "generate java enum for enums" in {
-      val records = ModuleGenerator(getClass.getResourceAsStream("/enum.avsc"))
-      ModuleRenderer.render(records) should include("public enum MyEnum{\n    DONE, ARCHIVED, DELETED\n}")
+      new ModuleRenderer()(EnumType("com.sammy", "MyClass", Seq("Boo", "Foo", "Hoo"))) shouldBe "//auto generated code by avro4s\npublic enum MyClass{\n    Boo, Foo, Hoo\n}"
     }
     "generate option for nullable unions" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/user.avsc"))
-      ModuleRenderer.render(types) should include("description: Option[String]")
-      ModuleRenderer.render(types) should include("dateBounced: Option[Long]")
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", UnionType(NullType, PrimitiveType.String))))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: Option[String]\n)"
     }
-    "generate either for union types of two" in {
-      val types = ModuleGenerator(getClass.getResourceAsStream("/user.avsc"))
-      ModuleRenderer.render(types) should include("snoozeDate: Either[Double, Long]")
+    "generate either for union types of records" in {
+      new ModuleRenderer()(RecordType("com.sammy", "MyClass", Seq(FieldDef("name", UnionType(PrimitiveType.String, RecordType("com.sammy", "NestedClass", Seq(FieldDef("name", PrimitiveType.String)))))))) shouldBe "//auto generated code by avro4s\ncase class MyClass(\n  name: Either[String, com.sammy.NestedClass]\n)"
     }
   }
 }

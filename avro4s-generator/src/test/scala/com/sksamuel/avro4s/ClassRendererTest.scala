@@ -6,7 +6,7 @@ class ClassRendererTest extends WordSpec with Matchers {
 
   val types = ModuleGenerator(getClass.getResourceAsStream("/gameofthrones.avsc"))
   val fields = types.collect {
-    case record: Record => record.fields
+    case record: RecordType => record.fields
   }.flatten
 
   "ClassRenderer" should {
@@ -24,6 +24,10 @@ class ClassRendererTest extends WordSpec with Matchers {
     }
     "generate field for Long fields" in {
       fields should contain(FieldDef("deathCount", PrimitiveType("Long")))
+    }
+    "generate definition for enums" in {
+      val enum = ModuleGenerator(getClass.getResourceAsStream("/enum.avsc")).head
+      enum shouldBe EnumType("", "", Seq("ACTIVE", "EXPIRED", "REVOKED", "PENDING", "DENIED"))
     }
   }
 }
