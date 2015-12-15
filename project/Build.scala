@@ -5,7 +5,6 @@ import sbt.Keys._
 object Build extends Build {
 
   val org = "com.sksamuel.avro4s"
-  val appVersion = "1.0.0"
 
   val AvroVersion = "1.7.7"
   val ScalaVersion = "2.11.7"
@@ -13,11 +12,12 @@ object Build extends Build {
   val Slf4jVersion = "1.7.12"
   val Log4jVersion = "1.2.17"
   val ShapelessVersion = "2.2.5"
+  val Json4sVersion = "3.3.0"
 
   val rootSettings = Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq(ScalaVersion, "2.12.0-M3"),
+    crossScalaVersions := Seq(ScalaVersion, "2.10.6"),
     publishMavenStyle := true,
     resolvers += Resolver.mavenLocal,
     publishArtifact in Test := false,
@@ -27,14 +27,20 @@ object Build extends Build {
     sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := false,
     libraryDependencies ++= Seq(
-      "org.scala-lang"    % "scala-reflect"     % ScalaVersion,
-      "com.chuusai"       %% "shapeless"        % ShapelessVersion,
-      "org.apache.avro"   % "avro"              % AvroVersion,
-      "org.slf4j"         % "slf4j-api"         % Slf4jVersion,
-      "log4j"             % "log4j"             % Log4jVersion % "test",
-      "org.slf4j"         % "log4j-over-slf4j"  % Slf4jVersion % "test",
-      "org.scalatest"     %% "scalatest"        % ScalatestVersion % "test"
+      "org.scala-lang"        % "scala-reflect" % ScalaVersion,
+      "com.chuusai"           %% "shapeless" % ShapelessVersion,
+      "org.apache.avro"       % "avro" % AvroVersion,
+      "org.slf4j"             % "slf4j-api" % Slf4jVersion,
+      "log4j"                 % "log4j" % Log4jVersion % "test",
+      "org.slf4j"             % "log4j-over-slf4j" % Slf4jVersion % "test",
+      "org.scalatest"         %% "scalatest" % ScalatestVersion % "test"
     ),
+    libraryDependencies ++= {
+      if (scalaVersion.value.contains("2.10")) {
+        println("qeqweqweqweqwe" + scalaVersion.value)
+        Seq(compilerPlugin("org.scalamacros" % "paradise_2.10.6" % "2.1.0"))
+      } else Nil
+    },
     publishTo <<= version {
       (v: String) =>
         val nexus = "https://oss.sonatype.org/"
@@ -86,7 +92,7 @@ object Build extends Build {
   lazy val json = Project("avro4s-json", file("avro4s-json"))
     .settings(rootSettings: _*)
     .settings(publish := {})
-    .settings(libraryDependencies += "org.json4s" %% "json4s-native" % "3.3.0")
+    .settings(libraryDependencies += "org.json4s" %% "json4s-native" % Json4sVersion)
     .settings(name := "avro4s-json")
     .dependsOn(core)
 }

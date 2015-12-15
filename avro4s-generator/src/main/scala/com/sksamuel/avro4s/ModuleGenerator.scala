@@ -10,6 +10,7 @@ object ModuleGenerator {
 
   import scala.collection.JavaConverters._
 
+  def apply(str: String): Seq[Module] = apply(new Schema.Parser().parse(str))
   def apply(in: InputStream): Seq[Module] = ModuleGenerator(new Parser().parse(in))
   def apply(file: File): Seq[Module] = ModuleGenerator(new Parser().parse(file))
   def apply(path: Path): Seq[Module] = apply(path.toFile)

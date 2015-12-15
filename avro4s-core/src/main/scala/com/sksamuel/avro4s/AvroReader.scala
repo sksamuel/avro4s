@@ -61,8 +61,8 @@ object FromValue {
     import scala.collection.JavaConverters._
 
     override def apply(value: Any): Array[T] = value match {
-      case array: Array[T] => array.map(fromvalue.apply)
-      case list: java.util.Collection[T] => list.asScala.map(fromvalue.apply).toArray
+      case array: Array[_] => array.map(fromvalue.apply)
+      case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toArray
     }
   }
 
@@ -71,8 +71,8 @@ object FromValue {
     import scala.collection.JavaConverters._
 
     override def apply(value: Any): Set[T] = value match {
-      case array: Array[T] => array.map(fromvalue.apply).toSet
-      case list: java.util.Collection[T] => list.asScala.map(fromvalue.apply).toSet
+      case array: Array[_] => array.map(fromvalue.apply).toSet
+      case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toSet
     }
   }
 
@@ -81,8 +81,8 @@ object FromValue {
     import scala.collection.JavaConverters._
 
     override def apply(value: Any): List[T] = value match {
-      case array: Array[T] => array.map(fromvalue.apply).toList
-      case list: java.util.Collection[T] => list.asScala.map(fromvalue.apply).toList
+      case array: Array[_] => array.map(fromvalue.apply).toList
+      case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toList
     }
   }
 
@@ -91,8 +91,8 @@ object FromValue {
     import scala.collection.JavaConverters._
 
     override def apply(value: Any): Seq[T] = value match {
-      case array: Array[T] => array.map(fromvalue.apply)
-      case list: java.util.Collection[T] => list.asScala.map(fromvalue.apply).toList
+      case array: Array[_] => array.map(fromvalue.apply)
+      case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toList
     }
   }
 
@@ -101,7 +101,7 @@ object FromValue {
     import scala.collection.JavaConverters._
 
     override def apply(value: Any): Map[String, T] = value match {
-      case map: java.util.Map[Any, Any] =>
+      case map: java.util.Map[_, _] =>
         map.asScala.toMap.map { case (k, v) => k.toString -> fromvalue(v) }
     }
   }
