@@ -77,7 +77,7 @@ object Build extends Build {
     .settings(publish := {})
     .settings(publishArtifact := false)
     .settings(name := "avro4s")
-    .aggregate(core, generator)
+    .aggregate(core, generator, json)
 
   lazy val core = Project("avro4s-core", file("avro4s-core"))
     .settings(rootSettings: _*)
