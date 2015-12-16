@@ -137,9 +137,9 @@ Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4))
 
 ## Using avro4s in your project
 
-Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.1.0'`
+Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.1.3'`
 
-SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.1.0"`
+SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.1.3"`
 
 Maven:
 
@@ -147,7 +147,7 @@ Maven:
 <dependency>
     <groupId>com.sksamuel.avro4s</groupId>
     <artifactId>avro4s-core_2.11</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.3</version>
 </dependency>
 ```
 
