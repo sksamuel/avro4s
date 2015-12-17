@@ -97,14 +97,14 @@ object ToSchema {
   }
 }
 
-trait AvroSchemaFields[L <: HList] extends DepFn2[Seq[FieldAnnotation], Seq[FieldAnnotation]] with Serializable {
+trait AvroSchemaFields[L <: HList] extends DepFn2[Seq[(String, AvroDoc)], Seq[(String, Seq[AvroProp])]] with Serializable {
   type Out = List[Schema.Field]
 }
 
 object AvroSchemaFields {
 
   implicit object HNilFields extends AvroSchemaFields[HNil] {
-    override def apply(a: Seq[FieldAnnotation], b: Seq[FieldAnnotation]): List[Field] = List.empty
+    override def apply(a: Seq[(String, AvroDoc)], b: Seq[(String, Seq[AvroProp])]): List[Field] = List.empty
   }
 
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
@@ -112,10 +112,11 @@ object AvroSchemaFields {
                                                        remaining: AvroSchemaFields[T]): AvroSchemaFields[FieldType[K, V] :: T] = {
 
     new AvroSchemaFields[FieldType[K, V] :: T] {
-      def apply(docs: Seq[FieldAnnotation], props: Seq[FieldAnnotation]): List[Schema.Field] = {
+      def apply(docs: Seq[(String, AvroDoc)], props: Seq[(String, Seq[AvroProp])]): List[Schema.Field] = {
         val name = key.value.name
-        val doc = docs.find(_.field == name).flatMap(_.values.headOption).orNull
+        val doc = docs.find(_._1 == name).map(_._2.doc).orNull
         val field = new Schema.Field(name, toschema.value(), doc, null)
+        props.find(_._1 == name).map(_._2).foreach(props => props.foreach(prop => field.addProp(prop.name, prop.value)))
         field +: remaining(docs, props)
       }
     }
@@ -126,33 +127,39 @@ trait AvroSchema[T] {
   def apply(): Schema
 }
 
-case class FieldAnnotation(field: String, values: Seq[String])
-
 object AvroSchema {
 
   import scala.reflect.ClassTag
-  import scala.reflect.runtime.universe.{Type, WeakTypeTag, typeOf}
+  import scala.reflect.runtime.universe.{WeakTypeTag, typeOf}
 
   implicit def GenericAvroSchema[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
                                                    keys: Keys[Repr],
                                                    schemaFields: AvroSchemaFields[Repr],
                                                    typeTag: WeakTypeTag[T],
-                                                   annotations: Annotations[AvroDoc, T],
                                                    tag: ClassTag[T]): AvroSchema[T] = new AvroSchema[T] {
 
-    def annotations(tpe: Type): Seq[FieldAnnotation] = {
-      typeTag.tpe.members.filter(_.isConstructor).head.asMethod.paramLists.flatten.map { sym =>
-        FieldAnnotation(
-          sym.name.decodedName.toString,
-          sym.annotations.collect {
-            case a if a.tree.tpe <:< tpe => a.tree.children.tail.head.toString.drop(1).dropRight(1)
-          }
-        )
+    val params = typeTag.tpe.members.filter(_.isConstructor).head.asMethod.paramLists.flatten
+
+    val docs: Seq[(String, AvroDoc)] = {
+      params.flatMap { sym =>
+        sym.annotations.collectFirst {
+          case a if a.tree.tpe =:= typeOf[AvroDoc] =>
+            sym.name.decodedName.toString -> AvroDoc(a.tree.children.tail.head.toString.drop(1).dropRight(1))
+        }
       }
     }
 
-    val docs = annotations(typeOf[AvroDoc])
-    val props = annotations(typeOf[AvroProp])
+    val props: Seq[(String, Seq[AvroProp])] = {
+      params.map { sym =>
+        val name = sym.name.decodedName.toString
+        val props = sym.annotations.collect {
+          case a if a.tree.tpe =:= typeOf[AvroProp] =>
+            val children = a.tree.children.tail.map(_.toString.drop(1).dropRight(1))
+            AvroProp(children.head, children.last)
+        }
+        name -> props
+      }
+    }
 
     import scala.collection.JavaConverters._
 

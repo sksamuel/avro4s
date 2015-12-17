@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "Annotated",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "str",
+      "type": "string",
+      "cold": "play"
+    },
+    {
+      "name": "long",
+      "type": "long",
+      "kate": "bush"
+    },
+    {
+      "name": "int",
+      "type": "int"
+    }
+  ]
+}

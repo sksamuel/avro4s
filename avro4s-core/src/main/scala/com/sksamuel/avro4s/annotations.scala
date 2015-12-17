@@ -4,7 +4,7 @@ import scala.annotation.StaticAnnotation
 
 case class AvroDoc(doc: String) extends StaticAnnotation
 
-case class AvroProp(doc: String) extends StaticAnnotation
+case class AvroProp(name: String, value: String) extends StaticAnnotation
 
 case class AvroFixed(size: Int) extends StaticAnnotation
 
