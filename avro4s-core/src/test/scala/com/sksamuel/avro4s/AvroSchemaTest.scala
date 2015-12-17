@@ -1,6 +1,8 @@
 package com.sksamuel.avro4s
 
 import org.scalatest.{Matchers, WordSpec}
+import shapeless.Annotations
+import shapeless.ops.zipper.First
 
 class AvroSchemaTest extends WordSpec with Matchers {
 
@@ -175,6 +177,12 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "support doc annotation on class" in {
       @AvroDoc("hello its me") case class Annotated(str: String)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation.avsc"))
+      val schema = AvroSchema[Annotated]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support doc annotation on field" in {
+      case class Annotated(@AvroDoc("hello its me") str: String, @AvroDoc("I am a long") long: Long, int: Int)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/field_annotation.avsc"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }

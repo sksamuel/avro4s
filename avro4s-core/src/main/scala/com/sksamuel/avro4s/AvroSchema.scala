@@ -1,11 +1,13 @@
 package com.sksamuel.avro4s
 
-import java.io.{InputStream, File}
+import java.io.{File, InputStream}
 import java.util
 
 import org.apache.avro.Schema
-import shapeless.labelled._
+import org.apache.avro.Schema.Field
 import shapeless._
+import shapeless.labelled._
+import shapeless.ops.record._
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -95,23 +97,26 @@ object ToSchema {
   }
 }
 
-trait AvroSchemaFields[L <: HList] extends DepFn0 with Serializable {
+trait AvroSchemaFields[L <: HList] extends DepFn2[Seq[FieldAnnotation], Seq[FieldAnnotation]] with Serializable {
   type Out = List[Schema.Field]
 }
 
 object AvroSchemaFields {
 
   implicit object HNilFields extends AvroSchemaFields[HNil] {
-    def apply() = List.empty
+    override def apply(a: Seq[FieldAnnotation], b: Seq[FieldAnnotation]): List[Field] = List.empty
   }
 
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
                                                        toschema: Lazy[ToSchema[V]],
                                                        remaining: AvroSchemaFields[T]): AvroSchemaFields[FieldType[K, V] :: T] = {
+
     new AvroSchemaFields[FieldType[K, V] :: T] {
-      def apply(): List[Schema.Field] = {
-        val field = new Schema.Field(key.value.name, toschema.value(), null, null)
-        field +: remaining()
+      def apply(docs: Seq[FieldAnnotation], props: Seq[FieldAnnotation]): List[Schema.Field] = {
+        val name = key.value.name
+        val doc = docs.find(_.field == name).flatMap(_.values.headOption).orNull
+        val field = new Schema.Field(name, toschema.value(), doc, null)
+        field +: remaining(docs, props)
       }
     }
   }
@@ -121,16 +126,33 @@ trait AvroSchema[T] {
   def apply(): Schema
 }
 
+case class FieldAnnotation(field: String, values: Seq[String])
+
 object AvroSchema {
 
   import scala.reflect.ClassTag
-  import scala.reflect.runtime.universe.typeOf
-  import scala.reflect.runtime.universe.WeakTypeTag
+  import scala.reflect.runtime.universe.{Type, WeakTypeTag, typeOf}
 
-  implicit def schemaBuilder[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
-                                               schemaFields: AvroSchemaFields[Repr],
-                                               typeTag: WeakTypeTag[T],
-                                               tag: ClassTag[T]): AvroSchema[T] = new AvroSchema[T] {
+  implicit def GenericAvroSchema[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
+                                                   keys: Keys[Repr],
+                                                   schemaFields: AvroSchemaFields[Repr],
+                                                   typeTag: WeakTypeTag[T],
+                                                   annotations: Annotations[AvroDoc, T],
+                                                   tag: ClassTag[T]): AvroSchema[T] = new AvroSchema[T] {
+
+    def annotations(tpe: Type): Seq[FieldAnnotation] = {
+      typeTag.tpe.members.filter(_.isConstructor).head.asMethod.paramLists.flatten.map { sym =>
+        FieldAnnotation(
+          sym.name.decodedName.toString,
+          sym.annotations.collect {
+            case a if a.tree.tpe <:< tpe => a.tree.children.tail.head.toString.drop(1).dropRight(1)
+          }
+        )
+      }
+    }
+
+    val docs = annotations(typeOf[AvroDoc])
+    val props = annotations(typeOf[AvroProp])
 
     import scala.collection.JavaConverters._
 
@@ -143,7 +165,7 @@ object AvroSchema {
         tag.runtimeClass.getPackage.getName,
         false
       )
-      schema.setFields(schemaFields().asJava)
+      schema.setFields(schemaFields(docs, props).asJava)
       schema
     }
   }
