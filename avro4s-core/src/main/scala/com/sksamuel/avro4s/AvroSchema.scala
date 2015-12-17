@@ -97,14 +97,14 @@ object ToSchema {
   }
 }
 
-trait AvroSchemaFields[L <: HList] extends DepFn2[Seq[(String, AvroDoc)], Seq[(String, Seq[AvroProp])]] with Serializable {
+trait AvroSchemaFields[L <: HList] extends DepFn1[FieldAnnotations] with Serializable {
   type Out = List[Schema.Field]
 }
 
 object AvroSchemaFields {
 
   implicit object HNilFields extends AvroSchemaFields[HNil] {
-    override def apply(a: Seq[(String, AvroDoc)], b: Seq[(String, Seq[AvroProp])]): List[Field] = List.empty
+    override def apply(annotations: FieldAnnotations): List[Field] = List.empty
   }
 
   implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
@@ -112,16 +112,21 @@ object AvroSchemaFields {
                                                        remaining: AvroSchemaFields[T]): AvroSchemaFields[FieldType[K, V] :: T] = {
 
     new AvroSchemaFields[FieldType[K, V] :: T] {
-      def apply(docs: Seq[(String, AvroDoc)], props: Seq[(String, Seq[AvroProp])]): List[Schema.Field] = {
+      def apply(annotations: FieldAnnotations): List[Schema.Field] = {
         val name = key.value.name
-        val doc = docs.find(_._1 == name).map(_._2.doc).orNull
+        val doc = annotations.docs.find(_._1 == name).map(_._2.doc).orNull
         val field = new Schema.Field(name, toschema.value(), doc, null)
-        props.find(_._1 == name).map(_._2).foreach(props => props.foreach(prop => field.addProp(prop.name, prop.value)))
-        field +: remaining(docs, props)
+        annotations.props.filter(_._1 == name).flatMap(_._2).foreach(prop => field.addProp(prop.name, prop.value))
+        annotations.aliases.filter(_._1 == name).flatMap(_._2).map(_.alias).foreach(field.addAlias)
+        field +: remaining(annotations)
       }
     }
   }
 }
+
+case class FieldAnnotations(docs: Map[String, AvroDoc],
+                            props: Map[String, Seq[AvroProp]],
+                            aliases: Map[String, Seq[AvroAlias]])
 
 trait AvroSchema[T] {
   def apply(): Schema
@@ -140,25 +145,38 @@ object AvroSchema {
 
     val params = typeTag.tpe.members.filter(_.isConstructor).head.asMethod.paramLists.flatten
 
-    val docs: Seq[(String, AvroDoc)] = {
+    implicit class RichSymbol(sym: scala.reflect.runtime.universe.Symbol) {
+      def decode: String = sym.name.decodedName.toString
+    }
+
+    val docs: Map[String, AvroDoc] = {
       params.flatMap { sym =>
         sym.annotations.collectFirst {
           case a if a.tree.tpe =:= typeOf[AvroDoc] =>
-            sym.name.decodedName.toString -> AvroDoc(a.tree.children.tail.head.toString.drop(1).dropRight(1))
+            sym.decode -> AvroDoc(a.tree.children.tail.head.toString.drop(1).dropRight(1))
         }
-      }
+      }.toMap
     }
 
-    val props: Seq[(String, Seq[AvroProp])] = {
+    val props: Map[String, Seq[AvroProp]] = {
       params.map { sym =>
-        val name = sym.name.decodedName.toString
         val props = sym.annotations.collect {
           case a if a.tree.tpe =:= typeOf[AvroProp] =>
             val children = a.tree.children.tail.map(_.toString.drop(1).dropRight(1))
             AvroProp(children.head, children.last)
         }
-        name -> props
-      }
+        sym.decode -> props
+      }.toMap
+    }
+
+    val aliases: Map[String, Seq[AvroAlias]] = {
+      params.map { sym =>
+        val aliases = sym.annotations.collect {
+          case a if a.tree.tpe =:= typeOf[AvroAlias] =>
+            AvroAlias(a.tree.children.tail.head.toString.drop(1).dropRight(1))
+        }
+        sym.decode -> aliases
+      }.toMap
     }
 
     import scala.collection.JavaConverters._
@@ -172,7 +190,7 @@ object AvroSchema {
         tag.runtimeClass.getPackage.getName,
         false
       )
-      schema.setFields(schemaFields(docs, props).asJava)
+      schema.setFields(schemaFields(FieldAnnotations(docs, props, aliases)).asJava)
       schema
     }
   }

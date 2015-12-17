@@ -1,15 +1,21 @@
 {
   "type": "record",
-  "name": "AliasExample",
+  "name": "Annotated",
   "namespace": "com.sksamuel.avro4s",
   "fields": [
-    {
-      "name": "field",
-      "type": "string",
-      "aliases": [
-        "tother",
-        "tnext"
-      ]
-    }
+     {
+       "name" : "str",
+       "type" : "string",
+       "aliases" : [ "cold" ]
+     },
+     {
+       "name" : "long",
+       "type" : "long",
+       "aliases" : [ "kate", "bush" ]
+     },
+     {
+       "name" : "int",
+       "type" : "int"
+     }
   ]
 }

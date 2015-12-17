@@ -190,5 +190,11 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support alias annotations on field" in {
+      case class Annotated(@AvroAlias("cold") str: String, @AvroAlias("kate") @AvroAlias("bush") long: Long, int: Int)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases.avsc"))
+      val schema = AvroSchema[Annotated]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
