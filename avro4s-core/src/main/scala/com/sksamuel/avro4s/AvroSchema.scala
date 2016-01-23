@@ -199,6 +199,7 @@ object AvroSchema {
         case a if a.tpe =:= typeOf[AvroProp] =>
           val children = a.scalaArgs.map(_.toString.drop(1).dropRight(1))
           schema.addProp(children.head, children.last)
+        case _ =>
       }
 
       schema.setFields(schemaFields(FieldAnnotations(docs, props, aliases)).asJava)
