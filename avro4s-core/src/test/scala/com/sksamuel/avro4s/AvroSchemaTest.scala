@@ -174,19 +174,25 @@ class AvroSchemaTest extends WordSpec with Matchers {
     }
     "support doc annotation on class" in {
       @AvroDoc("hello its me") case class Annotated(str: String)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation_class.avsc"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support doc annotation on field" in {
       case class Annotated(@AvroDoc("hello its me") str: String, @AvroDoc("I am a long") long: Long, int: Int)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/field_annotation.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation_field.avsc"))
+      val schema = AvroSchema[Annotated]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support prop annotation on class" in {
+      @AvroProp("cold", "play") case class Annotated(str: String)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/props_annotation_class.avsc"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support prop annotation on field" in {
       case class Annotated(@AvroProp("cold", "play") str: String, @AvroProp("kate", "bush") long: Long, int: Int)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/props_annotation.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/props_annotation_field.avsc"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }

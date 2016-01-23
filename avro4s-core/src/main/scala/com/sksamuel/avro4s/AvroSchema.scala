@@ -143,7 +143,10 @@ object AvroSchema {
                                                    typeTag: WeakTypeTag[T],
                                                    tag: ClassTag[T]): AvroSchema[T] = new AvroSchema[T] {
 
-    val params = typeTag.tpe.members.filter(_.isConstructor).head.asMethod.paramLists.flatten
+    // we want to look for annotations on the case class constructor, or the primary constructor of a normal
+    // class. So we can just take the first constructor available.
+    val ctr = typeTag.tpe.members.filter(_.isMethod).map(_.asMethod).filter(_.isConstructor).head
+    val params = ctr.paramss.flatten
 
     implicit class RichSymbol(sym: scala.reflect.runtime.universe.Symbol) {
       def decode: String = sym.name.decodedName.toString
@@ -152,8 +155,8 @@ object AvroSchema {
     val docs: Map[String, AvroDoc] = {
       params.flatMap { sym =>
         sym.annotations.collectFirst {
-          case a if a.tree.tpe =:= typeOf[AvroDoc] =>
-            sym.decode -> AvroDoc(a.tree.children.tail.head.toString.drop(1).dropRight(1))
+          case a if a.tpe =:= typeOf[AvroDoc] =>
+            sym.decode -> AvroDoc(a.scalaArgs.head.toString.drop(1).dropRight(1))
         }
       }.toMap
     }
@@ -161,35 +164,43 @@ object AvroSchema {
     val props: Map[String, Seq[AvroProp]] = {
       params.map { sym =>
         val props = sym.annotations.collect {
-          case a if a.tree.tpe =:= typeOf[AvroProp] =>
-            val children = a.tree.children.tail.map(_.toString.drop(1).dropRight(1))
+          case a if a.tpe =:= typeOf[AvroProp] =>
+            val children = a.scalaArgs.map(_.toString.drop(1).dropRight(1))
             AvroProp(children.head, children.last)
         }
         sym.decode -> props
-      }.toMap
+      }.toMap.filter(_._2.nonEmpty)
     }
 
     val aliases: Map[String, Seq[AvroAlias]] = {
       params.map { sym =>
         val aliases = sym.annotations.collect {
-          case a if a.tree.tpe =:= typeOf[AvroAlias] =>
-            AvroAlias(a.tree.children.tail.head.toString.drop(1).dropRight(1))
+          case a if a.tpe =:= typeOf[AvroAlias] =>
+            AvroAlias(a.scalaArgs.head.toString.drop(1).dropRight(1))
         }
         sym.decode -> aliases
-      }.toMap
+      }.toMap.filter(_._2.nonEmpty)
     }
 
     import scala.collection.JavaConverters._
 
     def apply(): Schema = {
+
       val schema = org.apache.avro.Schema.createRecord(
         typeTag.tpe.typeSymbol.name.toString,
         typeTag.tpe.typeSymbol.annotations.collectFirst {
-          case a if a.tree.tpe.<:<(typeOf[AvroDoc]) => a.tree.children.tail.head.toString.drop(1).dropRight(1)
+          case a if a.tpe =:= typeOf[AvroDoc] => a.scalaArgs.head.toString.drop(1).dropRight(1)
         }.orNull,
         tag.runtimeClass.getPackage.getName,
         false
       )
+
+      typeTag.tpe.typeSymbol.annotations.foreach {
+        case a if a.tpe =:= typeOf[AvroProp] =>
+          val children = a.scalaArgs.map(_.toString.drop(1).dropRight(1))
+          schema.addProp(children.head, children.last)
+      }
+
       schema.setFields(schemaFields(FieldAnnotations(docs, props, aliases)).asJava)
       schema
     }
