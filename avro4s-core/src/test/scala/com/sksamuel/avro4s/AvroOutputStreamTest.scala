@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
-import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.generic.{GenericData, GenericDatumReader, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
@@ -271,5 +271,21 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       }
       map("foo").get("str").toString shouldBe "sam"
     }
+    "support extends AnyVal" in {
+      val instance = Wibble(ValueClass("bob"))
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Wibble](output)
+      avro.write(instance)
+      avro.close()
+
+      val record = read[Wibble](output)
+      record.get("valueClass").asInstanceOf[GenericRecord].get("value").toString shouldBe "bob"
+    }
+
   }
 }
+
+case class Wibble(valueClass: ValueClass)
+
+case class ValueClass(value: String) extends AnyVal
