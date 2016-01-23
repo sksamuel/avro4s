@@ -4,11 +4,12 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
-import org.apache.avro.generic.{GenericData, GenericDatumReader, GenericRecord}
+import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
 import shapeless.Lazy
+
 import scala.collection.JavaConverters._
 
 class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
@@ -272,20 +273,57 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       map("foo").get("str").toString shouldBe "sam"
     }
     "support extends AnyVal" in {
-      val instance = Wibble(ValueClass("bob"))
+      val instance = ValueWrapper(ValueClass("bob"))
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Wibble](output)
+      val avro = AvroOutputStream[ValueWrapper](output)
       avro.write(instance)
       avro.close()
 
-      val record = read[Wibble](output)
+      val record = read[ValueWrapper](output)
       record.get("valueClass").asInstanceOf[GenericRecord].get("value").toString shouldBe "bob"
     }
-
+//    "support traits" in {
+//      val instance = Traits(A("foo"))
+//
+//      val output = new ByteArrayOutputStream
+//      val avro = AvroOutputStream[Traits](output)
+//      avro.write(instance)
+//      avro.close()
+//
+//      val record = read[Traits](output)
+//      record.get("str").toString shouldBe "foo"
+//    }
+    //    "support sealed traits" in {
+    //
+    //      val instance = Seals(KissFromARose, Crazy("foo"))
+    //
+    //      val output = new ByteArrayOutputStream
+    //      val avro = AvroOutputStream[Seals](output)
+    //      avro.write(instance)
+    //      avro.close()
+    //
+    //      val record = read[Seals](output)
+    //      record.get("seal1").toString shouldBe "bob"
+    //      record.get("seal2").toString shouldBe "bob"
+    //    }
   }
 }
 
-case class Wibble(valueClass: ValueClass)
+trait Trait
+
+case class A(str: String) extends Trait
+
+case class Traits(t: Trait)
+
+trait Seal
+
+case object KissFromARose extends Seal
+
+case class Crazy(v: String) extends Seal
+
+case class Seals(seal1: Seal, seal2: Seal)
+
+case class ValueWrapper(valueClass: ValueClass)
 
 case class ValueClass(value: String) extends AnyVal

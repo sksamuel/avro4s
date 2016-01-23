@@ -1,0 +1,19 @@
+{
+  "type" : "record",
+  "name" : "Rapper",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "fibble",
+    "type" : {
+      "type" : "record",
+      "name" : "Fibble",
+      "fields" : [ {
+        "name" : "str",
+        "type" : [ "string", "null" ]
+      }, {
+        "name" : "dbl",
+        "type" : [ "double", "null" ]
+      } ]
+    }
+  } ]
+}

@@ -1,0 +1,22 @@
+{
+  "type" : "record",
+  "name" : "Trapper",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "tibble",
+    "type" : {
+      "type" : "record",
+      "name" : "Tibble",
+      "fields" : [ {
+        "name" : "str",
+        "type" : [ "double", "string", "null" ]
+      }, {
+        "name" : "age",
+        "type" : [ "int", "null" ]
+      }, {
+        "name" : "place",
+        "type" : [ "string", "null" ]
+      } ]
+    }
+  } ]
+}

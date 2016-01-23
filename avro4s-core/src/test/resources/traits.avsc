@@ -1,0 +1,19 @@
+{
+  "type" : "record",
+  "name" : "Wrapper",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "wibble",
+    "type" : {
+      "type" : "record",
+      "name" : "Wibble",
+      "fields" : [ {
+        "name" : "str",
+        "type" : [ "string", "null" ]
+      }, {
+        "name" : "dbl",
+        "type" : [ "double", "null" ]
+      } ]
+    }
+  } ]
+}

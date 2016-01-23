@@ -1,0 +1,22 @@
+{
+  "type" : "record",
+  "name" : "Napper",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "nibble",
+    "type" : {
+      "type" : "record",
+      "name" : "Nibble",
+      "fields" : [ {
+        "name" : "str",
+        "type" : [ "string", "null" ]
+      }, {
+        "name" : "age",
+        "type" : [ "int", "null" ]
+      }, {
+        "name" : "place",
+        "type" : [ "string", "null" ]
+      } ]
+    }
+  } ]
+}

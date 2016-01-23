@@ -92,12 +92,12 @@ object ToSchema {
     }
   }
 
-  implicit def GenericToSchema[T](implicit tschema: AvroSchema[T]) = new ToSchema[T] {
-    override def apply(): Schema = tschema()
+  implicit def GenericToSchema[T](implicit schema: AvroSchema[T]) = new ToSchema[T] {
+    override def apply(): Schema = schema()
   }
 }
 
-trait AvroSchemaFields[L <: HList] extends DepFn1[FieldAnnotations] with Serializable {
+trait AvroSchemaFields[L] extends DepFn1[FieldAnnotations] with Serializable {
   type Out = List[Schema.Field]
 }
 
@@ -128,6 +128,25 @@ case class FieldAnnotations(docs: Map[String, AvroDoc],
                             props: Map[String, Seq[AvroProp]],
                             aliases: Map[String, Seq[AvroAlias]])
 
+trait SchemaCollector[T] {
+  def apply(): List[Schema]
+}
+
+object SchemaCollector {
+
+  implicit def CNilSchemaPopulator: SchemaCollector[CNil] = new SchemaCollector[CNil] {
+    override def apply(): List[Schema] = Nil
+  }
+
+  implicit def CoproductPopulator[H, T <: Coproduct](implicit remaining: SchemaCollector[T],
+                                                     schema: AvroSchema[H],
+                                                     c: ClassTag[H]) = new SchemaCollector[H :+: T] {
+    override def apply(): List[Schema] = {
+      List(schema()) ++ remaining()
+    }
+  }
+}
+
 trait AvroSchema[T] {
   def apply(): Schema
 }
@@ -136,6 +155,18 @@ object AvroSchema {
 
   import scala.reflect.ClassTag
   import scala.reflect.runtime.universe.{WeakTypeTag, typeOf}
+
+  // the approach for sealed traits is to grab a schema for each possible implementation, and then merge them
+  // into a giant schema with everything that's not common marked as optional
+  implicit def CoproductAvroSchema[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                                      typeTag: WeakTypeTag[T],
+                                                      classTag: ClassTag[T],
+                                                      collector: Lazy[SchemaCollector[C]]): AvroSchema[T] = new AvroSchema[T] {
+    override def apply(): Schema = {
+      val schemas = collector.value()
+      AvroSchemaMerge(typeTag.tpe.typeSymbol.name.toString, classTag.runtimeClass.getPackage.getName, schemas)
+    }
+  }
 
   implicit def GenericAvroSchema[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
                                                    keys: Keys[Repr],
