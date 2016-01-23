@@ -19,7 +19,7 @@ object AvroSchemaMerge {
 
         // if we have two schemas with the same type, then just keep the first one
         val union = {
-          val schemas = fields.map(_.schema).groupBy(_.getType).map(_._2.head).toList :+ Schema.create(Schema.Type.NULL)
+          val schemas = fields.map(_.schema).groupBy(_.getType).map(_._2.head).toList.sortBy(_.getName) :+ Schema.create(Schema.Type.NULL)
           Schema.createUnion(schemas.asJava)
         }
 

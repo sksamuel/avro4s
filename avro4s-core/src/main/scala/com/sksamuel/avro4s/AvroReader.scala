@@ -144,7 +144,7 @@ object FromValue {
       }
 
       value match {
-        case utf8: Utf8 => convert(typeOf[String])
+        case utf8: Utf8 => convert(typeOf[java.lang.String])
         case true | false => convert(typeOf[Boolean])
         case _: Int => convert(typeOf[Int])
         case _: Long => convert(typeOf[Long])
