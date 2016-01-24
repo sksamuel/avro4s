@@ -12,6 +12,14 @@ import shapeless.Lazy
 
 import scala.collection.JavaConverters._
 
+sealed trait Dibble
+
+case class Dobble(str: String) extends Dibble
+
+case class Dabble(dbl: Double) extends Dibble
+
+case class Drapper(dibble: Dibble)
+
 class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
   def read[T](out: ByteArrayOutputStream)(implicit schema: Lazy[AvroSchema[T]]): GenericRecord = read(out.toByteArray)
@@ -283,46 +291,20 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val record = read[ValueWrapper](output)
       record.get("valueClass").asInstanceOf[GenericRecord].get("value").toString shouldBe "bob"
     }
-//    "support traits" in {
-//      val instance = Traits(A("foo"))
+    "support sealed traits" in {
+//      val instance = Drapper(Dobble("foo"))
 //
 //      val output = new ByteArrayOutputStream
-//      val avro = AvroOutputStream[Traits](output)
+//      val avro = AvroOutputStream[Drapper](output)
 //      avro.write(instance)
 //      avro.close()
 //
-//      val record = read[Traits](output)
+//      val record = read[Drapper](output)
 //      record.get("str").toString shouldBe "foo"
-//    }
-    //    "support sealed traits" in {
-    //
-    //      val instance = Seals(KissFromARose, Crazy("foo"))
-    //
-    //      val output = new ByteArrayOutputStream
-    //      val avro = AvroOutputStream[Seals](output)
-    //      avro.write(instance)
-    //      avro.close()
-    //
-    //      val record = read[Seals](output)
-    //      record.get("seal1").toString shouldBe "bob"
-    //      record.get("seal2").toString shouldBe "bob"
-    //    }
+    }
   }
 }
 
-trait Trait
-
-case class A(str: String) extends Trait
-
-case class Traits(t: Trait)
-
-trait Seal
-
-case object KissFromARose extends Seal
-
-case class Crazy(v: String) extends Seal
-
-case class Seals(seal1: Seal, seal2: Seal)
 
 case class ValueWrapper(valueClass: ValueClass)
 

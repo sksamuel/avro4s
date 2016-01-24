@@ -105,11 +105,12 @@ trait AvroWriter[T] {
 
 object AvroWriter {
 
-  implicit def GenericSer[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
-                                            writes: AvroMapper[Repr],
-                                            schema: Lazy[AvroSchema[T]]) = new AvroWriter[T] {
+  implicit def GenericWriter[T, Repr <: HList](implicit
+                                               gen: LabelledGeneric.Aux[T, Repr],
+                                               mapper: AvroMapper[Repr],
+                                               schema: Lazy[AvroSchema[T]]) = new AvroWriter[T] {
     override def apply(t: T): GenericRecord = {
-      val map = writes(labl.to(t))
+      val map = mapper(gen.to(t))
       val r = new org.apache.avro.generic.GenericData.Record(schema.value.apply)
       map.foreach { case (k, v) => r.put(k, v) }
       r

@@ -2,11 +2,6 @@ package com.sksamuel.avro4s
 
 import org.scalatest.{Matchers, WordSpec}
 
-sealed trait Fibble
-case class Fobble(str: String) extends Fibble
-case class Fabble(dbl: Double) extends Fibble
-case class Rapper(fibble: Fibble)
-
 sealed trait Wibble
 case class Wobble(str: String) extends Wibble
 case class Wabble(dbl: Double) extends Wibble
@@ -192,28 +187,19 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support traits" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/traits.avsc"))
-      val schema = AvroSchema[Wrapper]
-      println(schema.toString(true))
-      schema.toString(true) shouldBe expected.toString(true)
-    }
     "support sealed traits" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.avsc"))
-      val schema = AvroSchema[Rapper]
-      println(schema.toString(true))
+      val schema = AvroSchema[Wrapper]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "merge trait subtypes fields with same name into unions" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.avsc"))
       val schema = AvroSchema[Trapper]
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "merge trait subtypes fields with same name and same type with head schema only" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.avsc"))
       val schema = AvroSchema[Napper]
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support doc annotation on class" in {

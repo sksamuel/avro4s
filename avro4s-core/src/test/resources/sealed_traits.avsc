@@ -1,12 +1,12 @@
 {
   "type" : "record",
-  "name" : "Rapper",
+  "name" : "Wrapper",
   "namespace" : "com.sksamuel.avro4s",
   "fields" : [ {
-    "name" : "fibble",
+    "name" : "wibble",
     "type" : {
       "type" : "record",
-      "name" : "Fibble",
+      "name" : "Wibble",
       "fields" : [ {
         "name" : "str",
         "type" : [ "string", "null" ]

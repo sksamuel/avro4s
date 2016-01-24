@@ -62,7 +62,6 @@ class UniverseTest extends WordSpec with Matchers {
   "Avro4s" should {
     "support complex schema" in {
       val schema = AvroSchema[Universe]
-      println(schema.toString(true))
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/universe.avsc"))
       schema.toString(true) shouldBe expected.toString(true)
     }
