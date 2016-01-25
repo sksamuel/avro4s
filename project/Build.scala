@@ -27,7 +27,7 @@ object Build extends Build {
     sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
     libraryDependencies ++= Seq(
-      "org.scala-lang"        % "scala-reflect" % ScalaVersion,
+      "org.scala-lang"        % "scala-reflect" % scalaVersion.value,
       "com.chuusai"           %% "shapeless" % ShapelessVersion,
       "org.apache.avro"       % "avro" % AvroVersion,
       "org.slf4j"             % "slf4j-api" % Slf4jVersion,
