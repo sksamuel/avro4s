@@ -12,7 +12,7 @@ import scala.util.Try
 class AvroInputStream[T](in: SeekableInput)(implicit schema: Lazy[AvroSchema[T]], deser: Lazy[AvroReader[T]]) {
 
   val datumReader = new GenericDatumReader[GenericRecord](schema.value())
-  val dataFileReader = new DataFileReader[GenericRecord](in: SeekableInput, datumReader)
+  val dataFileReader = new DataFileReader[GenericRecord](in, datumReader)
 
   def iterator: Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = dataFileReader.hasNext
