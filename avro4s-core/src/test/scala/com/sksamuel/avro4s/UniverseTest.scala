@@ -29,13 +29,13 @@ import org.scalatest.{Matchers, WordSpec}
   */
 class UniverseTest extends WordSpec with Matchers {
 
-  val clipper = Ship(name = "Imperial Clipper", role = "fighter escort", maxSpeed = 430, jumpRange = 8.67, hardpoints = Map("medium" -> 4, "large" -> 2), defaultWeapon = Some("pulse laser"))
-  val eagle = Ship(name = "Eagle", role = "fighter", maxSpeed = 350, jumpRange = 15.4, hardpoints = Map("small" -> 3), defaultWeapon = None)
+  val clipper = Ship(name = "Imperial Clipper", role = "fighter escort", maxSpeed = 430, jumpRange = 8.67, hardpoints = Map(("medium", 4), ("large", 2)), defaultWeapon = Some("pulse laser"))
+  val eagle = Ship(name = "Eagle", role = "fighter", maxSpeed = 350, jumpRange = 15.4, hardpoints = Map(("small", 3)), defaultWeapon = None)
   val earth = Planet("Earth", "Sol")
 
   val g = Universe(
     factions = Seq(
-      Faction("Imperial", true, homeworld = Option(earth), shipRanks = Map("baron" -> clipper), area = 4461244.553),
+      Faction("Imperial", true, homeworld = Option(earth), shipRanks = Map(("baron", clipper)), area = 4461244.553),
       Faction("Federation", true, homeworld = Option(earth), area = 3969244.184),
       Faction("Independant", false, homeworld = None, area = 15662.186)
     ),
@@ -61,7 +61,7 @@ class UniverseTest extends WordSpec with Matchers {
 
   "Avro4s" should {
     "support complex schema" in {
-      val schema = AvroSchema[Universe]
+      val schema = ToAvroSchema[Universe].apply()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/universe.avsc"))
       schema.toString(true) shouldBe expected.toString(true)
     }

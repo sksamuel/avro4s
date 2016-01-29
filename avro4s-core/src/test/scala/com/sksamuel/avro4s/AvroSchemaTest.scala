@@ -20,16 +20,11 @@ case class Napper(nibble: Nibble)
 class AvroSchemaTest extends WordSpec with Matchers {
 
   "AvroSchema" should {
-    "accept java enums" in {
-      case class Test(wine: Wine)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/enum.avsc"))
-      val schema = AvroSchema[Test]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
     "accept booleans" in {
       case class Test(booly: Boolean)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/boolean.avsc"))
       val schema = AvroSchema[Test]
+      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "accept bytes" in {
@@ -187,37 +182,46 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support sealed traits" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.avsc"))
-      val schema = AvroSchema[Wrapper]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "merge trait subtypes fields with same name into unions" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.avsc"))
-      val schema = AvroSchema[Trapper]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "merge trait subtypes fields with same name and same type with head schema only" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.avsc"))
-      val schema = AvroSchema[Napper]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
+//    "accept java enums" in {
+//      case class Test(wine: Wine)
+//      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/enum.avsc"))
+    //      val schema = ToAvroSchema[Test]
+//      schema.toString(true) shouldBe expected.toString(true)
+//    }
+    //    "support sealed traits" in {
+    //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.avsc"))
+    //      val schema = AvroSchema[Wrapper]()
+    //      schema.toString(true) shouldBe expected.toString(true)
+    //    }
+    //    "merge trait subtypes fields with same name into unions" in {
+    //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.avsc"))
+    //      val schema = AvroSchema[Trapper]()
+    //      schema.toString(true) shouldBe expected.toString(true)
+    //    }
+    //    "merge trait subtypes fields with same name and same type with head schema only" in {
+    //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.avsc"))
+    //      val schema = AvroSchema[Napper]()
+    //      schema.toString(true) shouldBe expected.toString(true)
+    //    }
     "support doc annotation on class" in {
       @AvroDoc("hello its me") case class Annotated(str: String)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation_class.avsc"))
       val schema = AvroSchema[Annotated]
+      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support doc annotation on field" in {
       case class Annotated(@AvroDoc("hello its me") str: String, @AvroDoc("I am a long") long: Long, int: Int)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation_field.avsc"))
       val schema = AvroSchema[Annotated]
+      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support prop annotation on class" in {
       @AvroProp("cold", "play") case class Annotated(str: String)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/props_annotation_class.avsc"))
       val schema = AvroSchema[Annotated]
+      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support prop annotation on field" in {

@@ -9,7 +9,7 @@ import shapeless.Lazy
 
 import scala.util.Try
 
-class AvroInputStream[T](in: SeekableInput)(implicit schema: Lazy[AvroSchema[T]], deser: Lazy[AvroReader[T]]) {
+class AvroInputStream[T](in: SeekableInput)(implicit schema: Lazy[ToAvroSchema[T]], deser: Lazy[AvroReader[T]]) {
 
   val datumReader = new GenericDatumReader[GenericRecord](schema.value())
   val dataFileReader = new DataFileReader[GenericRecord](in, datumReader)
@@ -28,8 +28,8 @@ class AvroInputStream[T](in: SeekableInput)(implicit schema: Lazy[AvroSchema[T]]
 }
 
 object AvroInputStream {
-  def apply[T](bytes: Array[Byte])(implicit schema: Lazy[AvroSchema[T]], deserializer: Lazy[AvroReader[T]]): AvroInputStream[T] = new AvroInputStream[T](new SeekableByteArrayInput(bytes))
-  def apply[T](path: String)(implicit schema: Lazy[AvroSchema[T]], deserializer: Lazy[AvroReader[T]]): AvroInputStream[T] = apply(new File(path))
-  def apply[T](path: Path)(implicit schema: Lazy[AvroSchema[T]], deserializer: Lazy[AvroReader[T]]): AvroInputStream[T] = apply(path.toFile)
-  def apply[T](file: File)(implicit schema: Lazy[AvroSchema[T]], deserializer: Lazy[AvroReader[T]]): AvroInputStream[T] = new AvroInputStream[T](new SeekableFileInput(file))
+  def apply[T](bytes: Array[Byte])(implicit schema: Lazy[ToAvroSchema[T]], deserializer: Lazy[AvroReader[T]]): AvroInputStream[T] = new AvroInputStream[T](new SeekableByteArrayInput(bytes))
+  def apply[T](path: String)(implicit schema: Lazy[ToAvroSchema[T]], deserializer: Lazy[AvroReader[T]]): AvroInputStream[T] = apply(new File(path))
+  def apply[T](path: Path)(implicit schema: Lazy[ToAvroSchema[T]], deserializer: Lazy[AvroReader[T]]): AvroInputStream[T] = apply(path.toFile)
+  def apply[T](file: File)(implicit schema: Lazy[ToAvroSchema[T]], deserializer: Lazy[AvroReader[T]]): AvroInputStream[T] = new AvroInputStream[T](new SeekableFileInput(file))
 }

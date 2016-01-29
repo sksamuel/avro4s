@@ -22,8 +22,8 @@ case class Drapper(dibble: Dibble)
 
 class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
-  def read[T](out: ByteArrayOutputStream)(implicit schema: Lazy[AvroSchema[T]]): GenericRecord = read(out.toByteArray)
-  def read[T](bytes: Array[Byte])(implicit schema: Lazy[AvroSchema[T]]): GenericRecord = {
+  def read[T](out: ByteArrayOutputStream)(implicit schema: Lazy[ToAvroSchema[T]]): GenericRecord = read(out.toByteArray)
+  def read[T](bytes: Array[Byte])(implicit schema: Lazy[ToAvroSchema[T]]): GenericRecord = {
     val datum = new GenericDatumReader[GenericRecord](schema.value.apply)
     val reader = new DataFileReader[GenericRecord](new SeekableByteArrayInput(bytes), datum)
     reader.hasNext
@@ -290,17 +290,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
       val record = read[ValueWrapper](output)
       record.get("valueClass").asInstanceOf[GenericRecord].get("value").toString shouldBe "bob"
-    }
-    "support sealed traits" in {
-//      val instance = Drapper(Dobble("foo"))
-//
-//      val output = new ByteArrayOutputStream
-//      val avro = AvroOutputStream[Drapper](output)
-//      avro.write(instance)
-//      avro.close()
-//
-//      val record = read[Drapper](output)
-//      record.get("str").toString shouldBe "foo"
     }
   }
 }

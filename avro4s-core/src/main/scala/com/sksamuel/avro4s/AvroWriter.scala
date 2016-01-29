@@ -50,7 +50,7 @@ object ToValue {
     }
   }
 
-  implicit object ByteArrayToValue$ extends ToValue[Array[Byte]] {
+  implicit object ByteArrayToValue extends ToValue[Array[Byte]] {
     override def apply(value: Array[Byte]): ByteBuffer = ByteBuffer.wrap(value)
   }
 
@@ -108,7 +108,7 @@ object AvroWriter {
   implicit def GenericWriter[T, Repr <: HList](implicit
                                                gen: LabelledGeneric.Aux[T, Repr],
                                                mapper: AvroMapper[Repr],
-                                               schema: Lazy[AvroSchema[T]]) = new AvroWriter[T] {
+                                               schema: Lazy[ToAvroSchema[T]]) = new AvroWriter[T] {
     override def apply(t: T): GenericRecord = {
       val map = mapper(gen.to(t))
       val r = new org.apache.avro.generic.GenericData.Record(schema.value.apply)
