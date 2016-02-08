@@ -6,9 +6,9 @@ case class Ingredient(name: String, sugar: Double, fat: Double)
 
 object Test extends App {
 
-  import com.sksamuel.avro4s.ToAvroSchema
+  import com.sksamuel.avro4s.ToSchema$
 
-  val schema = ToAvroSchema[Pizza].apply()
+  val schema = ToSchema[Pizza].apply()
   println(schema.toString(true))
 
   import java.io.File

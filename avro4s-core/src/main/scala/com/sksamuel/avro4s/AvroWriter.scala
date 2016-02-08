@@ -93,7 +93,7 @@ object AvroMapper {
                                                          tag: ClassTag[V]): AvroMapper[FieldType[Key, V] :: T] = {
     new AvroMapper[FieldType[Key, V] :: T] {
       override def apply(value: FieldType[Key, V] :: T): Map[String, Any] = value match {
-        case h :: t => remaining(t) + (key.value.name -> tovalue.value(h))
+        case h :: t => remaining(t) + ((key.value.name, tovalue.value(h)))
       }
     }
   }
@@ -108,7 +108,7 @@ object AvroWriter {
   implicit def GenericWriter[T, Repr <: HList](implicit
                                                gen: LabelledGeneric.Aux[T, Repr],
                                                mapper: AvroMapper[Repr],
-                                               schema: Lazy[ToAvroSchema[T]]) = new AvroWriter[T] {
+                                               schema: Lazy[ToSchema[T]]) = new AvroWriter[T] {
     override def apply(t: T): GenericRecord = {
       val map = mapper(gen.to(t))
       val r = new org.apache.avro.generic.GenericData.Record(schema.value.apply)

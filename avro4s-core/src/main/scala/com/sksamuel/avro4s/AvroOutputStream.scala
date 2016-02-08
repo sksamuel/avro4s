@@ -7,7 +7,7 @@ import org.apache.avro.file.DataFileWriter
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import shapeless.Lazy
 
-class AvroOutputStream[T](os: OutputStream)(implicit schema: Lazy[ToAvroSchema[T]], writer: Lazy[AvroWriter[T]]) {
+class AvroOutputStream[T](os: OutputStream)(implicit schema: Lazy[ToSchema[T]], writer: Lazy[AvroWriter[T]]) {
 
   val datumWriter = new GenericDatumWriter[GenericRecord]()
   val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
@@ -31,7 +31,7 @@ class AvroOutputStream[T](os: OutputStream)(implicit schema: Lazy[ToAvroSchema[T
 }
 
 object AvroOutputStream {
-  def apply[T](file: File)(implicit schema: Lazy[ToAvroSchema[T]], writer: Lazy[AvroWriter[T]]): AvroOutputStream[T] = apply(file.toPath)
-  def apply[T](path: Path)(implicit schema: Lazy[ToAvroSchema[T]], writer: Lazy[AvroWriter[T]]): AvroOutputStream[T] = apply(Files.newOutputStream(path))
-  def apply[T](os: OutputStream)(implicit schema: Lazy[ToAvroSchema[T]], writer: Lazy[AvroWriter[T]]): AvroOutputStream[T] = new AvroOutputStream[T](os)
+  def apply[T](file: File)(implicit schema: Lazy[ToSchema[T]], writer: Lazy[AvroWriter[T]]): AvroOutputStream[T] = apply(file.toPath)
+  def apply[T](path: Path)(implicit schema: Lazy[ToSchema[T]], writer: Lazy[AvroWriter[T]]): AvroOutputStream[T] = apply(Files.newOutputStream(path))
+  def apply[T](os: OutputStream)(implicit schema: Lazy[ToSchema[T]], writer: Lazy[AvroWriter[T]]): AvroOutputStream[T] = new AvroOutputStream[T](os)
 }

@@ -5,5 +5,5 @@ import org.apache.avro.Schema
 import scala.language.experimental.macros
 
 object AvroSchema {
-  def apply[T](implicit toAvroSchema: ToAvroSchema[T]): Schema = toAvroSchema()
+  def apply[T <: Product](implicit toAvroSchema: ToSchema[T]): Schema = toAvroSchema()
 }

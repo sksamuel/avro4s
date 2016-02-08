@@ -8,7 +8,7 @@ import shapeless.Lazy
 
 class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
 
-  def write[T](ts: Seq[T])(implicit schema: Lazy[ToAvroSchema[T]], ser: Lazy[AvroWriter[T]]): Array[Byte] = {
+  def write[T](ts: Seq[T])(implicit schema: Lazy[ToSchema[T]], ser: Lazy[AvroWriter[T]]): Array[Byte] = {
     val output = new ByteArrayOutputStream
     val avro = AvroOutputStream[T](output)
     avro.write(ts)
