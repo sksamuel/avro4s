@@ -7,7 +7,7 @@ object Build extends Build {
   val org = "com.sksamuel.avro4s"
 
   val AvroVersion = "1.7.7"
-  val ScalaVersion = "2.10.6"
+  val ScalaVersion = "2.11.7"
   val ScalatestVersion = "3.0.0-M12"
   val Slf4jVersion = "1.7.12"
   val Log4jVersion = "1.2.17"
@@ -17,7 +17,7 @@ object Build extends Build {
   val rootSettings = Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.11.7", ScalaVersion),
+    crossScalaVersions := Seq("2.10.6", ScalaVersion),
     publishMavenStyle := true,
     resolvers += Resolver.mavenLocal,
     publishArtifact in Test := false,
@@ -29,18 +29,12 @@ object Build extends Build {
     libraryDependencies ++= Seq(
       "com.sksamuel.scalax"   %% "scalax" % "0.17.0",
       "org.scala-lang"        % "scala-reflect" % scalaVersion.value,
-      "com.chuusai"           %% "shapeless" % ShapelessVersion,
       "org.apache.avro"       % "avro" % AvroVersion,
       "org.slf4j"             % "slf4j-api" % Slf4jVersion,
       "log4j"                 % "log4j" % Log4jVersion % "test",
       "org.slf4j"             % "log4j-over-slf4j" % Slf4jVersion % "test",
       "org.scalatest"         %% "scalatest" % ScalatestVersion % "test"
     ),
-    libraryDependencies ++= {
-      if (scalaVersion.value.contains("2.10")) {
-        Seq(compilerPlugin("org.scalamacros" % "paradise_2.10.6" % "2.1.0"))
-      } else Nil
-    },
     publishTo <<= version {
       (v: String) =>
         val nexus = "https://oss.sonatype.org/"
@@ -81,23 +75,28 @@ object Build extends Build {
 
   lazy val macros = Project("avro4s-macros", file("avro4s-macros"))
     .settings(rootSettings: _*)
-    .settings(publish := {})
-    .settings(name := "avro4s-macros")
+    .settings(
+      libraryDependencies ++= {
+        if (scalaVersion.value.contains("2.10")) {
+          Seq(
+            "org.scalamacros" %% "quasiquotes" % "2.1.0",
+            compilerPlugin("org.scalamacros" % "paradise_2.10.6" % "2.1.0")
+          )
+        } else Nil
+      })
+  .settings(name := "avro4s-macros")
 
   lazy val core = Project("avro4s-core", file("avro4s-core"))
     .settings(rootSettings: _*)
-    .settings(publish := {})
     .settings(name := "avro4s-core")
     .dependsOn(macros)
 
   lazy val generator = Project("avro4s-generator", file("avro4s-generator"))
     .settings(rootSettings: _*)
-    .settings(publish := {})
     .settings(name := "avro4s-generator")
 
   lazy val json = Project("avro4s-json", file("avro4s-json"))
     .settings(rootSettings: _*)
-    .settings(publish := {})
     .settings(libraryDependencies += "org.json4s" %% "json4s-native" % Json4sVersion)
     .settings(name := "avro4s-json")
     .dependsOn(core)

@@ -16,7 +16,11 @@ trait SchemaFor[T] {
   def apply(): org.apache.avro.Schema
 }
 
-object SchemaFor  {
+trait LowPrioritySchemaFor {
+  implicit def apply[T]: SchemaFor[T] = macro SchemaFor.applyImpl[T]
+}
+
+object SchemaFor extends LowPrioritySchemaFor  {
 
   implicit val BooleanSchemaFor: SchemaFor[Boolean] = new SchemaFor[Boolean] {
     def apply(): Schema = Schema.create(Schema.Type.BOOLEAN)
@@ -111,10 +115,10 @@ object SchemaFor  {
     }
   }
 
-  implicit def apply[T]: SchemaFor[T] = macro applyImpl[T]
-
   def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[SchemaFor[T]] = {
     import c.universe._
+    val tpe = weakTypeTag[T].tpe
+    require(tpe.typeSymbol.isClass, tpe + " is not a class but is " + tpe.typeSymbol.fullName)
 
     def annotations(sym: Symbol): Seq[c.Tree] = sym.annotations.map { a =>
       val name = a.tpe.typeSymbol.fullName
@@ -128,8 +132,6 @@ object SchemaFor  {
       }.flatMap(_.paramss.headOption).getOrElse(Nil)
     }
 
-    val tpe = weakTypeTag[T].tpe
-    require(tpe.typeSymbol.isClass, tpe + " is not a class but is " + tpe.typeSymbol.fullName)
     val sealedTraitOrClass = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed
 
     val fieldSchemaPartTrees: Seq[Tree] = if (sealedTraitOrClass) {
@@ -139,8 +141,8 @@ object SchemaFor  {
         val schemas = fs map { f =>
           val sig = f.typeSignature
           q"""{
-            import com.sksamuel.avro4s.SchemaFor._;
-            com.sksamuel.avro4s.SchemaFor.schemaBuilder[$sig]
+              import com.sksamuel.avro4s.SchemaFor._;
+              com.sksamuel.avro4s.SchemaFor.schemaBuilder[$sig]
           }
            """
         }
@@ -159,7 +161,7 @@ object SchemaFor  {
         val sig = f.typeSignature
         val annos = annotations(f)
         q"""{
-            import com.sksamuel.avro4s.SchemaFor._;
+            import com.sksamuel.avro4s.SchemaFor._
             com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($name, Seq(..$annos))
           }
        """
@@ -233,5 +235,3 @@ object SchemaFor  {
     schema
   }
 }
-
-case class Anno(classname: String, values: Seq[String])

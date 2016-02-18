@@ -1,14 +1,14 @@
 {
   "type": "record",
-  "name": "NestedListString",
+  "name": "NestedSetDouble",
   "namespace": "com.sksamuel.avro4s",
   "fields": [
     {
-      "name": "list",
+      "name": "set",
       "type": {
         "type": "array",
-        "items": {
-          "type": "string"
+        "items" : {
+           "type" : "double"
         }
       }
     }

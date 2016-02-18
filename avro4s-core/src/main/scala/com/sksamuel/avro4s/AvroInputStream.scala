@@ -5,8 +5,6 @@ import java.nio.file.Path
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput, SeekableFileInput, SeekableInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
-import shapeless.Lazy
-
 import scala.util.Try
 
 //class AvroInputStream[T](in: SeekableInput)(implicit schema: Lazy[ToSchema[T]], deser: Lazy[AvroReader[T]]) {

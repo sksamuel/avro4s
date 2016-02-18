@@ -1,6 +1,6 @@
 {
   "type" : "record",
-  "name" : "Test",
+  "name" : "NestedSet",
   "namespace" : "com.sksamuel.avro4s",
   "fields" : [ {
     "name" : "set",

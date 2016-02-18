@@ -4,8 +4,6 @@ import java.nio.ByteBuffer
 
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import shapeless._
-import shapeless.labelled._
 
 import scala.reflect.ClassTag
 
@@ -14,10 +12,6 @@ trait FromValue[T] {
 }
 
 object FromValue {
-
-  implicit object HNilFromValue extends FromValue[HNil] {
-    override def apply(value: Any): HNil = HNil
-  }
 
   implicit object BigDecimalFromValue extends FromValue[BigDecimal] {
     override def apply(value: Any): BigDecimal = BigDecimal(new String(value.asInstanceOf[ByteBuffer].array))
@@ -106,9 +100,9 @@ object FromValue {
     }
   }
 
-  implicit def GenericReader[T](implicit reader: Lazy[AvroReader[T]]): FromValue[T] = new FromValue[T] {
+  implicit def GenericReader[T](implicit reader: AvroReader[T]): FromValue[T] = new FromValue[T] {
     override def apply(value: Any): T = value match {
-      case record: GenericRecord => reader.value(record)
+      case record: GenericRecord => reader(record)
     }
   }
 
@@ -162,29 +156,5 @@ trait AvroReader[T] {
 }
 
 object AvroReader {
-
-  implicit object HNilReader extends AvroReader[HNil] {
-    def apply(record: GenericRecord): HNil = HNil
-  }
-
-  implicit def HConsFields[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
-                                                       fromValue: Lazy[FromValue[V]],
-                                                       remaining: AvroReader[T]): AvroReader[FieldType[K, V] :: T] = {
-    new AvroReader[FieldType[K, V] :: T] {
-
-      val fieldName = key.value.name
-
-      override def apply(record: GenericRecord): FieldType[K, V] :: T = {
-        val v = fromValue.value(record.get(key.value.name))
-        field[K](v) :: remaining(record)
-      }
-    }
-  }
-
-  implicit def GenericSer[T, Repr <: HList](implicit labl: LabelledGeneric.Aux[T, Repr],
-                                            reader: Lazy[AvroReader[Repr]]) = new AvroReader[T] {
-    override def apply(record: GenericRecord): T = labl.from(reader.value(record))
-  }
-
-  def apply[T](implicit reader: Lazy[AvroReader[T]]): AvroReader[T] = reader.value
+  def apply[T](implicit reader: AvroReader[T]): AvroReader[T] = reader
 }

@@ -19,16 +19,14 @@ case class Napper(nibble: Nibble)
 
 class AvroSchemaTest extends WordSpec with Matchers {
 
+  case class NestedListString(list: List[String])
+  case class NestedSetDouble(set: Set[Double])
+  case class NestedSet(set: Set[Nested])
   case class Nested(goo: String)
-
   case class NestedBoolean(b: Boolean)
-
   case class NestedTest(foo: String, nested: Nested)
-
   case class Inner(goo: String)
-
   case class Middle(inner: Inner)
-
   case class Outer(middle: Middle)
 
   "AvroSchema" should {
@@ -109,9 +107,8 @@ class AvroSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a List of primitives" in {
-      case class Test(list: List[String])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/list.avsc"))
-      val schema = SchemaFor[Test]()
+      val schema = SchemaFor[NestedListString]()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a scala.collection.immutable.Seq of records" in {
@@ -133,15 +130,19 @@ class AvroSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a Set of records" in {
-      case class Test(set: Set[Nested])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setrecords.avsc"))
-      val schema = SchemaFor[Test]()
+      val schema = SchemaFor[NestedSet]()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a Set of strings" in {
       case class Test(set: Set[String])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setstrings.avsc"))
       val schema = SchemaFor[Test]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for a Set of doubles" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setdoubles.avsc"))
+      val schema = SchemaFor[NestedSetDouble]()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate union:T,U for Either[T,U] of primitives" in {
@@ -184,25 +185,21 @@ class AvroSchemaTest extends WordSpec with Matchers {
       case class Test(wine: Wine)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/enum.avsc"))
       val schema = SchemaFor[Test]()
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support sealed traits" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.avsc"))
       val schema = SchemaFor[Wrapper]()
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "merge trait subtypes fields with same name into unions" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.avsc"))
       val schema = SchemaFor[Trapper]()
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "merge trait subtypes fields with same name and same type into a single schema" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.avsc"))
       val schema = SchemaFor[Napper]()
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support doc annotation on class" in {
