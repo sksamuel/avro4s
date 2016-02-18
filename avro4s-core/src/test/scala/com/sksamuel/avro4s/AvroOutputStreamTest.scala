@@ -18,7 +18,6 @@ case class Dabble(dbl: Double) extends Dibble
 case class Drapper(dibble: Dibble)
 
 case class Test1(wine: Wine)
-
 case class Test2(dec: BigDecimal)
 
 case class Foo(str: String, boolean: Boolean)
@@ -36,8 +35,9 @@ case class NestedSeqTest(seq: Seq[Foo])
 case class NestedMapTest(map: Map[String, Foo])
 
 case class ValueWrapper(valueClass: ValueClass)
-
 case class ValueClass(value: String) extends AnyVal
+
+case class EitherCaseClasses(e: Either[Test1, Test2])
 
 class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
@@ -146,6 +146,23 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
       val record = read[Test](output)
       record.get("e").toString shouldBe "45.4"
+    }
+    "write eithers of case classes" in {
+      val output1 = new ByteArrayOutputStream
+      val avro1 = AvroOutputStream[EitherCaseClasses](output1)
+      avro1.write(EitherCaseClasses(Left(Test1(Wine.CabSav))))
+      avro1.close()
+
+      val record1 = read[EitherCaseClasses](output1)
+      record1.get("e").toString shouldBe """{"wine": "CabSav"}"""
+
+      val output2 = new ByteArrayOutputStream
+      val avro2 = AvroOutputStream[EitherCaseClasses](output2)
+      avro2.write(EitherCaseClasses(Right(Test2(14.56))))
+      avro2.close()
+
+      val record2 = read[EitherCaseClasses](output2)
+      record2.get("e").toString shouldBe """{"dec": {"bytes": "14.56"}}"""
     }
     "write a Some as populated union" in {
       case class Test(opt: Option[Double])
