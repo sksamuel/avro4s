@@ -9,7 +9,7 @@
       "name" : "Wibble",
       "fields" : [ {
         "name" : "str",
-        "type" : [ "string", "null" ]
+        "type" : [ "null", "string" ]
       }, {
         "name" : "dbl",
         "type" : [ "double", "null" ]

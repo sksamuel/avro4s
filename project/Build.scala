@@ -7,7 +7,7 @@ object Build extends Build {
   val org = "com.sksamuel.avro4s"
 
   val AvroVersion = "1.7.7"
-  val ScalaVersion = "2.11.7"
+  val ScalaVersion = "2.10.6"
   val ScalatestVersion = "3.0.0-M12"
   val Slf4jVersion = "1.7.12"
   val Log4jVersion = "1.2.17"
@@ -17,7 +17,7 @@ object Build extends Build {
   val rootSettings = Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.10.6", ScalaVersion),
+    crossScalaVersions := Seq("2.11.7", ScalaVersion),
     publishMavenStyle := true,
     resolvers += Resolver.mavenLocal,
     publishArtifact in Test := false,
@@ -27,6 +27,7 @@ object Build extends Build {
     sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
     libraryDependencies ++= Seq(
+      "com.sksamuel.scalax"   %% "scalax" % "0.17.0",
       "org.scala-lang"        % "scala-reflect" % scalaVersion.value,
       "com.chuusai"           %% "shapeless" % ShapelessVersion,
       "org.apache.avro"       % "avro" % AvroVersion,

@@ -9,13 +9,13 @@
       "name" : "Nibble",
       "fields" : [ {
         "name" : "str",
-        "type" : [ "string", "null" ]
+        "type" : [ "string" ]
       }, {
         "name" : "age",
         "type" : [ "int", "null" ]
       }, {
         "name" : "place",
-        "type" : [ "string", "null" ]
+        "type" : [ "null", "string" ]
       } ]
     }
   } ]

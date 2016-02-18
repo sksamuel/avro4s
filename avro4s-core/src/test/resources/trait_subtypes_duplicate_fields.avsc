@@ -9,13 +9,13 @@
       "name" : "Tibble",
       "fields" : [ {
         "name" : "str",
-        "type" : [ "double", "string", "null" ]
+        "type" : [ "double", "string" ]
       }, {
         "name" : "age",
         "type" : [ "int", "null" ]
       }, {
         "name" : "place",
-        "type" : [ "string", "null" ]
+        "type" : [ "null", "string" ]
       } ]
     }
   } ]

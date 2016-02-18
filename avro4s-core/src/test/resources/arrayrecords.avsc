@@ -1,27 +1,19 @@
 {
-  "type": "record",
-  "name": "Test",
-  "namespace": "com.sksamuel.avro4s",
-  "fields": [
-    {
-      "name": "array",
-      "type": {
-        "type": "array",
-        "items" : {
-           "type" : "record",
-           "name" : "Nested",
-             "fields" : [
-               {
-                 "name" : "str",
-                 "type" : "string"
-               },
-               {
-                 "name" : "bool",
-                 "type" : "boolean"
-               }
-             ]
-          }
+  "type" : "record",
+  "name" : "Test",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "array",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "Nested",
+        "fields" : [ {
+          "name" : "goo",
+          "type" : "string"
+        } ]
       }
     }
-  ]
+  } ]
 }
