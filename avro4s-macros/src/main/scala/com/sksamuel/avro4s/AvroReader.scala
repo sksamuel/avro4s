@@ -5,13 +5,24 @@ import java.nio.ByteBuffer
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 
+import scala.language.experimental.macros
 import scala.reflect.ClassTag
+import scala.reflect.macros._
 
+// turns an avro java value into a scala value
 trait FromValue[T] {
   def apply(value: Any): T
 }
 
-object FromValue {
+trait LowPriorityFromValue {
+  implicit def generic[T](implicit reader: AvroReader[T]): FromValue[T] = new FromValue[T] {
+    override def apply(value: Any): T = value match {
+      case record: GenericRecord => reader(record)
+    }
+  }
+}
+
+object FromValue extends LowPriorityFromValue {
 
   implicit object BigDecimalFromValue extends FromValue[BigDecimal] {
     override def apply(value: Any): BigDecimal = BigDecimal(new String(value.asInstanceOf[ByteBuffer].array))
@@ -60,7 +71,7 @@ object FromValue {
     }
   }
 
-  implicit def SetReader[T](implicit fromvalue: FromValue[T]): FromValue[Set[T]] = new FromValue[Set[T]] {
+  implicit def SetFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Set[T]] = new FromValue[Set[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -70,7 +81,7 @@ object FromValue {
     }
   }
 
-  implicit def ListReader[T](implicit fromvalue: FromValue[T]): FromValue[List[T]] = new FromValue[List[T]] {
+  implicit def ListFromValue[T](implicit fromvalue: FromValue[T]): FromValue[List[T]] = new FromValue[List[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -80,7 +91,7 @@ object FromValue {
     }
   }
 
-  implicit def SeqReader[T](implicit fromvalue: FromValue[T]): FromValue[Seq[T]] = new FromValue[Seq[T]] {
+  implicit def SeqFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Seq[T]] = new FromValue[Seq[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -90,7 +101,7 @@ object FromValue {
     }
   }
 
-  implicit def MapReader[T](implicit fromvalue: FromValue[T]): FromValue[Map[String, T]] = new FromValue[Map[String, T]] {
+  implicit def MapFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Map[String, T]] = new FromValue[Map[String, T]] {
 
     import scala.collection.JavaConverters._
 
@@ -100,19 +111,13 @@ object FromValue {
     }
   }
 
-  implicit def GenericReader[T](implicit reader: AvroReader[T]): FromValue[T] = new FromValue[T] {
-    override def apply(value: Any): T = value match {
-      case record: GenericRecord => reader(record)
-    }
-  }
-
   import scala.reflect.runtime.universe.WeakTypeTag
 
-  implicit def EitherReader[A, B](implicit
-                                  leftfromvalue: FromValue[A],
-                                  rightfromvalue: FromValue[B],
-                                  leftType: WeakTypeTag[A],
-                                  rightType: WeakTypeTag[B]): FromValue[Either[A, B]] = new FromValue[Either[A, B]] {
+  implicit def EitherFromValue[A, B](implicit
+                                     leftfromvalue: FromValue[A],
+                                     rightfromvalue: FromValue[B],
+                                     leftType: WeakTypeTag[A],
+                                     rightType: WeakTypeTag[B]): FromValue[Either[A, B]] = new FromValue[Either[A, B]] {
     override def apply(value: Any): Either[A, B] = {
 
       import scala.reflect.runtime.universe.typeOf
@@ -152,9 +157,45 @@ object FromValue {
 }
 
 trait AvroReader[T] {
-  def apply(record: GenericRecord): T
+  def apply(record: org.apache.avro.generic.GenericRecord): T
 }
 
 object AvroReader {
-  def apply[T](implicit reader: AvroReader[T]): AvroReader[T] = reader
+
+  implicit def apply[T]: AvroReader[T] = macro applyImpl[T]
+
+  def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[AvroReader[T]] = {
+    import c.universe._
+    val tpe = weakTypeTag[T].tpe
+    require(tpe.typeSymbol.asClass.isCaseClass, s"Require a case class but $tpe is not")
+
+    def fieldsForType(tpe: c.universe.Type): List[c.universe.Symbol] = {
+      tpe.declarations.collectFirst {
+        case m: MethodSymbol if m.isPrimaryConstructor => m
+      }.flatMap(_.paramss.headOption).getOrElse(Nil)
+    }
+
+    val companion = tpe.typeSymbol.companionSymbol
+
+    val fromValues: Seq[Tree] = fieldsForType(tpe).map { f =>
+      val name = f.name.asInstanceOf[c.TermName]
+      val decoded: String = name.decoded
+      val sig = f.typeSignature
+      q"""{
+            com.sksamuel.avro4s.AvroReader.read[$sig](record, $decoded)
+          }
+       """
+    }
+
+    c.Expr[AvroReader[T]](
+      q"""new com.sksamuel.avro4s.AvroReader[$tpe] {
+            def apply(record: org.apache.avro.generic.GenericRecord): $tpe = {
+              $companion.apply(..$fromValues)
+            }
+          }
+        """
+    )
+  }
+
+  def read[T](record: GenericRecord, name: String)(implicit fromValue: FromValue[T]): T = fromValue(record.get(name))
 }
