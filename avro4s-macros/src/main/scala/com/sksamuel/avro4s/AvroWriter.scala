@@ -105,6 +105,13 @@ object AvroWriter {
       val mapKey: String = name.decoded
       val sig = f.typeSignature
       q"""{
+
+
+                      import com.sksamuel.avro4s.ToSchema._
+                      import com.sksamuel.avro4s.ToValue._
+                      import com.sksamuel.avro4s.SchemaFor._
+
+
             com.sksamuel.avro4s.AvroWriter.tuple[$sig]($mapKey, t.$name : $sig)
           }
        """
@@ -112,9 +119,9 @@ object AvroWriter {
 
     c.Expr[AvroWriter[T]](
       q"""new com.sksamuel.avro4s.AvroWriter[$tpe] {
+
             def apply(t : $tpe): org.apache.avro.generic.GenericRecord = {
               val map: Map[String, Any] = Map(..$tuples)
-              import com.sksamuel.avro4s.SchemaFor._
               com.sksamuel.avro4s.AvroWriter.createRecord[$tpe](map)
             }
           }

@@ -8,6 +8,7 @@ import org.apache.avro.util.Utf8
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.macros._
+import scala.collection.JavaConverters._
 
 // turns an avro java value into a scala value
 trait FromValue[T] {
@@ -62,52 +63,41 @@ object FromValue extends LowPriorityFromValue {
 
   implicit def ArrayReader[T](implicit fromvalue: FromValue[T],
                               tag: ClassTag[T]): FromValue[Array[T]] = new FromValue[Array[T]] {
-
-    import scala.collection.JavaConverters._
-
     override def apply(value: Any): Array[T] = value match {
       case array: Array[_] => array.map(fromvalue.apply)
       case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toArray
+      case other => sys.error("Unsupported array " + other)
     }
   }
 
   implicit def SetFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Set[T]] = new FromValue[Set[T]] {
-
-    import scala.collection.JavaConverters._
-
     override def apply(value: Any): Set[T] = value match {
       case array: Array[_] => array.map(fromvalue.apply).toSet
       case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toSet
+      case other => sys.error("Unsupported set " + other)
     }
   }
 
   implicit def ListFromValue[T](implicit fromvalue: FromValue[T]): FromValue[List[T]] = new FromValue[List[T]] {
-
-    import scala.collection.JavaConverters._
-
     override def apply(value: Any): List[T] = value match {
       case array: Array[_] => array.map(fromvalue.apply).toList
       case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toList
+      case other => sys.error("Unsupported list " + other)
+    }
+  }
+
+  implicit def MapFromValue[T]: FromValue[Map[String, T]] = new FromValue[Map[String, T]] {
+    override def apply(value: Any): Map[String, T] = value match {
+      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> null.asInstanceOf[T] }
+      case other => sys.error("Unsupported map " + other)
     }
   }
 
   implicit def SeqFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Seq[T]] = new FromValue[Seq[T]] {
-
-    import scala.collection.JavaConverters._
-
     override def apply(value: Any): Seq[T] = value match {
       case array: Array[_] => array.map(fromvalue.apply)
       case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toList
-    }
-  }
-
-  implicit def MapFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Map[String, T]] = new FromValue[Map[String, T]] {
-
-    import scala.collection.JavaConverters._
-
-    override def apply(value: Any): Map[String, T] = value match {
-      case map: java.util.Map[_, _] =>
-        map.asScala.toMap.map { case (k, v) => k.toString -> fromvalue(v) }
+      case other => sys.error("Unsupported seq " + other)
     }
   }
 
@@ -180,17 +170,27 @@ object AvroReader {
     val fromValues: Seq[Tree] = fieldsForType(tpe).map { f =>
       val name = f.name.asInstanceOf[c.TermName]
       val decoded: String = name.decoded
-      val sig = f.typeSignature
+      val sig = tpe.declaration(name).typeSignature
       q"""{
-            com.sksamuel.avro4s.AvroReader.read[$sig](record, $decoded)
-          }
-       """
+           $decoded
+            }"""
     }
+
+    //             com.sksamuel.avro4s.AvroReader.read[$sig](record, $decoded)
+
+    //    $companion.apply(..$fromValues)
 
     c.Expr[AvroReader[T]](
       q"""new com.sksamuel.avro4s.AvroReader[$tpe] {
+
+            import com.sksamuel.avro4s.ToSchema._
+            import com.sksamuel.avro4s.ToValue._
+            import com.sksamuel.avro4s.FromValue._
+
             def apply(record: org.apache.avro.generic.GenericRecord): $tpe = {
-              $companion.apply(..$fromValues)
+              val values =  Seq(..$fromValues)
+              sys.error(""+values)
+              null.asInstanceOf[$tpe]
             }
           }
         """

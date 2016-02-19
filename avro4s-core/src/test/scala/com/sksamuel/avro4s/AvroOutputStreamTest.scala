@@ -207,6 +207,17 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val record = read[NestedSeqDoubles](output)
       record.get("sequence").asInstanceOf[java.util.List[Double]].asScala shouldBe Seq(1d, 2d, 3d, 4d)
     }
+    "write seq of maps" in {
+//      val output = new ByteArrayOutputStream
+//      val avro = AvroOutputStream[SeqOfCaseClassWithMaps](output)
+//      avro.write(SeqOfCaseClassWithMaps(Seq(HasMap(Map("a" -> "b")), HasMap(Map("c" -> "d")))))
+//      avro.close()
+//
+//      val record = read[NestedSeqTest](output)
+//      val data = record.get("seq").asInstanceOf[java.util.List[GenericRecord]].asScala.toList
+//      data.head.get("str").toString shouldBe "sam"
+//      data.last.get("str").toString shouldBe "ham"
+    }
     "write Seq of nested classes" in {
       val output = new ByteArrayOutputStream
       val avro = AvroOutputStream[NestedSeqTest](output)
