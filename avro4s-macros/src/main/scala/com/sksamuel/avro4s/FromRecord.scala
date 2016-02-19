@@ -17,7 +17,7 @@ trait FromValue[T] {
 }
 
 trait LowPriorityFromValue {
-  implicit def generic[T](implicit reader: AvroReader[T]): FromValue[T] = new FromValue[T] {
+  implicit def generic[T](implicit reader: FromRecord[T]): FromValue[T] = new FromValue[T] {
     override def apply(value: Any): T = value match {
       case record: GenericRecord => reader(record)
     }
@@ -147,15 +147,16 @@ object FromValue extends LowPriorityFromValue {
   }
 }
 
-trait AvroReader[T] {
+// converts an avro record into a type T
+trait FromRecord[T] {
   def apply(record: org.apache.avro.generic.GenericRecord): T
 }
 
-object AvroReader {
+object FromRecord {
 
-  implicit def apply[T]: AvroReader[T] = macro applyImpl[T]
+  implicit def apply[T]: FromRecord[T] = macro applyImpl[T]
 
-  def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[AvroReader[T]] = {
+  def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[FromRecord[T]] = {
     import c.universe._
     val tpe = weakTypeTag[T].tpe
     require(tpe.typeSymbol.asClass.isCaseClass, s"Require a case class but $tpe is not")
@@ -172,11 +173,11 @@ object AvroReader {
       val name = f.name.asInstanceOf[c.TermName]
       val decoded: String = name.decoded
       val sig = f.typeSignature
-      q"""{  com.sksamuel.avro4s.AvroReader.read[$sig](record, $decoded)  }"""
+      q"""{  com.sksamuel.avro4s.FromRecord.read[$sig](record, $decoded)  }"""
     }
 
-    c.Expr[AvroReader[T]](
-      q"""new com.sksamuel.avro4s.AvroReader[$tpe] {
+    c.Expr[FromRecord[T]](
+      q"""new com.sksamuel.avro4s.FromRecord[$tpe] {
             import com.sksamuel.avro4s.ToSchema._
             import com.sksamuel.avro4s.ToValue._
             import com.sksamuel.avro4s.FromValue._

@@ -45,7 +45,7 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   case class Enums(wine: Wine)
 
 
-  def write[T](ts: Seq[T])(implicit schema: SchemaFor[T], ser: AvroWriter[T]): Array[Byte] = {
+  def write[T](ts: Seq[T])(implicit schema: SchemaFor[T], ser: ToRecord[T]): Array[Byte] = {
     val output = new ByteArrayOutputStream
     val avro = AvroOutputStream[T](output)
     avro.write(ts)

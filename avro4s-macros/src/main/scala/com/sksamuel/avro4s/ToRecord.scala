@@ -15,7 +15,7 @@ trait ToValue[A] {
 }
 
 trait LowPriorityToValue {
-  implicit def GenericWriter[T](implicit writer: AvroWriter[T]): ToValue[T] = new ToValue[T] {
+  implicit def GenericWriter[T](implicit writer: ToRecord[T]): ToValue[T] = new ToValue[T] {
     override def apply(value: T): GenericRecord = writer(value)
   }
 }
@@ -83,15 +83,15 @@ object ToValue extends LowPriorityToValue {
   }
 }
 
-trait AvroWriter[T] {
+trait ToRecord[T] {
   def apply(t: T): GenericRecord
 }
 
-object AvroWriter {
+object ToRecord {
 
-  implicit def apply[T]: AvroWriter[T] = macro applyImpl[T]
+  implicit def apply[T]: ToRecord[T] = macro applyImpl[T]
 
-  def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[AvroWriter[T]] = {
+  def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[ToRecord[T]] = {
     import c.universe._
     val tpe = weakTypeTag[T].tpe
 
@@ -106,24 +106,19 @@ object AvroWriter {
       val mapKey: String = name.decoded
       val sig = f.typeSignature
       q"""{
-
-
-                      import com.sksamuel.avro4s.ToSchema._
-                      import com.sksamuel.avro4s.ToValue._
-                      import com.sksamuel.avro4s.SchemaFor._
-
-
-            com.sksamuel.avro4s.AvroWriter.tuple[$sig]($mapKey, t.$name : $sig)
+            import com.sksamuel.avro4s.ToSchema._
+            import com.sksamuel.avro4s.ToValue._
+            import com.sksamuel.avro4s.SchemaFor._
+            com.sksamuel.avro4s.ToRecord.tuple[$sig]($mapKey, t.$name : $sig)
           }
        """
     }
 
-    c.Expr[AvroWriter[T]](
-      q"""new com.sksamuel.avro4s.AvroWriter[$tpe] {
-
+    c.Expr[ToRecord[T]](
+      q"""new com.sksamuel.avro4s.ToRecord[$tpe] {
             def apply(t : $tpe): org.apache.avro.generic.GenericRecord = {
               val map: Map[String, Any] = Map(..$tuples)
-              com.sksamuel.avro4s.AvroWriter.createRecord[$tpe](map)
+              com.sksamuel.avro4s.ToRecord.createRecord[$tpe](map)
             }
           }
         """
