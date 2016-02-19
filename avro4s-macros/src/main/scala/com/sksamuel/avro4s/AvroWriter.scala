@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 
 import org.apache.avro.generic.{GenericData, GenericRecord}
+import shapeless.Lazy
 
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
@@ -129,7 +130,7 @@ object AvroWriter {
     )
   }
 
-  def tuple[T](name: String, value: T)(implicit toValue: ToValue[T]): (String, Any) = name -> toValue(value)
+  def tuple[T](name: String, value: T)(implicit toValue: Lazy[ToValue[T]]): (String, Any) = name -> toValue.value(value)
 
   def createRecord[T](map: Map[String, Any])
                      (implicit schemaFor: SchemaFor[T]): GenericRecord = {

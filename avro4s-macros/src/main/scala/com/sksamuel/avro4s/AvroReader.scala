@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
+import shapeless.Lazy
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -86,9 +87,9 @@ object FromValue extends LowPriorityFromValue {
     }
   }
 
-  implicit def MapFromValue[T]: FromValue[Map[String, T]] = new FromValue[Map[String, T]] {
+  implicit def MapFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Map[String, T]] = new FromValue[Map[String, T]] {
     override def apply(value: Any): Map[String, T] = value match {
-      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> null.asInstanceOf[T] }
+      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> fromvalue(v) }
       case other => sys.error("Unsupported map " + other)
     }
   }
@@ -170,32 +171,24 @@ object AvroReader {
     val fromValues: Seq[Tree] = fieldsForType(tpe).map { f =>
       val name = f.name.asInstanceOf[c.TermName]
       val decoded: String = name.decoded
-      val sig = tpe.declaration(name).typeSignature
-      q"""{
-           $decoded
-            }"""
+      val sig = f.typeSignature
+      q"""{  com.sksamuel.avro4s.AvroReader.read[$sig](record, $decoded)  }"""
     }
-
-    //             com.sksamuel.avro4s.AvroReader.read[$sig](record, $decoded)
-
-    //    $companion.apply(..$fromValues)
 
     c.Expr[AvroReader[T]](
       q"""new com.sksamuel.avro4s.AvroReader[$tpe] {
-
             import com.sksamuel.avro4s.ToSchema._
             import com.sksamuel.avro4s.ToValue._
             import com.sksamuel.avro4s.FromValue._
-
             def apply(record: org.apache.avro.generic.GenericRecord): $tpe = {
-              val values =  Seq(..$fromValues)
-              sys.error(""+values)
-              null.asInstanceOf[$tpe]
+               $companion.apply(..$fromValues)
             }
           }
         """
     )
   }
 
-  def read[T](record: GenericRecord, name: String)(implicit fromValue: FromValue[T]): T = fromValue(record.get(name))
+  def read[T](record: GenericRecord, name: String)(implicit fromValue: Lazy[FromValue[T]]): T = {
+    fromValue.value(record.get(name))
+  }
 }

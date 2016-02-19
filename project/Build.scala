@@ -76,6 +76,9 @@ object Build extends Build {
   lazy val macros = Project("avro4s-macros", file("avro4s-macros"))
     .settings(rootSettings: _*)
     .settings(
+      libraryDependencies += "com.chuusai" %% "shapeless" % "2.2.5"
+    )
+    .settings(
       libraryDependencies ++= {
         if (scalaVersion.value.contains("2.10")) {
           Seq(

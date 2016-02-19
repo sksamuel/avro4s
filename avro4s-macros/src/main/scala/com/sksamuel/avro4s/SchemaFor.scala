@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.util
 
 import org.apache.avro.Schema
+import shapeless.Lazy
 
 import scala.annotation.implicitNotFound
 import scala.language.experimental.macros
@@ -74,9 +75,9 @@ object ToSchema extends LowPriorityToSchema {
     def apply(): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit def mapToSchema[B]: ToSchema[Map[String, B]] = {
-    new ToSchema[Map[String, B]] {
-      def apply(): Schema = Schema.createMap(Schema.create(Schema.Type.STRING))
+  implicit def mapToSchema[V](implicit valueToSchema: ToSchema[V]): ToSchema[Map[String, V]] = {
+    new ToSchema[Map[String, V]] {
+      def apply(): Schema = Schema.createMap(valueToSchema())
     }
   }
 
@@ -120,18 +121,6 @@ trait SchemaFor[T] {
   def apply(): org.apache.avro.Schema
 }
 
-object Test extends App {
-
-  case class SeqOfCaseClassWithMaps(seq: Seq[HasMap])
-  case class HasMap(map: Map[String, String])
-
-  import scala.reflect.runtime.universe._
-
-  val tpe = weakTypeOf[SeqOfCaseClassWithMaps]
-
-  val q = tpe
-}
-
 object SchemaFor {
 
   implicit def apply[T]: SchemaFor[T] = macro SchemaFor.applyImpl[T]
@@ -156,39 +145,37 @@ object SchemaFor {
     val sealedTraitOrClass = tType.typeSymbol.isClass && tType.typeSymbol.asClass.isSealed
 
     val fieldSchemaPartTrees: Seq[Tree] = if (sealedTraitOrClass) {
-      sys.error("qweqwe")
-//      val internal = tType.typeSymbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol]
-//      val descendants = internal.sealedDescendants.map(_.asInstanceOf[Symbol]) - tType.typeSymbol
-//      descendants.flatMap(x => fieldsForType(x.asType.toType)).groupBy(_.name.decoded).map { case (name, fs) =>
-//        val schemas = fs map { f =>
-//          val sig = f.typeSignature
-//          q"""{
-//               import com.sksamuel.avro4s.SchemaFor._
-//               import com.sksamuel.avro4s.ToSchema._
-//               com.sksamuel.avro4s.SchemaFor.schemaBuilder[$sig]
-//               }
-//           """
-//        }
-//        // if we have the same number of schemas as the number of descendants then it means every subclass
-//        // of the trait has that particular field, so we can make it non optional, otherwise it means at least
-//        // one subclass of the trait is missing the field, and so it must be marked optional
-//        val optional = schemas.size != descendants.size
-//        q""" com.sksamuel.avro4s.SchemaFor.unionBuilder($name, Set(..$schemas), $optional) """
-//      }.toSeq
+      val internal = tType.typeSymbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol]
+      val descendants = internal.sealedDescendants.map(_.asInstanceOf[Symbol]) - tType.typeSymbol
+      descendants.flatMap(x => fieldsForType(x.asType.toType)).groupBy(_.name.decoded).map { case (name, fs) =>
+        val schemas = fs map { f =>
+          val sig = f.typeSignature
+          q"""{
+               import com.sksamuel.avro4s.SchemaFor._
+               import com.sksamuel.avro4s.ToSchema._
+               com.sksamuel.avro4s.SchemaFor.schemaBuilder[$sig]
+               }
+           """
+        }
+        // if we have the same number of schemas as the number of descendants then it means every subclass
+        // of the trait has that particular field, so we can make it non optional, otherwise it means at least
+        // one subclass of the trait is missing the field, and so it must be marked optional
+        val optional = schemas.size != descendants.size
+        q""" com.sksamuel.avro4s.SchemaFor.unionBuilder($name, Set(..$schemas), $optional) """
+      }.toSeq
     } else {
 
-      val fields = tType.declarations.collect {
-        case term: TermSymbol if term.isVal => term
-      }.toList
+      val fields = tType.declarations.collectFirst {
+        case m: MethodSymbol if m.isPrimaryConstructor => m.paramss.head
+      }.getOrElse(Nil)
 
       fields.map { f =>
         val name = f.name
         val decoded = name.decoded.trim
         val sig = f.typeSignature
-        val ss = sig.toString
         val annos = annotations(f)
         q"""{
-            com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($ss, Seq(..$annos))
+            com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($decoded, Seq(..$annos))
             }
          """
       }
@@ -202,7 +189,7 @@ object SchemaFor {
 
     c.Expr[SchemaFor[T]](
       q"""
-                      new com.sksamuel.avro4s.SchemaFor[$tType] {
+           new com.sksamuel.avro4s.SchemaFor[$tType] {
             def apply(): org.apache.avro.Schema = {
               com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
                 $name,
@@ -242,7 +229,9 @@ object SchemaFor {
 
   // given a name and a type T, builds the schema field for that type T. A schema field might itself contain
   // a nested record schema if T is a class. The provided annos are a wrapper around annotations.
-  def fieldBuilder[T](name: String, annos: Seq[Anno])(implicit toSchema: ToSchema[T]): Schema.Field = fieldBuilder(name, annos, Schema.create(Schema.Type.BOOLEAN))
+  def fieldBuilder[T](name: String, annos: Seq[Anno])(implicit toSchema: Lazy[ToSchema[T]]): Schema.Field = {
+    fieldBuilder(name, annos, toSchema.value.apply())
+  }
 
   private def fieldBuilder(name: String, annos: Seq[Anno], schema: Schema): Schema.Field = {
     val field = new Schema.Field(name, schema, doc(annos), null)
