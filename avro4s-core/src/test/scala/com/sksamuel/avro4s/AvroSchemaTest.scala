@@ -38,7 +38,7 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "accept booleans" in {
       case class Test(booly: Boolean)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/boolean.avsc"))
-      val schema = SchemaFor[Test]()
+      val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "accept bytes" in {
@@ -142,7 +142,7 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "generate array type for a Set of strings" in {
       case class Test(set: Set[String])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setstrings.avsc"))
-      val schema = SchemaFor[Test]()
+      val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a Set of doubles" in {
@@ -159,7 +159,7 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "generate union:T,U for Either[T,U] of primitives" in {
       case class Test(either: Either[String, Double])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/either.avsc"))
-      val schema = SchemaFor[Test]()
+      val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate union:T,U for Either[T,U] of records" in {
