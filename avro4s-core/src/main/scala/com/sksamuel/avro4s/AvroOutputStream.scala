@@ -3,7 +3,6 @@ package com.sksamuel.avro4s
 import java.io.{File, OutputStream}
 import java.nio.file.{Files, Path}
 
-import com.typesafe.scalalogging.slf4j.StrictLogging
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.EncoderFactory
@@ -17,7 +16,7 @@ trait AvroOutputStream[T] {
 }
 
 class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
-  extends AvroOutputStream[T] with StrictLogging {
+  extends AvroOutputStream[T] {
 
   val dataWriter = new GenericDatumWriter[GenericRecord](schemaFor())
   val encoder = EncoderFactory.get().binaryEncoder(os, null)
@@ -33,7 +32,7 @@ class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[
 }
 
 class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
-  extends AvroOutputStream[T] with StrictLogging {
+  extends AvroOutputStream[T] {
 
   val datumWriter = new GenericDatumWriter[GenericRecord](schemaFor())
   val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)

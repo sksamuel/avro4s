@@ -220,7 +220,7 @@ object SchemaFor {
   }
 
   // builds a schema for a type T
-  def schemaBuilder[T](implicit toSchema: ToSchema[T]): Schema = toSchema()
+  def schemaBuilder[T](implicit toSchema: Lazy[ToSchema[T]]): Schema = toSchema.value()
 
   def unionBuilder(name: String, schemas: Set[Schema], optional: Boolean): Schema.Field = {
     val sortedSchemas = (if (optional) schemas + Schema.create(Schema.Type.NULL) else schemas).toSeq.sortBy(_.getName)

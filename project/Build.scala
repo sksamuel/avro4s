@@ -17,7 +17,7 @@ object Build extends Build {
   val rootSettings = Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.10.6", ScalaVersion),
+    crossScalaVersions := Seq("2.12.0-M3", ScalaVersion),
     publishMavenStyle := true,
     resolvers += Resolver.mavenLocal,
     publishArtifact in Test := false,
@@ -27,13 +27,13 @@ object Build extends Build {
     sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
     libraryDependencies ++= Seq(
-      "com.sksamuel.scalax"   %% "scalax" % "0.17.0",
-      "org.scala-lang"        % "scala-reflect" % scalaVersion.value,
-      "org.apache.avro"       % "avro" % AvroVersion,
-      "org.slf4j"             % "slf4j-api" % Slf4jVersion,
-      "log4j"                 % "log4j" % Log4jVersion % "test",
-      "org.slf4j"             % "log4j-over-slf4j" % Slf4jVersion % "test",
-      "org.scalatest"         %% "scalatest" % ScalatestVersion % "test"
+      "com.sksamuel.scalax"   %% "scalax"               % "0.18.0",
+      "org.scala-lang"        % "scala-reflect"         % scalaVersion.value,
+      "org.apache.avro"       % "avro"                  % AvroVersion,
+      "org.slf4j"             % "slf4j-api"             % Slf4jVersion,
+      "log4j"                 % "log4j"                 % Log4jVersion % "test",
+      "org.slf4j"             % "log4j-over-slf4j"      % Slf4jVersion % "test",
+      "org.scalatest"         %% "scalatest"            % ScalatestVersion % "test"
     ),
     publishTo <<= version {
       (v: String) =>
@@ -71,23 +71,14 @@ object Build extends Build {
     .settings(publish := {})
     .settings(publishArtifact := false)
     .settings(name := "avro4s")
-    .aggregate(macros, core, generator, json)
+    .aggregate(macros, core, generator)
 
   lazy val macros = Project("avro4s-macros", file("avro4s-macros"))
     .settings(rootSettings: _*)
     .settings(
       libraryDependencies += "com.chuusai" %% "shapeless" % "2.2.5"
     )
-    .settings(
-      libraryDependencies ++= {
-        if (scalaVersion.value.contains("2.10")) {
-          Seq(
-            "org.scalamacros" %% "quasiquotes" % "2.1.0",
-            compilerPlugin("org.scalamacros" % "paradise_2.10.6" % "2.1.0")
-          )
-        } else Nil
-      })
-  .settings(name := "avro4s-macros")
+    .settings(name := "avro4s-macros")
 
   lazy val core = Project("avro4s-core", file("avro4s-core"))
     .settings(rootSettings: _*)
@@ -98,9 +89,9 @@ object Build extends Build {
     .settings(rootSettings: _*)
     .settings(name := "avro4s-generator")
 
-  lazy val json = Project("avro4s-json", file("avro4s-json"))
-    .settings(rootSettings: _*)
-    .settings(libraryDependencies += "org.json4s" %% "json4s-native" % Json4sVersion)
-    .settings(name := "avro4s-json")
-    .dependsOn(core)
+//  lazy val json = Project("avro4s-json", file("avro4s-json"))
+//    .settings(rootSettings: _*)
+//    .settings(libraryDependencies += "org.json4s" %% "json4s-native" % Json4sVersion)
+//    .settings(name := "avro4s-json")
+//    .dependsOn(core)
 }
