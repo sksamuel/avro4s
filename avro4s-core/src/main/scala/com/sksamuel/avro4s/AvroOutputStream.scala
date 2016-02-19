@@ -13,12 +13,13 @@ trait AvroOutputStream[T] {
   def flush(): Unit
   def fSync(): Unit
   def write(t: T): Unit
+  def write(ts: Seq[T]): Unit = ts.foreach(write)
 }
 
 class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
   extends AvroOutputStream[T] with StrictLogging {
 
-  val dataWriter = new GenericDatumWriter[GenericRecord]()
+  val dataWriter = new GenericDatumWriter[GenericRecord](schemaFor())
   val encoder = EncoderFactory.get().binaryEncoder(os, null)
 
   override def close(): Unit = {
