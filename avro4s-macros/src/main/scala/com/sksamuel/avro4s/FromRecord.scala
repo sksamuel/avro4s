@@ -8,7 +8,6 @@ import shapeless.Lazy
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
-import scala.reflect.macros._
 import scala.collection.JavaConverters._
 
 // turns an avro java value into a scala value
@@ -156,22 +155,22 @@ object FromRecord {
 
   implicit def apply[T]: FromRecord[T] = macro applyImpl[T]
 
-  def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[FromRecord[T]] = {
+  def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[FromRecord[T]] = {
     import c.universe._
     val tpe = weakTypeTag[T].tpe
     require(tpe.typeSymbol.asClass.isCaseClass, s"Require a case class but $tpe is not")
 
     def fieldsForType(tpe: c.universe.Type): List[c.universe.Symbol] = {
-      tpe.declarations.collectFirst {
-        case m: MethodSymbol if m.isPrimaryConstructor => m
-      }.flatMap(_.paramss.headOption).getOrElse(Nil)
+      tpe.decls.collectFirst {
+        case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.head
+      }.getOrElse(Nil)
     }
 
-    val companion = tpe.typeSymbol.companionSymbol
+    val companion = tpe.typeSymbol.companion
 
     val fromValues: Seq[Tree] = fieldsForType(tpe).map { f =>
       val name = f.name.asInstanceOf[c.TermName]
-      val decoded: String = name.decoded
+      val decoded: String = name.decodedName.toString
       val sig = f.typeSignature
       q"""{  com.sksamuel.avro4s.FromRecord.read[$sig](record, $decoded)  }"""
     }

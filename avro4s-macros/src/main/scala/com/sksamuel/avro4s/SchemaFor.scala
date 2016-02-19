@@ -9,8 +9,8 @@ import scala.annotation.implicitNotFound
 import scala.language.experimental.macros
 import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.ClassTag
-import scala.reflect.macros.Context
 import scala.collection.JavaConverters._
+import scala.reflect.macros.whitebox
 
 trait ToSchema[T] {
   def apply(): org.apache.avro.Schema
@@ -125,21 +125,21 @@ object SchemaFor {
 
   implicit def apply[T]: SchemaFor[T] = macro SchemaFor.applyImpl[T]
 
-  def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[SchemaFor[T]] = {
+  def applyImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
     import c.universe._
     val tType = weakTypeOf[T]
     require(tType.typeSymbol.isClass, tType + " is not a class but is " + tType.typeSymbol.fullName)
 
     def annotations(sym: Symbol): Seq[c.Tree] = sym.annotations.map { a =>
-      val name = a.tpe.typeSymbol.fullName
-      val args = a.scalaArgs.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+      val name = a.tree.tpe.typeSymbol.fullName
+      val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
       q"com.sksamuel.avro4s.Anno($name, $args)"
     }
 
     def fieldsForType(atype: c.universe.Type): List[c.universe.Symbol] = {
-      atype.declarations.collectFirst {
-        case m: MethodSymbol if m.isPrimaryConstructor => m
-      }.flatMap(_.paramss.headOption).getOrElse(Nil)
+      atype.decls.collectFirst {
+        case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.head
+      }.getOrElse(Nil)
     }
 
     val sealedTraitOrClass = tType.typeSymbol.isClass && tType.typeSymbol.asClass.isSealed
@@ -147,7 +147,7 @@ object SchemaFor {
     val fieldSchemaPartTrees: Seq[Tree] = if (sealedTraitOrClass) {
       val internal = tType.typeSymbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol]
       val descendants = internal.sealedDescendants.map(_.asInstanceOf[Symbol]) - tType.typeSymbol
-      descendants.flatMap(x => fieldsForType(x.asType.toType)).groupBy(_.name.decoded).map { case (name, fs) =>
+      descendants.flatMap(x => fieldsForType(x.asType.toType)).groupBy(_.name.decodedName.toString).map { case (name, fs) =>
         val schemas = fs map { f =>
           val sig = f.typeSignature
           q"""{
@@ -165,13 +165,13 @@ object SchemaFor {
       }.toSeq
     } else {
 
-      val fields = tType.declarations.collectFirst {
-        case m: MethodSymbol if m.isPrimaryConstructor => m.paramss.head
+      val fields = tType.decls.collectFirst {
+        case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.head
       }.getOrElse(Nil)
 
       fields.map { f =>
         val name = f.name
-        val decoded = name.decoded.trim
+        val decoded = name.decodedName.toString.trim
         val sig = f.typeSignature
         val annos = annotations(f)
         q"""{
@@ -182,7 +182,7 @@ object SchemaFor {
     }
 
     // name of the actual class
-    val name = tType.typeSymbol.name.decoded
+    val name = tType.typeSymbol.name.decodedName.toString
     // name of the outer package, can't find a way to get this explicitly so hacking the full class name
     val pack = tType.typeSymbol.fullName.split('.').takeWhile(_.forall(c => !c.isUpper)).mkString(".")
     val annos = annotations(tType.typeSymbol)

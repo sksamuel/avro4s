@@ -8,7 +8,6 @@ import shapeless.Lazy
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.language.implicitConversions
-import scala.reflect.macros.Context
 
 trait ToValue[A] {
   def apply(value: A): Any = value
@@ -91,19 +90,19 @@ object ToRecord {
 
   implicit def apply[T]: ToRecord[T] = macro applyImpl[T]
 
-  def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[ToRecord[T]] = {
+  def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[ToRecord[T]] = {
     import c.universe._
     val tpe = weakTypeTag[T].tpe
 
     def fieldsForType(tpe: c.universe.Type): List[c.universe.Symbol] = {
-      tpe.declarations.collectFirst {
+      tpe.decls.collectFirst {
         case m: MethodSymbol if m.isPrimaryConstructor => m
-      }.flatMap(_.paramss.headOption).getOrElse(Nil)
+      }.flatMap(_.paramLists.headOption).getOrElse(Nil)
     }
 
     val tuples: Seq[Tree] = fieldsForType(tpe).map { f =>
       val name = f.name.asInstanceOf[c.TermName]
-      val mapKey: String = name.decoded
+      val mapKey: String = name.decodedName.toString
       val sig = f.typeSignature
       q"""{
             import com.sksamuel.avro4s.ToSchema._
