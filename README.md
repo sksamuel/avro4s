@@ -11,7 +11,7 @@ The features of the library are:
 * Boilerplate free deserialization of avro to classes
 
 ## Changelog
-* 1.2.1 - Added 2.10 cross build release
+* 1.3.0 - Added support for 2.12. Removed 2.10 cross build. Fixed issues with private vals. Added binary (no schema) output stream. Exposed RecordFormat[T] typeclass to enable easy conversion of T to/from an avro Record.
 * 1.2.0 - Added support for properties, doc fields, and aliases. These are set via annotations.
 * 1.1.0 - Added json document to avro schema converter
 * 1.0.0 - Migrated all macros to use Shapeless. Fixed some trickier nested case class issues. Simplified API. Added support for java enums.
