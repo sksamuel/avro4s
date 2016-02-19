@@ -153,7 +153,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "accept deep nested structure" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/deepnested.avsc"))
       val schema = SchemaFor[Level1]()
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate union:T,U for Either[T,U] of primitives" in {
@@ -223,7 +222,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
       case class Annotated(@AvroDoc("hello its me") str: String, @AvroDoc("I am a long") long: Long, int: Int)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation_field.avsc"))
       val schema = SchemaFor[Annotated]()
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support prop annotation on class" in {
@@ -236,7 +234,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
       case class Annotated(@AvroProp("cold", "play") str: String, @AvroProp("kate", "bush") long: Long, int: Int)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/props_annotation_field.avsc"))
       val schema = SchemaFor[Annotated]()
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support alias annotations on field" in {
