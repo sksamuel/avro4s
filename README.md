@@ -123,15 +123,19 @@ To convert from a class into a record:
 ```scala
 case class Composer(name: String, birthplace: String, compositions: Seq[String])
 val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
+val format = RecordFormat[Composer]
 // record is of type GenericRecord
-val record = RecordFormat[Composer].to(ennio)
+val record = format.to(ennio)
 ```
 
 And to go from a record back into a type:
 
 ```
+// given some record from earlier
+val record = ...
+val format = RecordFormat[Composer]
 // is an instance of Composer
-val ennio = RecordFormat[Composer].from(record)
+val ennio = format.from(record)
 ```
 
 ## Type Mappings
