@@ -130,7 +130,7 @@ val record = format.to(ennio)
 
 And to go from a record back into a type:
 
-```
+```scala
 // given some record from earlier
 val record = ...
 val format = RecordFormat[Composer]
