@@ -1,8 +1,8 @@
 # avro4s
 
-[![Join the chat at https://gitter.im/sksamuel/avro4s](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/sksamuel/avro4s?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/51zero/avro4s.png)](https://travis-ci.org/sksamuel/avro4s)
+[![Join the chat at https://gitter.im/sksamuel/avro4s](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/sksamuel/avro4s?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/sksamuel/avro4s.png)](https://travis-ci.org/sksamuel/avro4s)
 
-Avro4s is a scheme/class generation and serializing/deserializing library for [Avro](http://avro.apache.org/) written in Scala. The objective is to allow seamless use with Scala without the need to to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a [shapeless](https://github.com/milessabin/shapeless) based library and generates code for use with avro at _compile time_.
+Avro4s is a scheme/class generation and serializing/deserializing library for [Avro](http://avro.apache.org/) written in Scala. The objective is to allow seamless use with Scala without the need to to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a macro based library and generates code for use with avro at _compile time_.
 
 The features of the library are: 
 * Schema generation from classes at compile time
@@ -11,7 +11,7 @@ The features of the library are:
 * Boilerplate free deserialization of avro to classes
 
 ## Changelog
-* 1.3.0 - Added support for 2.12. Removed 2.10 cross build. Fixed issues with private vals. Added binary (no schema) output stream. Exposed RecordFormat[T] typeclass to enable easy conversion of T to/from an avro Record.
+* 1.3.0 - Added support for Scala 2.12. Removed 2.10 cross build. Fixed issues with private vals. Added binary (no schema) output stream. Exposed RecordFormat[T] typeclass to enable easy conversion of T to/from an avro Record.
 * 1.2.0 - Added support for properties, doc fields, and aliases. These are set via annotations.
 * 1.1.0 - Added json document to avro schema converter
 * 1.0.0 - Migrated all macros to use Shapeless. Fixed some trickier nested case class issues. Simplified API. Added support for java enums.
@@ -114,6 +114,30 @@ Will print out:
 Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4)),false,false,500) Pizza(hawaiian,List(Ingredient(ham,1.5,5.6), Ingredient(pineapple,5.2,0.2)),false,false,500)
 ```
 
+## Conversions to/from GenericRecord
+
+To interface with the Java api it is sometimes desirable to convert between your classes and the avro GenericRecord type. You can do this easily in Avro4s using the RecordFormat typeclass (this is what the input/output streams use behind the scenes). Eg,
+
+To convert from a class into a record:
+
+```scala
+case class Composer(name: String, birthplace: String, compositions: Seq[String])
+val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
+val format = RecordFormat[Composer]
+// record is of type GenericRecord
+val record = format.to(ennio)
+```
+
+And to go from a record back into a type:
+
+```scala
+// given some record from earlier
+val record = ...
+val format = RecordFormat[Composer]
+// is an instance of Composer
+val ennio = format.from(record)
+```
+
 ## Type Mappings
 
 |Scala Type|Avro Type|
@@ -139,9 +163,9 @@ Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4))
 
 ## Using avro4s in your project
 
-Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.1.3'`
+Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.3.0'`
 
-SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.1.3"`
+SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.3.0"`
 
 Maven:
 
@@ -149,11 +173,11 @@ Maven:
 <dependency>
     <groupId>com.sksamuel.avro4s</groupId>
     <artifactId>avro4s-core_2.11</artifactId>
-    <version>1.1.3</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
-The above is just an example and is not always up to date. Check the latest released version on
+The above is just an example and is not always up to date with the latest version. Check the latest released version on
 [maven central](http://search.maven.org/#search|ga|1|g%3A%22com.sksamuel.avro4s%22)
 
 ## Building and Testing
