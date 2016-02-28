@@ -12,7 +12,7 @@ import org.apache.avro.Schema
   * - json arrays to avro arrays
   * - objects to records
   * - doubles to doubles
-  * - ints to longs
+  * - ints/longs to longs
   * - booleans to booleans
   * - nulls to union(string,null)
   */
@@ -31,6 +31,8 @@ class JsonToAvroConverter(namespace: String) {
     case JDecimal(_) => Schema.create(Schema.Type.DOUBLE)
     case JDouble(_) => Schema.create(Schema.Type.DOUBLE)
     case JInt(_) => Schema.create(Schema.Type.LONG)
+    case JLong(_) => Schema.create(Schema.Type.LONG)
+    case JNothing => Schema.create(Schema.Type.NULL)
     case JNull => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.STRING), Schema.create(Schema.Type.NULL)))
     case JString(_) => Schema.create(Schema.Type.STRING)
     case JObject(values) =>
