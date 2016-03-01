@@ -163,9 +163,9 @@ val ennio = format.from(record)
 
 ## Using avro4s in your project
 
-Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.3.1'`
+Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.3.2'`
 
-SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.3.1"`
+SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.3.2"`
 
 Maven:
 
@@ -173,7 +173,7 @@ Maven:
 <dependency>
     <groupId>com.sksamuel.avro4s</groupId>
     <artifactId>avro4s-core_2.11</artifactId>
-    <version>1.3.1</version>
+    <version>1.3.2</version>
 </dependency>
 ```
 
