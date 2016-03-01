@@ -4,6 +4,6 @@
   "namespace" : "com.test.avro",
   "fields" : [ {
     "name" : "foo",
-    "type" : [ "string", "null" ]
+    "type" : [ "null", "string" ]
   } ]
 }

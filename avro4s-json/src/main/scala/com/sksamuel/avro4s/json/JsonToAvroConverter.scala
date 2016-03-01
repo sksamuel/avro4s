@@ -33,7 +33,7 @@ class JsonToAvroConverter(namespace: String) {
     case JInt(_) => Schema.create(Schema.Type.LONG)
     case JLong(_) => Schema.create(Schema.Type.LONG)
     case JNothing => Schema.create(Schema.Type.NULL)
-    case JNull => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.STRING), Schema.create(Schema.Type.NULL)))
+    case JNull => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), Schema.create(Schema.Type.STRING)))
     case JString(_) => Schema.create(Schema.Type.STRING)
     case JObject(values) =>
       val record = Schema.createRecord(name, null, namespace, false)
