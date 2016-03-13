@@ -1,0 +1,104 @@
+{
+  "type": "record",
+  "name": "MyClass",
+  "namespace": "com.test.avro",
+  "fields": [
+    {
+      "name": "firstName",
+      "type": {
+        "type": "string",
+        "avro.java.string": "String"
+      }
+    },
+    {
+      "name": "lastName",
+      "type": {
+        "type": "string",
+        "avro.java.string": "String"
+      }
+    },
+    {
+      "name": "age",
+      "type": "long"
+    },
+    {
+      "name": "address",
+      "type": {
+        "type": "record",
+        "name": "address",
+        "fields": [
+          {
+            "name": "streetAddress",
+            "type": {
+              "type": "string",
+              "avro.java.string": "String"
+            }
+          },
+          {
+            "name": "city",
+            "type": {
+              "type": "string",
+              "avro.java.string": "String"
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "type": "string",
+              "avro.java.string": "String"
+            }
+          },
+          {
+            "name": "postalCode",
+            "type": {
+              "type": "string",
+              "avro.java.string": "String"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "phoneNumber",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "phoneNumber",
+          "fields": [
+            {
+              "name": "type",
+              "type": {
+                "type": "string",
+                "avro.java.string": "String"
+              }
+            },
+            {
+              "name": "number",
+              "type": {
+                "type": "string",
+                "avro.java.string": "String"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "gender",
+      "type": {
+        "type": "record",
+        "name": "gender",
+        "fields": [
+          {
+            "name": "type",
+            "type": {
+              "type": "string",
+              "avro.java.string": "String"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

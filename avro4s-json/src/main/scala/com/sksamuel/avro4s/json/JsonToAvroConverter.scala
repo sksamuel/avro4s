@@ -3,6 +3,7 @@ package com.sksamuel.avro4s.json
 import java.util
 
 import org.apache.avro.Schema
+import org.codehaus.jackson.node.TextNode
 
 /**
   * Accepts a json string, and returns an Avro Schema that best matches the json string.
@@ -16,7 +17,7 @@ import org.apache.avro.Schema
   * - booleans to booleans
   * - nulls to union(string,null)
   */
-class JsonToAvroConverter(namespace: String) {
+class JsonToAvroConverter(namespace: String, avroStringTypeIsString: Boolean = false) {
 
   import org.json4s._
   import org.json4s.native.JsonMethods._
@@ -33,8 +34,8 @@ class JsonToAvroConverter(namespace: String) {
     case JInt(_) => Schema.create(Schema.Type.LONG)
     case JLong(_) => Schema.create(Schema.Type.LONG)
     case JNothing => Schema.create(Schema.Type.NULL)
-    case JNull => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), Schema.create(Schema.Type.STRING)))
-    case JString(_) => Schema.create(Schema.Type.STRING)
+    case JNull => Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), createStringSchema))
+    case JString(_) => createStringSchema
     case JObject(values) =>
       val record = Schema.createRecord(name, null, namespace, false)
       val fields = values.map { case (name, value) => new Schema.Field(name, convert(name, value), null, null) }
@@ -42,4 +43,9 @@ class JsonToAvroConverter(namespace: String) {
       record
   }
 
+  private def createStringSchema = {
+    val schema = Schema.create(Schema.Type.STRING)
+    if (avroStringTypeIsString) schema.addProp("avro.java.string", new TextNode("String"))
+    schema
+  }
 }
