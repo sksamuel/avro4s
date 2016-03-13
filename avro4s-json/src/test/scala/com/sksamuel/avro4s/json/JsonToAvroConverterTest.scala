@@ -14,6 +14,15 @@ class JsonToAvroConverterTest extends WordSpec with Matchers {
         schema.toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream(s"/avro$k.avsc")).toString(true)
       }
     }
+
+    "convert json to avro but avoid utf8 and set the schema to use String" in {
+      for (k <- 1 to 2) {
+        val json = Source.fromInputStream(getClass.getResourceAsStream(s"/json$k.json")).getLines.mkString("\n")
+        val schema = new JsonToAvroConverter("com.test.avro", true).convert("MyClass", json)
+        schema.toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream(s"/avro${k}_with_strings.avsc")).toString(true)
+      }
+    }
+
     "convert nulls to Option[String]" in {
       val json = """ { "foo" : null } """
       val schema = new JsonToAvroConverter("com.test.avro").convert("MyClass", json)
