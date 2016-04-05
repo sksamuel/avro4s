@@ -13,6 +13,7 @@ The features of the library are:
 * Boilerplate free deserialization of avro to classes
 
 ## Changelog
+* 1.3.3 - Added missing support for deserializing byte arrays
 * 1.3.0 - Added support for Scala 2.12. Removed 2.10 cross build. Fixed issues with private vals. Added binary (no schema) output stream. Exposed RecordFormat[T] typeclass to enable easy conversion of T to/from an avro Record.
 * 1.2.0 - Added support for properties, doc fields, and aliases. These are set via annotations.
 * 1.1.0 - Added json document to avro schema converter
@@ -152,6 +153,7 @@ val ennio = format.from(record)
 |BigDecimal|[decimal](https://avro.apache.org/docs/1.7.7/spec.html#Decimal) with scale 2 and precision 8|
 |Double|double|
 |Float|float|
+|Java Enums|enum|
 |sealed trait T|enum|
 |scala.collection.Array[T]|array|
 |scala.collection.List[T]|array|
