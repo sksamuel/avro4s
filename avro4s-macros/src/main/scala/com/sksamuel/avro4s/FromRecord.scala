@@ -33,6 +33,10 @@ object FromValue extends LowPriorityFromValue {
     override def apply(value: Any): Boolean = value.toString.toBoolean
   }
 
+  implicit object ByteArrayFromValue extends FromValue[Array[Byte]] {
+    override def apply(value: Any): Array[Byte] = value.asInstanceOf[ByteBuffer].array
+  }
+
   implicit object DoubleFromValue extends FromValue[Double] {
     override def apply(value: Any): Double = value.toString.toDouble
   }
@@ -53,16 +57,16 @@ object FromValue extends LowPriorityFromValue {
     override def apply(value: Any): String = value.toString
   }
 
-  implicit def OptionReader[T](implicit fromvalue: FromValue[T]) = new FromValue[Option[T]] {
+  implicit def OptionFromValue[T](implicit fromvalue: FromValue[T]) = new FromValue[Option[T]] {
     override def apply(value: Any): Option[T] = Option(value).map(fromvalue.apply)
   }
 
-  implicit def EnumReader[E <: Enum[E]](implicit tag: ClassTag[E]) = new FromValue[E] {
+  implicit def EnumFromValue[E <: Enum[E]](implicit tag: ClassTag[E]) = new FromValue[E] {
     override def apply(value: Any): E = Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], value.toString)
   }
 
-  implicit def ArrayReader[T](implicit fromvalue: FromValue[T],
-                              tag: ClassTag[T]): FromValue[Array[T]] = new FromValue[Array[T]] {
+  implicit def ArrayFromValue[T](implicit fromvalue: FromValue[T],
+                                 tag: ClassTag[T]): FromValue[Array[T]] = new FromValue[Array[T]] {
     override def apply(value: Any): Array[T] = value match {
       case array: Array[_] => array.map(fromvalue.apply)
       case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toArray

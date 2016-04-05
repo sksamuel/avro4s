@@ -9,6 +9,7 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
 
   case class Booleans(bool: Boolean)
   case class BigDecimalTest(decimal: BigDecimal)
+  case class ByteArrayTest(bytes: Array[Byte])
   case class Floats(float: Float)
   case class Ints(int: Int)
   case class Doubles(double: Double)
@@ -68,6 +69,16 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
 
       val in = AvroInputStream[BigDecimalTest](bytes)
       in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read byte arrays" in {
+      val data = Seq(ByteArrayTest(Array[Byte](1, 2, 3)), ByteArrayTest(Array[Byte](125, 126, 127)))
+      val bytes = write(data)
+
+      val in = AvroInputStream[ByteArrayTest](bytes)
+      val result = in.iterator.toList
+      result.head.bytes.toList shouldBe Array[Byte](1, 2, 3).toList
+      result.last.bytes.toList shouldBe Array[Byte](125, 126, 127).toList
       in.close()
     }
     "read eithers of nested case classes" in {
