@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import jdk.internal.org.objectweb.asm.tree.analysis.Value
 import org.scalatest.{Matchers, WordSpec}
 
 sealed trait Wibble
@@ -243,14 +244,9 @@ class AvroSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support scala enums" in {
-      class Colours extends Enumeration {
-        val Red, Amber, Green = Value
-      }
-      case class ScalaEnums(value: Colours)
       val schema = SchemaFor[ScalaEnums]()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/scalaenums.avsc"))
       schema.toString(true) shouldBe expected.toString(true)
     }
   }
 }
-

@@ -2,6 +2,7 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 
+import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import shapeless.Lazy
@@ -12,12 +13,12 @@ import scala.collection.JavaConverters._
 
 // turns an avro java value into a scala value
 trait FromValue[T] {
-  def apply(value: Any): T
+  def apply(value: Any, field: Field = null): T
 }
 
 trait LowPriorityFromValue {
   implicit def generic[T](implicit reader: FromRecord[T]): FromValue[T] = new FromValue[T] {
-    override def apply(value: Any): T = value match {
+    override def apply(value: Any, field: Field): T = value match {
       case record: GenericRecord => reader(record)
     }
   }
@@ -26,81 +27,90 @@ trait LowPriorityFromValue {
 object FromValue extends LowPriorityFromValue {
 
   implicit object BigDecimalFromValue extends FromValue[BigDecimal] {
-    override def apply(value: Any): BigDecimal = BigDecimal(new String(value.asInstanceOf[ByteBuffer].array))
+    override def apply(value: Any, field: Field): BigDecimal = BigDecimal(new String(value.asInstanceOf[ByteBuffer].array))
   }
 
   implicit object BooleanFromValue extends FromValue[Boolean] {
-    override def apply(value: Any): Boolean = value.toString.toBoolean
+    override def apply(value: Any, field: Field): Boolean = value.toString.toBoolean
   }
 
   implicit object ByteArrayFromValue extends FromValue[Array[Byte]] {
-    override def apply(value: Any): Array[Byte] = value.asInstanceOf[ByteBuffer].array
+    override def apply(value: Any, field: Field): Array[Byte] = value.asInstanceOf[ByteBuffer].array
   }
 
   implicit object DoubleFromValue extends FromValue[Double] {
-    override def apply(value: Any): Double = value.toString.toDouble
+    override def apply(value: Any, field: Field): Double = value.toString.toDouble
   }
 
   implicit object FloatFromValue extends FromValue[Float] {
-    override def apply(value: Any): Float = value.toString.toFloat
+    override def apply(value: Any, field: Field): Float = value.toString.toFloat
   }
 
   implicit object IntFromValue extends FromValue[Int] {
-    override def apply(value: Any): Int = value.toString.toInt
+    override def apply(value: Any, field: Field): Int = value.toString.toInt
   }
 
   implicit object LongFromValue extends FromValue[Long] {
-    override def apply(value: Any): Long = value.toString.toLong
+    override def apply(value: Any, field: Field): Long = value.toString.toLong
   }
 
   implicit object StringFromValue extends FromValue[String] {
-    override def apply(value: Any): String = value.toString
+    override def apply(value: Any, field: Field): String = value.toString
   }
 
   implicit def OptionFromValue[T](implicit fromvalue: FromValue[T]) = new FromValue[Option[T]] {
-    override def apply(value: Any): Option[T] = Option(value).map(fromvalue.apply)
+    override def apply(value: Any, field: Field): Option[T] = Option(value).map((value: Any) => fromvalue.apply(value))
   }
 
-  implicit def EnumFromValue[E <: Enum[E]](implicit tag: ClassTag[E]) = new FromValue[E] {
-    override def apply(value: Any): E = Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], value.toString)
+  implicit def JavaEnumFromValue[E <: Enum[E]](implicit tag: ClassTag[E]) = new FromValue[E] {
+    override def apply(value: Any, field: Field): E = Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], value.toString)
+  }
+
+  implicit def ScalaEnumFromValue[E <: Enumeration#Value] = new FromValue[E] {
+    override def apply(value: Any, field: Field): E = {
+      val klass = Class.forName(field.schema.getFullName + "$")
+      import scala.reflect.NameTransformer._
+      val enum  = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
+      enum.withName(value.toString).asInstanceOf[E]
+    }
   }
 
   implicit def ArrayFromValue[T](implicit fromvalue: FromValue[T],
                                  tag: ClassTag[T]): FromValue[Array[T]] = new FromValue[Array[T]] {
-    override def apply(value: Any): Array[T] = value match {
-      case array: Array[_] => array.map(fromvalue.apply)
-      case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toArray
+    override def apply(value: Any, field: Field): Array[T] = value match {
+      case array: Array[_] => array.map((value: Any) => fromvalue.apply(value))
+      case list: java.util.Collection[_] => list.asScala.map((value: Any) => fromvalue.apply(value)).toArray
       case other => sys.error("Unsupported array " + other)
     }
   }
 
   implicit def SetFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Set[T]] = new FromValue[Set[T]] {
-    override def apply(value: Any): Set[T] = value match {
-      case array: Array[_] => array.map(fromvalue.apply).toSet
-      case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toSet
+    override def apply(value: Any, field: Field): Set[T] = value match {
+      case array: Array[_] => array.map((value: Any) => fromvalue.apply(value)).toSet
+      case list: java.util.Collection[_] => list.asScala.map((value: Any) => fromvalue.apply(value)).toSet
       case other => sys.error("Unsupported set " + other)
     }
   }
 
   implicit def ListFromValue[T](implicit fromvalue: FromValue[T]): FromValue[List[T]] = new FromValue[List[T]] {
-    override def apply(value: Any): List[T] = value match {
-      case array: Array[_] => array.map(fromvalue.apply).toList
-      case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toList
+    override def apply(value: Any, field: Field): List[T] = value match {
+      case array: Array[_] => array.map((value: Any) => fromvalue.apply(value)).toList
+      case list: java.util.Collection[_] => list.asScala.map((value: Any) => fromvalue.apply(value)).toList
       case other => sys.error("Unsupported list " + other)
     }
   }
 
   implicit def MapFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Map[String, T]] = new FromValue[Map[String, T]] {
-    override def apply(value: Any): Map[String, T] = value match {
+    override def apply(value: Any, field: Field): Map[String, T] = value match {
       case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> fromvalue(v) }
       case other => sys.error("Unsupported map " + other)
     }
   }
 
   implicit def SeqFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Seq[T]] = new FromValue[Seq[T]] {
-    override def apply(value: Any): Seq[T] = value match {
-      case array: Array[_] => array.map(fromvalue.apply)
-      case list: java.util.Collection[_] => list.asScala.map(fromvalue.apply).toList
+    override def apply(value: Any, field: Field): Seq[T] = value match {
+      case array: Array[_] => array.map((value: Any) => fromvalue.apply(value))
+      case list: java.util.Collection[_] => list.asScala.map((value: Any) => fromvalue.apply(value)).toList
       case other => sys.error("Unsupported seq " + other)
     }
   }
@@ -112,7 +122,7 @@ object FromValue extends LowPriorityFromValue {
                                      rightfromvalue: FromValue[B],
                                      leftType: WeakTypeTag[A],
                                      rightType: WeakTypeTag[B]): FromValue[Either[A, B]] = new FromValue[Either[A, B]] {
-    override def apply(value: Any): Either[A, B] = {
+    override def apply(value: Any, field: Field): Either[A, B] = {
 
       import scala.reflect.runtime.universe.typeOf
 
@@ -193,6 +203,6 @@ object FromRecord {
   }
 
   def read[T](record: GenericRecord, name: String)(implicit fromValue: Lazy[FromValue[T]]): T = {
-    fromValue.value(record.get(name))
+    fromValue.value(record.get(name), record.getSchema.getField(name))
   }
 }

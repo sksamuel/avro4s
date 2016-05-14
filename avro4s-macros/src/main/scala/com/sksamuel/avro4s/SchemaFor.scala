@@ -6,10 +6,10 @@ import org.apache.avro.Schema
 import shapeless.Lazy
 
 import scala.annotation.implicitNotFound
+import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
 import scala.reflect.macros.whitebox
 
 trait ToSchema[T] {
@@ -56,13 +56,6 @@ object ToSchema extends LowPriorityToSchema {
     override def apply(): Schema = {
       val values = tag.runtimeClass.getEnumConstants.map(_.toString)
       Schema.createEnum(tag.runtimeClass.getSimpleName, null, tag.runtimeClass.getPackage.getName, values.toList.asJava)
-    }
-  }
-
-  implicit def ScalaEnumToSchema[E <: Enumeration](implicit tag: ClassTag[E]): ToSchema[E] = new ToSchema[E] {
-    override def apply(): Schema = {
-      val values = tag.runtimeClass.getDeclaredFields.toList.filter(_.getType.getName == "scala.Enumeration$Value").map(_.getName)
-      Schema.createEnum(tag.runtimeClass.getSimpleName.replaceAll("\\$\\d+", ""), null, tag.runtimeClass.getPackage.getName, values.asJava)
     }
   }
 
@@ -178,13 +171,36 @@ object SchemaFor {
 
       fields.map { f =>
         val name = f.name
+        // the simple name of the field
         val decoded = name.decodedName.toString.trim
+        // the full path of the field, eg a.b.c.Class.value
+        val fieldPath = f.fullName
         val sig = f.typeSignature
         val annos = annotations(f)
-        q"""{
+
+        if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
+
+          //          val path = Paths.get("/home/sam/development/workspace/avro4s/debug")
+          //
+          //          val g = f.typeSignature.decls.collect {
+          //            case m if m.fullName.contains("outerEnum") =>
+          //              if (m.isMethod) {
+          //                Files.write(path, (m.asMethod.returnType + "\n").getBytes, StandardOpenOption.APPEND)
+          //                Files.write(path, (m.asMethod.returnType.typeSymbol + "\n").getBytes, StandardOpenOption.APPEND)
+          //              }
+          //          }.toList
+          val enumClass = f.typeSignature.toString.stripSuffix(".Value")
+          q"""{
+            com.sksamuel.avro4s.SchemaFor.enumBuilder($decoded, $enumClass)
+            }
+           """
+
+        } else {
+          q"""{
             com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($decoded, Seq(..$annos))
             }
-         """
+           """
+        }
       }
     }
 
@@ -232,6 +248,17 @@ object SchemaFor {
   def unionBuilder(name: String, schemas: Set[Schema], optional: Boolean): Schema.Field = {
     val sortedSchemas = (if (optional) schemas + Schema.create(Schema.Type.NULL) else schemas).toSeq.sortBy(_.getName)
     fieldBuilder(name, Nil, Schema.createUnion(sortedSchemas.asJava))
+  }
+
+  /**
+    * Given a name and a type T, builds a enum scala by taking the prefix of the .Value class
+    * and probing that for enum values
+    */
+  def enumBuilder(name: String, enumClassName: String): Schema.Field = {
+    val enumClass = Class.forName(enumClassName)
+    val values = enumClass.getMethod("values").invoke(null).asInstanceOf[scala.Enumeration#ValueSet].iterator.toList.map(_.toString)
+    val schema = Schema.createEnum(enumClass.getSimpleName, null, enumClass.getPackage.getName, values.asJava)
+    new Schema.Field(name, schema, null, null)
   }
 
   // given a name and a type T, builds the schema field for that type T. A schema field might itself contain

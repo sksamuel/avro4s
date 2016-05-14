@@ -357,5 +357,14 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       in.iterator.toList shouldBe data.toList
       in.close()
     }
+    "read scala enums" in {
+
+      val data = Seq(ScalaEnums(Colours.Red), ScalaEnums(Colours.Green))
+      val bytes = write(data)
+
+      val in = AvroInputStream[ScalaEnums](bytes)
+      val actual = in.iterator.toList shouldBe data.toList
+      in.close()
+    }
   }
 }
