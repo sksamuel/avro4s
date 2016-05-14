@@ -153,7 +153,9 @@ val ennio = format.from(record)
 |BigDecimal|[decimal](https://avro.apache.org/docs/1.7.7/spec.html#Decimal) with scale 2 and precision 8|
 |Double|double|
 |Float|float|
+|java.util.UUID|string|
 |Java Enums|enum|
+|scala.Enumeration|enum|
 |sealed trait T|enum|
 |scala.collection.Array[T]|array|
 |scala.collection.List[T]|array|
