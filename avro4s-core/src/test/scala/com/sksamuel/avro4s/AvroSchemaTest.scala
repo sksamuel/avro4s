@@ -242,6 +242,15 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[Annotated]()
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support scala enums" in {
+      class Colours extends Enumeration {
+        val Red, Amber, Green = Value
+      }
+      case class ScalaEnums(value: Colours)
+      val schema = SchemaFor[ScalaEnums]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/scalaenums.avsc"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 

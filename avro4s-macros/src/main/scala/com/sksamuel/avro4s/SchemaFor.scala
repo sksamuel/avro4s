@@ -24,11 +24,11 @@ trait LowPriorityToSchema {
 
 object ToSchema extends LowPriorityToSchema {
 
-  implicit val BooleanSchemaGen: ToSchema[Boolean] = new ToSchema[Boolean] {
+  implicit val BooleanToSchema: ToSchema[Boolean] = new ToSchema[Boolean] {
     def apply(): Schema = Schema.create(Schema.Type.BOOLEAN)
   }
 
-  implicit val BigDecimalSchemaGen: ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
+  implicit val BigDecimalToSchema: ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
     def apply(): Schema = {
       val schema = Schema.create(Schema.Type.BYTES)
       schema.addProp("logicalType", "decimal")
@@ -38,80 +38,87 @@ object ToSchema extends LowPriorityToSchema {
     }
   }
 
-  implicit val ByteArraySchema: ToSchema[Array[Byte]] = new ToSchema[Array[Byte]] {
+  implicit val ByteArrayToSchema: ToSchema[Array[Byte]] = new ToSchema[Array[Byte]] {
     def apply(): Schema = Schema.create(Schema.Type.BYTES)
   }
 
-  implicit val DoubleSchemaGen: ToSchema[Double] = new ToSchema[Double] {
+  implicit val DoubleToSchema: ToSchema[Double] = new ToSchema[Double] {
     def apply(): Schema = Schema.create(Schema.Type.DOUBLE)
   }
 
-  implicit def EitherSchema[A, B](implicit aSchema: ToSchema[A], bSchema: ToSchema[B]): ToSchema[Either[A, B]] = {
+  implicit def EitherToSchema[A, B](implicit aSchema: ToSchema[A], bSchema: ToSchema[B]): ToSchema[Either[A, B]] = {
     new ToSchema[Either[A, B]] {
       def apply(): Schema = Schema.createUnion(util.Arrays.asList(aSchema.apply, bSchema.apply))
     }
   }
 
-  implicit def EnumSchemaGen[E <: Enum[_]](implicit tag: ClassTag[E]): ToSchema[E] = new ToSchema[E] {
+  implicit def JavaEnumToSchema[E <: Enum[_]](implicit tag: ClassTag[E]): ToSchema[E] = new ToSchema[E] {
     override def apply(): Schema = {
       val values = tag.runtimeClass.getEnumConstants.map(_.toString)
       Schema.createEnum(tag.runtimeClass.getSimpleName, null, tag.runtimeClass.getPackage.getName, values.toList.asJava)
     }
   }
 
-  implicit val FloatSchema: ToSchema[Float] = new ToSchema[Float] {
+  implicit def ScalaEnumToSchema[E <: Enumeration](implicit tag: ClassTag[E]): ToSchema[E] = new ToSchema[E] {
+    override def apply(): Schema = {
+      val values = tag.runtimeClass.getDeclaredFields.toList.filter(_.getType.getName == "scala.Enumeration$Value").map(_.getName)
+      Schema.createEnum(tag.runtimeClass.getSimpleName.replaceAll("\\$\\d+", ""), null, tag.runtimeClass.getPackage.getName, values.asJava)
+    }
+  }
+
+  implicit val FloatToSchema: ToSchema[Float] = new ToSchema[Float] {
     def apply(): Schema = Schema.create(Schema.Type.FLOAT)
   }
 
-  implicit val IntSchema: ToSchema[Int] = new ToSchema[Int] {
+  implicit val IntToSchema: ToSchema[Int] = new ToSchema[Int] {
     def apply(): Schema = Schema.create(Schema.Type.INT)
   }
 
-  implicit val LongSchema: ToSchema[Long] = new ToSchema[Long] {
+  implicit val LongToSchema: ToSchema[Long] = new ToSchema[Long] {
     def apply(): Schema = Schema.create(Schema.Type.LONG)
   }
 
-  implicit val StringSchemaGen: ToSchema[String] = new ToSchema[String] {
+  implicit val StringToSchema: ToSchema[String] = new ToSchema[String] {
     def apply(): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit def mapToSchema[V](implicit valueToSchema: ToSchema[V]): ToSchema[Map[String, V]] = {
+  implicit def MapToSchema[V](implicit valueToSchema: ToSchema[V]): ToSchema[Map[String, V]] = {
     new ToSchema[Map[String, V]] {
       def apply(): Schema = Schema.createMap(valueToSchema())
     }
   }
 
-  implicit def OptionSchemaGen[T](implicit valueSchema: ToSchema[T]): ToSchema[Option[T]] = {
+  implicit def OptionToSchema[T](implicit valueSchema: ToSchema[T]): ToSchema[Option[T]] = {
     new ToSchema[Option[T]] {
       def apply(): Schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), valueSchema.apply))
     }
   }
 
-  implicit def ArraySchemaGen[S](implicit subschema: ToSchema[S]): ToSchema[Array[S]] = {
+  implicit def ArrayToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Array[S]] = {
     new ToSchema[Array[S]] {
       def apply(): Schema = Schema.createArray(subschema.apply)
     }
   }
 
-  implicit def IterableSchemaGen[S](implicit subschema: ToSchema[S]): ToSchema[Iterable[S]] = {
+  implicit def IterableToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Iterable[S]] = {
     new ToSchema[Iterable[S]] {
       def apply(): Schema = Schema.createArray(subschema.apply)
     }
   }
 
-  implicit def ListSchemaGen[S](implicit subschema: ToSchema[S]): ToSchema[List[S]] = {
+  implicit def ListToSchema[S](implicit subschema: ToSchema[S]): ToSchema[List[S]] = {
     new ToSchema[List[S]] {
       def apply(): Schema = Schema.createArray(subschema.apply)
     }
   }
 
-  implicit def SetSchemaGen[S](implicit subschema: ToSchema[S]): ToSchema[Set[S]] = {
+  implicit def SetToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Set[S]] = {
     new ToSchema[Set[S]] {
       def apply(): Schema = Schema.createArray(subschema.apply)
     }
   }
 
-  implicit def SeqSchemaGen[S](implicit subschema: ToSchema[S]): ToSchema[Seq[S]] = new ToSchema[Seq[S]] {
+  implicit def SeqToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Seq[S]] = new ToSchema[Seq[S]] {
     def apply(): Schema = Schema.createArray(subschema())
   }
 }
