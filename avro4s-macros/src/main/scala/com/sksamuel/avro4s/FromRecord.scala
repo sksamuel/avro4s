@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
@@ -56,6 +57,10 @@ object FromValue extends LowPriorityFromValue {
 
   implicit object StringFromValue extends FromValue[String] {
     override def apply(value: Any, field: Field): String = value.toString
+  }
+
+  implicit object UUIDFromValue extends FromValue[UUID] {
+    override def apply(value: Any, field: Field): UUID = UUID.fromString(value.toString)
   }
 
   implicit def OptionFromValue[T](implicit fromvalue: FromValue[T]) = new FromValue[Option[T]] {

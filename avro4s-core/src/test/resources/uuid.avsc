@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Ids",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "myid",
+      "type": "string"
+    }
+  ]
+}

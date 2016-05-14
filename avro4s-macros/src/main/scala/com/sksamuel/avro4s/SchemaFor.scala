@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.util
+import java.util.UUID
 
 import org.apache.avro.Schema
 import shapeless.Lazy
@@ -72,6 +73,10 @@ object ToSchema extends LowPriorityToSchema {
   }
 
   implicit val StringToSchema: ToSchema[String] = new ToSchema[String] {
+    def apply(): Schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object UUIDToSchema extends ToSchema[java.util.UUID] {
     def apply(): Schema = Schema.create(Schema.Type.STRING)
   }
 

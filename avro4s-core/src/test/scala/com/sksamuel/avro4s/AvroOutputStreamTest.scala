@@ -2,6 +2,7 @@ package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
+import java.util.UUID
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
@@ -347,6 +348,17 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
       val record = read[ScalaEnums](output)
       record.get("value").toString shouldBe "Amber"
+    }
+    "support UUIDs" in {
+      val instance = Ids(UUID.randomUUID())
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream[Ids](output)
+      avro.write(instance)
+      avro.close()
+
+      val record = read[Ids](output)
+      UUID.fromString(record.get("myid").toString) shouldBe instance.myid
     }
   }
 }

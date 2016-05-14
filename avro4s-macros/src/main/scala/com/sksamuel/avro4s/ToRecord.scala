@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import shapeless.Lazy
@@ -32,6 +33,10 @@ object ToValue extends LowPriorityToValue {
   implicit object IntToValue extends ToValue[Int]
 
   implicit object LongToValue extends ToValue[Long]
+
+  implicit object UUIDToValue extends ToValue[UUID] {
+    override def apply(value: UUID): String = value.toString
+  }
 
   implicit object BigDecimalToValue extends ToValue[BigDecimal] {
     override def apply(value: BigDecimal): ByteBuffer = ByteBuffer.wrap(value.toString.getBytes)

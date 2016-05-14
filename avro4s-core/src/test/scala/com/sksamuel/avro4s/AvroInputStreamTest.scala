@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
+import java.util.UUID
 
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
@@ -363,7 +364,16 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       val bytes = write(data)
 
       val in = AvroInputStream[ScalaEnums](bytes)
-      val actual = in.iterator.toList shouldBe data.toList
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read uuids" in {
+
+      val data = Seq(Ids(UUID.randomUUID()), Ids(UUID.randomUUID()))
+      val bytes = write(data)
+
+      val in = AvroInputStream[Ids](bytes)
+      in.iterator.toList shouldBe data.toList
       in.close()
     }
   }

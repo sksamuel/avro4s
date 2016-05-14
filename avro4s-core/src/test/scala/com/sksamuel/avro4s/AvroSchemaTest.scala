@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
-import jdk.internal.org.objectweb.asm.tree.analysis.Value
+import java.util.UUID
+
 import org.scalatest.{Matchers, WordSpec}
 
 sealed trait Wibble
@@ -22,6 +23,8 @@ case class Level4(str: Map[String, String])
 case class Level3(level4: Level4)
 case class Level2(level3: Level3)
 case class Level1(level2: Level2)
+
+case class Ids(myid: UUID)
 
 class AvroSchemaTest extends WordSpec with Matchers {
 
@@ -92,6 +95,11 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "accept multiple nested case classes" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_multiple.avsc"))
       val schema = SchemaFor[Outer]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "accept UUIDs" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid.avsc"))
+      val schema = SchemaFor[Ids]()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate option as Union[T, Null]" in {
