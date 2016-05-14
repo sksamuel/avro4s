@@ -91,7 +91,7 @@ object ToValue extends LowPriorityToValue {
   }
 }
 
-trait ToRecord[T] {
+trait ToRecord[T] extends Serializable {
   def apply(t: T): GenericRecord
 }
 

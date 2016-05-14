@@ -166,7 +166,7 @@ object FromValue extends LowPriorityFromValue {
 }
 
 // converts an avro record into a type T
-trait FromRecord[T] {
+trait FromRecord[T] extends Serializable {
   def apply(record: org.apache.avro.generic.GenericRecord): T
 }
 
