@@ -8,7 +8,7 @@ object Build extends Build {
 
   val AvroVersion = "1.7.7"
   val ScalaVersion = "2.11.8"
-  val ScalatestVersion = "3.0.0-M12"
+  val ScalatestVersion = "2.2.6"
   val Slf4jVersion = "1.7.12"
   val Log4jVersion = "1.2.17"
   val ShapelessVersion = "2.2.5"
@@ -17,7 +17,7 @@ object Build extends Build {
   val rootSettings = Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.12.0-M3", ScalaVersion),
+    crossScalaVersions := Seq("2.12.0-M4", ScalaVersion),
     publishMavenStyle := true,
     resolvers += Resolver.mavenLocal,
     publishArtifact in Test := false,
