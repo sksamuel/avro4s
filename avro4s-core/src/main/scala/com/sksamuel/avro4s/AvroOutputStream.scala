@@ -49,18 +49,13 @@ class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T]
 }
 
 object AvroOutputStream {
-  def apply[T: SchemaFor : ToRecord](file: File): AvroOutputStream[T] = apply(file.toPath, true)
 
-  def apply[T: SchemaFor : ToRecord](file: File, includeSchema: Boolean): AvroOutputStream[T] = apply(file.toPath, includeSchema)
+  def apply[T: SchemaFor : ToRecord](file: File): AvroOutputStream[T] = apply(file.toPath)
 
-  def apply[T: SchemaFor : ToRecord](path: Path): AvroOutputStream[T] = apply(Files.newOutputStream(path), true)
+  def apply[T: SchemaFor : ToRecord](path: String): AvroOutputStream[T] = apply(new File(path))
 
-  def apply[T: SchemaFor : ToRecord](path: Path, includeSchema: Boolean): AvroOutputStream[T] = apply(Files.newOutputStream(path), includeSchema)
+  def apply[T: SchemaFor : ToRecord](path: Path): AvroOutputStream[T] = new AvroDataOutputStream(Files.newOutputStream(path))
 
-  def apply[T: SchemaFor : ToRecord](os: OutputStream): AvroOutputStream[T] = apply(os, true)
+  def apply[T: SchemaFor : ToRecord](os: OutputStream): AvroOutputStream[T] = new AvroBinaryOutputStream(os)
 
-  def apply[T: SchemaFor : ToRecord](os: OutputStream, includeSchema: Boolean): AvroOutputStream[T] = {
-    if (includeSchema) new AvroDataOutputStream[T](os)
-    else new AvroBinaryOutputStream[T](os)
-  }
 }
