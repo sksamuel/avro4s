@@ -1,11 +1,12 @@
 package com.sksamuel.avro4s
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, EOFException}
 import java.nio.ByteBuffer
 import java.util.UUID
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.io.DecoderFactory
 import org.apache.avro.util.Utf8
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
@@ -44,10 +45,19 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
   def read[T](out: ByteArrayOutputStream)(implicit schema: SchemaFor[T]): GenericRecord = read(out.toByteArray)
   def read[T](bytes: Array[Byte])(implicit schema: SchemaFor[T]): GenericRecord = {
-    val datum = new GenericDatumReader[GenericRecord](schema())
-    val reader = new DataFileReader[GenericRecord](new SeekableByteArrayInput(bytes), datum)
-    reader.hasNext
-    reader.next()
+    val datumReader = new GenericDatumReader[GenericRecord](schema())
+    val binDecoder = DecoderFactory.get().binaryDecoder(bytes, null)
+    val records = new java.util.ArrayList[GenericRecord]()
+
+    try {
+      while (true)
+        records.add(datumReader.read(null, binDecoder))
+    } catch {
+      case _: EOFException => null
+    }
+    val result = records.iterator()
+    result.hasNext
+    result.next
   }
 
   "AvroOutputStream" should {

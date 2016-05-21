@@ -45,6 +45,8 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   case class Goo(double: Double)
   case class Moo(either: Either[Joo, Goo])
   case class Enums(wine: Wine)
+  case class ComplexElement(unit: Ints, decimal: Doubles, flag: Booleans)
+  case class ComplexType(elements: Seq[ComplexElement])
 
 
   def write[T](ts: Seq[T])(implicit schema: SchemaFor[T], ser: ToRecord[T]): Array[Byte] = {
@@ -69,6 +71,14 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       val bytes = write(data)
 
       val in = AvroInputStream[BigDecimalTest](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read complex type" in {
+      val data = Seq(ComplexType(Seq(ComplexElement(Ints(2), Doubles(0.12345), Booleans(true)), ComplexElement(Ints(5), Doubles(0.98568), Booleans(false)))))
+      val bytes = write(data)
+
+      val in = AvroInputStream[ComplexType](bytes)
       in.iterator.toList shouldBe data.toList
       in.close()
     }

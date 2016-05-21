@@ -50,17 +50,14 @@ class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T]
 
 object AvroOutputStream {
   def apply[T: SchemaFor : ToRecord](file: File): AvroOutputStream[T] = apply(file.toPath, true)
-
-  def apply[T: SchemaFor : ToRecord](file: File, includeSchema: Boolean): AvroOutputStream[T] = apply(file.toPath, includeSchema)
+  def apply[T: SchemaFor : ToRecord](file: File, binaryModeDisabled: Boolean): AvroOutputStream[T] = apply(file.toPath, binaryModeDisabled)
 
   def apply[T: SchemaFor : ToRecord](path: Path): AvroOutputStream[T] = apply(Files.newOutputStream(path), true)
+  def apply[T: SchemaFor : ToRecord](path: Path, binaryModeDisabled: Boolean): AvroOutputStream[T] = apply(Files.newOutputStream(path), binaryModeDisabled)
 
-  def apply[T: SchemaFor : ToRecord](path: Path, includeSchema: Boolean): AvroOutputStream[T] = apply(Files.newOutputStream(path), includeSchema)
-
-  def apply[T: SchemaFor : ToRecord](os: OutputStream): AvroOutputStream[T] = apply(os, true)
-
-  def apply[T: SchemaFor : ToRecord](os: OutputStream, includeSchema: Boolean): AvroOutputStream[T] = {
-    if (includeSchema) new AvroDataOutputStream[T](os)
+  def apply[T: SchemaFor : ToRecord](os: OutputStream): AvroOutputStream[T] = apply(os, false)
+  def apply[T: SchemaFor : ToRecord](os: OutputStream, binaryModeDisabled: Boolean): AvroOutputStream[T] = {
+    if (binaryModeDisabled) new AvroDataOutputStream[T](os)
     else new AvroBinaryOutputStream[T](os)
   }
 }

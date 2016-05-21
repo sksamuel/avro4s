@@ -12,11 +12,11 @@ class AvroDataOutputStreamTest extends WordSpec with Matchers {
   "AvroDataOutputStream" should {
     "not include schema" in {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream[Composer](baos, true)
+      val output = AvroOutputStream[Composer](baos, false)
       output.write(ennio)
       output.close()
-      new String(baos.toByteArray) should include("birthplace")
-      new String(baos.toByteArray) should include("compositions")
+      new String(baos.toByteArray) should not include "birthplace"
+      new String(baos.toByteArray) should not include "compositions"
     }
   }
 }
