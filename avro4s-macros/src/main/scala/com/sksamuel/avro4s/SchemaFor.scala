@@ -1,9 +1,9 @@
 package com.sksamuel.avro4s
 
 import java.util
-import java.util.UUID
 
 import org.apache.avro.Schema
+import org.codehaus.jackson.node.TextNode
 import shapeless.Lazy
 
 import scala.annotation.implicitNotFound
@@ -11,6 +11,7 @@ import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.ClassTag
+import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
 
 trait ToSchema[T] {
@@ -121,7 +122,7 @@ object ToSchema extends LowPriorityToSchema {
   }
 }
 
-@implicitNotFound("Cout not find implicit SchemaFor[${T}]")
+@implicitNotFound("Could not find implicit SchemaFor[${T}]")
 trait SchemaFor[T] {
   def apply(): org.apache.avro.Schema
 }
@@ -131,6 +132,7 @@ object SchemaFor {
   implicit def apply[T]: SchemaFor[T] = macro SchemaFor.applyImpl[T]
 
   def applyImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
+    import c.universe
     import c.universe._
     val tType = weakTypeOf[T]
     require(tType.typeSymbol.isClass, tType + " is not a class but is " + tType.typeSymbol.fullName)
@@ -170,41 +172,41 @@ object SchemaFor {
       }.toSeq
     } else {
 
-      val fields = tType.decls.collectFirst {
-        case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.head
-      }.getOrElse(Nil)
+      val ctr = tType.decls.collectFirst {
+        case m: MethodSymbol if m.isPrimaryConstructor => m
+      }.get
 
-      fields.map { f =>
+      val fields = ctr.paramLists.head
+
+      fields.zipWithIndex.map { case (f, index) =>
         val name = f.name
         // the simple name of the field
-        val decoded = name.decodedName.toString.trim
+        val fieldName = name.decodedName.toString.trim
         // the full path of the field, eg a.b.c.Class.value
         val fieldPath = f.fullName
         val sig = f.typeSignature
         val annos = annotations(f)
 
-        if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
+        // this gets the method that generates the default value for this field
+        // (if the field has a default value otherwise its a nosymbol)
+        val ds = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+        val defaultGetter = ds.nme.defaultGetterName(ds.nme.CONSTRUCTOR, index + 1)
+        val defaultGetterName = TermName(defaultGetter.toString)
+        val member = tType.companion.member(defaultGetterName)
 
-          //          val path = Paths.get("/home/sam/development/workspace/avro4s/debug")
-          //
-          //          val g = f.typeSignature.decls.collect {
-          //            case m if m.fullName.contains("outerEnum") =>
-          //              if (m.isMethod) {
-          //                Files.write(path, (m.asMethod.returnType + "\n").getBytes, StandardOpenOption.APPEND)
-          //                Files.write(path, (m.asMethod.returnType.typeSymbol + "\n").getBytes, StandardOpenOption.APPEND)
-          //              }
-          //          }.toList
+        if (f.isTerm && f.asTerm.isParamWithDefault && member.isMethod) {
+          //val path = Paths.get("/home/sam/development/workspace/avro4s/debug")
+          //path.toFile.createNewFile()
+          //Files.write(path, (s"defaultMethodFor $fieldName $defaultGetterName\n").getBytes, StandardOpenOption.APPEND)
+          //Files.write(path, (s"does method exist? $member1\n").getBytes, StandardOpenOption.APPEND)
+          //Files.write(path, ("{ com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), null) }\n").getBytes, StandardOpenOption.APPEND)
+          q"""{ com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $member) }"""
+        } else if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
           val enumClass = f.typeSignature.toString.stripSuffix(".Value")
-          q"""{
-            com.sksamuel.avro4s.SchemaFor.enumBuilder($decoded, $enumClass)
-            }
+          q"""{ com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }
            """
-
         } else {
-          q"""{
-            com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($decoded, Seq(..$annos))
-            }
-           """
+          q"""{ com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), null) }"""
         }
       }
     }
@@ -252,7 +254,7 @@ object SchemaFor {
 
   def unionBuilder(name: String, schemas: Set[Schema], optional: Boolean): Schema.Field = {
     val sortedSchemas = (if (optional) schemas + Schema.create(Schema.Type.NULL) else schemas).toSeq.sortBy(_.getName)
-    fieldBuilder(name, Nil, Schema.createUnion(sortedSchemas.asJava))
+    fieldBuilder(name, Nil, Schema.createUnion(sortedSchemas.asJava), null)
   }
 
   /**
@@ -268,12 +270,13 @@ object SchemaFor {
 
   // given a name and a type T, builds the schema field for that type T. A schema field might itself contain
   // a nested record schema if T is a class. The provided annos are a wrapper around annotations.
-  def fieldBuilder[T](name: String, annos: Seq[Anno])(implicit toSchema: Lazy[ToSchema[T]]): Schema.Field = {
-    fieldBuilder(name, annos, toSchema.value.apply())
+  def fieldBuilder[T](name: String, annos: Seq[Anno], default: Any)(implicit toSchema: Lazy[ToSchema[T]]): Schema.Field = {
+    fieldBuilder(name, annos, toSchema.value.apply(), default)
   }
 
-  private def fieldBuilder(name: String, annos: Seq[Anno], schema: Schema): Schema.Field = {
-    val field = new Schema.Field(name, schema, doc(annos), null)
+  private def fieldBuilder(name: String, annos: Seq[Anno], schema: Schema, default: Any): Schema.Field = {
+    val defaultNode = if (default == null) null else new TextNode(default.toString)
+    val field = new Schema.Field(name, schema, doc(annos), defaultNode)
     aliases(annos).foreach(field.addAlias)
     addProps(annos, field.addProp)
     field

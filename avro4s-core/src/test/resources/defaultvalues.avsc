@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "DefaultValues",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string",
+      "default" : "sammy"
+    }
+  ]
+}

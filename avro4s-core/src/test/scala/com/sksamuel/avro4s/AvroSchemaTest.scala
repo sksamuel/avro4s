@@ -38,6 +38,8 @@ class AvroSchemaTest extends WordSpec with Matchers {
   case class Middle(inner: Inner)
   case class Outer(middle: Middle)
 
+  val defaults = DefaultValues("qwe")
+
   "AvroSchema" should {
     "accept booleans" in {
       case class Test(booly: Boolean)
@@ -256,5 +258,12 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/scalaenums.avsc"))
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support default values" in {
+      val schema = SchemaFor[DefaultValues]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/defaultvalues.avsc"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
+
+case class DefaultValues(name: String = "sammy")
