@@ -27,12 +27,8 @@ class AvroJsonInputTest extends WordSpec with Matchers {
     }
 
     "serialise back to a single entry" in {
-      val baos = new ByteArrayOutputStream()
-      val output = AvroJsonOutput[Composer](baos)
-      output.write(ennio)
-      output.close()
-      baos.toString("UTF-8") shouldBe "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
-      val in = new ByteInputStream(baos.toByteArray, baos.size())
+      val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
+      val in = new ByteInputStream(json.getBytes("UTF-8"), json.size)
       val input = new AvroJsonInputStream[Composer](in)
       val result = input.singleEntity
       result shouldBe Success(ennio)
