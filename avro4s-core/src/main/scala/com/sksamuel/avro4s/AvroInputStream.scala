@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import java.io.File
+import java.io.{File, InputStream}
 import java.nio.file.{Files, Path}
 
 import org.apache.avro.file.SeekableByteArrayInput
@@ -27,6 +27,24 @@ class AvroInputStream[T](in: SeekableByteArrayInput)(implicit schemaFor: SchemaF
       .map(record => Try(fromRecord(record)))
 
   def close(): Unit = in.close()
+}
+
+final case class AvroJsonInputStream[T](in: InputStream)(implicit schemaFor: SchemaFor[T], fromRecord: FromRecord[T]) {
+  private val schema = schemaFor()
+  private val dataumReader = new GenericDatumReader[GenericRecord](schema)
+  private val jsonDecoder = DecoderFactory.get.jsonDecoder(schema, in)
+
+  def iterator: Iterator[T] = Iterator.continually(Try{dataumReader.read(null, jsonDecoder)})
+    .takeWhile(_.isSuccess)
+    .map(_.get)
+    .map(fromRecord.apply)
+
+  def tryIterator: Iterator[Try[T]] = Iterator.continually(Try(dataumReader.read(null, jsonDecoder)))
+    .takeWhile(_.isSuccess)
+    .map(_.get)
+    .map(record => Try(fromRecord(record)))
+
+  def singleEntity: Try[T] = Try{dataumReader.read(null, jsonDecoder)}.map(fromRecord.apply)
 }
 
 object AvroInputStream {
