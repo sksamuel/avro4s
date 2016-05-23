@@ -48,6 +48,24 @@ class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T]
   override def fSync(): Unit = dataFileWriter.fSync()
 }
 
+case class AvroJsonOutput[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
+  extends AvroOutputStream[T] {
+  private val schema = schemaFor()
+  protected val datumWriter = new GenericDatumWriter[GenericRecord](schema)
+  private val encoder = EncoderFactory.get.jsonEncoder(schema, os)
+
+  override def close(): Unit = {
+    encoder.flush()
+    os.close()
+  }
+
+  override def fSync(): Unit = {}
+
+  override def flush(): Unit = encoder.flush()
+
+  override def write(t: T): Unit = datumWriter.write(toRecord(t), encoder)
+}
+
 object AvroOutputStream {
   def apply[T: SchemaFor : ToRecord](file: File): AvroOutputStream[T] = apply(file.toPath, true)
   def apply[T: SchemaFor : ToRecord](file: File, binaryModeDisabled: Boolean): AvroOutputStream[T] = apply(file.toPath, binaryModeDisabled)
