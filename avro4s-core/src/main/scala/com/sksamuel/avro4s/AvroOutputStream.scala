@@ -15,7 +15,7 @@ trait AvroOutputStream[T] {
   def write(ts: Seq[T]): Unit = ts.foreach(write)
 }
 
-class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
+case class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
   extends AvroOutputStream[T] {
 
   val dataWriter = new GenericDatumWriter[GenericRecord](schemaFor())
@@ -31,7 +31,7 @@ class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[
   override def fSync(): Unit = ()
 }
 
-class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
+case class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
   extends AvroOutputStream[T] {
 
   val datumWriter = new GenericDatumWriter[GenericRecord](schemaFor())
@@ -48,7 +48,7 @@ class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T]
   override def fSync(): Unit = dataFileWriter.fSync()
 }
 
-case class AvroJsonOutput[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
+case class AvroJsonOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
   extends AvroOutputStream[T] {
   private val schema = schemaFor()
   protected val datumWriter = new GenericDatumWriter[GenericRecord](schema)
@@ -60,9 +60,7 @@ case class AvroJsonOutput[T](os: OutputStream)(implicit schemaFor: SchemaFor[T],
   }
 
   override def fSync(): Unit = {}
-
   override def flush(): Unit = encoder.flush()
-
   override def write(t: T): Unit = datumWriter.write(toRecord(t), encoder)
 }
 
