@@ -117,8 +117,8 @@ Will print out:
 Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4)),false,false,500) Pizza(hawaiian,List(Ingredient(ham,1.5,5.6), Ingredient(pineapple,5.2,0.2)),false,false,500)
 ```
 
-## JSON Serialisation 
-You can now serialise to json using the AvroJsonInputStream
+## JSON Serializing 
+You can now Serialize to json using the AvroJsonInputStream
 
 Simply 
 ```scala
@@ -132,8 +132,8 @@ val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy o
       println(boas.toString("UTF-8"))
 ```    
 
-## JSON DeSerialisation 
-  You can now de-serialise json using the AvroJsonInputStream
+## JSON DeSerializing 
+  You can now de-serialize json using the AvroJsonInputStream
    Simply
 ```scala
       val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
