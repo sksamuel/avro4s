@@ -193,6 +193,30 @@ val ennio = format.from(record)
 |scala.collection.Either[L, R]|union:L,R|
 |T|record|
 
+## Custom Type Mappings
+
+It is very easy to add custom type mappings. To do this, you need to create instances of `ToSchema`, `ToValue` and `FromValue` typeclasses.
+
+`ToSchema` is used to generate an avro schema for a given jvm type. `ToValue` is used to convert an instance of a jvm type into an instance of the avro type. And `FromValue` is used to convert an instance of the avro type into the jvm type. 
+
+For example, to create a mapping for org.joda.time.DateTime that we wish to store as an ISO Date string, then we can do the following:
+
+```scala
+implicit object DateTimeToSchema extends ToSchema[DateTime] {
+  override def apply(): Schema = Schema.create(Schema.Type.STRING)
+}
+
+implicit object DateTimeToValue extends ToValue[DateTime] {
+  override def apply(value: DateTime): String = ISODateTimeFormat.dateTime().print(value)
+}
+
+implicit object DateTimeFromValue extends FromValue[DateTime] {
+  override def apply(value: Any): DateTime = ISODateTimeFormat.dateTime().parseDateTime(value.toString())
+}
+```
+
+These typeclasses must be implicit and in scope when you invoke `AvroSchema` or create an `AvroInputStream` or `AvroOutputStream`.
+
 ## Using avro4s in your project
 
 Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.3.2'`
