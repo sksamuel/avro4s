@@ -117,6 +117,32 @@ Will print out:
 Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4)),false,false,500) Pizza(hawaiian,List(Ingredient(ham,1.5,5.6), Ingredient(pineapple,5.2,0.2)),false,false,500)
 ```
 
+## JSON Serializing 
+You can now Serialize to json using the AvroJsonInputStream
+
+Simply 
+```scala
+case class Composer(name: String, birthplace: String, compositions: Seq[String])
+val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
+
+      val baos = new ByteArrayOutputStream()
+      val output = AvroJsonOutput[Composer](baos)
+      output.write(ennio)
+      output.close()
+      println(boas.toString("UTF-8"))
+```    
+
+## JSON DeSerializing 
+  You can now de-serialize json using the AvroJsonInputStream
+   Simply
+```scala
+      val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
+      val in = new ByteInputStream(json.getBytes("UTF-8"), json.size())
+      val input = new AvroJsonInputStream[Composer](in)
+      val result = input.singleEntity
+      result shouldBe Success(ennio)
+```   
+  
 ## Conversions to/from GenericRecord
 
 To interface with the Java api it is sometimes desirable to convert between your classes and the avro GenericRecord type. You can do this easily in Avro4s using the RecordFormat typeclass (this is what the input/output streams use behind the scenes). Eg,
