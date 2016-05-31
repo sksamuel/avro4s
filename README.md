@@ -118,28 +118,28 @@ Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4))
 ```
 
 ## JSON Serializing
-You can now serialize to JSON using the `AvroJsonInputStream`
+You can now serialize to JSON using the `AvroJsonOutputStream`
 
 Simply
 ```scala
 case class Composer(name: String, birthplace: String, compositions: Seq[String])
 val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
 
-      val baos = new ByteArrayOutputStream()
-      val output = AvroJsonOutput[Composer](baos)
-      output.write(ennio)
-      output.close()
-      println(boas.toString("UTF-8"))
+val baos = new ByteArrayOutputStream()
+val output = AvroJsonOutput[Composer](baos)
+output.write(ennio)
+output.close()
+println(baos.toString("UTF-8"))
 ```    
 
 ## JSON Deserializing
   You can now deserialize JSON using the `AvroJsonInputStream`as the following:
 ```scala
-      val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
-      val in = new ByteInputStream(json.getBytes("UTF-8"), json.size())
-      val input = new AvroJsonInputStream[Composer](in)
-      val result = input.singleEntity
-      result shouldBe Success(ennio)
+val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
+val in = new ByteInputStream(json.getBytes("UTF-8"), json.size)
+val input = new AvroJsonInputStream[Composer](in)
+val result = input.singleEntity
+result shouldBe Success(ennio)
 ```   
 
 ## Conversions to/from GenericRecord
@@ -214,19 +214,19 @@ implicit object DateTimeFromValue extends FromValue[DateTime] {
 }
 ```
 
-These typeclasses must be implicit and in scope when you invoke `AvroSchema` or create an `AvroInputStream` or `AvroOutputStream`.
+These typeclasses must be implicit and in scope when you invoke `AvroSchema` or create an `AvroInputStream`/`AvroOutputStream`.
 
 ## Using avro4s in your project
 
-### Gradle
+#### Gradle
 
 `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.4.3'`
 
-### SBT
+#### SBT
 
 `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.4.3"`
 
-### Maven
+#### Maven
 
 ```xml
 <dependency>
@@ -237,7 +237,7 @@ These typeclasses must be implicit and in scope when you invoke `AvroSchema` or 
 ```
 
 The above is just an example and is not always up to date with the latest version. Check the latest released version on
-[maven central](http://search.maven.org/#search|ga|1|g%3A%22com.sksamuel.avro4s%22)
+[Maven Central](http://search.maven.org/#search|ga|1|g%3A%22com.sksamuel.avro4s%22)
 
 ## Building and Testing
 
