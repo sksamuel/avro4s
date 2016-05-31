@@ -4,19 +4,19 @@
 [<img src="https://img.shields.io/maven-central/v/com.sksamuel.avro4s/avro4s-core_2.11*.svg?label=latest%20release%20for%202.11"/>](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22avro4s-core_2.11%22)
 [<img src="https://img.shields.io/maven-central/v/com.sksamuel.avro4s/avro4s-core_2.12*.svg?label=latest%20release%20for%202.12"/>](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22avro4s-core_2.12.0-M3%22)
 
-Avro4s is a schema/class generation and serializing/deserializing library for [Avro](http://avro.apache.org/) written in Scala. The objective is to allow seamless use with Scala without the need to to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a macro based library and generates code for use with avro at _compile time_.
+Avro4s is a schema/class generation and serializing/deserializing library for [Avro](http://avro.apache.org/) written in Scala. The objective is to allow seamless use with Scala without the need to to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a macro based library and generates code for use with Avro at _compile time_.
 
-The features of the library are: 
+The features of the library are:
 * Schema generation from classes at compile time
 * Class generation from schemas at build time
-* Boilerplate free serialization of classes to avro
-* Boilerplate free deserialization of avro to classes
+* Boilerplate free serialization of classes to Avro
+* Boilerplate free deserialization of Avro to classes
 
 ## Changelog
 * 1.3.3 - Added missing support for deserializing byte arrays
-* 1.3.0 - Added support for Scala 2.12. Removed 2.10 cross build. Fixed issues with private vals. Added binary (no schema) output stream. Exposed RecordFormat[T] typeclass to enable easy conversion of T to/from an avro Record.
+* 1.3.0 - Added support for Scala 2.12. Removed 2.10 cross build. Fixed issues with private vals. Added binary (no schema) output stream. Exposed RecordFormat[T] typeclass to enable easy conversion of T to/from an Avro Record.
 * 1.2.0 - Added support for properties, doc fields, and aliases. These are set via annotations.
-* 1.1.0 - Added json document to avro schema converter
+* 1.1.0 - Added JSON document to Avro schema converter
 * 1.0.0 - Migrated all macros to use Shapeless. Fixed some trickier nested case class issues. Simplified API. Added support for java enums.
 * 0.94.0 - Added support for writing/reading Either and Option in serializer/deserializer. Fixed bug with array serialization.
 * 0.93.0 - Added support for either and options in schema generator. Added support for aliases via scala annotation.
@@ -31,7 +31,7 @@ case class Ingredient(name: String, sugar: Double, fat: Double)
 case class Pizza(name: String, ingredients: Seq[Ingredient], vegetarian: Boolean, vegan: Boolean, calories: Int)
 ```
 
-Next is to invoke the apply method of AvroSchema passing in the top level type. This will return an `org.apache.avro.Schema` instance, from which you can output, write to a file etc.
+Next is to invoke the `apply` method of `AvroSchema` passing in the top level type. This will return an `org.apache.avro.Schema` instance, from which you can output, write to a file etc.
 
 ```scala
 import com.sksamuel.avro4s.AvroSchema
@@ -100,7 +100,7 @@ os.close()
 
 ## Deserializing
 
-With avro4s we can easily deserialize a file back into Scala case classes. Given the pizzas.avro file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class. We first create an instance of the input stream specifying the types we will read back, and the file. Then we call iterator which will return a lazy iterator (reads on demand) of the data in the file. In this example, we'll load all data at once from the iterator via `toSet`.
+With avro4s we can easily deserialize a file back into Scala case classes. Given the `pizzas.avro` file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class. We first create an instance of the input stream specifying the types we will read back, and the file. Then we call iterator which will return a lazy iterator (reads on demand) of the data in the file. In this example, we'll load all data at once from the iterator via `toSet`.
 
 ```scala
 import com.sksamuel.avro4s.AvroInputStream
@@ -117,10 +117,10 @@ Will print out:
 Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4)),false,false,500) Pizza(hawaiian,List(Ingredient(ham,1.5,5.6), Ingredient(pineapple,5.2,0.2)),false,false,500)
 ```
 
-## JSON Serializing 
-You can now Serialize to json using the AvroJsonInputStream
+## JSON Serializing
+You can now serialize to JSON using the `AvroJsonInputStream`
 
-Simply 
+Simply
 ```scala
 case class Composer(name: String, birthplace: String, compositions: Seq[String])
 val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
@@ -132,9 +132,8 @@ val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy o
       println(boas.toString("UTF-8"))
 ```    
 
-## JSON DeSerializing 
-  You can now de-serialize json using the AvroJsonInputStream
-   Simply
+## JSON Deserializing
+  You can now deserialize JSON using the `AvroJsonInputStream`as the following:
 ```scala
       val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
       val in = new ByteInputStream(json.getBytes("UTF-8"), json.size())
@@ -142,10 +141,10 @@ val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy o
       val result = input.singleEntity
       result shouldBe Success(ennio)
 ```   
-  
+
 ## Conversions to/from GenericRecord
 
-To interface with the Java api it is sometimes desirable to convert between your classes and the avro GenericRecord type. You can do this easily in Avro4s using the RecordFormat typeclass (this is what the input/output streams use behind the scenes). Eg,
+To interface with the Java API it is sometimes desirable to convert between your classes and the Avro `GenericRecord` type. You can do this easily in avro4s using the `RecordFormat` typeclass (this is what the input/output streams use behind the scenes). Eg,
 
 To convert from a class into a record:
 
@@ -197,9 +196,9 @@ val ennio = format.from(record)
 
 It is very easy to add custom type mappings. To do this, you need to create instances of `ToSchema`, `ToValue` and `FromValue` typeclasses.
 
-`ToSchema` is used to generate an avro schema for a given jvm type. `ToValue` is used to convert an instance of a jvm type into an instance of the avro type. And `FromValue` is used to convert an instance of the avro type into the jvm type. 
+`ToSchema` is used to generate an Avro schema for a given JVM type. `ToValue` is used to convert an instance of a JVM type into an instance of the Avro type. And `FromValue` is used to convert an instance of the Avro type into the JVM type.
 
-For example, to create a mapping for org.joda.time.DateTime that we wish to store as an ISO Date string, then we can do the following:
+For example, to create a mapping for `org.joda.time.DateTime` that we wish to store as an ISO Date string, then we can do the following:
 
 ```scala
 implicit object DateTimeToSchema extends ToSchema[DateTime] {
@@ -211,7 +210,7 @@ implicit object DateTimeToValue extends ToValue[DateTime] {
 }
 
 implicit object DateTimeFromValue extends FromValue[DateTime] {
-  override def apply(value: Any): DateTime = ISODateTimeFormat.dateTime().parseDateTime(value.toString())
+  override def apply(value: Any, field: Field): DateTime = ISODateTimeFormat.dateTime().parseDateTime(value.toString())
 }
 ```
 
@@ -219,17 +218,21 @@ These typeclasses must be implicit and in scope when you invoke `AvroSchema` or 
 
 ## Using avro4s in your project
 
-Gradle: `compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.3.2'`
+### Gradle
 
-SBT: `libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.3.2"`
+`compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.4.3'`
 
-Maven:
+### SBT
+
+`libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.4.3"`
+
+### Maven
 
 ```xml
 <dependency>
     <groupId>com.sksamuel.avro4s</groupId>
     <artifactId>avro4s-core_2.11</artifactId>
-    <version>1.3.2</version>
+    <version>1.4.3</version>
 </dependency>
 ```
 
