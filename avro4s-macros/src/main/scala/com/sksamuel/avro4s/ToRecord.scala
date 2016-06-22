@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.util.UUID
 
+import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import shapeless.Lazy
 
@@ -124,9 +125,10 @@ object ToRecord {
 
     c.Expr[ToRecord[T]](
       q"""new com.sksamuel.avro4s.ToRecord[$tpe] {
+            private val schema = SchemaFor[$tpe]()
             def apply(t : $tpe): org.apache.avro.generic.GenericRecord = {
               val map: Map[String, Any] = Map(..$tuples)
-              com.sksamuel.avro4s.ToRecord.createRecord[$tpe](map)
+              com.sksamuel.avro4s.ToRecord.createRecord[$tpe](map, schema)
             }
           }
         """
@@ -135,9 +137,8 @@ object ToRecord {
 
   def tuple[T](name: String, value: T)(implicit toValue: Lazy[ToValue[T]]): (String, Any) = name -> toValue.value(value)
 
-  def createRecord[T](map: Map[String, Any])
-                     (implicit schemaFor: SchemaFor[T]): GenericRecord = {
-    val record = new GenericData.Record(schemaFor())
+  def createRecord[T](map: Map[String, Any], schema: Schema): GenericRecord = {
+    val record = new GenericData.Record(schema)
     map.foreach { case (key, value) => record.put(key, value) }
     record
   }
