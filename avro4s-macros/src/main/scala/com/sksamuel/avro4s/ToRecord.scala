@@ -3,7 +3,7 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.util.UUID
 
-import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.generic.GenericRecord
 import shapeless.Lazy
 
 import scala.collection.JavaConverters._
@@ -109,36 +109,48 @@ object ToRecord {
       }.flatMap(_.paramLists.headOption).getOrElse(Nil)
     }
 
-    val tuples: Seq[Tree] = fieldsForType(tpe).map { f =>
-      val name = f.name.asInstanceOf[c.TermName]
-      val mapKey: String = name.decodedName.toString
+    val converters: Seq[Tree] = fieldsForType(tpe).map { f =>
       val sig = f.typeSignature
+
       q"""{
             import com.sksamuel.avro4s.ToSchema._
             import com.sksamuel.avro4s.ToValue._
             import com.sksamuel.avro4s.SchemaFor._
-            com.sksamuel.avro4s.ToRecord.tuple[$sig]($mapKey, t.$name : $sig)
+
+            com.sksamuel.avro4s.ToRecord.converter[$sig]
           }
        """
     }
 
+    val puts: Seq[Tree] = fieldsForType(tpe).zipWithIndex.map {
+      case (f, idx) =>
+        val name = f.name.asInstanceOf[c.TermName]
+        val fieldName: String = name.decodedName.toString
+        val sig = f.typeSignature
+
+        q"""
+          {
+            val converter = converters($idx).asInstanceOf[com.sksamuel.avro4s.ToValue[$sig]]
+            record.put($fieldName, converter(t.$name : $sig))
+          }
+        """
+    }
+
     c.Expr[ToRecord[T]](
       q"""new com.sksamuel.avro4s.ToRecord[$tpe] {
+            private val schemaFor : SchemaFor[$tpe] = SchemaFor[$tpe]
+            private val converters : Array[com.sksamuel.avro4s.ToValue[_]] = Array(..$converters)
+
             def apply(t : $tpe): org.apache.avro.generic.GenericRecord = {
-              val map: Map[String, Any] = Map(..$tuples)
-              com.sksamuel.avro4s.ToRecord.createRecord[$tpe](map)
+
+              val record = new org.apache.avro.generic.GenericData.Record(schemaFor())
+              ..$puts
+              record
             }
           }
         """
     )
   }
 
-  def tuple[T](name: String, value: T)(implicit toValue: Lazy[ToValue[T]]): (String, Any) = name -> toValue.value(value)
-
-  def createRecord[T](map: Map[String, Any])
-                     (implicit schemaFor: SchemaFor[T]): GenericRecord = {
-    val record = new GenericData.Record(schemaFor())
-    map.foreach { case (key, value) => record.put(key, value) }
-    record
-  }
+  def converter[T](implicit toValue: Lazy[ToValue[T]]): ToValue[T] = toValue.value
 }
