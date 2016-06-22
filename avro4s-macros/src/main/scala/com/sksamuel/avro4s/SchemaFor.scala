@@ -15,110 +15,109 @@ import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
 
 trait ToSchema[T] {
-  def apply(): org.apache.avro.Schema
+  protected val schema: Schema
+
+  def apply(): Schema = schema
 }
 
 trait LowPriorityToSchema {
   implicit def apply[T: Manifest](implicit schemaFor: SchemaFor[T]): ToSchema[T] = new ToSchema[T] {
-    override def apply(): Schema = schemaFor()
+    protected val schema = schemaFor()
   }
 }
 
 object ToSchema extends LowPriorityToSchema {
 
   implicit val BooleanToSchema: ToSchema[Boolean] = new ToSchema[Boolean] {
-    def apply(): Schema = Schema.create(Schema.Type.BOOLEAN)
+    protected val schema = Schema.create(Schema.Type.BOOLEAN)
   }
 
   implicit val BigDecimalToSchema: ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
-    def apply(): Schema = {
-      val schema = Schema.create(Schema.Type.BYTES)
-      schema.addProp("logicalType", "decimal")
-      schema.addProp("scale", "2")
-      schema.addProp("precision", "8")
-      schema
-    }
+    protected val schema = Schema.create(Schema.Type.BYTES)
+    schema.addProp("logicalType", "decimal")
+    schema.addProp("scale", "2")
+    schema.addProp("precision", "8")
   }
 
   implicit val ByteArrayToSchema: ToSchema[Array[Byte]] = new ToSchema[Array[Byte]] {
-    def apply(): Schema = Schema.create(Schema.Type.BYTES)
+    protected val schema = Schema.create(Schema.Type.BYTES)
   }
 
   implicit val DoubleToSchema: ToSchema[Double] = new ToSchema[Double] {
-    def apply(): Schema = Schema.create(Schema.Type.DOUBLE)
+    protected val schema =  Schema.create(Schema.Type.DOUBLE)
   }
 
   implicit def EitherToSchema[A, B](implicit aSchema: ToSchema[A], bSchema: ToSchema[B]): ToSchema[Either[A, B]] = {
     new ToSchema[Either[A, B]] {
-      def apply(): Schema = Schema.createUnion(util.Arrays.asList(aSchema.apply, bSchema.apply))
+      protected val schema = Schema.createUnion(util.Arrays.asList(aSchema.apply, bSchema.apply))
     }
   }
 
   implicit def JavaEnumToSchema[E <: Enum[_]](implicit tag: ClassTag[E]): ToSchema[E] = new ToSchema[E] {
-    override def apply(): Schema = {
+    protected val schema = {
       val values = tag.runtimeClass.getEnumConstants.map(_.toString)
       Schema.createEnum(tag.runtimeClass.getSimpleName, null, tag.runtimeClass.getPackage.getName, values.toList.asJava)
     }
   }
 
   implicit val FloatToSchema: ToSchema[Float] = new ToSchema[Float] {
-    def apply(): Schema = Schema.create(Schema.Type.FLOAT)
+    protected val schema = Schema.create(Schema.Type.FLOAT)
   }
 
   implicit val IntToSchema: ToSchema[Int] = new ToSchema[Int] {
-    def apply(): Schema = Schema.create(Schema.Type.INT)
+    protected val schema = Schema.create(Schema.Type.INT)
   }
 
   implicit val LongToSchema: ToSchema[Long] = new ToSchema[Long] {
-    def apply(): Schema = Schema.create(Schema.Type.LONG)
+    protected val schema = Schema.create(Schema.Type.LONG)
   }
 
   implicit val StringToSchema: ToSchema[String] = new ToSchema[String] {
-    def apply(): Schema = Schema.create(Schema.Type.STRING)
+    protected val schema = Schema.create(Schema.Type.STRING)
   }
 
   implicit object UUIDToSchema extends ToSchema[java.util.UUID] {
-    def apply(): Schema = Schema.create(Schema.Type.STRING)
+    protected val schema = Schema.create(Schema.Type.STRING)
   }
 
   implicit def MapToSchema[V](implicit valueToSchema: ToSchema[V]): ToSchema[Map[String, V]] = {
     new ToSchema[Map[String, V]] {
-      def apply(): Schema = Schema.createMap(valueToSchema())
+      protected val schema = Schema.createMap(valueToSchema())
     }
   }
 
   implicit def OptionToSchema[T](implicit valueSchema: ToSchema[T]): ToSchema[Option[T]] = {
     new ToSchema[Option[T]] {
-      def apply(): Schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), valueSchema.apply))
+      protected val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), valueSchema.apply))
     }
   }
 
   implicit def ArrayToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Array[S]] = {
     new ToSchema[Array[S]] {
-      def apply(): Schema = Schema.createArray(subschema.apply)
+      protected val schema = Schema.createArray(subschema.apply)
     }
   }
 
   implicit def IterableToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Iterable[S]] = {
     new ToSchema[Iterable[S]] {
-      def apply(): Schema = Schema.createArray(subschema.apply)
+      protected val schema = Schema.createArray(subschema.apply)
     }
   }
 
   implicit def ListToSchema[S](implicit subschema: ToSchema[S]): ToSchema[List[S]] = {
     new ToSchema[List[S]] {
-      def apply(): Schema = Schema.createArray(subschema.apply)
+      protected val schema = Schema.createArray(subschema.apply)
     }
   }
 
   implicit def SetToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Set[S]] = {
     new ToSchema[Set[S]] {
-      def apply(): Schema = Schema.createArray(subschema.apply)
+      protected val schema = Schema.createArray(subschema.apply)
     }
   }
 
   implicit def SeqToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Seq[S]] = new ToSchema[Seq[S]] {
-    def apply(): Schema = Schema.createArray(subschema())
+    protected val schema = Schema.createArray(subschema())
   }
 }
 
@@ -220,7 +219,8 @@ object SchemaFor {
     c.Expr[SchemaFor[T]](
       q"""
            new com.sksamuel.avro4s.SchemaFor[$tType] {
-            def apply(): org.apache.avro.Schema = {
+
+           val schema : org.apache.avro.Schema = {
               com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
                 $name,
                 $pack,
@@ -228,6 +228,7 @@ object SchemaFor {
                 Seq(..$annos)
               )
             }
+            def apply(): org.apache.avro.Schema = schema
           }
         """
     )
