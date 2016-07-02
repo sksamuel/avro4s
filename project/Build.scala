@@ -6,7 +6,7 @@ object Build extends Build {
 
   val org = "com.sksamuel.avro4s"
 
-  val AvroVersion = "1.7.7"
+  val AvroVersion = "1.8.1"
   val ScalaVersion = "2.11.8"
   val ScalatestVersion = "3.0.0-M12"
   val Slf4jVersion = "1.7.12"
@@ -76,7 +76,7 @@ object Build extends Build {
   lazy val macros = Project("avro4s-macros", file("avro4s-macros"))
     .settings(rootSettings: _*)
     .settings(
-      libraryDependencies += "com.chuusai" %% "shapeless" % "2.2.5"
+      libraryDependencies += "com.chuusai" %% "shapeless" % ShapelessVersion
     )
     .settings(name := "avro4s-macros")
 
