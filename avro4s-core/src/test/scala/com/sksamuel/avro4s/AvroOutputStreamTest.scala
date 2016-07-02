@@ -1,12 +1,11 @@
 package com.sksamuel.avro4s
 
-import java.io.{ByteArrayOutputStream, EOFException}
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.util.UUID
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
-import org.apache.avro.io.DecoderFactory
 import org.apache.avro.util.Utf8
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
@@ -46,25 +45,18 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
   def read[T](out: ByteArrayOutputStream)(implicit schema: SchemaFor[T]): GenericRecord = read(out.toByteArray)
   def read[T](bytes: Array[Byte])(implicit schema: SchemaFor[T]): GenericRecord = {
     val datumReader = new GenericDatumReader[GenericRecord](schema())
-    val binDecoder = DecoderFactory.get().binaryDecoder(bytes, null)
-    val records = new java.util.ArrayList[GenericRecord]()
-
-    try {
-      while (true)
-        records.add(datumReader.read(null, binDecoder))
-    } catch {
-      case _: EOFException => null
-    }
-    val result = records.iterator()
-    result.hasNext
-    result.next
+    val dataFileReader = new DataFileReader[GenericRecord](new SeekableByteArrayInput(bytes), datumReader)
+     new Iterator[GenericRecord] {
+      override def hasNext: Boolean = dataFileReader.hasNext
+      override def next(): GenericRecord = dataFileReader.next
+    }.toList.head
   }
 
   "AvroOutputStream" should {
     "support java enums" in {
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test1](output)
+      val avro = AvroOutputStream.data[Test1](output)
       avro.write(Test1(Wine.Malbec))
       avro.close()
 
@@ -74,7 +66,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     "write big decimal" in {
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test2](output)
+      val avro = AvroOutputStream.data[Test2](output)
       avro.write(Test2(123.456789))
       avro.close()
 
@@ -85,7 +77,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(str: String)
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test("sammy"))
       avro.close()
 
@@ -96,7 +88,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(bool: Boolean)
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(true))
       avro.close()
 
@@ -107,7 +99,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(l: Long)
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(56l))
       avro.close()
 
@@ -118,7 +110,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(i: Int)
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(666))
       avro.close()
 
@@ -129,7 +121,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(d: Double)
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(123.456))
       avro.close()
 
@@ -140,7 +132,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(e: Either[String, Double])
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(Left("sam")))
       avro.close()
 
@@ -151,7 +143,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(e: Either[String, Double])
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(Right(45.4d)))
       avro.close()
 
@@ -160,7 +152,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     }
     "write eithers of case classes" in {
       val output1 = new ByteArrayOutputStream
-      val avro1 = AvroOutputStream[EitherCaseClasses](output1)
+      val avro1 = AvroOutputStream.data[EitherCaseClasses](output1)
       avro1.write(EitherCaseClasses(Left(Test1(Wine.CabSav))))
       avro1.close()
 
@@ -168,7 +160,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       record1.get("e").toString shouldBe """{"wine": "CabSav"}"""
 
       val output2 = new ByteArrayOutputStream
-      val avro2 = AvroOutputStream[EitherCaseClasses](output2)
+      val avro2 = AvroOutputStream.data[EitherCaseClasses](output2)
       avro2.write(EitherCaseClasses(Right(Test2(14.56))))
       avro2.close()
 
@@ -179,7 +171,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(opt: Option[Double])
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(Some(123.456d)))
       avro.close()
 
@@ -190,7 +182,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(opt: Option[Double])
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(None))
       avro.close()
 
@@ -201,7 +193,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(array: Array[Double])
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(Array(1d, 2d, 3d, 4d)))
       avro.close()
 
@@ -211,7 +203,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     "write Seq of doubles" in {
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[NestedSeqDoubles](output)
+      val avro = AvroOutputStream.data[NestedSeqDoubles](output)
       avro.write(NestedSeqDoubles(Seq(1d, 2d, 3d, 4d)))
       avro.close()
 
@@ -220,7 +212,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     }
     "write deep nested maps" in {
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Level1](output)
+      val avro = AvroOutputStream.data[Level1](output)
       avro.write(Level1(Level2(Level3(Level4(Map("a" -> "b"))))))
       avro.close()
 
@@ -229,7 +221,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     }
     "write Seq of nested classes" in {
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[NestedSeqTest](output)
+      val avro = AvroOutputStream.data[NestedSeqTest](output)
       avro.write(NestedSeqTest(List(Foo("sam", true), Foo("ham", false))))
       avro.close()
 
@@ -240,7 +232,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     }
     "write Set of doubles" in {
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[NestedSetDoubles](output)
+      val avro = AvroOutputStream.data[NestedSetDoubles](output)
       avro.write(NestedSetDoubles(Set(1d, 9d, 9d, 9d, 9d)))
       avro.close()
 
@@ -249,7 +241,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     }
     "write Set of nested classes" in {
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[NestedSetTest](output)
+      val avro = AvroOutputStream.data[NestedSetTest](output)
       avro.write(NestedSetTest(Set(Foo("sam", true), Foo("ham", false))))
       avro.close()
 
@@ -260,7 +252,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     }
     "write list of doubles" in {
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[NestedListDouble](output)
+      val avro = AvroOutputStream.data[NestedListDouble](output)
       avro.write(NestedListDouble(List(1d, 2d, 3d, 4d)))
       avro.close()
 
@@ -269,7 +261,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     }
     "write list of booleans" in {
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[NestedListBools](output)
+      val avro = AvroOutputStream.data[NestedListBools](output)
       avro.write(NestedListBools(List(true, false, true)))
       avro.close()
 
@@ -278,7 +270,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     }
     "write list of nested classes" in {
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[NestedListFoo](output)
+      val avro = AvroOutputStream.data[NestedListFoo](output)
       avro.write(NestedListFoo(List(Foo("sam", false))))
       avro.close()
 
@@ -289,7 +281,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(map: Map[String, String])
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(Map(("name", "sammy"))))
       avro.close()
 
@@ -302,7 +294,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(map: Map[String, Double])
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(Map(("name", 12.3d))))
       avro.close()
 
@@ -315,7 +307,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       case class Test(map: Map[String, Boolean])
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Test](output)
+      val avro = AvroOutputStream.data[Test](output)
       avro.write(Test(Map(("name", true))))
       avro.close()
 
@@ -326,7 +318,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
     }
     "write map of nested classes" in {
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[NestedMapTest](output)
+      val avro = AvroOutputStream.data[NestedMapTest](output)
       avro.write(NestedMapTest(Map(("foo", Foo("sam", false)))))
       avro.close()
 
@@ -341,7 +333,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val instance = ValueWrapper(ValueClass("bob"))
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[ValueWrapper](output)
+      val avro = AvroOutputStream.data[ValueWrapper](output)
       avro.write(instance)
       avro.close()
 
@@ -352,7 +344,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val instance = ScalaEnums(Colours.Amber)
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[ScalaEnums](output)
+      val avro = AvroOutputStream.data[ScalaEnums](output)
       avro.write(instance)
       avro.close()
 
@@ -363,7 +355,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       val instance = Ids(UUID.randomUUID())
 
       val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream[Ids](output)
+      val avro = AvroOutputStream.data[Ids](output)
       avro.write(instance)
       avro.close()
 

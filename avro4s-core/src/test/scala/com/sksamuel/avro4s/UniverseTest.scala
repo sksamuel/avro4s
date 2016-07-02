@@ -1,5 +1,8 @@
 package com.sksamuel.avro4s
 
+import java.io.FileOutputStream
+import java.nio.file.Paths
+
 import org.scalatest.{Matchers, WordSpec}
 
 /**
@@ -58,20 +61,20 @@ class UniverseTest extends WordSpec with Matchers {
 
   "Avro4s" should {
     "support complex schema" in {
-      // val schema = SchemaFor[Universe].apply()
-      //val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/universe.avsc"))
-      //schema.toString(true) shouldBe expected.toString(true)
+    //  val schema = SchemaFor[Universe].apply()
+    //  val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/universe.avsc"))
+    //  schema.toString(true) shouldBe expected.toString(true)
     }
     "support complex write" in {
-      //val output = new FileOutputStream("universe.avro")
-      //val avro = AvroOutputStream[Universe](output)
-      //avro.write(g)
-      //avro.close()
+      val output = new FileOutputStream("universe.avro")
+      val avro = AvroOutputStream.data[Universe](output)
+      avro.write(g)
+      avro.close()
     }
     "support complex read" in {
-     // val avro = AvroInputStream[Universe](Paths.get("universe.avro"))
-     // val universe = avro.iterator.next()
-     // universe shouldBe g
+      val avro = AvroInputStream.data[Universe](Paths.get("universe.avro"))
+      val universe = avro.iterator.next()
+      universe shouldBe g
     }
   }
 }

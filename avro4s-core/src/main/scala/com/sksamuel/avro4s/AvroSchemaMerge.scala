@@ -15,7 +15,7 @@ object AvroSchemaMerge {
     val fields = schemas.flatMap(_.getFields.asScala).groupBy(_.name).map { case (name, fields) =>
 
         val doc = fields.flatMap(x => Option(x.doc)).mkString("; ")
-        val default = fields.find(_.defaultValue != null).map(_.defaultValue).orNull
+        val default = fields.find(_.defaultVal != null).map(_.defaultVal).orNull
 
         // if we have two schemas with the same type, then just keep the first one
         val union = {

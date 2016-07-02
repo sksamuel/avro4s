@@ -13,6 +13,10 @@ The features of the library are:
 * Boilerplate free deserialization of Avro to classes
 
 ## Changelog
+* 1.5.0 - Upgraded to Avro 1.8.1. Deprecated factory methods in io classes in favour of more explicit naming. Added caching for the macro generation (thanks @jtvoorde).
+* 1.4.3 - Added support for json serialization
+* 1.4.1 - Added support for parameter defaults
+* 1.4.0 - Added better support for enums. Rewrote the macro backend. Added better binary support.
 * 1.3.3 - Added missing support for deserializing byte arrays
 * 1.3.0 - Added support for Scala 2.12. Removed 2.10 cross build. Fixed issues with private vals. Added binary (no schema) output stream. Exposed RecordFormat[T] typeclass to enable easy conversion of T to/from an Avro Record.
 * 1.2.0 - Added support for properties, doc fields, and aliases. These are set via annotations.
@@ -81,7 +85,9 @@ Which will output the following schema:
 ```
 You can see that the schema generator handles nested case classes, sequences, primitives, etc. For a full list of supported object types, see the table later.
 
-## Serializing
+## Input / Output
+
+### Serializing
 
 Avro4s allows us to easily serialize case classes using an instance of `AvroOutputStream` which we write to, and close, just like you would any regular output stream. An `AvroOutputStream` can be created from a `File`, `Path`, or by wrapping another `OutputStream`. When we create one, we specify the type of objects that we will be serializing. Eg, to serialize instances of our Pizza class:
 
@@ -92,20 +98,20 @@ import com.sksamuel.avro4s.AvroOutputStream
 val pepperoni = Pizza("pepperoni", Seq(Ingredient("pepperoni", 12, 4.4), Ingredient("onions", 1, 0.4)), false, false, 98)
 val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pineapple", 5.2, 0.2)), false, false, 91)
 
-val os = AvroOutputStream[Pizza](new File("pizzas.avro"))
+val os = AvroOutputStream.data[Pizza](new File("pizzas.avro"))
 os.write(Seq(pepperoni, hawaiian))
 os.flush()
 os.close()
 ```
 
-## Deserializing
+### Deserializing
 
 With avro4s we can easily deserialize a file back into Scala case classes. Given the `pizzas.avro` file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class. We first create an instance of the input stream specifying the types we will read back, and the file. Then we call iterator which will return a lazy iterator (reads on demand) of the data in the file. In this example, we'll load all data at once from the iterator via `toSet`.
 
 ```scala
 import com.sksamuel.avro4s.AvroInputStream
 
-val is = AvroInputStream[Pizza](new File("pizzas.avro"))
+val is = AvroInputStream.data[Pizza](new File("pizzas.avro"))
 val pizzas = is.iterator.toSet
 is.close()
 println(pizzas.mkString("\n"))
@@ -117,27 +123,58 @@ Will print out:
 Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4)),false,false,500) Pizza(hawaiian,List(Ingredient(ham,1.5,5.6), Ingredient(pineapple,5.2,0.2)),false,false,500)
 ```
 
-## JSON Serializing
-You can now serialize to JSON using the `AvroJsonOutputStream`
+### Binary Serializing
+You can serialize to Binary using the `AvroBinaryOutputStream` which you can create directly or by using `AvroOutputStream.binary`.
+The difference with binary serialization is that the schema is not included in the output.
 
 Simply
+
 ```scala
 case class Composer(name: String, birthplace: String, compositions: Seq[String])
 val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
 
 val baos = new ByteArrayOutputStream()
-val output = AvroJsonOutput[Composer](baos)
+val output = AvroOutputStream.binary[Composer](baos)
 output.write(ennio)
 output.close()
 println(baos.toString("UTF-8"))
-```    
+```
 
-## JSON Deserializing
-  You can now deserialize JSON using the `AvroJsonInputStream`as the following:
+### Binary Deserializing
+You can deserialize Binary using the `AvroBinaryInputStream` which you can create directly or by using `AvroInputStream.binary`
+The difference with binary serialization is that the schema is not included in the data.
+  
 ```scala
 val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
 val in = new ByteInputStream(json.getBytes("UTF-8"), json.size)
-val input = new AvroJsonInputStream[Composer](in)
+val input = new AvroInputStream.binary[Composer](in)
+val result = input.singleEntity
+result shouldBe Success(ennio)
+```   
+
+### JSON Serializing
+You can serialize to JSON using the `AvroJsonOutputStream` which you can create directly or by using `AvroOutputStream.json`
+
+Simply
+
+```scala
+case class Composer(name: String, birthplace: String, compositions: Seq[String])
+val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
+
+val baos = new ByteArrayOutputStream()
+val output = AvroOutputStream.json[Composer](baos)
+output.write(ennio)
+output.close()
+println(baos.toString("UTF-8"))
+```
+
+### JSON Deserializing
+You can deserialize JSON using the `AvroJsonInputStream` which you can create directly or by using `AvroInputStream.json`
+  
+```scala
+val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
+val in = new ByteInputStream(json.getBytes("UTF-8"), json.size)
+val input = new AvroInputStream.json[Composer](in)
 val result = input.singleEntity
 result shouldBe Success(ennio)
 ```   

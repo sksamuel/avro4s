@@ -46,7 +46,10 @@ case class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaF
     os.close()
   }
 
-  override def write(t: T): Unit = dataFileWriter.append(toRecord(t))
+  override def write(t: T): Unit = {
+    val record = toRecord(t)
+    dataFileWriter.append(record)
+  }
   override def flush(): Unit = dataFileWriter.flush()
   override def fSync(): Unit = dataFileWriter.fSync()
 }

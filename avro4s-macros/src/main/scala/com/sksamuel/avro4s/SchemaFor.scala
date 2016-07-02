@@ -34,9 +34,9 @@ object ToSchema extends LowPriorityToSchema {
 
   implicit val BigDecimalToSchema: ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
     protected val schema = Schema.create(Schema.Type.BYTES)
-    schema.addProp("logicalType", "decimal")
-    schema.addProp("scale", "2")
-    schema.addProp("precision", "8")
+    schema.addProp("logicalType", "decimal": Any)
+    schema.addProp("scale", "2": Any)
+    schema.addProp("precision", "8": Any)
   }
 
   implicit val ByteArrayToSchema: ToSchema[Array[Byte]] = new ToSchema[Array[Byte]] {
@@ -288,7 +288,7 @@ object SchemaFor {
     import scala.collection.JavaConverters._
 
     val schema = org.apache.avro.Schema.createRecord(name, doc(annos), pack, false)
-    addProps(annos, schema.addProp)
+    addProps(annos, schema.addProp(_, _: Any))
     schema.setFields(fields.asJava)
     schema
   }

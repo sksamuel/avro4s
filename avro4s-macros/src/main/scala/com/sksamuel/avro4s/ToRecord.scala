@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.util.UUID
 
+import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
 import shapeless.Lazy
 
@@ -76,11 +77,11 @@ object ToValue extends LowPriorityToValue {
   }
 
   implicit def JavaEnumToValue[E <: Enum[_]]: ToValue[E] = new ToValue[E] {
-    override def apply(value: E): Any = value.name
+    override def apply(value: E): Any = new EnumSymbol(null, value)
   }
 
   implicit def ScalaEnumToValue[E <: Enumeration#Value]: ToValue[E] = new ToValue[E] {
-    override def apply(value: E): Any = value.toString
+    override def apply(value: E): Any = new EnumSymbol(null, value.toString)
   }
 
   implicit def EitherToValue[T, U](implicit lefttovalue: ToValue[T], righttovalue: ToValue[U]) = new ToValue[Either[T, U]] {
