@@ -139,7 +139,7 @@ object ToRecord {
 
     c.Expr[ToRecord[T]](
       q"""new com.sksamuel.avro4s.ToRecord[$tpe] {
-            private val schemaFor : SchemaFor[$tpe] = SchemaFor[$tpe]
+            private val schemaFor : com.sksamuel.avro4s.SchemaFor[$tpe] = com.sksamuel.avro4s.SchemaFor[$tpe]
             private val converters : Array[com.sksamuel.avro4s.ToValue[_]] = Array(..$converters)
 
             def apply(t : $tpe): org.apache.avro.generic.GenericRecord = {
