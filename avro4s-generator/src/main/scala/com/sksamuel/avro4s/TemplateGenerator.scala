@@ -15,7 +15,7 @@ object TemplateGenerator {
     val enums = modules.collect {
       case enum: EnumType => Template(
         enum.namespace.replace(".", File.separator) + File.separator + enum.name + ".java",
-        s"package ${enum.namespace}\n\n" + renderer(enum))
+        s"package ${enum.namespace};\n\n" + renderer(enum))
     }
 
     // records can be grouped into a single file per package
