@@ -38,8 +38,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
   case class Middle(inner: Inner)
   case class Outer(middle: Middle)
 
-  val defaults = DefaultValues("qwe")
-
   "AvroSchema" should {
     "accept booleans" in {
       case class Test(booly: Boolean)
@@ -266,4 +264,4 @@ class AvroSchemaTest extends WordSpec with Matchers {
   }
 }
 
-case class DefaultValues(name: String = "sammy")
+case class DefaultValues(name: String = "sammy", age: Int = 21, isFemale: Boolean = false, length: Double = 6.2, timestamp: Long = 1468920998000l)

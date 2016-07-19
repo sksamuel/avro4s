@@ -3,7 +3,8 @@ package com.sksamuel.avro4s
 import java.util
 
 import org.apache.avro.Schema
-import org.codehaus.jackson.node.TextNode
+import org.codehaus.jackson.JsonNode
+import org.codehaus.jackson.node._
 import shapeless.Lazy
 
 import scala.annotation.implicitNotFound
@@ -276,7 +277,15 @@ object SchemaFor {
   }
 
   private def fieldBuilder(name: String, annos: Seq[Anno], schema: Schema, default: Any): Schema.Field = {
-    val defaultNode = if (default == null) null else new TextNode(default.toString)
+    def toNode(value: Any): JsonNode = value match {
+      case x: Int => new IntNode(x)
+      case x: Long => new LongNode(x)
+      case x: Boolean => BooleanNode.valueOf(x)
+      case x: Double => new DoubleNode(x)
+      case _ => new TextNode(value.toString)
+    }
+
+    val defaultNode = if (default == null) null else toNode(default)
     val field = new Schema.Field(name, schema, doc(annos), defaultNode)
     aliases(annos).foreach(field.addAlias)
     addProps(annos, field.addProp)
