@@ -7,6 +7,26 @@
       "name": "name",
       "type": "string",
       "default" : "sammy"
+    },
+    {
+      "name": "age",
+      "type": "int",
+      "default": 21
+    },
+    {
+      "name": "isFemale",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "name": "length",
+      "type": "double",
+      "default": 6.2
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "default": 1468920998000
     }
   ]
 }
