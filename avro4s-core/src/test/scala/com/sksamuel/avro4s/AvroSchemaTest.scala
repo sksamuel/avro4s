@@ -274,5 +274,8 @@ case class DefaultValues(
     "home" -> "sammy's home address",
     "work" -> "sammy's work address"
   ),
-  traits: Seq[String] = Seq("Adventurous", "Helpful")
+  traits: Seq[String] = Seq("Adventurous", "Helpful"),
+  favoriteWine: Wine = Wine.CabSav
 )
+
+

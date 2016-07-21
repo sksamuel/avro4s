@@ -46,6 +46,15 @@
         "items": "string"
       },
       "default": ["Adventurous", "Helpful"]
+    },
+    {
+      "name": "favoriteWine",
+      "type": {
+        "type": "enum",
+        "name": "Wine",
+        "symbols": ["Malbec", "Shiraz", "CabSav", "Merlot"]
+      },
+      "default": "CabSav"
     }
   ]
 }
