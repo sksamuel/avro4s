@@ -264,4 +264,15 @@ class AvroSchemaTest extends WordSpec with Matchers {
   }
 }
 
-case class DefaultValues(name: String = "sammy", age: Int = 21, isFemale: Boolean = false, length: Double = 6.2, timestamp: Long = 1468920998000l)
+case class DefaultValues(
+  name: String = "sammy",
+  age: Int = 21,
+  isFemale: Boolean = false,
+  length: Double = 6.2,
+  timestamp: Long = 1468920998000l,
+  address: Map[String, String] = Map(
+    "home" -> "sammy's home address",
+    "work" -> "sammy's work address"
+  ),
+  traits: Seq[String] = Seq("Adventurous", "Helpful")
+)

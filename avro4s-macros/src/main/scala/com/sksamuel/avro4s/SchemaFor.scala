@@ -282,6 +282,16 @@ object SchemaFor {
       case x: Long => new LongNode(x)
       case x: Boolean => BooleanNode.valueOf(x)
       case x: Double => new DoubleNode(x)
+      case x: Seq[_] =>
+        val arrayNode = new ArrayNode(JsonNodeFactory.instance)
+        x.foreach( z => arrayNode.add(toNode(z)))
+        arrayNode
+      case x: Map[String, _] =>
+        val objectNode = new ObjectNode(JsonNodeFactory.instance)
+        x.foreach{ case (k, v) =>
+          objectNode.put(k, toNode(v))
+        }
+        objectNode
       case _ => new TextNode(value.toString)
     }
 
