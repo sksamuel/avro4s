@@ -27,6 +27,34 @@
       "name": "timestamp",
       "type": "long",
       "default": 1468920998000
+    },
+    {
+      "name": "address",
+      "type": {
+        "type": "map",
+        "values": "string"
+      },
+      "default": {
+        "home": "sammy's home address",
+        "work": "sammy's work address"
+      }
+    },
+    {
+      "name": "traits",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": ["Adventurous", "Helpful"]
+    },
+    {
+      "name": "favoriteWine",
+      "type": {
+        "type": "enum",
+        "name": "Wine",
+        "symbols": ["Malbec", "Shiraz", "CabSav", "Merlot"]
+      },
+      "default": "CabSav"
     }
   ]
 }
