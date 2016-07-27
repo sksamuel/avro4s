@@ -239,7 +239,7 @@ For example, to create a mapping for `org.joda.time.DateTime` that we wish to st
 
 ```scala
 implicit object DateTimeToSchema extends ToSchema[DateTime] {
-  override def apply(): Schema = Schema.create(Schema.Type.STRING)
+  override val schema: Schema = Schema.create(Schema.Type.STRING)
 }
 
 implicit object DateTimeToValue extends ToValue[DateTime] {
