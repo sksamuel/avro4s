@@ -2,6 +2,7 @@ package com.sksamuel.avro4s
 
 import java.util.UUID
 
+import org.apache.avro.reflect.AvroDefault
 import org.scalatest.{Matchers, WordSpec}
 
 sealed trait Wibble
@@ -261,8 +262,19 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/defaultvalues.avsc"))
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support default option values" in {
+      val schema = SchemaFor[OptionDefaultValues]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optiondefaultvalues.avsc"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
+
+case class OptionDefaultValues(
+  name: String = "sammy",
+  description: Option[String] = None,
+  currency: Option[String] = Some("$")
+)
 
 case class DefaultValues(
   name: String = "sammy",

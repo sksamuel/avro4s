@@ -45,7 +45,7 @@ object ToSchema extends LowPriorityToSchema {
   }
 
   implicit val DoubleToSchema: ToSchema[Double] = new ToSchema[Double] {
-    protected val schema =  Schema.create(Schema.Type.DOUBLE)
+    protected val schema = Schema.create(Schema.Type.DOUBLE)
   }
 
   implicit def EitherToSchema[A, B](implicit aSchema: ToSchema[A], bSchema: ToSchema[B]): ToSchema[Either[A, B]] = {
@@ -284,14 +284,15 @@ object SchemaFor {
       case x: Double => new DoubleNode(x)
       case x: Seq[_] =>
         val arrayNode = new ArrayNode(JsonNodeFactory.instance)
-        x.foreach( z => arrayNode.add(toNode(z)))
+        x.foreach(z => arrayNode.add(toNode(z)))
         arrayNode
       case x: Map[String, _] =>
         val objectNode = new ObjectNode(JsonNodeFactory.instance)
-        x.foreach{ case (k, v) =>
+        x.foreach { case (k, v) =>
           objectNode.put(k, toNode(v))
         }
         objectNode
+      case x: Option[_] => x.map(toNode).orNull
       case _ => new TextNode(value.toString)
     }
 
