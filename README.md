@@ -13,6 +13,9 @@ The features of the library are:
 * Boilerplate free deserialization of Avro to classes
 
 ## Changelog
+* 1.5.3 - Added support for Option[X] in default parameters.
+* 1.5.2 - Added support for ints, longs, booleans, doubles, arrays, enums and maps in default parameters.
+* 1.5.1 - Fixed macro bug introduced in 1.5.0 which broke macro generation.
 * 1.5.0 - Upgraded to Avro 1.8.1. Deprecated factory methods in io classes in favour of more explicit naming. Added caching for the macro generation (thanks @jtvoorde).
 * 1.4.3 - Added support for json serialization
 * 1.4.1 - Added support for parameter defaults
