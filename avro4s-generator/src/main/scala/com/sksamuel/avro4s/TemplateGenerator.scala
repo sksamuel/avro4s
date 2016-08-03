@@ -14,7 +14,8 @@ object TemplateGenerator {
     // each enum must go into its own template
     val enums = modules.collect {
       case enum: EnumType => Template(
-        enum.namespace.replace(".", File.separator) + File.separator + enum.name + ".java",
+        enum.namespace.replace(".", File.separator) + File.separator + enum.name,
+        "java",
         s"package ${enum.namespace};\n\n" + renderer(enum))
     }
 
@@ -24,7 +25,8 @@ object TemplateGenerator {
     }.groupBy(_.namespace).map { case (namespace, records) =>
       val defin = s"package $namespace\n\n" + records.map(renderer.apply).mkString("\n\n")
       Template(
-        namespace.replace(".", File.separator) + File.separator + "domain.scala",
+        namespace.replace(".", File.separator) + File.separator + "domain",
+        "scala",
         defin
       )
     }
