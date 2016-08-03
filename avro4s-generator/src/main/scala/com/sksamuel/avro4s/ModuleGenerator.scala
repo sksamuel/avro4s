@@ -119,19 +119,21 @@ case class Template(file: String, extension: String, definition: String)
 
 
 object FileRenderer {
+  def output(dir: Path, template: Seq[Template]): Map[Path, String] = template.map { template =>
+    val targetPath = dir resolve Paths.get(template.file.replace(".", File.separator) + s".${template.extension}")
+    targetPath -> template.definition
+  }.toMap
+
   def render(dir: Path, template: Seq[Template]): Seq[Path] = {
+    output(dir, template).map {
+      case (targetPath, contents) =>
+        val packagePath = targetPath.getParent
+        packagePath.toFile.mkdirs()
 
-    template.map { template =>
-
-      val targetPath = dir resolve Paths.get(template.file.replace(".", File.separator) + s".${template.extension}")
-      val packagePath = targetPath.getParent
-      packagePath.toFile.mkdirs()
-
-      val writer = Files.newBufferedWriter(targetPath)
-      writer.write(template.definition)
-      writer.close()
-      targetPath
-
-    }
+        val writer = Files.newBufferedWriter(targetPath)
+        writer.write(contents)
+        writer.close()
+        targetPath
+    }.toSeq
   }
 }
