@@ -115,7 +115,7 @@ object TypeRenderer {
 
 
 // templates contains all generated definitions grouped by file
-case class Template(file: String, definition: String)
+case class Template(file: String, extension: String, definition: String)
 
 
 object FileRenderer {
@@ -123,7 +123,7 @@ object FileRenderer {
 
     template.map { template =>
 
-      val targetPath = dir resolve Paths.get(template.file.replace(".", File.separator))
+      val targetPath = dir resolve Paths.get(template.file.replace(".", File.separator) + s".${template.extension}")
       val packagePath = targetPath.getParent
       packagePath.toFile.mkdirs()
 
