@@ -217,19 +217,39 @@ object SchemaFor {
     val pack = tType.typeSymbol.fullName.split('.').takeWhile(_.forall(c => !c.isUpper)).mkString(".")
     val annos = annotations(tType.typeSymbol)
 
+    // we create an explicit ToSchema[T] in the scope of any
+    // fieldBuilder calls, containing the incomplete schema
+
+    // this is a higher priority implicit than
+    // LowPriorityToSchema.apply(SchemaFor[T]): ToSchema[T], so it
+    // avoids the use of the SchemaFor[T] we're in the middle of generating
+
+    // that's a good thing, since that depends on completeSchema,
+    // which is a Lazy value that ... depends on the fields we're
+    // generating in those fieldBuilder calls
     c.Expr[SchemaFor[T]](
       q"""
-           new com.sksamuel.avro4s.SchemaFor[$tType] {
+          new com.sksamuel.avro4s.SchemaFor[$tType] {
+            import org.apache.avro.Schema
+            import com.sksamuel.avro4s.ToSchema
+            import shapeless.Lazy
 
-           val schema : org.apache.avro.Schema = {
+            val (incompleteSchema: Schema, completeSchema: Lazy[Schema]) = {
               com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
                 $name,
                 $pack,
-                Seq(..$fieldSchemaPartTrees),
+                Lazy {
+                  val selfSchema = incompleteSchema
+                  implicit val selfToSchema: ToSchema[$tType] = new ToSchema[$tType] {
+                    val schema: Schema = selfSchema
+                  }
+                  Seq(..$fieldSchemaPartTrees)
+                },
                 Seq(..$annos)
               )
             }
-            def apply(): org.apache.avro.Schema = schema
+
+            def apply(): org.apache.avro.Schema = completeSchema.value
           }
         """
     )
@@ -303,13 +323,28 @@ object SchemaFor {
     field
   }
 
-  def recordBuilder[T](name: String, pack: String, fields: Seq[Schema.Field], annos: Seq[Anno]): Schema = {
+  def recordBuilder[T](name: String, pack: String, fields: Lazy[Seq[Schema.Field]], annos: Seq[Anno]): (Schema, Lazy[Schema]) = {
 
     import scala.collection.JavaConverters._
 
     val schema = org.apache.avro.Schema.createRecord(name, doc(annos), pack, false)
-    addProps(annos, schema.addProp(_, _: Any))
-    schema.setFields(fields.asJava)
-    schema
+    // In recursive fields, the definition of the field depends on the
+    // schema, but the definition of the schema depends on the
+    // field. Furthermore, Schema and Field are java classes, strict
+    // in their fields.
+
+    // Thankfully, they're mutable!
+
+    // So we can still manage to tie the knot by providing a strict
+    // schema (to be used in field definitions) and a lazy schema
+    // (with all the fields, only defined once the fields have been
+    // defined).
+
+    val fullSchema = fields.map { fields =>
+      schema.setFields(fields.asJava)
+      addProps(annos, schema.addProp(_, _: Any))
+      schema
+    }
+    (schema, fullSchema)
   }
 }
