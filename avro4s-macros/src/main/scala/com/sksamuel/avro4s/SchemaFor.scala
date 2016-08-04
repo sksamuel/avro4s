@@ -5,7 +5,7 @@ import java.util
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.codehaus.jackson.JsonNode
 import org.codehaus.jackson.node._
-import shapeless.Lazy
+import shapeless.{ :+:, CNil, Coproduct, Lazy }
 
 import scala.annotation.implicitNotFound
 import scala.collection.JavaConverters._
@@ -91,7 +91,7 @@ object ToSchema extends LowPriorityToSchema {
 
   implicit def OptionToSchema[T](implicit valueSchema: ToSchema[T]): ToSchema[Option[T]] = {
     new ToSchema[Option[T]] {
-      protected val schema = Schema.createUnion(util.Arrays.asList(Schema.create(Schema.Type.NULL), valueSchema.apply))
+      protected val schema = createUnion(Schema.create(Schema.Type.NULL), valueSchema())
     }
   }
 
@@ -121,6 +121,45 @@ object ToSchema extends LowPriorityToSchema {
 
   implicit def SeqToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Seq[S]] = new ToSchema[Seq[S]] {
     protected val schema = Schema.createArray(subschema())
+  }
+
+  // A coproduct is a union, or a generalised either.
+  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
+
+  // Shapeless's implementation builds up the type recursively,
+  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
+  // so here we define the schema for the base case of the recursion, C :+: CNil
+  implicit def CoproductBaseSchema[S](implicit subschema: ToSchema[S]): ToSchema[S :+: CNil] = new ToSchema[S :+: CNil] {
+    protected val schema = createUnion(subschema())
+  }
+
+  // And here we continue the recursion up.
+  implicit def CoproductSchema[S,T <: Coproduct](implicit subschema: ToSchema[S], coproductSchema: ToSchema[T]): ToSchema[S :+: T] = new ToSchema[S :+: T] {
+    protected val schema = createUnion(subschema(), coproductSchema())
+  }
+
+  private def createUnion(schemas: Schema*): Schema = {
+    import scala.collection.JavaConversions._
+    import scala.util.{Try, Success, Failure}
+
+    // union schemas can't contain other union schemas as a direct
+    // child, so whenever we create a union, we need to check if our
+    // children are unions
+
+    // if they are, we just merge them into the union we're creating
+
+    def schemasOf(schema: Schema): Seq[Schema] = Try(schema.getTypes /* throws an error if we're not a union */) match {
+      case Success(subschemas) => subschemas
+      case Failure(_) => Seq(schema)
+    }
+
+    def moveNullToHead(schemas: Seq[Schema]) = {
+      val (nulls, withoutNull) = schemas.partition(_.getType == Schema.Type.NULL)
+      nulls.headOption.toSeq ++ withoutNull
+    }
+
+    val subschemas = schemas.flatMap(schemasOf)
+    Schema.createUnion(moveNullToHead(subschemas))
   }
 }
 
