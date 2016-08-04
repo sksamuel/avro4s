@@ -27,6 +27,11 @@ case class Level1(level2: Level2)
 
 case class Ids(myid: UUID)
 
+case class Recursive(payload: Int, next: Option[Recursive])
+
+case class MutRec1(payload: Int, children: List[MutRec2])
+case class MutRec2(payload: String, children: List[MutRec1])
+
 class AvroSchemaTest extends WordSpec with Matchers {
 
   case class NestedListString(list: List[String])
@@ -265,6 +270,16 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "support default option values" in {
       val schema = SchemaFor[OptionDefaultValues]()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optiondefaultvalues.avsc"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support recursive types" in {
+      val schema = SchemaFor[Recursive]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive.avsc"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support mutually recursive types" in {
+      val schema = SchemaFor[MutRec1]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.avsc"))
       schema.toString(true) shouldBe expected.toString(true)
     }
   }
