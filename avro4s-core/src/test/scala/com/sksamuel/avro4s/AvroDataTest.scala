@@ -24,5 +24,26 @@ class AvroDataTest extends WordSpec with Matchers {
       is.close()
       file.delete()
     }
+
+    "be able to serialize/deserialize recursive data" in {
+      val data = Recursive(4, Some(Recursive(2, Some(Recursive(9, None)))))
+
+      val file: File = new File("recursive.avro")
+
+      // at the moment you need to store the recursive schema in a variable
+      // so that the compiler doesn't try to expand it forever
+      implicit val schema = SchemaFor[Recursive]
+
+      val os = AvroOutputStream.data[Recursive](file)
+      os.write(data)
+      os.close
+
+      val is = AvroInputStream.data[Recursive](file)
+      val parsed = is.iterator.toList
+      is.close()
+      file.delete()
+
+      parsed shouldBe List(data)
+    }
   }
 }

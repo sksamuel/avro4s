@@ -118,7 +118,7 @@ object ToRecord {
             import com.sksamuel.avro4s.ToValue._
             import com.sksamuel.avro4s.SchemaFor._
 
-            com.sksamuel.avro4s.ToRecord.converter[$sig]
+            com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]
           }
        """
     }
@@ -131,8 +131,8 @@ object ToRecord {
 
         q"""
           {
-            val converter = converters($idx).asInstanceOf[com.sksamuel.avro4s.ToValue[$sig]]
-            record.put($fieldName, converter(t.$name : $sig))
+            val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.ToValue[$sig]]]
+            record.put($fieldName, converter.value(t.$name : $sig))
           }
         """
     }
@@ -140,7 +140,7 @@ object ToRecord {
     c.Expr[ToRecord[T]](
       q"""new com.sksamuel.avro4s.ToRecord[$tpe] {
             private val schemaFor : com.sksamuel.avro4s.SchemaFor[$tpe] = com.sksamuel.avro4s.SchemaFor[$tpe]
-            private val converters : Array[com.sksamuel.avro4s.ToValue[_]] = Array(..$converters)
+            private val converters : Array[shapeless.Lazy[com.sksamuel.avro4s.ToValue[_]]] = Array(..$converters)
 
             def apply(t : $tpe): org.apache.avro.generic.GenericRecord = {
 
@@ -153,5 +153,5 @@ object ToRecord {
     )
   }
 
-  def converter[T](implicit toValue: Lazy[ToValue[T]]): ToValue[T] = toValue.value
+  def lazyConverter[T](implicit toValue: Lazy[ToValue[T]]): Lazy[ToValue[T]] = toValue
 }

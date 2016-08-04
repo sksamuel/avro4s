@@ -194,7 +194,7 @@ object FromRecord {
           import com.sksamuel.avro4s.ToValue._
           import com.sksamuel.avro4s.FromValue._
 
-         com.sksamuel.avro4s.FromRecord.converter[$sig] }"""
+         com.sksamuel.avro4s.FromRecord.lazyConverter[$sig] }"""
     }
 
     val fromValues: Seq[Tree] = fieldsForType(tpe).zipWithIndex.map {
@@ -204,8 +204,8 @@ object FromRecord {
         val sig = f.typeSignature
         q"""
           {
-            val converter = converters($idx).asInstanceOf[com.sksamuel.avro4s.FromValue[$sig]]
-            converter(record.get($decoded), record.getSchema.getField($decoded))
+            val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.FromValue[$sig]]]
+            converter.value(record.get($decoded), record.getSchema.getField($decoded))
           }
         """
     }
@@ -216,7 +216,7 @@ object FromRecord {
             import com.sksamuel.avro4s.ToValue._
             import com.sksamuel.avro4s.FromValue._
 
-            private val converters = Array(..$converters)
+            private val converters: Array[shapeless.Lazy[com.sksamuel.avro4s.FromValue[_]]] = Array(..$converters)
 
             def apply(record: org.apache.avro.generic.GenericRecord): $tpe = {
               $companion.apply(..$fromValues)
@@ -226,7 +226,5 @@ object FromRecord {
     )
   }
 
-  def converter[T](implicit fromValue: Lazy[FromValue[T]]): FromValue[T] = {
-    fromValue.value
-  }
+  def lazyConverter[T](implicit fromValue: Lazy[FromValue[T]]): Lazy[FromValue[T]] = fromValue
 }
