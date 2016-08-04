@@ -35,7 +35,7 @@ object ModuleGenerator {
         case Schema.Type.NULL => NullType
         case Schema.Type.RECORD => types.getOrElse(schema.getFullName, recordFor(schema))
         case Schema.Type.STRING => PrimitiveType("String")
-        case Schema.Type.UNION => UnionType(schemaToType(schema.getTypes.get(0)), schemaToType(schema.getTypes.get(1)))
+        case Schema.Type.UNION => UnionType(schema.getTypes.asScala.toSeq.map(schemaToType _))
         case _ => sys.error("Unsupported field type: " + schema.getType)
       }
     }
@@ -91,7 +91,10 @@ object PrimitiveType {
 
 case class ArrayType(arrayType: Type) extends Type
 
-case class UnionType(left: Type, right: Type) extends Type
+case class UnionType(types: Seq[Type]) extends Type
+object UnionType {
+  def apply(ts: Type*)(implicit dummy: DummyImplicit): UnionType = UnionType(ts)
+}
 
 case object NullType extends Type
 
@@ -99,15 +102,18 @@ case class FieldDef(name: String, `type`: Type)
 
 object TypeRenderer {
   def render(f: FieldDef): String = s"  ${f.name}: ${renderType(f.`type`)}"
-  def renderType(t: Type): String = {
+  def renderType(t: Type, forceCoproduct: Boolean = false): String = {
     t match {
       case PrimitiveType(base) => base
       case ArrayType(arrayType) => s"Seq[${renderType(arrayType)}]"
       case RecordType(namespace, name, _) => namespace + "." + name
       case EnumType(namespace, name, _) => namespace + "." + name
       case MapType(valueType) => s"Map[String, ${renderType(valueType)}]"
-      case UnionType(NullType, right) => s"Option[${renderType(right)}]"
-      case UnionType(left, right) => s"Either[${renderType(left)}, ${renderType(right)}]"
+      case UnionType(Seq()) => "shapeless.CNil"
+      case UnionType(Seq(NullType, right)) => s"Option[${renderType(right)}]"
+      case UnionType(Seq(left, right)) if !forceCoproduct => s"Either[${renderType(left)}, ${renderType(right)}]"
+      case UnionType(NullType +: seq) => s"Option[${renderType(UnionType(seq))}]"
+      case UnionType(head +: tail) => s"shapeless.:+:[${renderType(head)}, ${renderType(UnionType(tail), forceCoproduct = true)}]"
       case NullType => "null"
     }
   }
