@@ -13,6 +13,7 @@ The features of the library are:
 * Boilerplate free deserialization of Avro to classes
 
 ## Changelog
+* 1.5.4 - Added support for recursive types. Thanks to @SohumB
 * 1.5.3 - Added support for Option[X] in default parameters.
 * 1.5.2 - Added support for ints, longs, booleans, doubles, arrays, enums and maps in default parameters.
 * 1.5.1 - Fixed macro bug introduced in 1.5.0 which broke macro generation.
