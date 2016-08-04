@@ -6,6 +6,8 @@ import java.util.UUID
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
 
+import shapeless.{:+:, Coproduct, CNil}
+
 class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
 
   case class Booleans(bool: Boolean)
@@ -47,7 +49,8 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   case class Enums(wine: Wine)
   case class ComplexElement(unit: Ints, decimal: Doubles, flag: Booleans)
   case class ComplexType(elements: Seq[ComplexElement])
-
+  case class CoPrimitives(cp: String :+: Boolean :+: CNil)
+  case class CoRecords(cp: Joo :+: Goo :+: CNil)
 
   def write[T](ts: Seq[T])(implicit schema: SchemaFor[T], ser: ToRecord[T]): Array[Byte] = {
     val output = new ByteArrayOutputStream
@@ -105,6 +108,31 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       val bytes = write(data)
 
       val in = AvroInputStream[EitherStringBoolean](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read coproducts of primitives" in {
+      type SB = String :+: Boolean :+: CNil
+      val data = Seq(
+        CoPrimitives(Coproduct[SB]("gammy")),
+        CoPrimitives(Coproduct[SB](true)),
+        CoPrimitives(Coproduct[SB](false))
+      )
+      val bytes = write(data)
+
+      val in = AvroInputStream[CoPrimitives](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read coproducts of case classes" in {
+      type JG = Joo :+: Goo :+: CNil
+      val data = Seq(
+        CoRecords(Coproduct[JG](Joo(98l))),
+        CoRecords(Coproduct[JG](Goo(9.4d)))
+      )
+      val bytes = write(data)
+
+      val in = AvroInputStream[CoRecords](bytes)
       in.iterator.toList shouldBe data.toList
       in.close()
     }
