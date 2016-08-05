@@ -38,6 +38,7 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   case class SetCaseClasses(set: Set[Foo])
   case class EitherStringBoolean(either: Either[String, Boolean])
   case class EitherArray(payload: Either[Seq[Int], String])
+  case class EitherMap(payload: Either[Map[String, Int], Boolean])
   case class MapBoolean(map: Map[String, Boolean])
   case class MapSeq(map: Map[String, Seq[String]])
   case class MapOptions(map: Map[String, Option[String]])
@@ -118,6 +119,15 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
 
       val bytes = write(data)
       val in = AvroInputStream[EitherArray](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read eithers of maps" in {
+      val data = Seq(EitherMap(Left(Map("val" -> 4))), EitherMap(Right(true)))
+
+      val bytes = write(data)
+
+      val in = AvroInputStream[EitherMap](bytes)
       in.iterator.toList shouldBe data.toList
       in.close()
     }
