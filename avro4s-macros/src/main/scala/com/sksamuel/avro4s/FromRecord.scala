@@ -148,11 +148,25 @@ object FromValue extends LowPriorityFromValue {
     }
   }
 
+  private def errorString(value: Any, field: Field) = {
+    val klass = value match {
+      case null => "null"
+      case _ => value.getClass.toString
+    }
+
+    val fieldName = field match {
+      case null => "[unknown]"
+      case _ => s"[${field.name}]"
+    }
+
+    s"Value $value of type $klass is not compatible with $fieldName"
+  }
+
   implicit def EitherFromValue[A:WeakTypeTag:FromValue, B:WeakTypeTag:FromValue]: FromValue[Either[A, B]] = new FromValue[Either[A, B]] {
     override def apply(value: Any, field: Field): Either[A, B] =
       safeFrom[A](value).map(Left[A,B](_))
         .orElse(safeFrom[B](value).map(Right[A,B](_)))
-        .getOrElse(sys.error(s"Value $value of type ${value.getClass} is not compatible with ${field.name}"))
+        .getOrElse(sys.error(errorString(value, field)))
   }
 
   // A coproduct is a union, or a generalised either.
@@ -166,8 +180,7 @@ object FromValue extends LowPriorityFromValue {
   // tried all the other cases and failed. But the FromValue[CNil]
   // needs to exist to supply a base case for the recursion.
   implicit def CNilFromValue: FromValue[CNil] = new FromValue[CNil] {
-    override def apply(value: Any, field: Field): CNil =
-      sys.error(s"Value $value of type ${value.getClass} is not compatible with ${field.name}")
+    override def apply(value: Any, field: Field): CNil = sys.error(errorString(value, field))
   }
 
   // We're expecting to read a value of type S :+: T from avro.  Avro
