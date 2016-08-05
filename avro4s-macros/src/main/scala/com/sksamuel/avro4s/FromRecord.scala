@@ -143,6 +143,15 @@ object FromValue extends LowPriorityFromValue {
       case _: Long if tpe <:< typeOf[Long] => Some(from(value))
       case _: Double if tpe <:< typeOf[Double] => Some(from(value))
       case _: Float if tpe <:< typeOf[Float] => Some(from(value))
+      // we don't need to worry about the inner type of the array,
+      // as avro schemas will not legally allow multiple arrays in a union
+      // tpe is the type we're _expecting_, though, so we need to
+      // check both scala and java collections
+      case _: GenericData.Array[_]
+          if tpe <:< typeOf[Array[_]] ||
+             tpe <:< typeOf[java.util.Collection[_]] ||
+             tpe <:< typeOf[Iterable[_]] =>
+        Some(from(value))
       case record: GenericData.Record if typeVals == recordFields(record) => Some(from(value))
       case _ => None
     }
