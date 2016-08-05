@@ -52,6 +52,7 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   case class ComplexType(elements: Seq[ComplexElement])
   case class CoPrimitives(cp: String :+: Boolean :+: CNil)
   case class CoRecords(cp: Joo :+: Goo :+: CNil)
+  case class CoArrays(cp: Seq[String] :+: Int :+: CNil)
 
   def write[T](ts: Seq[T])(implicit schema: SchemaFor[T], ser: ToRecord[T]): Array[Byte] = {
     val output = new ByteArrayOutputStream
@@ -142,6 +143,18 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       val bytes = write(data)
 
       val in = AvroInputStream[CoRecords](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read coproducts of arrays" in {
+      type SSI = Seq[String] :+: Int :+: CNil
+      val data = Seq(
+        CoArrays(Coproduct[SSI](Seq("hello", "goodbye"))),
+        CoArrays(Coproduct[SSI](4))
+      )
+
+      val bytes = write(data)
+      val in = AvroInputStream[CoArrays](bytes)
       in.iterator.toList shouldBe data.toList
       in.close()
     }
