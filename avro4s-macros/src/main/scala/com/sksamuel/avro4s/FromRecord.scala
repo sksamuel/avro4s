@@ -152,6 +152,11 @@ object FromValue extends LowPriorityFromValue {
              tpe <:< typeOf[java.util.Collection[_]] ||
              tpe <:< typeOf[Iterable[_]] =>
         Some(from(value))
+      // and similarly for maps
+      case _: java.util.Map[_, _]
+          if tpe <:< typeOf[java.util.Map[_,_]] ||
+             tpe <:< typeOf[Map[_,_]] =>
+        Some(from(value))
       case record: GenericData.Record if typeVals == recordFields(record) => Some(from(value))
       case _ => None
     }
