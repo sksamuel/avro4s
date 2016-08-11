@@ -261,11 +261,11 @@ These typeclasses must be implicit and in scope when you invoke `AvroSchema` or 
 
 #### Gradle
 
-`compile 'com.sksamuel.avro4s:avro4s-core_2.11:1.4.3'`
+`compile 'com.sksamuel.avro4s:avro4s-core_2.11:xxx'`
 
 #### SBT
 
-`libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.4.3"`
+`libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "xxx"`
 
 #### Maven
 
@@ -273,12 +273,11 @@ These typeclasses must be implicit and in scope when you invoke `AvroSchema` or 
 <dependency>
     <groupId>com.sksamuel.avro4s</groupId>
     <artifactId>avro4s-core_2.11</artifactId>
-    <version>1.4.3</version>
+    <version>xxx</version>
 </dependency>
 ```
 
-The above is just an example and is not always up to date with the latest version. Check the latest released version on
-[Maven Central](http://search.maven.org/#search|ga|1|g%3A%22com.sksamuel.avro4s%22)
+Check the latest released version on [Maven Central](http://search.maven.org/#search|ga|1|g%3A%22com.sksamuel.avro4s%22)
 
 ## Building and Testing
 
