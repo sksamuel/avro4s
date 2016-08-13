@@ -141,7 +141,7 @@ val baos = new ByteArrayOutputStream()
 val output = AvroOutputStream.binary[Composer](baos)
 output.write(ennio)
 output.close()
-println(baos.toString("UTF-8"))
+val bytes = baos.toByteArray
 ```
 
 ### Binary Deserializing
@@ -149,11 +149,10 @@ You can deserialize Binary using the `AvroBinaryInputStream` which you can creat
 The difference with binary serialization is that the schema is not included in the data.
   
 ```scala
-val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
-val in = new ByteInputStream(json.getBytes("UTF-8"), json.size)
-val input = new AvroInputStream.binary[Composer](in)
-val result = input.singleEntity
-result shouldBe Success(ennio)
+val in = new ByteArrayInputStream(bytes)
+val input = AvroInputStream.binary[Composer](in)
+val result = input.iterator.toSeq
+result shouldBe Vector(ennio)
 ```   
 
 ### JSON Serializing
@@ -178,7 +177,7 @@ You can deserialize JSON using the `AvroJsonInputStream` which you can create di
 ```scala
 val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
 val in = new ByteInputStream(json.getBytes("UTF-8"), json.size)
-val input = new AvroInputStream.json[Composer](in)
+val input = AvroInputStream.json[Composer](in)
 val result = input.singleEntity
 result shouldBe Success(ennio)
 ```   
