@@ -215,7 +215,7 @@ import com.sksamuel.avro4s.ScaleAndPrecision
 
 case class MyDecimal(d: BigDecimal)
 
-implicit sp = ScaleAndPrecision(8, 20)
+implicit val sp = ScaleAndPrecision(8, 20)
 val schema = AvroSchema[MyDecimal]
 ```
 
