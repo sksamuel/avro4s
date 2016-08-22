@@ -27,17 +27,19 @@ trait LowPriorityToSchema {
   }
 }
 
+case class ScaleAndPrecision(scale: Int, precision: Int)
+
 object ToSchema extends LowPriorityToSchema {
 
   implicit val BooleanToSchema: ToSchema[Boolean] = new ToSchema[Boolean] {
     protected val schema = Schema.create(Schema.Type.BOOLEAN)
   }
 
-  implicit val BigDecimalToSchema: ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
+  implicit def BigDecimalToSchema(implicit sp: ScaleAndPrecision = ScaleAndPrecision(2, 8)): ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
     protected val schema = Schema.create(Schema.Type.BYTES)
     schema.addProp("logicalType", "decimal": Any)
-    schema.addProp("scale", "2": Any)
-    schema.addProp("precision", "8": Any)
+    schema.addProp("scale", sp.scale.toString: Any)
+    schema.addProp("precision", sp.precision.toString: Any)
   }
 
   implicit val ByteArrayToSchema: ToSchema[Array[Byte]] = new ToSchema[Array[Byte]] {
