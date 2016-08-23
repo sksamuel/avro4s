@@ -13,6 +13,8 @@ The features of the library are:
 * Boilerplate free deserialization of Avro to classes
 
 ## Changelog
+* 1.5.6 - Added support for setting scale and precision on BigDecimal @blbradley
+* 1.5.5 - Skipped
 * 1.5.4 - Added support for recursive types @SohumB
 * 1.5.3 - Added support for Option[X] in default parameters @jecos
 * 1.5.2 - Added support for ints, longs, booleans, doubles, arrays, enums and maps in default parameters @whazenberg
