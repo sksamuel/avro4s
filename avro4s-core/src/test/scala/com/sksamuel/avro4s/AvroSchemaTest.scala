@@ -311,6 +311,11 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.avsc"))
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "generate schema for underlying field in a value class" in {
+      val schema = SchemaFor[ValueClass]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/value_class.avsc"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 

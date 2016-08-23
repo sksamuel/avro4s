@@ -18,9 +18,9 @@ trait FromValue[T] {
 }
 
 trait LowPriorityFromValue {
-  implicit def generic[T](implicit reader: FromRecord[T]): FromValue[T] = new FromValue[T] {
+  implicit def apply[T](implicit fromRecord: FromRecord[T]): FromValue[T] = new FromValue[T] {
     override def apply(value: Any, field: Field): T = value match {
-      case record: GenericRecord => reader(record)
+      case record: GenericRecord => fromRecord(record)
     }
   }
 }
@@ -75,7 +75,7 @@ object FromValue extends LowPriorityFromValue {
     override def apply(value: Any, field: Field): E = {
       val klass = Class.forName(field.schema.getFullName + "$")
       import scala.reflect.NameTransformer._
-      val enum  = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
+      val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
       enum.withName(value.toString).asInstanceOf[E]
     }
   }

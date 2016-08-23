@@ -16,8 +16,8 @@ trait ToValue[A] {
 }
 
 trait LowPriorityToValue {
-  implicit def GenericWriter[T](implicit writer: ToRecord[T]): ToValue[T] = new ToValue[T] {
-    override def apply(value: T): GenericRecord = writer(value)
+  implicit def apply[T](implicit toRecord: ToRecord[T]): ToValue[T] = new ToValue[T] {
+    override def apply(value: T): GenericRecord = toRecord(value)
   }
 }
 
@@ -128,13 +128,28 @@ object ToRecord {
         val name = f.name.asInstanceOf[c.TermName]
         val fieldName: String = name.decodedName.toString
         val sig = f.typeSignature
+        val valueClass = sig.typeSymbol.isClass && sig.typeSymbol.asClass.isDerivedValueClass
 
-        q"""
+        // if a field is a value class we need to handle it here, using a converter
+        // for the underlying value rather than the actual value class
+        if (valueClass) {
+          val valueCstr = sig.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+          val valueFieldType = valueCstr.typeSignature
+          val valueFieldName = valueCstr.name.asInstanceOf[c.TermName]
+          q"""
+          {
+            val converter = com.sksamuel.avro4s.ToRecord.lazyConverter[$valueFieldType]
+            record.put($fieldName, converter.value(t.$name.$valueFieldName : $valueFieldType))
+          }
+          """
+        } else {
+          q"""
           {
             val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.ToValue[$sig]]]
             record.put($fieldName, converter.value(t.$name : $sig))
           }
-        """
+          """
+        }
     }
 
     c.Expr[ToRecord[T]](

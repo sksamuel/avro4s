@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.io.{File, OutputStream}
 import java.nio.file.{Files, Path}
 
+import org.apache.avro.Schema
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.EncoderFactory
@@ -37,21 +38,33 @@ case class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: Schem
 case class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
   extends AvroOutputStream[T] {
 
-  val datumWriter = new GenericDatumWriter[GenericRecord](schemaFor())
-  val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
-  dataFileWriter.create(schemaFor(), os)
+  val schema = schemaFor()
+  val (writer, writeFn) = schema.getType match {
+    case Schema.Type.DOUBLE | Schema.Type.LONG | Schema.Type.BOOLEAN | Schema.Type.STRING =>
+      val datumWriter = new GenericDatumWriter[T](schema)
+      val dataFileWriter = new DataFileWriter[T](datumWriter)
+      dataFileWriter.create(schema, os)
+      (dataFileWriter, (t: T) => dataFileWriter.append(t))
+    case _ =>
+      val datumWriter = new GenericDatumWriter[GenericRecord](schema)
+      val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
+      dataFileWriter.create(schema, os)
+      (dataFileWriter, (t: T) => {
+        val record = toRecord.apply(t)
+        dataFileWriter.append(record)
+      })
+  }
 
   override def close(): Unit = {
-    dataFileWriter.close()
+    writer.close()
     os.close()
   }
 
   override def write(t: T): Unit = {
-    val record = toRecord(t)
-    dataFileWriter.append(record)
+    writeFn(t)
   }
-  override def flush(): Unit = dataFileWriter.flush()
-  override def fSync(): Unit = dataFileWriter.fSync()
+  override def flush(): Unit = writer.flush()
+  override def fSync(): Unit = writer.fSync()
 }
 
 // avro output stream that writes json instead of a packed format

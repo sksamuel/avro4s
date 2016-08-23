@@ -175,7 +175,13 @@ object SchemaFor {
       }.getOrElse(Nil)
     }
 
-    val sealedTraitOrClass = tType.typeSymbol.isClass && tType.typeSymbol.asClass.isSealed
+    val valueClass = tType.typeSymbol.isClass && tType.typeSymbol.asClass.isDerivedValueClass
+    val underlyingType = if (valueClass) {
+      tType.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head.typeSignature
+    } else {
+      tType
+    }
+    val sealedTraitOrClass = underlyingType.typeSymbol.isClass && underlyingType.typeSymbol.asClass.isSealed
 
     val fieldSchemaPartTrees: Seq[Tree] = if (sealedTraitOrClass) {
       val internal = tType.typeSymbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol]
@@ -198,7 +204,7 @@ object SchemaFor {
       }.toSeq
     } else {
 
-      val ctr = tType.decls.collectFirst {
+      val ctr = underlyingType.decls.collectFirst {
         case m: MethodSymbol if m.isPrimaryConstructor => m
       }.get
 
@@ -218,7 +224,7 @@ object SchemaFor {
         val ds = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
         val defaultGetter = ds.nme.defaultGetterName(ds.nme.CONSTRUCTOR, index + 1)
         val defaultGetterName = TermName(defaultGetter.toString)
-        val member = tType.companion.member(defaultGetterName)
+        val member = underlyingType.companion.member(defaultGetterName)
 
         if (f.isTerm && f.asTerm.isParamWithDefault && member.isMethod) {
           //val path = Paths.get("/home/sam/development/workspace/avro4s/debug")
@@ -238,10 +244,10 @@ object SchemaFor {
     }
 
     // name of the actual class
-    val name = tType.typeSymbol.name.decodedName.toString
+    val name = underlyingType.typeSymbol.name.decodedName.toString
     // name of the outer package, can't find a way to get this explicitly so hacking the full class name
-    val pack = tType.typeSymbol.fullName.split('.').takeWhile(_.forall(c => !c.isUpper)).mkString(".")
-    val annos = annotations(tType.typeSymbol)
+    val pack = underlyingType.typeSymbol.fullName.split('.').takeWhile(_.forall(c => !c.isUpper)).mkString(".")
+    val annos = annotations(underlyingType.typeSymbol)
 
     // we create an explicit ToSchema[T] in the scope of any
     // fieldBuilder calls, containing the incomplete schema
@@ -253,33 +259,45 @@ object SchemaFor {
     // that's a good thing, since that depends on completeSchema,
     // which is a Lazy value that ... depends on the fields we're
     // generating in those fieldBuilder calls
-    c.Expr[SchemaFor[T]](
-      q"""
-          new com.sksamuel.avro4s.SchemaFor[$tType] {
-            import org.apache.avro.Schema
-            import com.sksamuel.avro4s.ToSchema
-            import shapeless.Lazy
+    if (valueClass) {
+      c.Expr[SchemaFor[T]](
+        q"""
+        new com.sksamuel.avro4s.SchemaFor[$tType] {
+          def apply(): org.apache.avro.Schema = com.sksamuel.avro4s.SchemaFor.valueInvoker[$underlyingType]
+        }
+      """
+      )
+    } else {
+      c.Expr[SchemaFor[T]](
+        q"""
+        new com.sksamuel.avro4s.SchemaFor[$tType] {
+          import org.apache.avro.Schema
+          import com.sksamuel.avro4s.ToSchema
+          import shapeless.Lazy
 
-            val (incompleteSchema: Schema, completeSchema: Lazy[Schema]) = {
-              com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
-                $name,
-                $pack,
-                Lazy {
-                  val selfSchema = incompleteSchema
-                  implicit val selfToSchema: ToSchema[$tType] = new ToSchema[$tType] {
-                    val schema: Schema = selfSchema
-                  }
-                  Seq(..$fieldSchemaPartTrees)
-                },
-                Seq(..$annos)
-              )
-            }
-
-            def apply(): org.apache.avro.Schema = completeSchema.value
+          val (incompleteSchema: Schema, completeSchema: Lazy[Schema]) = {
+            com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
+              $name,
+              $pack,
+              Lazy {
+                val selfSchema = incompleteSchema
+                implicit val selfToSchema: ToSchema[$tType] = new ToSchema[$tType] {
+                  val schema: Schema = selfSchema
+                }
+                Seq(..$fieldSchemaPartTrees)
+              },
+              Seq(..$annos)
+            )
           }
-        """
-    )
+
+          def apply(): org.apache.avro.Schema = completeSchema.value
+        }
+      """
+      )
+    }
   }
+
+  def valueInvoker[T](implicit to: ToSchema[T]): org.apache.avro.Schema = to()
 
   def annotationsFor(klass: Class[_], annos: Seq[Anno]): Seq[Anno] = annos.filter(_.classname == klass.getName)
 

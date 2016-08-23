@@ -338,7 +338,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
       avro.close()
 
       val record = read[ValueWrapper](output)
-      record.get("valueClass").asInstanceOf[GenericRecord].get("value").toString shouldBe "bob"
+      new String(record.get("valueClass").asInstanceOf[Utf8].getBytes) shouldBe "bob"
     }
     "support scala enums" in {
       val instance = ScalaEnums(Colours.Amber)
