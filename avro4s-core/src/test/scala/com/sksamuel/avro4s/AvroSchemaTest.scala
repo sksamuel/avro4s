@@ -2,7 +2,6 @@ package com.sksamuel.avro4s
 
 import java.util.UUID
 
-import org.apache.avro.reflect.AvroDefault
 import org.scalatest.{Matchers, WordSpec}
 
 sealed trait Wibble
@@ -45,6 +44,36 @@ class AvroSchemaTest extends WordSpec with Matchers {
   case class Outer(middle: Middle)
 
   "AvroSchema" should {
+    "support top level Doubles" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_double.avsc"))
+      val schema = AvroSchema[Double]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support top level Booleans" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_boolean.avsc"))
+      val schema = AvroSchema[Boolean]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support top level Longs" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_long.avsc"))
+      val schema = AvroSchema[Long]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support top level Integers" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_integer.avsc"))
+      val schema = AvroSchema[Int]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support top level Strings" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_string.avsc"))
+      val schema = AvroSchema[String]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support top level Floats" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_float.avsc"))
+      val schema = AvroSchema[Float]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
     "accept booleans" in {
       case class Test(booly: Boolean)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/boolean.avsc"))

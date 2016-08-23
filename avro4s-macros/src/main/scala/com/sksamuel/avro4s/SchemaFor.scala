@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import java.util
 
-import org.apache.avro.Schema
+import org.apache.avro.{Schema, SchemaBuilder}
 import org.codehaus.jackson.JsonNode
 import org.codehaus.jackson.node._
 import shapeless.Lazy
@@ -130,6 +130,30 @@ trait SchemaFor[T] {
 }
 
 object SchemaFor {
+
+  implicit object LongSchemaFor extends SchemaFor[Long] {
+    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().longType()
+  }
+
+  implicit object IntSchemaFor extends SchemaFor[Int] {
+    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().intType()
+  }
+
+  implicit object FloatSchemaFor extends SchemaFor[Float] {
+    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().floatType()
+  }
+
+  implicit object DoubleSchemaFor extends SchemaFor[Double] {
+    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().doubleType()
+  }
+
+  implicit object BooleanSchemaFor extends SchemaFor[Boolean] {
+    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().booleanType()
+  }
+
+  implicit object StringSchemaFor extends SchemaFor[String] {
+    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().stringType()
+  }
 
   implicit def apply[T]: SchemaFor[T] = macro SchemaFor.applyImpl[T]
 
@@ -289,7 +313,7 @@ object SchemaFor {
     val enumClass = Class.forName(enumClassName)
     val values = enumClass.getMethod("values").invoke(null).asInstanceOf[scala.Enumeration#ValueSet].iterator.toList.map(_.toString)
     val schema = Schema.createEnum(enumClass.getSimpleName, null, enumClass.getPackage.getName, values.asJava)
-    new Schema.Field(name, schema, null, null)
+    new Schema.Field(name, schema, null: String, null: Object)
   }
 
   // given a name and a type T, builds the schema field for that type T. A schema field might itself contain
