@@ -219,6 +219,23 @@ implicit val sp = ScaleAndPrecision(8, 20)
 val schema = AvroSchema[MyDecimal]
 ```
 
+```json
+{
+  "type":"record",
+  "name":"MyDecimal",
+  "namespace":"$iw",
+  "fields":[{
+    "name":"d",
+    "type":{
+      "type":"bytes",
+      "logicalType":"decimal",
+      "scale":"8",
+      "precision":"20"
+    }
+  }]
+}
+```
+
 ## Type Mappings
 
 |Scala Type|Avro Type|
@@ -228,7 +245,7 @@ val schema = AvroSchema[MyDecimal]
 |String|string or fixed|
 |Int|int|
 |Long|long|
-|BigDecimal|[decimal](https://avro.apache.org/docs/1.7.7/spec.html#Decimal) with scale 2 and precision 8|
+|BigDecimal|[decimal](https://avro.apache.org/docs/1.7.7/spec.html#Decimal) with default scale 2 and precision 8|
 |Double|double|
 |Float|float|
 |java.util.UUID|string|
