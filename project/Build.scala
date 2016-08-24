@@ -8,16 +8,16 @@ object Build extends Build {
 
   val AvroVersion = "1.8.1"
   val ScalaVersion = "2.11.8"
-  val ScalatestVersion = "3.0.0"
+  val ScalatestVersion = "3.0.0-RC3"
   val Slf4jVersion = "1.7.12"
   val Log4jVersion = "1.2.17"
-  val ShapelessVersion = "2.2.5"
-  val Json4sVersion = "3.3.0"
+  val ShapelessVersion = "2.3.1"
+  val Json4sVersion = "3.4.0"
 
   val rootSettings = Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.12.0-M5", ScalaVersion),
+    crossScalaVersions := Seq("2.12.0-M4", ScalaVersion),
     publishMavenStyle := true,
     resolvers += Resolver.mavenLocal,
     publishArtifact in Test := false,
