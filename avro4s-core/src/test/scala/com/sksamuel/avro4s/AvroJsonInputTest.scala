@@ -7,9 +7,8 @@ import scala.util.Success
 
 class AvroJsonInputTest extends WordSpec with Matchers {
 
-  case class Composer(name: String, birthplace: String, compositions: Seq[String])
-
   val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
+  val tgtbtu = Score("The good, the bad and the ugly", "ennio", Rating(10000))
 
   "AvroJsonInput" should {
     "serialise back to the case class as a set" in {
@@ -26,6 +25,13 @@ class AvroJsonInputTest extends WordSpec with Matchers {
       val input = new AvroJsonInputStream[Composer](in)
       val result = input.singleEntity
       result shouldBe Success(ennio)
+    }
+    "support value classes" in {
+      val json = """{"name":"The good, the bad and the ugly","composer":"ennio","rating":10000}"""
+      val in = new ByteInputStream(json.getBytes("UTF-8"), json.length)
+      val input = new AvroJsonInputStream[Score](in)
+      val result = input.singleEntity
+      result shouldBe Success(tgtbtu)
     }
   }
 

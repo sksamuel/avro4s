@@ -6,13 +6,14 @@ import java.util.UUID
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import shapeless.{ :+:, CNil, Coproduct, Inr, Lazy }
+import shapeless.{:+:, CNil, Coproduct, Inr, Lazy}
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 
-// turns an avro java value into a scala value
+// turns an avro value into a scala value
+// type T is the target scala type
 trait FromValue[T] {
   def apply(value: Any, field: Field = null): T
 }
@@ -122,7 +123,7 @@ object FromValue extends LowPriorityFromValue {
 
   import scala.reflect.runtime.universe.WeakTypeTag
 
-  private def safeFrom[T:WeakTypeTag:FromValue](value: Any): Option[T] = {
+  private def safeFrom[T: WeakTypeTag : FromValue](value: Any): Option[T] = {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
@@ -131,7 +132,7 @@ object FromValue extends LowPriorityFromValue {
     // if we have a generic record, we can't use the type to work out which one it matches,
     // so we have to compare field names
     val typeVals: Set[String] =
-      tpe.members.filter(_.isTerm).map(_.asTerm).filter(_.isVal).map(_.name.decodedName.toString.trim).toSet
+    tpe.members.filter(_.isTerm).map(_.asTerm).filter(_.isVal).map(_.name.decodedName.toString.trim).toSet
 
     def recordFields(record: GenericRecord): Set[String] =
       record.getSchema.getFields.asScala.map(_.name).toSet
@@ -148,14 +149,14 @@ object FromValue extends LowPriorityFromValue {
       // tpe is the type we're _expecting_, though, so we need to
       // check both scala and java collections
       case _: GenericData.Array[_]
-          if tpe <:< typeOf[Array[_]] ||
-             tpe <:< typeOf[java.util.Collection[_]] ||
-             tpe <:< typeOf[Iterable[_]] =>
+        if tpe <:< typeOf[Array[_]] ||
+          tpe <:< typeOf[java.util.Collection[_]] ||
+          tpe <:< typeOf[Iterable[_]] =>
         Some(from(value))
       // and similarly for maps
       case _: java.util.Map[_, _]
-          if tpe <:< typeOf[java.util.Map[_,_]] ||
-             tpe <:< typeOf[Map[_,_]] =>
+        if tpe <:< typeOf[java.util.Map[_, _]] ||
+          tpe <:< typeOf[Map[_, _]] =>
         Some(from(value))
       case record: GenericData.Record if typeVals == recordFields(record) => Some(from(value))
       case _ => None
@@ -176,10 +177,10 @@ object FromValue extends LowPriorityFromValue {
     s"Value $value of type $klass is not compatible with $fieldName"
   }
 
-  implicit def EitherFromValue[A:WeakTypeTag:FromValue, B:WeakTypeTag:FromValue]: FromValue[Either[A, B]] = new FromValue[Either[A, B]] {
+  implicit def EitherFromValue[A: WeakTypeTag : FromValue, B: WeakTypeTag : FromValue]: FromValue[Either[A, B]] = new FromValue[Either[A, B]] {
     override def apply(value: Any, field: Field): Either[A, B] =
-      safeFrom[A](value).map(Left[A,B](_))
-        .orElse(safeFrom[B](value).map(Right[A,B](_)))
+      safeFrom[A](value).map(Left[A, B](_))
+        .orElse(safeFrom[B](value).map(Right[A, B](_)))
         .getOrElse(sys.error(errorString(value, field)))
   }
 
@@ -203,7 +204,7 @@ object FromValue extends LowPriorityFromValue {
   // rest of the coproduct type T.
 
   // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
-  implicit def CoproductFromValue[S:WeakTypeTag:FromValue, T <: Coproduct :FromValue]: FromValue[S :+: T] = new FromValue[S :+: T] {
+  implicit def CoproductFromValue[S: WeakTypeTag : FromValue, T <: Coproduct : FromValue]: FromValue[S :+: T] = new FromValue[S :+: T] {
     override def apply(value: Any, field: Field): S :+: T =
       safeFrom[S](value).map(Coproduct[S :+: T](_))
         .getOrElse(Inr(implicitly[FromValue[T]].apply(value, field)))
@@ -239,7 +240,8 @@ object FromRecord {
           import com.sksamuel.avro4s.ToValue._
           import com.sksamuel.avro4s.FromValue._
 
-         com.sksamuel.avro4s.FromRecord.lazyConverter[$sig] }"""
+          com.sksamuel.avro4s.FromRecord.lazyConverter[$sig] }
+        """
     }
 
     val fromValues: Seq[Tree] = fieldsForType(tpe).zipWithIndex.map {
@@ -247,12 +249,28 @@ object FromRecord {
         val name = f.name.asInstanceOf[c.TermName]
         val decoded: String = name.decodedName.toString
         val sig = f.typeSignature
-        q"""
+        val valueClass = sig.typeSymbol.isClass && sig.typeSymbol.asClass.isDerivedValueClass
+        if (valueClass) {
+          val valueCstr = sig.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+          val valueFieldType = valueCstr.typeSignature
+
+          // the name of the field is always the outer field, ie the name of the variable
+          // that refers to the value class itself, and not the variable inside the value class
+          q"""
+          {
+            val converter = com.sksamuel.avro4s.FromRecord.lazyConverter[$valueFieldType]
+            val value = converter.value(record.get($decoded), record.getSchema.getField($decoded))
+            new $sig(value)
+          }
+          """
+        } else {
+          q"""
           {
             val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.FromValue[$sig]]]
             converter.value(record.get($decoded), record.getSchema.getField($decoded))
           }
-        """
+          """
+        }
     }
 
     c.Expr[FromRecord[T]](

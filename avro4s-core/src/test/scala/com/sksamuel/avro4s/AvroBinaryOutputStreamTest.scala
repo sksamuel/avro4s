@@ -6,7 +6,6 @@ import org.scalatest.{Matchers, WordSpec}
 
 class AvroBinaryOutputStreamTest extends WordSpec with Matchers {
 
-  case class Composer(name: String, birthplace: String, compositions: Seq[String])
   val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
 
   "AvroBinaryOutputStream" should {

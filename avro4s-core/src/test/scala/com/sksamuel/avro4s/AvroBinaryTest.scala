@@ -1,10 +1,12 @@
 package com.sksamuel.avro4s
 
-import java.io.File
+import java.io.{ByteArrayOutputStream, File}
 
 import org.scalatest.{Matchers, WordSpec}
 
 class AvroBinaryTest extends WordSpec with Matchers {
+
+  val tgtbtu = Score("The good, the bad and the ugly", "ennio", Rating(10000))
 
   "AvroBinary" should {
     "be able to read its own output" in {
@@ -23,6 +25,18 @@ class AvroBinaryTest extends WordSpec with Matchers {
       is.close()
 
       file.delete()
+    }
+
+    "support value classes" in {
+      val baos = new ByteArrayOutputStream()
+      val output = AvroOutputStream.binary[Score](baos)
+      output.write(tgtbtu)
+      output.close()
+
+      val is = AvroInputStream.binary[Score](baos.toByteArray)
+      val pizzas = is.iterator.toList
+      pizzas shouldBe List(tgtbtu)
+      is.close()
     }
   }
 }
