@@ -13,6 +13,7 @@ The features of the library are:
 * Boilerplate free deserialization of Avro to classes
 
 ## Changelog
+* 1.6.0 - Added support for Coproducts (see section on coproducts) @SohumB. Added support for value classes. Bumped 2.12 cross build to M4.
 * 1.5.6 - Added support for setting scale and precision on BigDecimal @blbradley
 * 1.5.5 - Skipped
 * 1.5.4 - Added support for recursive types @SohumB
