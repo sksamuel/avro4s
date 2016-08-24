@@ -6,6 +6,8 @@ import java.util.UUID
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
 
+import shapeless.{:+:, Coproduct, CNil}
+
 class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
 
   case class Booleans(bool: Boolean)
@@ -35,6 +37,8 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   case class SetStrings(set: Set[String])
   case class SetCaseClasses(set: Set[Foo])
   case class EitherStringBoolean(either: Either[String, Boolean])
+  case class EitherArray(payload: Either[Seq[Int], String])
+  case class EitherMap(payload: Either[Map[String, Int], Boolean])
   case class MapBoolean(map: Map[String, Boolean])
   case class MapSeq(map: Map[String, Seq[String]])
   case class MapOptions(map: Map[String, Option[String]])
@@ -47,7 +51,10 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
   case class Enums(wine: Wine)
   case class ComplexElement(unit: Ints, decimal: Doubles, flag: Booleans)
   case class ComplexType(elements: Seq[ComplexElement])
-
+  case class CoPrimitives(cp: String :+: Boolean :+: CNil)
+  case class CoRecords(cp: Joo :+: Goo :+: CNil)
+  case class CoArrays(cp: Seq[String] :+: Int :+: CNil)
+  case class CoMaps(cp: Map[String, Int] :+: Int :+: CNil)
 
   def write[T](ts: Seq[T])(implicit schema: SchemaFor[T], ser: ToRecord[T]): Array[Byte] = {
     val output = new ByteArrayOutputStream
@@ -105,6 +112,73 @@ class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
       val bytes = write(data)
 
       val in = AvroInputStream[EitherStringBoolean](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read eithers of arrays" in {
+      val data = Seq(EitherArray(Left(Seq(1,2))), EitherArray(Right("lammy")))
+
+      val bytes = write(data)
+      val in = AvroInputStream[EitherArray](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read eithers of maps" in {
+      val data = Seq(EitherMap(Left(Map("val" -> 4))), EitherMap(Right(true)))
+
+      val bytes = write(data)
+
+      val in = AvroInputStream[EitherMap](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read coproducts of primitives" in {
+      type SB = String :+: Boolean :+: CNil
+      val data = Seq(
+        CoPrimitives(Coproduct[SB]("gammy")),
+        CoPrimitives(Coproduct[SB](true)),
+        CoPrimitives(Coproduct[SB](false))
+      )
+      val bytes = write(data)
+
+      val in = AvroInputStream[CoPrimitives](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read coproducts of case classes" in {
+      type JG = Joo :+: Goo :+: CNil
+      val data = Seq(
+        CoRecords(Coproduct[JG](Joo(98l))),
+        CoRecords(Coproduct[JG](Goo(9.4d)))
+      )
+      val bytes = write(data)
+
+      val in = AvroInputStream[CoRecords](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read coproducts of arrays" in {
+      type SSI = Seq[String] :+: Int :+: CNil
+      val data = Seq(
+        CoArrays(Coproduct[SSI](Seq("hello", "goodbye"))),
+        CoArrays(Coproduct[SSI](4))
+      )
+
+      val bytes = write(data)
+      val in = AvroInputStream[CoArrays](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read coproducts of maps" in {
+      type MSII = Map[String, Int] :+: Int :+: CNil
+      val data = Seq(
+        CoMaps(Coproduct[MSII](Map("v" -> 1))),
+        CoMaps(Coproduct[MSII](9))
+      )
+
+      val bytes = write(data)
+      println(bytes)
+      val in = AvroInputStream[CoMaps](bytes)
       in.iterator.toList shouldBe data.toList
       in.close()
     }

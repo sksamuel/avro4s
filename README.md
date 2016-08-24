@@ -238,7 +238,16 @@ val schema = AvroSchema[MyDecimal]
 }
 ```
 
+## Coproducts
+
+Avro supports generalised unions, eithers of more than two values. To represent these in scala, we use `shapeless.:+:`, such that `A :+: B :+: C :+: CNil` represents cases where a type is `A` OR `B` OR `C`. See shapeless' [documentation on coproducts](https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0#coproducts-and-discriminated-unions) for more on how to use coproducts.
+
 ## Type Mappings
+
+``` scala
+import scala.collection.{Array, List, Seq, Iterable, Set, Map, Option, Either}
+import shapeless.{:+:, CNil}
+```
 
 |Scala Type|Avro Type|
 |----------|---------|
@@ -254,14 +263,17 @@ val schema = AvroSchema[MyDecimal]
 |Java Enums|enum|
 |scala.Enumeration|enum|
 |sealed trait T|enum|
-|scala.collection.Array[T]|array|
-|scala.collection.List[T]|array|
-|scala.collection.Seq[T]|array|
-|scala.collection.Iterable[T]|array|
-|scala.collection.Set[T]|array|
-|scala.collection.Map[String, T]|map|
-|scala.collection.Option[T]|union:null,T|
-|scala.collection.Either[L, R]|union:L,R|
+|Array[T]|array|
+|List[T]|array|
+|Seq[T]|array|
+|Iterable[T]|array|
+|Set[T]|array|
+|Map[String, T]|map|
+|Option[T]|union:null,T|
+|Either[L, R]|union:L,R|
+|A :+: B :+: C :+: CNil|union:A,B,C|
+|Option[Either[L, R]]|union:null,L,R|
+|Option[A :+: B :+: C :+: CNil]|union:null,A,B,C|
 |T|record|
 
 ## Custom Type Mappings

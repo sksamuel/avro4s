@@ -11,6 +11,7 @@ import org.scalatest.concurrent.Timeouts
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.JavaConverters._
+import shapeless.{:+:, CNil, Coproduct}
 
 sealed trait Dibble
 case class Dobble(str: String) extends Dibble
@@ -39,6 +40,11 @@ case class ValueWrapper(valueClass: ValueClass)
 case class ValueClass(value: String) extends AnyVal
 
 case class EitherCaseClasses(e: Either[Test1, Test2])
+
+case class CPWrapper(u: Option[CPWrapper.ISTTB])
+object CPWrapper {
+  type ISTTB = Int :+: String :+: Test1 :+: Test2 :+: Boolean :+: CNil
+}
 
 class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
@@ -188,6 +194,33 @@ class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
 
       val record = read[Test](output)
       record.get("opt") shouldBe null
+    }
+    "write out primitives in coproducts as unions" in {
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[CPWrapper](output)
+      avro.write(CPWrapper(Some(Coproduct[CPWrapper.ISTTB](4))))
+      avro.close
+
+      val record = read[CPWrapper](output)
+      record.get("u").toString shouldBe "4"
+    }
+    "write out classes in coproducts as unions" in {
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[CPWrapper](output)
+      avro.write(CPWrapper(Some(Coproduct[CPWrapper.ISTTB](Test2(34.98)))))
+      avro.close
+
+      val record = read[CPWrapper](output)
+      record.get("u").toString shouldBe """{"dec": {"bytes": "34.98"}}"""
+    }
+    "write out Nones in coproducts as nulls" in {
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[CPWrapper](output)
+      avro.write(CPWrapper(None))
+      avro.close
+
+      val record = read[CPWrapper](output)
+      record.get("u") shouldBe null
     }
     "write Array of doubles" in {
       case class Test(array: Array[Double])

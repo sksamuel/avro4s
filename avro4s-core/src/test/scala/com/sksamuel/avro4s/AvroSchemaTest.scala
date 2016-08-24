@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.util.UUID
 
 import org.scalatest.{Matchers, WordSpec}
+import shapeless.{:+:, CNil}
 
 sealed trait Wibble
 case class Wobble(str: String) extends Wibble
@@ -30,6 +31,12 @@ case class Recursive(payload: Int, next: Option[Recursive])
 
 case class MutRec1(payload: Int, children: List[MutRec2])
 case class MutRec2(payload: String, children: List[MutRec1])
+
+case class Union(union: Int :+: String :+: Boolean :+: CNil)
+case class UnionOfUnions(union: (Int :+: String :+: CNil) :+: Boolean :+: CNil)
+case class OptionalUnion(union: Option[Int :+: String :+: CNil])
+case class UnionOfOptional(union: Option[Int] :+: String :+: CNil)
+case class AllOptionals(union: Option[Option[Int] :+: Option[String] :+: CNil])
 
 class AvroSchemaTest extends WordSpec with Matchers {
 
@@ -315,6 +322,26 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[ValueClass]()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/value_class.avsc"))
       schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support unions and unions of unions" in {
+      val single = SchemaFor[Union]()
+      val unionOfUnions = SchemaFor[UnionOfUnions]()
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/union.avsc"))
+
+      single.toString(true) shouldBe expected.toString(true)
+      unionOfUnions.toString(true) shouldBe expected.toString(true).replace("Union", "UnionOfUnions")
+    }
+    "support mixing optionals with unions, merging appropriately" in {
+      val outsideOptional = SchemaFor[OptionalUnion]()
+      val insideOptional = SchemaFor[UnionOfOptional]()
+      val bothOptional = SchemaFor[AllOptionals]()
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optionalunion.avsc"))
+
+      outsideOptional.toString(true) shouldBe expected.toString(true)
+      insideOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "UnionOfOptional")
+      bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
     }
   }
 }

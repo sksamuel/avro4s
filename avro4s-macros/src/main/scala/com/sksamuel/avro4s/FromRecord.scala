@@ -6,7 +6,7 @@ import java.util.UUID
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import shapeless.Lazy
+import shapeless.{ :+:, CNil, Coproduct, Inr, Lazy }
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -122,46 +122,91 @@ object FromValue extends LowPriorityFromValue {
 
   import scala.reflect.runtime.universe.WeakTypeTag
 
-  implicit def EitherFromValue[A, B](implicit
-                                     leftfromvalue: FromValue[A],
-                                     rightfromvalue: FromValue[B],
-                                     leftType: WeakTypeTag[A],
-                                     rightType: WeakTypeTag[B]): FromValue[Either[A, B]] = new FromValue[Either[A, B]] {
-    override def apply(value: Any, field: Field): Either[A, B] = {
+  private def safeFrom[T:WeakTypeTag:FromValue](value: Any): Option[T] = {
+    import scala.reflect.runtime.universe.typeOf
 
-      import scala.reflect.runtime.universe.typeOf
+    val tpe = implicitly[WeakTypeTag[T]].tpe
+    val from = implicitly[FromValue[T]]
 
-      def convert[C](tpe: scala.reflect.runtime.universe.Type): Either[A, B] = {
-        if (leftType.tpe <:< tpe) Left(leftfromvalue(value))
-        else if (rightType.tpe <:< tpe) Right(rightfromvalue(value))
-        else sys.error(s"Value $value of type ${value.getClass} is not compatible with the defined either types")
-      }
+    // if we have a generic record, we can't use the type to work out which one it matches,
+    // so we have to compare field names
+    val typeVals: Set[String] =
+      tpe.members.filter(_.isTerm).map(_.asTerm).filter(_.isVal).map(_.name.decodedName.toString.trim).toSet
 
-      def typeVals(tpe: scala.reflect.runtime.universe.Type): List[String] = {
-        tpe.members.filter(_.isTerm).map(_.asTerm).filter(_.isVal).map(_.name.decodedName.toString.trim).toList
-      }
+    def recordFields(record: GenericRecord): Set[String] =
+      record.getSchema.getFields.asScala.map(_.name).toSet
 
-      // if we have a generic record, we can't use the type to work out which one it matches,
-      // so we have to compare field names
-      def fromRecord(record: GenericRecord): Either[A, B] = {
-        import scala.collection.JavaConverters._
-        val fieldNames = record.getSchema.getFields.asScala.map(_.name).toList
-        if (typeVals(leftType.tpe).toSet == fieldNames.toSet) Left(leftfromvalue(value))
-        else if (typeVals(rightType.tpe).toSet == fieldNames.toSet) Right(rightfromvalue(value))
-        else sys.error(s"Value $value of type ${value.getClass} is not compatible with the defined either types")
-      }
-
-      value match {
-        case utf8: Utf8 => convert(typeOf[java.lang.String])
-        case true | false => convert(typeOf[Boolean])
-        case _: Int => convert(typeOf[Int])
-        case _: Long => convert(typeOf[Long])
-        case _: Double => convert(typeOf[Double])
-        case _: Float => convert(typeOf[Float])
-        case record: GenericData.Record => fromRecord(record)
-        case _ => sys.error(s"Value $value of type ${value.getClass} is not compatible with the defined either types")
-      }
+    value match {
+      case utf8: Utf8 if tpe <:< typeOf[java.lang.String] => Some(from(value))
+      case true | false if tpe <:< typeOf[Boolean] => Some(from(value))
+      case _: Int if tpe <:< typeOf[Int] => Some(from(value))
+      case _: Long if tpe <:< typeOf[Long] => Some(from(value))
+      case _: Double if tpe <:< typeOf[Double] => Some(from(value))
+      case _: Float if tpe <:< typeOf[Float] => Some(from(value))
+      // we don't need to worry about the inner type of the array,
+      // as avro schemas will not legally allow multiple arrays in a union
+      // tpe is the type we're _expecting_, though, so we need to
+      // check both scala and java collections
+      case _: GenericData.Array[_]
+          if tpe <:< typeOf[Array[_]] ||
+             tpe <:< typeOf[java.util.Collection[_]] ||
+             tpe <:< typeOf[Iterable[_]] =>
+        Some(from(value))
+      // and similarly for maps
+      case _: java.util.Map[_, _]
+          if tpe <:< typeOf[java.util.Map[_,_]] ||
+             tpe <:< typeOf[Map[_,_]] =>
+        Some(from(value))
+      case record: GenericData.Record if typeVals == recordFields(record) => Some(from(value))
+      case _ => None
     }
+  }
+
+  private def errorString(value: Any, field: Field) = {
+    val klass = value match {
+      case null => "null"
+      case _ => value.getClass.toString
+    }
+
+    val fieldName = field match {
+      case null => "[unknown]"
+      case _ => s"[${field.name}]"
+    }
+
+    s"Value $value of type $klass is not compatible with $fieldName"
+  }
+
+  implicit def EitherFromValue[A:WeakTypeTag:FromValue, B:WeakTypeTag:FromValue]: FromValue[Either[A, B]] = new FromValue[Either[A, B]] {
+    override def apply(value: Any, field: Field): Either[A, B] =
+      safeFrom[A](value).map(Left[A,B](_))
+        .orElse(safeFrom[B](value).map(Right[A,B](_)))
+        .getOrElse(sys.error(errorString(value, field)))
+  }
+
+  // A coproduct is a union, or a generalised either.
+  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
+
+  // Shapeless's implementation builds up the type recursively,
+  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
+
+  // `apply` here should never be invoked under normal operation; if
+  // we're trying to read a value of type CNil it's because we've
+  // tried all the other cases and failed. But the FromValue[CNil]
+  // needs to exist to supply a base case for the recursion.
+  implicit def CNilFromValue: FromValue[CNil] = new FromValue[CNil] {
+    override def apply(value: Any, field: Field): CNil = sys.error(errorString(value, field))
+  }
+
+  // We're expecting to read a value of type S :+: T from avro.  Avro
+  // unions are untyped, so we have to attempt to read a value of type
+  // S (the concrete type), and if that fails, attempt to read the
+  // rest of the coproduct type T.
+
+  // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
+  implicit def CoproductFromValue[S:WeakTypeTag:FromValue, T <: Coproduct :FromValue]: FromValue[S :+: T] = new FromValue[S :+: T] {
+    override def apply(value: Any, field: Field): S :+: T =
+      safeFrom[S](value).map(Coproduct[S :+: T](_))
+        .getOrElse(Inr(implicitly[FromValue[T]].apply(value, field)))
   }
 }
 

@@ -5,7 +5,7 @@ import java.util.UUID
 
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
-import shapeless.Lazy
+import shapeless.{:+:, Coproduct, CNil, Inl, Inr, Lazy}
 
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
@@ -88,6 +88,27 @@ object ToValue extends LowPriorityToValue {
     override def apply(value: Either[T, U]): Any = value match {
       case Left(left) => lefttovalue(left)
       case Right(right) => righttovalue(right)
+    }
+  }
+
+  // A coproduct is a union, or a generalised either.
+  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
+
+  // Shapeless's implementation builds up the type recursively,
+  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
+
+  // `apply` here should never actually be invoked, because you can't
+  // actually construct a value of type a: CNil, but the ToValue[CNil]
+  // needs to exist to supply a base case for the recursion.
+  implicit def CNilToValue: ToValue[CNil] = new ToValue[CNil] {
+    override def apply(value: CNil): Any = sys.error("This should never happen: CNil has no inhabitants")
+  }
+
+  // A :+: B is either Inl(value: A) or Inr(value: B), continuing the recursion
+  implicit def CoproductToValue[S, T <: Coproduct](implicit curToValue: ToValue[S], restToValue: ToValue[T]): ToValue[S :+: T] = new ToValue[S :+: T] {
+    override def apply(value: S :+: T): Any = value match {
+      case Inl(s) => curToValue(s)
+      case Inr(t) => restToValue(t)
     }
   }
 }
