@@ -131,7 +131,7 @@ object FromValue extends LowPriorityFromValue {
 
     // if we have a generic record, we can't use the type to work out which one it matches,
     // so we have to compare field names
-    val typeVals: Set[String] =
+    lazy val typeVals: Set[String] =
     tpe.members.filter(_.isTerm).map(_.asTerm).filter(_.isVal).map(_.name.decodedName.toString.trim).toSet
 
     def recordFields(record: GenericRecord): Set[String] =
