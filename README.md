@@ -92,6 +92,17 @@ Which will output the following schema:
 ```
 You can see that the schema generator handles nested case classes, sequences, primitives, etc. For a full list of supported object types, see the table later.
 
+## Recursive Schemas
+
+Avro4s supports recursive schemas, but you will have to manually force the `SchemaFor` instance, instead of letting it be generated.
+
+``` scala
+case class Recursive(payload: Int, next: Option[Recursive])
+
+implicit val schemaFor = SchemaFor[Recursive]
+val schema = AvroSchema[Recursive]
+```
+
 ## Input / Output
 
 ### Serializing
