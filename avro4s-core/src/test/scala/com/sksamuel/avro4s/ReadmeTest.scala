@@ -37,5 +37,9 @@ class ReadmeTest extends WordSpec with Matchers {
       is.close()
       pizzas shouldEqual List(pepperoni, hawaiian)
     }
+
+    "exercise scoped scale/precision" in {
+      Product.schema().toString(true) shouldEqual new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/scoped_implicits.avsc")).toString(true)
+    }
   }
 }
