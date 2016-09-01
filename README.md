@@ -92,6 +92,17 @@ Which will output the following schema:
 ```
 You can see that the schema generator handles nested case classes, sequences, primitives, etc. For a full list of supported object types, see the table later.
 
+## Recursive Schemas
+
+Avro4s supports recursive schemas, but you will have to manually force the `SchemaFor` instance, instead of letting it be generated.
+
+``` scala
+case class Recursive(payload: Int, next: Option[Recursive])
+
+implicit val schemaFor = SchemaFor[Recursive]
+val schema = AvroSchema[Recursive]
+```
+
 ## Input / Output
 
 ### Serializing
@@ -300,6 +311,31 @@ implicit object DateTimeFromValue extends FromValue[DateTime] {
 ```
 
 These typeclasses must be implicit and in scope when you invoke `AvroSchema` or create an `AvroInputStream`/`AvroOutputStream`.
+
+## Selective Customisation
+
+You can selectively customise the way Avro4s generates certain parts of your hierarchy, thanks to implicit precedence. Suppose you have the following classes:
+
+```scala
+case class Product(name: String, price: Price, litres: BigDecimal)
+case class Price(currency: String, amount: BigDecimal)
+```
+
+And you want to selectively use different scale/precision for the `price` and `litres` quantities. You can do this by forcing the implicits in the corresponding companion objects.
+
+``` scala
+object Price {
+  implicit val sp = ScaleAndPrecision(10,2)
+  implicit val schema = SchemaFor[Price]
+}
+
+object Product {
+  implicit val sp = ScaleAndPrecision(8,4)
+  implicit val schema = SchemaFor[Product]
+}
+```
+
+This will result in a schema where both `BigDecimal` quantities have their own separate scale and precision.
 
 ## Using avro4s in your project
 

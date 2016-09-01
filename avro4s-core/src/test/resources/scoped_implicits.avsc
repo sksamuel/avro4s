@@ -1,0 +1,36 @@
+{
+  "type" : "record",
+  "name" : "Product",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "name",
+    "type" : "string"
+  }, {
+    "name" : "price",
+    "type" : {
+      "type" : "record",
+      "name" : "Price",
+      "namespace" : "com.sksamuel.avro4s",
+      "fields" : [ {
+        "name" : "currency",
+        "type" : "string"
+      }, {
+        "name" : "amount",
+        "type" : {
+          "type" : "bytes",
+          "logicalType" : "decimal",
+          "scale" : "10",
+          "precision" : "2"
+        }
+      } ]
+    }
+  }, {
+    "name" : "litres",
+    "type" : {
+      "type" : "bytes",
+      "logicalType" : "decimal",
+      "scale" : "8",
+      "precision" : "4"
+    }
+  } ]
+}
