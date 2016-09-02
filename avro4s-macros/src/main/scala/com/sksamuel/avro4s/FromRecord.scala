@@ -129,13 +129,10 @@ object FromValue extends LowPriorityFromValue {
     val tpe = implicitly[WeakTypeTag[T]].tpe
     val from = implicitly[FromValue[T]]
 
-    // if we have a generic record, we can't use the type to work out which one it matches,
-    // so we have to compare field names
-    lazy val typeVals: Set[String] =
-    tpe.members.filter(_.isTerm).map(_.asTerm).filter(_.isVal).map(_.name.decodedName.toString.trim).toSet
-
-    def recordFields(record: GenericRecord): Set[String] =
-      record.getSchema.getFields.asScala.map(_.name).toSet
+    def typeName: String = {
+      val nearestPackage = Stream.iterate(tpe.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head
+      s"${nearestPackage.fullName}.${tpe.typeSymbol.name}"
+    }
 
     value match {
       case utf8: Utf8 if tpe <:< typeOf[java.lang.String] => Some(from(value))
@@ -158,7 +155,7 @@ object FromValue extends LowPriorityFromValue {
         if tpe <:< typeOf[java.util.Map[_, _]] ||
           tpe <:< typeOf[Map[_, _]] =>
         Some(from(value))
-      case record: GenericData.Record if typeVals == recordFields(record) => Some(from(value))
+      case record: GenericData.Record if typeName == record.getSchema.getFullName => Some(from(value))
       case _ => None
     }
   }
