@@ -6,7 +6,8 @@
     { "name": "name", "type": "string", "default": "sammy" },
     {
       "name": "description",
-      "type": ["null", "string"]
+      "type": ["null", "string"],
+      "default": null
     },
     {
       "name": "currency",

@@ -395,7 +395,8 @@ object SchemaFor {
           objectNode.put(k, toNode(v))
         }
         objectNode
-      case x: Option[_] => x.map(toNode).orNull
+      case Some(x) => toNode(x)
+      case None => NullNode.instance
       case _ => new TextNode(value.toString)
     }
 
