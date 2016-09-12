@@ -13,6 +13,7 @@ The features of the library are:
 * Boilerplate free deserialization of Avro to classes
 
 ## Changelog
+* 1.6.1 - Fixed bug when using Option with a default value of None. Updated sbt generator. Added better way to discrimate between tpyes (Ilya Epifanov). Optimized reflection lookup @simonsouter.
 * 1.6.0 - Added support for Coproducts (see section on coproducts) @SohumB. Added support for value classes. Bumped 2.12 cross build to M4.
 * 1.5.6 - Added support for setting scale and precision on BigDecimal @blbradley
 * 1.5.5 - Skipped
