@@ -232,13 +232,7 @@ object FromRecord {
 
     val converters: Seq[Tree] = fieldsForType(tpe).map { f =>
       val sig = f.typeSignature
-      q"""{
-          import com.sksamuel.avro4s.ToSchema._
-          import com.sksamuel.avro4s.ToValue._
-          import com.sksamuel.avro4s.FromValue._
-
-          com.sksamuel.avro4s.FromRecord.lazyConverter[$sig] }
-        """
+      q"""com.sksamuel.avro4s.FromRecord.lazyConverter[$sig]"""
     }
 
     val fromValues: Seq[Tree] = fieldsForType(tpe).zipWithIndex.map {
@@ -272,10 +266,6 @@ object FromRecord {
 
     c.Expr[FromRecord[T]](
       q"""new com.sksamuel.avro4s.FromRecord[$tpe] {
-            import com.sksamuel.avro4s.ToSchema._
-            import com.sksamuel.avro4s.ToValue._
-            import com.sksamuel.avro4s.FromValue._
-
             private val converters: Array[shapeless.Lazy[com.sksamuel.avro4s.FromValue[_]]] = Array(..$converters)
 
             def apply(record: org.apache.avro.generic.GenericRecord): $tpe = {

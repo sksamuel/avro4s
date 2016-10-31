@@ -10,7 +10,6 @@ import shapeless.{ :+:, CNil, Coproduct, Lazy }
 import scala.annotation.implicitNotFound
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
-import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
@@ -228,12 +227,7 @@ object SchemaFor {
       descendants.flatMap(x => fieldsForType(x.asType.toType)).groupBy(_.name.decodedName.toString).map { case (name, fs) =>
         val schemas = fs map { f =>
           val sig = f.typeSignature
-          q"""{
-               import com.sksamuel.avro4s.SchemaFor._
-               import com.sksamuel.avro4s.ToSchema._
-               com.sksamuel.avro4s.SchemaFor.schemaBuilder[$sig]
-               }
-           """
+          q"""com.sksamuel.avro4s.SchemaFor.schemaBuilder[$sig]"""
         }
         // if we have the same number of schemas as the number of descendants then it means every subclass
         // of the trait has that particular field, so we can make it non optional, otherwise it means at least
@@ -310,18 +304,14 @@ object SchemaFor {
       c.Expr[SchemaFor[T]](
         q"""
         new com.sksamuel.avro4s.SchemaFor[$tType] {
-          import org.apache.avro.Schema
-          import com.sksamuel.avro4s.ToSchema
-          import shapeless.Lazy
-
-          val (incompleteSchema: Schema, completeSchema: Lazy[Schema]) = {
+          val (incompleteSchema: org.apache.avro.Schema, completeSchema: shapeless.Lazy[org.apache.avro.Schema]) = {
             com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
               $name,
               $pack,
-              Lazy {
+              shapeless.Lazy {
                 val selfSchema = incompleteSchema
-                implicit val selfToSchema: ToSchema[$tType] = new ToSchema[$tType] {
-                  val schema: Schema = selfSchema
+                implicit val selfToSchema: com.sksamuel.avro4s.ToSchema[$tType] = new com.sksamuel.avro4s.ToSchema[$tType] {
+                  val schema: org.apache.avro.Schema = selfSchema
                 }
                 Seq(..$fieldSchemaPartTrees)
               },
