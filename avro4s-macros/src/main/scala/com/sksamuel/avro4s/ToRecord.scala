@@ -9,7 +9,6 @@ import shapeless.{:+:, Coproduct, CNil, Inl, Inr, Lazy}
 
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
-import scala.language.implicitConversions
 
 trait ToValue[A] {
   def apply(value: A): Any = value
@@ -134,14 +133,7 @@ object ToRecord {
     val converters: Seq[Tree] = fieldsForType(tpe).map { f =>
       val sig = f.typeSignature
 
-      q"""{
-            import com.sksamuel.avro4s.ToSchema._
-            import com.sksamuel.avro4s.ToValue._
-            import com.sksamuel.avro4s.SchemaFor._
-
-            com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]
-          }
-       """
+      q"""com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
     }
 
     val puts: Seq[Tree] = fieldsForType(tpe).zipWithIndex.map {
