@@ -1,10 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.util
-
-import org.apache.avro.{Schema, SchemaBuilder}
-import org.codehaus.jackson.JsonNode
-import org.codehaus.jackson.node._
+import org.apache.avro.{JsonProperties, Schema, SchemaBuilder}
 import shapeless.{ :+:, CNil, Coproduct, Lazy }
 
 import scala.annotation.implicitNotFound
@@ -370,28 +367,21 @@ object SchemaFor {
   }
 
   private def fieldBuilder(name: String, annos: Seq[Anno], schema: Schema, default: Any): Schema.Field = {
-    def toNode(value: Any): JsonNode = value match {
-      case x: Int => new IntNode(x)
-      case x: Long => new LongNode(x)
-      case x: Boolean => BooleanNode.valueOf(x)
-      case x: Double => new DoubleNode(x)
-      case x: Seq[_] =>
-        val arrayNode = new ArrayNode(JsonNodeFactory.instance)
-        x.foreach(z => arrayNode.add(toNode(z)))
-        arrayNode
-      case x: Map[String, _] =>
-        val objectNode = new ObjectNode(JsonNodeFactory.instance)
-        x.foreach { case (k, v) =>
-          objectNode.put(k, toNode(v))
-        }
-        objectNode
-      case Some(x) => toNode(x)
-      case None => NullNode.instance
-      case _ => new TextNode(value.toString)
+    def toDefaultValue(value: Any): Any = value match {
+      case x: Int => x
+      case x: Long => x
+      case x: Boolean => x
+      case x: Double => x
+      case x: Seq[_] => x.asJava
+      case x: Map[_, _] => x.asJava
+      case Some(x) => x
+      case None => JsonProperties.NULL_VALUE
+      case _ => value.toString
     }
 
-    val defaultNode = if (default == null) null else toNode(default)
-    val field = new Schema.Field(name, schema, doc(annos), defaultNode)
+    val defaultValue = if (default == null) null else toDefaultValue(default)
+
+    val field = new Schema.Field(name, schema, doc(annos), defaultValue)
     aliases(annos).foreach(field.addAlias)
     addProps(annos, field.addProp)
     field

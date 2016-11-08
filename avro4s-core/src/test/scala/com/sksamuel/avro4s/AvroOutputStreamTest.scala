@@ -7,7 +7,7 @@ import java.util.UUID
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.scalatest.concurrent.Timeouts
+import org.scalatest.concurrent.TimeLimits
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.JavaConverters._
@@ -46,7 +46,7 @@ object CPWrapper {
   type ISTTB = Int :+: String :+: Test1 :+: Test2 :+: Boolean :+: CNil
 }
 
-class AvroOutputStreamTest extends WordSpec with Matchers with Timeouts {
+class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
 
   def read[T](out: ByteArrayOutputStream)(implicit schema: SchemaFor[T]): GenericRecord = read(out.toByteArray)
   def read[T](bytes: Array[Byte])(implicit schema: SchemaFor[T]): GenericRecord = {
