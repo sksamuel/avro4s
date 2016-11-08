@@ -23,19 +23,19 @@ class ReadmeTest extends WordSpec with Matchers {
 
   "Readme" should {
     "exercise pizzas" in {
-      val schema = SchemaFor[Pizza]()
-
       val pepperoni = Pizza("pepperoni", Seq(Ingredient("pepperoni", 12.2, 4.4), Ingredient("onions", 1.2, 0.4)), false, false, 500)
       val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pineapple", 5.2, 0.2)), false, false, 500)
-      val os = AvroOutputStream.data[Pizza](new File("pizzas.avro"))
+      val file = new File("pizzas.avro")
+      val os = AvroOutputStream.data[Pizza](file)
       os.write(Seq(pepperoni, hawaiian))
       os.flush()
       os.close()
 
-      val is = AvroInputStream.data[Pizza](new File("pizzas.avro"))
+      val is = AvroInputStream.data[Pizza](file)
       val pizzas = is.iterator.toList
       is.close()
       pizzas shouldEqual List(pepperoni, hawaiian)
+      file.delete()
     }
 
     "exercise scoped scale/precision" in {

@@ -135,7 +135,6 @@ object ToSchema extends LowPriorityToSchema {
   }
 
   private def createUnion(schemas: Schema*): Schema = {
-    import scala.collection.JavaConversions._
     import scala.util.{Try, Success, Failure}
 
     // union schemas can't contain other union schemas as a direct
@@ -145,7 +144,7 @@ object ToSchema extends LowPriorityToSchema {
     // if they are, we just merge them into the union we're creating
 
     def schemasOf(schema: Schema): Seq[Schema] = Try(schema.getTypes /* throws an error if we're not a union */) match {
-      case Success(subschemas) => subschemas
+      case Success(subschemas) => subschemas.asScala
       case Failure(_) => Seq(schema)
     }
 
@@ -155,7 +154,7 @@ object ToSchema extends LowPriorityToSchema {
     }
 
     val subschemas = schemas.flatMap(schemasOf)
-    Schema.createUnion(moveNullToHead(subschemas))
+    Schema.createUnion(moveNullToHead(subschemas).asJava)
   }
 }
 
