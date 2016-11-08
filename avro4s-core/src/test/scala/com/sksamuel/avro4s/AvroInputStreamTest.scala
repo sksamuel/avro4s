@@ -2,13 +2,12 @@ package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
 import java.util.UUID
-
-import org.scalatest.concurrent.Timeouts
+import org.scalatest.concurrent.TimeLimits
 import org.scalatest.{Matchers, WordSpec}
 
 import shapeless.{:+:, Coproduct, CNil}
 
-class AvroInputStreamTest extends WordSpec with Matchers with Timeouts {
+class AvroInputStreamTest extends WordSpec with Matchers with TimeLimits {
 
   case class Booleans(bool: Boolean)
   case class BigDecimalTest(decimal: BigDecimal)

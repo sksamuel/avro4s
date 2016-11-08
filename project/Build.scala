@@ -22,7 +22,9 @@ object Build extends Build {
     resolvers += Resolver.mavenLocal,
     publishArtifact in Test := false,
     parallelExecution in Test := false,
-    scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-Ywarn-unused-import"),
+    scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-Ywarn-unused-import",
+      "-Xfatal-warnings", "-feature", "-language:existentials"
+    ),
     javacOptions := Seq("-source", "1.7", "-target", "1.7"),
     sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,

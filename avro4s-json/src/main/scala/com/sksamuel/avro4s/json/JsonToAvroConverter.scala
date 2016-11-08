@@ -38,7 +38,9 @@ class JsonToAvroConverter(namespace: String, avroStringTypeIsString: Boolean = f
     case JString(_) => createStringSchema
     case JObject(values) =>
       val record = Schema.createRecord(name, null, namespace, false)
-      val fields = values.map { case (name, value) => new Schema.Field(name, convert(name, value), null, null) }
+      val doc: String = null
+      val default: AnyRef = null
+      val fields = values.map { case (name, value) => new Schema.Field(name, convert(name, value), doc, default) }
       record.setFields(fields.asJava)
       record
   }
