@@ -1,8 +1,9 @@
 package com.sksamuel.avro4s
 
 import java.util
-import org.apache.avro.{JsonProperties, Schema, SchemaBuilder}
-import shapeless.{ :+:, CNil, Coproduct, Lazy }
+
+import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
+import shapeless.{:+:, CNil, Coproduct, Lazy}
 
 import scala.annotation.implicitNotFound
 import scala.collection.JavaConverters._
@@ -32,10 +33,11 @@ object ToSchema extends LowPriorityToSchema {
   }
 
   implicit def BigDecimalToSchema(implicit sp: ScaleAndPrecision = ScaleAndPrecision(2, 8)): ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
-    protected val schema = Schema.create(Schema.Type.BYTES)
-    schema.addProp("logicalType", "decimal": Any)
-    schema.addProp("scale", sp.scale: Any)
-    schema.addProp("precision", sp.precision: Any)
+    protected val schema = {
+      val schema = Schema.create(Schema.Type.BYTES)
+      LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(schema)
+      schema
+    }
   }
 
   implicit val ByteArrayToSchema: ToSchema[Array[Byte]] = new ToSchema[Array[Byte]] {

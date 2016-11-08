@@ -19,8 +19,8 @@
         "type" : {
           "type" : "bytes",
           "logicalType" : "decimal",
-          "scale" : 10,
-          "precision" : 2
+          "precision" : 8,
+          "scale" : 2
         }
       } ]
     }
@@ -29,8 +29,8 @@
     "type" : {
       "type" : "bytes",
       "logicalType" : "decimal",
-      "scale" : 8,
-      "precision" : 4
+      "precision" : 8,
+      "scale" : 3
     }
   } ]
 }

@@ -10,12 +10,12 @@ case class Product(name: String, price: Price, litres: BigDecimal)
 case class Price(currency: String, amount: BigDecimal)
 
 object Price {
-  implicit val sp = ScaleAndPrecision(10,2)
+  implicit val sp = ScaleAndPrecision(2,8)
   implicit val schema = SchemaFor[Price]
 }
 
 object Product {
-  implicit val sp = ScaleAndPrecision(8,4)
+  implicit val sp = ScaleAndPrecision(3,8)
   implicit val schema = SchemaFor[Product]
 }
 

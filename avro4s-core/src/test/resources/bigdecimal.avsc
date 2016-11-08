@@ -1,16 +1,14 @@
 {
-  "type": "record",
-  "name": "Test",
-  "namespace": "com.sksamuel.avro4s",
-  "fields": [
-    {
-      "name": "decimal",
-      "type": {
-        "type" : "bytes",
-        "logicalType": "decimal",
-        "scale": 2,
-        "precision": 8
-       }
+  "type" : "record",
+  "name" : "Test",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "decimal",
+    "type" : {
+      "type" : "bytes",
+      "logicalType" : "decimal",
+      "precision" : 8,
+      "scale" : 2
     }
-  ]
+  } ]
 }
