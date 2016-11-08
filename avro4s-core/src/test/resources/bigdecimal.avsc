@@ -8,8 +8,8 @@
       "type": {
         "type" : "bytes",
         "logicalType": "decimal",
-        "scale": "2",
-        "precision": "8"
+        "scale": 2,
+        "precision": 8
        }
     }
   ]

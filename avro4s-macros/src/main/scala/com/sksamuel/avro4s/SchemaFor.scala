@@ -34,8 +34,8 @@ object ToSchema extends LowPriorityToSchema {
   implicit def BigDecimalToSchema(implicit sp: ScaleAndPrecision = ScaleAndPrecision(2, 8)): ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
     protected val schema = Schema.create(Schema.Type.BYTES)
     schema.addProp("logicalType", "decimal": Any)
-    schema.addProp("scale", sp.scale.toString: Any)
-    schema.addProp("precision", sp.precision.toString: Any)
+    schema.addProp("scale", sp.scale: Any)
+    schema.addProp("precision", sp.precision: Any)
   }
 
   implicit val ByteArrayToSchema: ToSchema[Array[Byte]] = new ToSchema[Array[Byte]] {
