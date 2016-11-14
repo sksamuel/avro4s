@@ -127,7 +127,7 @@ class AvroSchemaTest extends WordSpec with Matchers {
       case class Test(decimal: BigDecimal)
       val schema = SchemaFor[Test]()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal.avsc"))
-      schema.toString(true) shouldBe expected.toString(true)
+      schema shouldBe expected
     }
     "accept nested case classes" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested.avsc"))

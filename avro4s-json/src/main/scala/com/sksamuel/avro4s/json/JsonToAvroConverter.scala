@@ -43,6 +43,7 @@ class JsonToAvroConverter(namespace: String, avroStringTypeIsString: Boolean = f
       val fields = values.map { case (name, value) => new Schema.Field(name, convert(name, value), doc, default) }
       record.setFields(fields.asJava)
       record
+    case other => sys.error(s"Unsupported type $other")
   }
 
   private def createStringSchema = {
