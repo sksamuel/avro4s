@@ -11,7 +11,7 @@ object GlobalPlugin extends AutoPlugin {
   val AvroVersion = "1.8.1"
   val Log4jVersion = "1.2.17"
   val ScalatestVersion = "3.0.0"
-  val ScalaVersion = "2.11.8"
+  val ScalaVersion = "2.12.1"
   val Slf4jVersion = "1.7.12"
 
   override def requires = ReleasePlugin
@@ -19,7 +19,7 @@ object GlobalPlugin extends AutoPlugin {
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.11.8"),
+    crossScalaVersions := Seq("2.11.8", "2.12.1"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-Ywarn-unused-import",
