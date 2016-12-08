@@ -232,7 +232,22 @@ object FromRecord {
 
     val converters: Seq[Tree] = fieldsForType(tpe).map { f =>
       val sig = f.typeSignature
-      q"""com.sksamuel.avro4s.FromRecord.lazyConverter[$sig]"""
+      val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
+        case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+          anno.tree.children.tail match {
+            case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+          }
+      }
+
+      fixedAnnotation match {
+        case Some(fixed) =>
+          q"""{
+            null
+          }
+          """
+        case None =>
+          q"""com.sksamuel.avro4s.FromRecord.lazyConverter[$sig]"""
+      }
     }
 
     val fromValues: Seq[Tree] = fieldsForType(tpe).zipWithIndex.map {
@@ -240,8 +255,22 @@ object FromRecord {
         val name = f.name.asInstanceOf[c.TermName]
         val decoded: String = name.decodedName.toString
         val sig = f.typeSignature
+        val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
+          case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+            anno.tree.children.tail match {
+              case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+            }
+        }
+
         val valueClass = sig.typeSymbol.isClass && sig.typeSymbol.asClass.isDerivedValueClass
-        if (valueClass) {
+        if (fixedAnnotation.nonEmpty) {
+          q"""
+          {
+            val value = record.get($decoded).asInstanceOf[org.apache.avro.generic.GenericData.Fixed]
+            new $sig(new scala.collection.mutable.WrappedArray.ofByte(value.bytes()))
+          }
+          """
+        } else if (valueClass) {
           val valueCstr = sig.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
           val valueFieldType = valueCstr.typeSignature
 

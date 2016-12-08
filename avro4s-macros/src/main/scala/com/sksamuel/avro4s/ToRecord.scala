@@ -5,7 +5,7 @@ import java.util.UUID
 
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
-import shapeless.{:+:, Coproduct, CNil, Inl, Inr, Lazy}
+import shapeless.{:+:, CNil, Coproduct, Inl, Inr, Lazy}
 
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
@@ -17,6 +17,34 @@ trait ToValue[A] {
 trait LowPriorityToValue {
   implicit def apply[T](implicit toRecord: ToRecord[T]): ToValue[T] = new ToValue[T] {
     override def apply(value: T): GenericRecord = toRecord(value)
+  }
+
+  def fixed[T]: ToValue[T] = macro LowPriorityToValue.fixedImpl[T]
+}
+
+object LowPriorityToValue {
+  def fixedImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[ToValue[T]] = {
+    import c.universe._
+    val tpe = weakTypeTag[T].tpe
+
+    val fixedAnnotation: Option[AvroFixed] = tpe.typeSymbol.annotations.collectFirst {
+      case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+        anno.tree.children.tail match {
+          case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+        }
+    }
+
+    c.Expr[ToValue[T]](
+      q"""
+        {
+          val schema = com.sksamuel.avro4s.SchemaFor[$tpe]()
+          new com.sksamuel.avro4s.ToValue[$tpe] {
+            override def apply(t: $tpe): org.apache.avro.generic.GenericFixed = {
+              new org.apache.avro.generic.GenericData.Fixed(schema, t.bytes.array)
+            }
+          }
+        }
+      """)
   }
 }
 
@@ -133,7 +161,22 @@ object ToRecord {
     val converters: Seq[Tree] = fieldsForType(tpe).map { f =>
       val sig = f.typeSignature
 
-      q"""com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
+      val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
+        case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+          anno.tree.children.tail match {
+            case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+          }
+      }
+
+      fixedAnnotation match {
+        case Some(AvroFixed(size)) =>
+          q"""{
+            shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixed[$sig])
+          }
+          """
+        case None =>
+          q"""com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
+      }
     }
 
     val puts: Seq[Tree] = fieldsForType(tpe).zipWithIndex.map {
@@ -141,11 +184,25 @@ object ToRecord {
         val name = f.name.asInstanceOf[c.TermName]
         val fieldName: String = name.decodedName.toString
         val sig = f.typeSignature
+        val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
+          case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+            anno.tree.children.tail match {
+              case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+            }
+        }
+
         val valueClass = sig.typeSymbol.isClass && sig.typeSymbol.asClass.isDerivedValueClass
 
         // if a field is a value class we need to handle it here, using a converter
         // for the underlying value rather than the actual value class
-        if (valueClass) {
+        if (fixedAnnotation.nonEmpty) {
+          q"""
+          {
+            val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.ToValue[$sig]]]
+            record.put($fieldName, converter.value(t.$name : $sig))
+          }
+          """
+        } else if (valueClass) {
           val valueCstr = sig.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
           val valueFieldType = valueCstr.typeSignature
           val valueFieldName = valueCstr.name.asInstanceOf[c.TermName]
