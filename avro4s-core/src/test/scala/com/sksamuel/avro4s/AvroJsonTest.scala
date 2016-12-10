@@ -24,5 +24,20 @@ class AvroJsonTest extends WordSpec with Matchers {
       is.close()
       file.delete()
     }
+
+    "be able to read its own output for strings" in {
+
+      val testSource = "hello avro"
+      val file: File = new File("string.json")
+      val os = AvroOutputStream.json[String](file)
+      os.write(testSource)
+      os.close()
+
+      val is = AvroInputStream.json[String](file)
+      val pizzas = is.iterator.toList
+      pizzas shouldBe List(testSource)
+      is.close()
+      file.delete()
+    }
   }
 }
