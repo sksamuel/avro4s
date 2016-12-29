@@ -168,27 +168,33 @@ trait SchemaFor[T] {
 object SchemaFor {
 
   implicit object LongSchemaFor extends SchemaFor[Long] {
-    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().longType()
+    private val schema = SchemaBuilder.builder().longType()
+    def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object IntSchemaFor extends SchemaFor[Int] {
-    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().intType()
+    private val schema = SchemaBuilder.builder().intType()
+    def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object FloatSchemaFor extends SchemaFor[Float] {
-    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().floatType()
+    private val schema = SchemaBuilder.builder().floatType()
+    def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object DoubleSchemaFor extends SchemaFor[Double] {
-    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().doubleType()
+    private val schema = SchemaBuilder.builder().doubleType()
+    def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object BooleanSchemaFor extends SchemaFor[Boolean] {
-    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().booleanType()
+    private val schema = SchemaBuilder.builder().booleanType()
+    def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object StringSchemaFor extends SchemaFor[String] {
-    def apply(): org.apache.avro.Schema = SchemaBuilder.builder().stringType()
+    private val schema = SchemaBuilder.builder().stringType()
+    def apply(): org.apache.avro.Schema = schema
   }
 
   implicit def apply[T]: SchemaFor[T] = macro SchemaFor.applyImpl[T]
@@ -294,7 +300,8 @@ object SchemaFor {
       c.Expr[SchemaFor[T]](
         q"""
         new com.sksamuel.avro4s.SchemaFor[$tType] {
-          def apply(): org.apache.avro.Schema = com.sksamuel.avro4s.SchemaFor.valueInvoker[$underlyingType]
+          private val schema: org.apache.avro.Schema = com.sksamuel.avro4s.SchemaFor.valueInvoker[$underlyingType]
+          def apply(): org.apache.avro.Schema = schema
         }
       """
       )
