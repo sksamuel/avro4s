@@ -197,6 +197,14 @@ object SchemaFor {
     def apply(): org.apache.avro.Schema = schema
   }
 
+  def fixedSchemaFor[T](name: String, annos: Seq[Anno], namespace: String, size: Int): SchemaFor[T] = {
+    new SchemaFor[T] {
+      private val schema = Schema.createFixed(name, doc(annos), namespace, size)
+
+      override def apply(): Schema = schema
+    }
+  }
+
   implicit def apply[T]: SchemaFor[T] = macro SchemaFor.applyImpl[T]
 
   def applyImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
@@ -211,13 +219,20 @@ object SchemaFor {
       q"com.sksamuel.avro4s.Anno($name, $args)"
     }
 
+    lazy val fixedAnnotation: Option[AvroFixed] = tType.typeSymbol.annotations.collectFirst {
+      case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+        anno.tree.children.tail match {
+          case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+        }
+    }
+
     def fieldsForType(atype: c.universe.Type): List[c.universe.Symbol] = {
       atype.decls.collectFirst {
         case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.head
       }.getOrElse(Nil)
     }
 
-    val valueClass = tType.typeSymbol.isClass && tType.typeSymbol.asClass.isDerivedValueClass
+    val valueClass = tType.typeSymbol.isClass && tType.typeSymbol.asClass.isDerivedValueClass && fixedAnnotation.isEmpty
     val underlyingType = if (valueClass) {
       tType.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head.typeSignature
     } else {
@@ -306,28 +321,38 @@ object SchemaFor {
       """
       )
     } else {
-      c.Expr[SchemaFor[T]](
-        q"""
-        new com.sksamuel.avro4s.SchemaFor[$tType] {
-          val (incompleteSchema: org.apache.avro.Schema, completeSchema: shapeless.Lazy[org.apache.avro.Schema]) = {
-            com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
-              $name,
-              $pack,
-              shapeless.Lazy {
-                val selfSchema = incompleteSchema
-                implicit val selfToSchema: com.sksamuel.avro4s.ToSchema[$tType] = new com.sksamuel.avro4s.ToSchema[$tType] {
-                  val schema: org.apache.avro.Schema = selfSchema
-                }
-                Seq(..$fieldSchemaPartTrees)
-              },
-              Seq(..$annos)
-            )
-          }
+      fixedAnnotation match {
+        case Some(AvroFixed(size)) =>
+          val expr = c.Expr[SchemaFor[T]](
+            q"""
+              com.sksamuel.avro4s.SchemaFor.fixedSchemaFor[$tType]($name, Seq(..$annos), $pack, $size)
+            """
+          )
+          expr
+        case None =>
+          c.Expr[SchemaFor[T]](
+            q"""
+            new com.sksamuel.avro4s.SchemaFor[$tType] {
+              val (incompleteSchema: org.apache.avro.Schema, completeSchema: shapeless.Lazy[org.apache.avro.Schema]) = {
+                com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
+                  $name,
+                  $pack,
+                  shapeless.Lazy {
+                    val selfSchema = incompleteSchema
+                    implicit val selfToSchema: com.sksamuel.avro4s.ToSchema[$tType] = new com.sksamuel.avro4s.ToSchema[$tType] {
+                      val schema: org.apache.avro.Schema = selfSchema
+                    }
+                    Seq(..$fieldSchemaPartTrees)
+                  },
+                  Seq(..$annos)
+                )
+              }
 
-          def apply(): org.apache.avro.Schema = completeSchema.value
-        }
-      """
-      )
+              def apply(): org.apache.avro.Schema = completeSchema.value
+            }
+          """
+          )
+      }
     }
   }
 
@@ -341,6 +366,8 @@ object SchemaFor {
 
   // returns any aliases present in the list of annotations
   def aliases(annos: Seq[Anno]): Seq[String] = annotationsFor(classOf[AvroAlias], annos).flatMap(_.values.headOption)
+
+  def fixed(annos: Seq[Anno]): Option[Int] = annotationsFor(classOf[AvroFixed], annos).headOption.map(_.values.head.toInt)
 
   def addProps(annos: Seq[Anno], f: (String, String) => Unit): Unit = {
     annotationsFor(classOf[AvroProp], annos).map(_.values.toList).foreach {
