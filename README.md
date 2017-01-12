@@ -277,7 +277,6 @@ import shapeless.{:+:, CNil}
 |Float|float|
 |java.util.UUID|string|
 |Java Enums|enum|
-|scala.Enumeration|enum|
 |sealed trait T|enum|
 |Array[T]|array|
 |List[T]|array|
