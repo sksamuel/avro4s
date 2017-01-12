@@ -343,8 +343,22 @@ class AvroSchemaTest extends WordSpec with Matchers {
       insideOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "UnionOfOptional")
       bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
     }
+    "generate array type for a vector of primitives" in {
+      case class VectorPrim(booleans: Vector[Boolean])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/vector_prim.avsc"))
+      val schema = SchemaFor[VectorPrim]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate array type for an vector of records" in {
+      case class VectorRecord(records: Vector[Record])
+      case class Record(str: String, double: Double)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/vector_records.avsc"))
+      val schema = SchemaFor[VectorRecord]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
+
 
 case class OptionDefaultValues(
   name: String = "sammy",

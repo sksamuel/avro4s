@@ -1,0 +1,12 @@
+{
+  "type" : "record",
+  "name" : "VectorPrim",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "booleans",
+    "type" : {
+      "type" : "array",
+      "items" : "boolean"
+    }
+  } ]
+}

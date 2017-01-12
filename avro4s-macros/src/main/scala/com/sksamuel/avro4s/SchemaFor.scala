@@ -14,7 +14,6 @@ import scala.reflect.macros.whitebox
 
 trait ToSchema[T] {
   protected val schema: Schema
-
   def apply(): Schema = schema
 }
 
@@ -114,6 +113,12 @@ object ToSchema extends LowPriorityToSchema {
   implicit def SetToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Set[S]] = {
     new ToSchema[Set[S]] {
       protected val schema = Schema.createArray(subschema.apply)
+    }
+  }
+
+  implicit def VectorToSchema[S](implicit toschema: ToSchema[S]): ToSchema[Vector[S]] = {
+    new ToSchema[Vector[S]] {
+      protected val schema = Schema.createArray(toschema.apply)
     }
   }
 
