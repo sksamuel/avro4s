@@ -81,6 +81,14 @@ object FromValue extends LowPriorityFromValue {
     }
   }
 
+  implicit def VectorFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Vector[T]] = new FromValue[Vector[T]] {
+    override def apply(value: Any, field: Field): Vector[T] = value match {
+      case array: Array[_] => array.map((value: Any) => fromvalue.apply(value)).toVector
+      case list: java.util.Collection[_] => list.asScala.map((value: Any) => fromvalue.apply(value)).toVector
+      case other => sys.error("Unsupported vector " + other)
+    }
+  }
+
   implicit def ArrayFromValue[T](implicit fromvalue: FromValue[T],
                                  tag: ClassTag[T]): FromValue[Array[T]] = new FromValue[Array[T]] {
     override def apply(value: Any, field: Field): Array[T] = value match {
@@ -95,14 +103,6 @@ object FromValue extends LowPriorityFromValue {
       case array: Array[_] => array.map((value: Any) => fromvalue.apply(value)).toSet
       case list: java.util.Collection[_] => list.asScala.map((value: Any) => fromvalue.apply(value)).toSet
       case other => sys.error("Unsupported set " + other)
-    }
-  }
-
-  implicit def VectorFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Vector[T]] = new FromValue[Vector[T]] {
-    override def apply(value: Any, field: Field): Vector[T] = value match {
-      case array: Array[_] => array.map((value: Any) => fromvalue.apply(value)).toVector
-      case list: java.util.Collection[_] => list.asScala.map((value: Any) => fromvalue.apply(value)).toVector
-      case other => sys.error("Unsupported vector " + other)
     }
   }
 

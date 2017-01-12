@@ -33,6 +33,8 @@ class AvroInputStreamTest extends WordSpec with Matchers with TimeLimits {
   case class ListCaseClasses(list: List[Foo])
   case class ListDoubles(list: List[Double])
   case class ListInts(list: List[Int])
+  case class VectorInts(ints: Vector[Int])
+  case class VectorRecords(records: Vector[Foo])
   case class SetStrings(set: Set[String])
   case class SetCaseClasses(set: Set[Foo])
   case class EitherStringBoolean(either: Either[String, Boolean])
@@ -467,24 +469,21 @@ class AvroInputStreamTest extends WordSpec with Matchers with TimeLimits {
       in.iterator.toList shouldBe data.toList
       in.close()
     }
-//    "read vectors of prims" in {
-//      case class VectorPrim(strings: Vector[String])
-//      val data = Seq(VectorPrim(Vector("a", "b", "c")))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[VectorPrim](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read vectors of records" in {
-//      case class Record(str: String, b: Boolean)
-//      case class VectorRecords(records: Vector[Record])
-//      val data = Seq(VectorRecords(Vector(Record("sammy", true), Record("hammy", false))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[VectorRecords](bytes)
-//      in.iterator.toList shouldBe ""
-//      in.close()
-//    }
+    "read vectors of ints" in {
+      val data = Seq(VectorInts(Vector(3, 2, 1)))
+      val bytes = write(data)
+
+      val in = AvroInputStream.data[VectorInts](bytes)
+      in.iterator.toList shouldBe Seq(VectorInts(Vector(3, 2, 1)))
+      in.close()
+    }
+    "read vectors of records" in {
+      val data = Seq(VectorRecords(Vector(Foo("sammy", true), Foo("hammy", false))))
+      val bytes = write(data)
+
+      val in = AvroInputStream.data[VectorRecords](bytes)
+      in.iterator.toList shouldBe Seq(VectorRecords(Vector(Foo("sammy", true), Foo("hammy", false))))
+      in.close()
+    }
   }
 }
