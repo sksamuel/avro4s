@@ -467,5 +467,24 @@ class AvroInputStreamTest extends WordSpec with Matchers with TimeLimits {
       in.iterator.toList shouldBe data.toList
       in.close()
     }
+//    "read vectors of prims" in {
+//      case class VectorPrim(strings: Vector[String])
+//      val data = Seq(VectorPrim(Vector("a", "b", "c")))
+//      val bytes = write(data)
+//
+//      val in = AvroInputStream.data[VectorPrim](bytes)
+//      in.iterator.toList shouldBe data.toList
+//      in.close()
+//    }
+//    "read vectors of records" in {
+//      case class Record(str: String, b: Boolean)
+//      case class VectorRecords(records: Vector[Record])
+//      val data = Seq(VectorRecords(Vector(Record("sammy", true), Record("hammy", false))))
+//      val bytes = write(data)
+//
+//      val in = AvroInputStream.data[VectorRecords](bytes)
+//      in.iterator.toList shouldBe ""
+//      in.close()
+//    }
   }
 }

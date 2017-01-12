@@ -395,6 +395,29 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
       val record = read[Ids](output)
       UUID.fromString(record.get("myid").toString) shouldBe instance.myid
     }
+    "write Vector of primitives as arrays" in {
+      case class VectorPrim(ints: Vector[Int])
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[VectorPrim](output)
+      avro.write(VectorPrim(Vector(1, 1, 2, 3, 5, 8)))
+      avro.close()
+
+      val record = read[VectorPrim](output)
+      record.get("ints").asInstanceOf[java.util.List[Int]].asScala.toVector shouldBe Vector(1, 1, 2, 3, 5, 8)
+    }
+    "write Vector of records as arrays" in {
+      case class Record(str: String, b: Boolean)
+      case class VectorRecords(records: Vector[Record])
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[VectorRecords](output)
+      avro.write(VectorRecords(Vector(Record("sam", true), Record("ham", false))))
+      avro.close()
+
+      val record = read[VectorRecords](output)
+      val actual = record.get("records").asInstanceOf[java.util.List[GenericRecord]].asScala.toSet
+      actual.map(_.get("str").toString) shouldBe Set("sam", "ham")
+      actual.map(_.get("b").toString.toBoolean) shouldBe Set(true, false)
+    }
   }
 }
 

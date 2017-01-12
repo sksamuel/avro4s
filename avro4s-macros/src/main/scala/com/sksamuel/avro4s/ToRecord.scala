@@ -78,6 +78,10 @@ object ToValue extends LowPriorityToValue {
     override def apply(values: Set[T]): Any = values.map(tovalue.apply).asJava
   }
 
+  implicit def VectorToValue[T](implicit tovalue: ToValue[T]): ToValue[Vector[T]] = new ToValue[Vector[T]] {
+    override def apply(values: Vector[T]): Any = values.map(tovalue.apply).asJava
+  }
+
   implicit def SeqToValue[T](implicit tovalue: ToValue[T]): ToValue[Seq[T]] = new ToValue[Seq[T]] {
     override def apply(values: Seq[T]): Any = values.map(tovalue.apply).asJava
   }

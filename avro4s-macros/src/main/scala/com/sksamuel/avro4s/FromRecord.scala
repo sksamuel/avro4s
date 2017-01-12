@@ -98,6 +98,14 @@ object FromValue extends LowPriorityFromValue {
     }
   }
 
+  implicit def VectorFromValue[T](implicit fromvalue: FromValue[T]): FromValue[Vector[T]] = new FromValue[Vector[T]] {
+    override def apply(value: Any, field: Field): Vector[T] = value match {
+      case array: Array[_] => array.map((value: Any) => fromvalue.apply(value)).toVector
+      case list: java.util.Collection[_] => list.asScala.map((value: Any) => fromvalue.apply(value)).toVector
+      case other => sys.error("Unsupported vector " + other)
+    }
+  }
+
   implicit def ListFromValue[T](implicit fromvalue: FromValue[T]): FromValue[List[T]] = new FromValue[List[T]] {
     override def apply(value: Any, field: Field): List[T] = value match {
       case array: Array[_] => array.map((value: Any) => fromvalue.apply(value)).toList
