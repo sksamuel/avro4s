@@ -13,6 +13,7 @@ The features of the library are:
 * Boilerplate free deserialization of Avro to classes
 
 ## Changelog
+* 1.6.4 - Added support for Vectors
 * 1.6.3 - Fixed issue with decimal schema using strings instead of ints for scale and precision
 * 1.6.2 - Removed unused imports, fixed compiler warnings
 * 1.6.1 - Fixed bug when using Option with a default value of None. Updated sbt generator. Added better way to discrimate between tpyes (Ilya Epifanov). Optimized reflection lookup @simonsouter.
