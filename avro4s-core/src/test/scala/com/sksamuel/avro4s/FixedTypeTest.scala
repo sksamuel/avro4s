@@ -11,7 +11,7 @@ class FixedTypeTest extends WordSpec with Matchers {
     Array[Byte](0, 1, 2, 3))
 
   "Avro4s" should {
-    "generate fixed(n) type fir @AvroFixed(n) case class" in {
+    "generate fixed(n) type for @AvroFixed(n) case class" in {
       val schema = SchemaFor[QuarterSHA256]()
       schema.getType shouldBe Type.FIXED
       schema.getFixedSize shouldBe 8

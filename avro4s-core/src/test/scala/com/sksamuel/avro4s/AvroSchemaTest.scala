@@ -356,6 +356,12 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[VectorRecord]()
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support types nested in uppercase packages" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_in_uppercase_pkg.avsc"))
+      val schema = SchemaFor[examples.UppercasePkg.Data]()
+      println(schema.toString(true))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
