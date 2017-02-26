@@ -253,12 +253,12 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[Wrapper]()
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "merge trait subtypes fields with same name into unions" in {
+    "support trait subtypes fields with same name" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.avsc"))
       val schema = SchemaFor[Trapper]()
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "merge trait subtypes fields with same name and same type into a single schema" in {
+    "support trait subtypes fields with same name and same type" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.avsc"))
       val schema = SchemaFor[Napper]()
       schema.toString(true) shouldBe expected.toString(true)
@@ -359,7 +359,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "support types nested in uppercase packages" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_in_uppercase_pkg.avsc"))
       val schema = SchemaFor[examples.UppercasePkg.Data]()
-      println(schema.toString(true))
       schema.toString(true) shouldBe expected.toString(true)
     }
   }
