@@ -302,8 +302,7 @@ object SchemaFor {
 
     // name of the actual class
     val name = underlyingType.typeSymbol.name.decodedName.toString
-    // name of the outer package, can't find a way to get this explicitly so hacking the full class name
-    val pack = underlyingType.typeSymbol.fullName.split('.').takeWhile(_.forall(c => !c.isUpper)).mkString(".")
+    val pack = Stream.iterate(underlyingType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
     val annos = annotations(underlyingType.typeSymbol)
 
     // we create an explicit ToSchema[T] in the scope of any
