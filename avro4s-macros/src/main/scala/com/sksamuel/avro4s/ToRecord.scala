@@ -5,7 +5,8 @@ import java.util.UUID
 
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
-import shapeless.{:+:, CNil, Coproduct, Inl, Inr, Lazy}
+import shapeless.ops.coproduct.Reify
+import shapeless.{:+:, CNil, Coproduct, Generic, Inl, Inr, Lazy}
 
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
@@ -15,6 +16,12 @@ trait ToValue[A] {
 }
 
 trait LowPriorityToValue {
+
+  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                               coproductToValue: ToValue[C]): ToValue[T] = new ToValue[T] {
+    override def apply(value: T): Any = coproductToValue(gen.to(value))
+  }
+
   implicit def apply[T](implicit toRecord: ToRecord[T]): ToValue[T] = new ToValue[T] {
     override def apply(value: T): GenericRecord = toRecord(value)
   }
@@ -141,6 +148,11 @@ object ToValue extends LowPriorityToValue {
       case Inl(s) => curToValue(s)
       case Inr(t) => restToValue(t)
     }
+  }
+
+  implicit def genTraitObjectEnum[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                                     objs: Reify[C]): ToValue[T] = new ToValue[T] {
+    override def apply(value: T): Any = StringToValue(value.toString)
   }
 }
 

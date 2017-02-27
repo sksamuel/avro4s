@@ -19,5 +19,13 @@ class RecordFormatTest extends WordSpec with Matchers {
       val fmt = RecordFormat[examples.UppercasePkg.Data]
       fmt.from(fmt.to(data)) shouldBe data
     }
+
+    "convert to/from records containg sealed trait hierarchy" in {
+      val wrapper1 = Wrapper(Wobble("abc"))
+      val wrapper2 = Wrapper(Wabble(3.14))
+      val fmt = RecordFormat[Wrapper]
+      fmt.from(fmt.to(wrapper1)) shouldBe wrapper1
+      fmt.from(fmt.to(wrapper2)) shouldBe wrapper2
+    }
   }
 }

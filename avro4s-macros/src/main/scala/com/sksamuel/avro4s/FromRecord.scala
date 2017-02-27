@@ -6,7 +6,9 @@ import java.util.UUID
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import shapeless.{:+:, CNil, Coproduct, Inr, Lazy}
+import shapeless.ops.coproduct.Reify
+import shapeless.ops.hlist.ToList
+import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inr, Lazy}
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -19,6 +21,13 @@ trait FromValue[T] {
 }
 
 trait LowPriorityFromValue {
+
+  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                               fromCoproduct: FromValue[C]): FromValue[T] = new FromValue[T] {
+    override def apply(value: Any, field: Field): T =
+      gen.from(fromCoproduct(value, field))
+  }
+
   implicit def apply[T](implicit fromRecord: FromRecord[T]): FromValue[T] = new FromValue[T] {
     override def apply(value: Any, field: Field): T = value match {
       case record: GenericRecord => fromRecord(record)
@@ -213,6 +222,15 @@ object FromValue extends LowPriorityFromValue {
     override def apply(value: Any, field: Field): S :+: T =
       safeFrom[S](value).map(Coproduct[S :+: T](_))
         .getOrElse(Inr(implicitly[FromValue[T]].apply(value, field)))
+  }
+
+  implicit def genTraitObjectEnum[T, C <: Coproduct, L <: HList](implicit gen: Generic.Aux[T, C],
+                                                                 objs: Reify.Aux[C, L],
+                                                                 toList: ToList[L, T]): FromValue[T] = new FromValue[T] {
+    override def apply(value: Any, field: Field): T = {
+      val name = StringFromValue(value, field)
+      toList(objs()).find(_.toString == name).getOrElse(sys.error(errorString(value, field)))
+    }
   }
 }
 

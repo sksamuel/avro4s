@@ -3,7 +3,8 @@ package com.sksamuel.avro4s
 import java.util
 
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
-import shapeless.{:+:, CNil, Coproduct, Lazy}
+import shapeless.ops.coproduct.Reify
+import shapeless.{:+:, CNil, Coproduct, Generic, Lazy}
 
 import scala.annotation.implicitNotFound
 import scala.collection.JavaConverters._
@@ -18,6 +19,12 @@ trait ToSchema[T] {
 }
 
 trait LowPriorityToSchema {
+
+  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                               coproductSchema: ToSchema[C]): ToSchema[T] = new ToSchema[T] {
+    protected val schema: Schema = coproductSchema()
+  }
+
   implicit def apply[T: Manifest](implicit schemaFor: SchemaFor[T]): ToSchema[T] = new ToSchema[T] {
     protected val schema = schemaFor()
   }
@@ -141,6 +148,11 @@ object ToSchema extends LowPriorityToSchema {
     protected val schema = createUnion(subschema(), coproductSchema())
   }
 
+  implicit def genTraitObjectEnum[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                                     objs: Reify[C]): ToSchema[T] = new ToSchema[T] {
+    protected val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
+
   private def createUnion(schemas: Schema*): Schema = {
     import scala.util.{Try, Success, Failure}
 
@@ -246,19 +258,7 @@ object SchemaFor {
     val sealedTraitOrClass = underlyingType.typeSymbol.isClass && underlyingType.typeSymbol.asClass.isSealed
 
     val fieldSchemaPartTrees: Seq[Tree] = if (sealedTraitOrClass) {
-      val internal = tType.typeSymbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol]
-      val descendants = internal.sealedDescendants.map(_.asInstanceOf[Symbol]) - tType.typeSymbol
-      descendants.flatMap(x => fieldsForType(x.asType.toType)).groupBy(_.name.decodedName.toString).map { case (name, fs) =>
-        val schemas = fs map { f =>
-          val sig = f.typeSignature
-          q"""com.sksamuel.avro4s.SchemaFor.schemaBuilder[$sig]"""
-        }
-        // if we have the same number of schemas as the number of descendants then it means every subclass
-        // of the trait has that particular field, so we can make it non optional, otherwise it means at least
-        // one subclass of the trait is missing the field, and so it must be marked optional
-        val optional = schemas.size != descendants.size
-        q""" com.sksamuel.avro4s.SchemaFor.unionBuilder($name, Set(..$schemas), $optional) """
-      }.toSeq
+      c.abort(c.prefix.tree.pos, "Sealed traits/classes should be handled by coproduct generic!")
     } else {
 
       val ctr = underlyingType.decls.collectFirst {
@@ -378,14 +378,6 @@ object SchemaFor {
       case key :: value :: Nil => f(key, value)
       case other => sys.error("Invalid annotation value " + other)
     }
-  }
-
-  // builds a schema for a type T
-  def schemaBuilder[T](implicit toSchema: Lazy[ToSchema[T]]): Schema = toSchema.value()
-
-  def unionBuilder(name: String, schemas: Set[Schema], optional: Boolean): Schema.Field = {
-    val sortedSchemas = (if (optional) schemas + Schema.create(Schema.Type.NULL) else schemas).toSeq.sortBy(_.getName)
-    fieldBuilder(name, Nil, Schema.createUnion(sortedSchemas.asJava), null)
   }
 
   /**

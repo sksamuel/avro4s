@@ -258,6 +258,13 @@ val schema = AvroSchema[MyDecimal]
 
 Avro supports generalised unions, eithers of more than two values. To represent these in scala, we use `shapeless.:+:`, such that `A :+: B :+: C :+: CNil` represents cases where a type is `A` OR `B` OR `C`. See shapeless' [documentation on coproducts](https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0#coproducts-and-discriminated-unions) for more on how to use coproducts.
 
+## Sealed hierarchies
+
+Scala sealed traits/classes are supported both when it comes to schema generation and conversions to/from `GenericRecord`. Generally sealed hierarchies are encoded as unions - in the same way like Coproducts. Under the hood, shapeless `Generic` is used to derive Coproduct representation for sealed hierarchy.
+
+When all descendants of sealed trait/class are singleton objects, optimized, string-based encoding is used instead.
+
+
 ## Type Mappings
 
 ``` scala
@@ -277,7 +284,8 @@ import shapeless.{:+:, CNil}
 |Float|float|
 |java.util.UUID|string|
 |Java Enums|enum|
-|sealed trait T|enum|
+|sealed trait T|union|
+|sealed trait with only case objects|string|
 |Array[T]|array|
 |List[T]|array|
 |Seq[T]|array|

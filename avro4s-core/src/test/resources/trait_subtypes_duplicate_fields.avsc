@@ -4,19 +4,26 @@
   "namespace" : "com.sksamuel.avro4s",
   "fields" : [ {
     "name" : "tibble",
-    "type" : {
+    "type" : [ {
       "type" : "record",
-      "name" : "Tibble",
+      "name" : "Tabble",
       "fields" : [ {
         "name" : "str",
-        "type" : [ "double", "string" ]
+        "type" : "double"
       }, {
         "name" : "age",
-        "type" : [ "int", "null" ]
+        "type" : "int"
+      } ]
+    }, {
+      "type" : "record",
+      "name" : "Tobble",
+      "fields" : [ {
+        "name" : "str",
+        "type" : "string"
       }, {
         "name" : "place",
-        "type" : [ "null", "string" ]
+        "type" : "string"
       } ]
-    }
+    } ]
   } ]
 }

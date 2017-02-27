@@ -4,16 +4,20 @@
   "namespace" : "com.sksamuel.avro4s",
   "fields" : [ {
     "name" : "wibble",
-    "type" : {
+    "type" : [ {
       "type" : "record",
-      "name" : "Wibble",
+      "name" : "Wabble",
+      "fields" : [ {
+        "name" : "dbl",
+        "type" : "double"
+      } ]
+    }, {
+      "type" : "record",
+      "name" : "Wobble",
       "fields" : [ {
         "name" : "str",
-        "type" : [ "null", "string" ]
-      }, {
-        "name" : "dbl",
-        "type" : [ "double", "null" ]
+        "type" : "string"
       } ]
-    }
+    } ]
   } ]
 }
