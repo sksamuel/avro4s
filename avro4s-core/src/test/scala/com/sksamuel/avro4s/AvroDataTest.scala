@@ -25,6 +25,34 @@ class AvroDataTest extends WordSpec with Matchers {
       file.delete()
     }
 
+    "be able to read its own output for string types" in {
+      val testSource = "hello avro"
+      val file: File = new File("string.avro")
+      val os = AvroOutputStream.data[String](file)
+      os.write(testSource)
+      os.close()
+
+      val is = AvroInputStream.data[String](file)
+      val pizzas = is.iterator.toList
+      pizzas shouldBe List(testSource)
+      is.close()
+      file.delete()
+    }
+
+    "be able to read its own output for int types" in {
+      val testSource = 123
+      val file: File = new File("int.avro")
+      val os = AvroOutputStream.data[Int](file)
+      os.write(testSource)
+      os.close()
+
+      val is = AvroInputStream.data[Int](file)
+      val pizzas = is.iterator.toList
+      pizzas shouldBe List(testSource)
+      is.close()
+      file.delete()
+    }
+
     "be able to serialize/deserialize recursive data" in {
       val data = Recursive(4, Some(Recursive(2, Some(Recursive(9, None)))))
 

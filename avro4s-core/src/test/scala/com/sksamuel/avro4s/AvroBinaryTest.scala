@@ -38,5 +38,71 @@ class AvroBinaryTest extends WordSpec with Matchers {
       pizzas shouldBe List(tgtbtu)
       is.close()
     }
+
+    "support string type" in {
+      val testSource = "hello"
+      val baos = new ByteArrayOutputStream()
+      val output = AvroOutputStream.binary[String](baos)
+      output.write(testSource)
+      output.close()
+
+      val is = AvroInputStream.binary[String](baos.toByteArray)
+      val pizzas = is.iterator.toList
+      pizzas shouldBe List(testSource)
+      is.close()
+    }
+
+    "support int type" in {
+      val testSource = 123
+      val baos = new ByteArrayOutputStream()
+      val output = AvroOutputStream.binary[Int](baos)
+      output.write(testSource)
+      output.close()
+
+      val is = AvroInputStream.binary[Int](baos.toByteArray)
+      val pizzas = is.iterator.toList
+      pizzas shouldBe List(testSource)
+      is.close()
+    }
+
+    "support long type" in {
+      val testSource = 123L
+      val baos = new ByteArrayOutputStream()
+      val output = AvroOutputStream.binary[Long](baos)
+      output.write(testSource)
+      output.close()
+
+      val is = AvroInputStream.binary[Long](baos.toByteArray)
+      val pizzas = is.iterator.toList
+      pizzas shouldBe List(testSource)
+      is.close()
+    }
+
+    "support double type" in {
+      val testSource: Double = 123.123
+      val baos = new ByteArrayOutputStream()
+      val output = AvroOutputStream.binary[Double](baos)
+      output.write(testSource)
+      output.close()
+
+      val is = AvroInputStream.binary[Double](baos.toByteArray)
+      val pizzas = is.iterator.toList
+      pizzas shouldBe List(testSource)
+      is.close()
+    }
+
+    "support float type" in {
+      val testSource: Float = 123.123F
+      val baos = new ByteArrayOutputStream()
+      val output = AvroOutputStream.binary[Float](baos)
+      output.write(testSource)
+      output.close()
+
+      val is = AvroInputStream.binary[Float](baos.toByteArray)
+      val pizzas = is.iterator.toList
+      pizzas shouldBe List(testSource)
+      is.close()
+    }
+
   }
 }
