@@ -228,7 +228,7 @@ object FromValue extends LowPriorityFromValue {
                                                                  objs: Reify.Aux[C, L],
                                                                  toList: ToList[L, T]): FromValue[T] = new FromValue[T] {
     override def apply(value: Any, field: Field): T = {
-      val name = StringFromValue(value, field)
+      val name = value.toString
       toList(objs()).find(_.toString == name).getOrElse(sys.error(errorString(value, field)))
     }
   }

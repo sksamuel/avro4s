@@ -4,7 +4,8 @@ import java.util
 
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
-import shapeless.{:+:, CNil, Coproduct, Generic, Lazy}
+import shapeless.ops.hlist.ToList
+import shapeless.{:+:, CNil, Coproduct, Generic, HList, Lazy}
 
 import scala.annotation.implicitNotFound
 import scala.collection.JavaConverters._
@@ -148,9 +149,16 @@ object ToSchema extends LowPriorityToSchema {
     protected val schema = createUnion(subschema(), coproductSchema())
   }
 
-  implicit def genTraitObjectEnum[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                                     objs: Reify[C]): ToSchema[T] = new ToSchema[T] {
-    protected val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit def genTraitObjectEnum[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
+                                                                 gen: Generic.Aux[T, C],
+                                                                 objs: Reify.Aux[C, L],
+                                                                 toList: ToList[L, T]): ToSchema[T] = new ToSchema[T] {
+    protected val schema: Schema = {
+      val name = ct.runtimeClass.getSimpleName
+      val namespace = ct.runtimeClass.getPackage.getName
+      val symbols = toList(objs()).map(_.toString).asJava
+      Schema.createEnum(name, null, namespace, symbols)
+    }
   }
 
   private def createUnion(schemas: Schema*): Schema = {

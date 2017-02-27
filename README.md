@@ -262,7 +262,7 @@ Avro supports generalised unions, eithers of more than two values. To represent 
 
 Scala sealed traits/classes are supported both when it comes to schema generation and conversions to/from `GenericRecord`. Generally sealed hierarchies are encoded as unions - in the same way like Coproducts. Under the hood, shapeless `Generic` is used to derive Coproduct representation for sealed hierarchy.
 
-When all descendants of sealed trait/class are singleton objects, optimized, string-based encoding is used instead.
+When all descendants of sealed trait/class are singleton objects, optimized, enum-based encoding is used instead.
 
 
 ## Type Mappings
@@ -285,7 +285,7 @@ import shapeless.{:+:, CNil}
 |java.util.UUID|string|
 |Java Enums|enum|
 |sealed trait T|union|
-|sealed trait with only case objects|string|
+|sealed trait with only case objects|enum|
 |Array[T]|array|
 |List[T]|array|
 |Seq[T]|array|

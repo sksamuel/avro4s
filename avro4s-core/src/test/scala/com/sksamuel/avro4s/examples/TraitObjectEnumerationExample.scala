@@ -12,7 +12,7 @@ import scala.util.Failure
   * API inspired by scodec
   *
   * Design goals were to avoid the three individual implicits required by README "custom type mapping" example
-  * and avoid redundant specification of the object/string mapping.
+  * and avoid redundant specification of the object/enum mapping.
   *
   */
 class TraitObjectEnumerationExample extends WordSpec with Matchers {
@@ -32,9 +32,9 @@ class TraitObjectEnumerationExample extends WordSpec with Matchers {
 
   "AvroStream" should {
 
-    "generate schema using int" in {
-      AvroSchema[Test].toString should be
-        """{"type":"record","name":"Test","namespace":"com.sksamuel.avro4s.examples","fields":[{"name":"v","type":"string"}]}"""
+    "generate schema using enum" in {
+      AvroSchema[Test].toString shouldBe
+        """{"type":"record","name":"Test","namespace":"com.sksamuel.avro4s.examples","fields":[{"name":"v","type":{"type":"enum","name":"Base","symbols":["A","B"]}}]}"""
     }
 
     "serialize as string" in {
@@ -56,8 +56,7 @@ class TraitObjectEnumerationExample extends WordSpec with Matchers {
       val json = """{"v":"C"}"""
       val in = new ByteArrayInputStream(json.getBytes("UTF-8"))
       val input = AvroInputStream.json[Test](in)
-      input.singleEntity.asInstanceOf[Failure[Test]].exception.getMessage shouldBe
-        "Value C of type class org.apache.avro.util.Utf8 is not compatible with [v]"
+      input.singleEntity.asInstanceOf[Failure[Test]].exception.getMessage shouldBe "Unknown symbol in enum C"
     }
   }
 }

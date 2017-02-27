@@ -152,7 +152,7 @@ object ToValue extends LowPriorityToValue {
 
   implicit def genTraitObjectEnum[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
                                                      objs: Reify[C]): ToValue[T] = new ToValue[T] {
-    override def apply(value: T): Any = StringToValue(value.toString)
+    override def apply(value: T): Any = new EnumSymbol(null, value.toString)
   }
 }
 
