@@ -245,19 +245,14 @@ object FromRecord {
 
   def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[FromRecord[T]] = {
     import c.universe._
+    val helper = TypeHelper(c)
     val tpe = weakTypeTag[T].tpe
     require(tpe.typeSymbol.asClass.isCaseClass, s"Require a case class but $tpe is not")
 
-    def fieldsForType(tpe: c.universe.Type): List[c.universe.Symbol] = {
-      tpe.decls.collectFirst {
-        case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.head
-      }.getOrElse(Nil)
-    }
-
     val companion = tpe.typeSymbol.companion
 
-    val converters: Seq[Tree] = fieldsForType(tpe).map { f =>
-      val sig = f.typeSignature
+    val fields = helper.fieldsOf(tpe)
+    val converters: Seq[Tree] = fields.map { case (_, sig) =>
       val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
         case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
           anno.tree.children.tail match {
@@ -276,11 +271,10 @@ object FromRecord {
       }
     }
 
-    val fromValues: Seq[Tree] = fieldsForType(tpe).zipWithIndex.map {
-      case (f, idx) =>
+    val fromValues: Seq[Tree] = fields.zipWithIndex.map {
+      case ((f, sig), idx) =>
         val name = f.name.asInstanceOf[c.TermName]
         val decoded: String = name.decodedName.toString
-        val sig = f.typeSignature
         val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
           case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
             anno.tree.children.tail match {
