@@ -15,11 +15,11 @@ trait AvroInputStream[T] {
   def tryIterator(): Iterator[Try[T]]
 }
 
-class AvroBinaryInputStream[T](in: InputStream)
+class AvroBinaryInputStream[T](in: InputStream, writerSchema: org.apache.avro.Schema = null)
                               (implicit schemaFor: SchemaFor[T], fromRecord: FromRecord[T])
   extends AvroInputStream[T] {
-
-  val datumReader = new GenericDatumReader[GenericRecord](schemaFor())
+  val wSchema = if (writerSchema == null) schemaFor() else writerSchema
+  val datumReader = new GenericDatumReader[GenericRecord](wSchema, schemaFor())
   val binDecoder = DecoderFactory.get().binaryDecoder(in, null)
   val records = new java.util.ArrayList[GenericRecord]()
 
@@ -100,6 +100,12 @@ object AvroInputStream {
   def binary[T: SchemaFor : FromRecord](file: File): AvroBinaryInputStream[T] = binary(new SeekableFileInput(file))
   def binary[T: SchemaFor : FromRecord](path: String): AvroBinaryInputStream[T] = binary(Paths.get(path))
   def binary[T: SchemaFor : FromRecord](path: Path): AvroBinaryInputStream[T] = binary(path.toFile)
+
+  def binaryEvolve[T: SchemaFor : FromRecord](in: InputStream, writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = new AvroBinaryInputStream[T](in, writerSchema)
+  def binaryEvolve[T: SchemaFor : FromRecord](bytes: Array[Byte], writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = binaryEvolve(new SeekableByteArrayInput(bytes), writerSchema)
+  def binaryEvolve[T: SchemaFor : FromRecord](file: File, writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = binaryEvolve(new SeekableFileInput(file), writerSchema)
+  def binaryEvolve[T: SchemaFor : FromRecord](path: String, writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = binaryEvolve(Paths.get(path), writerSchema)
+  def binaryEvolve[T: SchemaFor : FromRecord](path: Path, writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = binaryEvolve(path.toFile, writerSchema)
 
   def data[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableByteArrayInput(bytes))
   def data[T: SchemaFor : FromRecord](file: File): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableFileInput(file))
