@@ -49,7 +49,7 @@ class AvroBinaryTest extends WordSpec with Matchers {
       output.write(v1)
       output.close()
 
-      val is = AvroInputStream.binary[Version2](baos.toByteArray, Option(AvroSchema[Version1]))
+      val is = AvroInputStream.binary[Version2](baos.toByteArray, AvroSchema[Version1])
       val v2 = is.iterator.toList.head
       is.close()
 
