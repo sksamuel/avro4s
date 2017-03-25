@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.io.{EOFException, File, InputStream}
 import java.nio.file.{Path, Paths}
 
+import org.apache.avro.Schema
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput, SeekableFileInput, SeekableInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.io.DecoderFactory
@@ -15,10 +16,10 @@ trait AvroInputStream[T] {
   def tryIterator(): Iterator[Try[T]]
 }
 
-class AvroBinaryInputStream[T](in: InputStream, writerSchema: org.apache.avro.Schema = null)
+class AvroBinaryInputStream[T](in: InputStream, writerSchema: Option[Schema])
                               (implicit schemaFor: SchemaFor[T], fromRecord: FromRecord[T])
   extends AvroInputStream[T] {
-  val wSchema = if (writerSchema == null) schemaFor() else writerSchema
+  val wSchema = writerSchema.getOrElse(schemaFor())
   val datumReader = new GenericDatumReader[GenericRecord](wSchema, schemaFor())
   val binDecoder = DecoderFactory.get().binaryDecoder(in, null)
   val records = new java.util.ArrayList[GenericRecord]()
@@ -95,17 +96,18 @@ object AvroInputStream {
   def json[T: SchemaFor : FromRecord](path: String): AvroJsonInputStream[T] = json(Paths.get(path))
   def json[T: SchemaFor : FromRecord](path: Path): AvroJsonInputStream[T] = json(path.toFile)
 
-  def binary[T: SchemaFor : FromRecord](in: InputStream): AvroBinaryInputStream[T] = new AvroBinaryInputStream[T](in)
+  def binary[T: SchemaFor : FromRecord](in: InputStream, writerSchema: Schema): AvroBinaryInputStream[T] = new AvroBinaryInputStream[T](in, Option(writerSchema))
+  def binary[T: SchemaFor : FromRecord](bytes: Array[Byte], writerSchema: Schema): AvroBinaryInputStream[T] = binary(new SeekableByteArrayInput(bytes), writerSchema)
+  def binary[T: SchemaFor : FromRecord](file: File, writerSchema: Schema): AvroBinaryInputStream[T] = binary(new SeekableFileInput(file), writerSchema)
+  def binary[T: SchemaFor : FromRecord](path: String, writerSchema: Schema): AvroBinaryInputStream[T] = binary(Paths.get(path), writerSchema)
+  def binary[T: SchemaFor : FromRecord](path: Path, writerSchema: Schema): AvroBinaryInputStream[T] = binary(path.toFile, writerSchema)
+
+  // convenience api for cases where the writer schema should be the same as the reader.
+  def binary[T: SchemaFor : FromRecord](in: InputStream): AvroBinaryInputStream[T] = new AvroBinaryInputStream[T](in, None)
   def binary[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroBinaryInputStream[T] = binary(new SeekableByteArrayInput(bytes))
   def binary[T: SchemaFor : FromRecord](file: File): AvroBinaryInputStream[T] = binary(new SeekableFileInput(file))
   def binary[T: SchemaFor : FromRecord](path: String): AvroBinaryInputStream[T] = binary(Paths.get(path))
   def binary[T: SchemaFor : FromRecord](path: Path): AvroBinaryInputStream[T] = binary(path.toFile)
-
-  def binaryEvolve[T: SchemaFor : FromRecord](in: InputStream, writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = new AvroBinaryInputStream[T](in, writerSchema)
-  def binaryEvolve[T: SchemaFor : FromRecord](bytes: Array[Byte], writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = binaryEvolve(new SeekableByteArrayInput(bytes), writerSchema)
-  def binaryEvolve[T: SchemaFor : FromRecord](file: File, writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = binaryEvolve(new SeekableFileInput(file), writerSchema)
-  def binaryEvolve[T: SchemaFor : FromRecord](path: String, writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = binaryEvolve(Paths.get(path), writerSchema)
-  def binaryEvolve[T: SchemaFor : FromRecord](path: Path, writerSchema: org.apache.avro.Schema): AvroBinaryInputStream[T] = binaryEvolve(path.toFile, writerSchema)
 
   def data[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableByteArrayInput(bytes))
   def data[T: SchemaFor : FromRecord](file: File): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableFileInput(file))
@@ -113,7 +115,7 @@ object AvroInputStream {
   def data[T: SchemaFor : FromRecord](path: Path): AvroDataInputStream[T] = data(path.toFile)
 
   @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
-  def apply[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroInputStream[T] = new AvroBinaryInputStream[T](new SeekableByteArrayInput(bytes))
+  def apply[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroInputStream[T] = new AvroBinaryInputStream[T](new SeekableByteArrayInput(bytes), None)
   @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
   def apply[T: SchemaFor : FromRecord](path: String): AvroInputStream[T] = apply(new File(path))
   @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
