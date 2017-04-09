@@ -16,7 +16,7 @@ trait AvroInputStream[T] {
   def tryIterator(): Iterator[Try[T]]
 }
 
-class AvroBinaryInputStream[T](in: InputStream, writerSchema: Option[Schema])
+class AvroBinaryInputStream[T](in: InputStream, writerSchema: Option[Schema] = None)
                               (implicit schemaFor: SchemaFor[T], fromRecord: FromRecord[T])
   extends AvroInputStream[T] {
   val wSchema = writerSchema.getOrElse(schemaFor())
@@ -103,7 +103,7 @@ object AvroInputStream {
   def binary[T: SchemaFor : FromRecord](path: Path, writerSchema: Schema): AvroBinaryInputStream[T] = binary(path.toFile, writerSchema)
 
   // convenience api for cases where the writer schema should be the same as the reader.
-  def binary[T: SchemaFor : FromRecord](in: InputStream): AvroBinaryInputStream[T] = new AvroBinaryInputStream[T](in, None)
+  def binary[T: SchemaFor : FromRecord](in: InputStream): AvroBinaryInputStream[T] = new AvroBinaryInputStream[T](in)
   def binary[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroBinaryInputStream[T] = binary(new SeekableByteArrayInput(bytes))
   def binary[T: SchemaFor : FromRecord](file: File): AvroBinaryInputStream[T] = binary(new SeekableFileInput(file))
   def binary[T: SchemaFor : FromRecord](path: String): AvroBinaryInputStream[T] = binary(Paths.get(path))
@@ -115,7 +115,7 @@ object AvroInputStream {
   def data[T: SchemaFor : FromRecord](path: Path): AvroDataInputStream[T] = data(path.toFile)
 
   @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
-  def apply[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroInputStream[T] = new AvroBinaryInputStream[T](new SeekableByteArrayInput(bytes), None)
+  def apply[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroInputStream[T] = new AvroBinaryInputStream[T](new SeekableByteArrayInput(bytes))
   @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
   def apply[T: SchemaFor : FromRecord](path: String): AvroInputStream[T] = apply(new File(path))
   @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
