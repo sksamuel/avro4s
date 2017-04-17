@@ -4,7 +4,7 @@ import java.io.{File, OutputStream}
 import java.nio.file.{Files, Path}
 
 import org.apache.avro.Schema
-import org.apache.avro.file.DataFileWriter
+import org.apache.avro.file.{CodecFactory, DataFileWriter}
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.EncoderFactory
 
@@ -35,7 +35,7 @@ case class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: Schem
 }
 
 // avro output stream that includes the schema for the messages. This is usually what you want.
-case class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
+case class AvroDataOutputStream[T](os: OutputStream, codec: CodecFactory = CodecFactory.nullCodec())(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
   extends AvroOutputStream[T] {
 
   val schema = schemaFor()
@@ -43,11 +43,13 @@ case class AvroDataOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaF
     case Schema.Type.DOUBLE | Schema.Type.LONG | Schema.Type.BOOLEAN | Schema.Type.STRING =>
       val datumWriter = new GenericDatumWriter[T](schema)
       val dataFileWriter = new DataFileWriter[T](datumWriter)
+      dataFileWriter.setCodec(codec)
       dataFileWriter.create(schema, os)
       (dataFileWriter, (t: T) => dataFileWriter.append(t))
     case _ =>
       val datumWriter = new GenericDatumWriter[GenericRecord](schema)
       val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
+      dataFileWriter.setCodec(codec)
       dataFileWriter.create(schema, os)
       (dataFileWriter, (t: T) => {
         val record = toRecord.apply(t)
@@ -91,6 +93,11 @@ object AvroOutputStream {
   def json[T: SchemaFor : ToRecord](path: Path): AvroJsonOutputStream[T] = json(Files.newOutputStream(path))
   def json[T: SchemaFor : ToRecord](os: OutputStream): AvroJsonOutputStream[T] = AvroJsonOutputStream(os)
 
+  def data[T: SchemaFor : ToRecord](file: File, codec: CodecFactory): AvroDataOutputStream[T] = data(file.toPath, codec)
+  def data[T: SchemaFor : ToRecord](path: Path, codec: CodecFactory): AvroDataOutputStream[T] = data(Files.newOutputStream(path), codec)
+  def data[T: SchemaFor : ToRecord](os: OutputStream, codec: CodecFactory): AvroDataOutputStream[T] = AvroDataOutputStream(os, codec)
+
+  // convenience api for cases where the the user want to use the default null codec.
   def data[T: SchemaFor : ToRecord](file: File): AvroDataOutputStream[T] = data(file.toPath)
   def data[T: SchemaFor : ToRecord](path: Path): AvroDataOutputStream[T] = data(Files.newOutputStream(path))
   def data[T: SchemaFor : ToRecord](os: OutputStream): AvroDataOutputStream[T] = AvroDataOutputStream(os)
