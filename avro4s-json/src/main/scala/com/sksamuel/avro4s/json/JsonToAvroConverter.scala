@@ -17,14 +17,22 @@ import org.codehaus.jackson.node.TextNode
   * - booleans to booleans
   * - nulls to union(string,null)
   */
-class JsonToAvroConverter(namespace: String, avroStringTypeIsString: Boolean = false) {
+class JsonToAvroConverter(namespace: String,
+                          avroStringTypeIsString: Boolean = false,
+                          jsonNamingStrategy: JsonNamingStrategy = CamelCase) {
 
   import org.json4s._
   import org.json4s.native.JsonMethods._
 
   import scala.collection.JavaConverters._
 
-  def convert(name: String, str: String): Schema = convert(name, parse(str))
+  def convert(name: String, str: String): Schema = {
+    convert(name, parse(str).transformField {
+      case JField(n, v) =>
+        val newName = toCamelCase(n, jsonNamingStrategy)
+        (newName, v)
+    })
+  }
 
   def convert(name: String, value: JValue): Schema = value match {
     case JArray(value) => Schema.createArray(convert(name, value.head))
@@ -51,4 +59,24 @@ class JsonToAvroConverter(namespace: String, avroStringTypeIsString: Boolean = f
     if (avroStringTypeIsString) schema.addProp("avro.java.string", new TextNode("String"))
     schema
   }
+
+  private def toCamelCase(s: String, from: JsonNamingStrategy): String = {
+    def fromDelimited(sep: String, s: String): String = {
+      val head :: tail = s.split(sep).toList
+      head ++ tail.foldLeft("")((acc, word) => acc ++ word.capitalize)
+
+    }
+
+    def decapitalize(s: String): String = {
+      if (s.nonEmpty) s.head.toLower + s.tail else s
+    }
+
+    from match {
+      case CamelCase => s
+      case PascalCase => decapitalize(s)
+      case SnakeCase => fromDelimited("_", s)
+      case LispCase => fromDelimited("-", s)
+    }
+  }
+
 }

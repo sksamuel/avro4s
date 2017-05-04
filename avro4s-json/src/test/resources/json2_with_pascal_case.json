@@ -1,0 +1,29 @@
+{
+  "Data": [
+    {
+      "Type": "articles",
+      "Id": "1",
+      "Attributes": {
+        "Title": "JSON API paints my bikeshed!",
+        "Body": "The shortest article. Ever."
+      },
+      "Relationships": {
+        "Author": {
+          "Nested": {
+            "Id": "42",
+            "Type": "people"
+          }
+        }
+      }
+    }
+  ],
+  "Included": [
+    {
+      "Type": "people",
+      "Id": "42",
+      "Details": {
+        "Name": "John"
+      }
+    }
+  ]
+}
