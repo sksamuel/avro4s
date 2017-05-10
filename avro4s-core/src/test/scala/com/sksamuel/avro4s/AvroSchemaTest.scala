@@ -41,13 +41,21 @@ case class AllOptionals(union: Option[Option[Int] :+: Option[String] :+: CNil])
 class AvroSchemaTest extends WordSpec with Matchers {
 
   case class NestedListString(list: List[String])
+
   case class NestedSetDouble(set: Set[Double])
+
   case class NestedSet(set: Set[Nested])
+
   case class Nested(goo: String)
+
   case class NestedBoolean(b: Boolean)
+
   case class NestedTest(foo: String, nested: Nested)
+
   case class Inner(goo: String)
+
   case class Middle(inner: Inner)
+
   case class Outer(middle: Middle)
 
   "AvroSchema" should {
@@ -293,77 +301,83 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[Annotated]()
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support scala enums" in {
-      val schema = SchemaFor[ScalaEnums]()
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/scalaenums.avsc"))
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support default values" in {
-      val schema = SchemaFor[DefaultValues]()
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/defaultvalues.avsc"))
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support default option values" in {
-      val schema = SchemaFor[OptionDefaultValues]()
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optiondefaultvalues.avsc"))
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support recursive types" in {
-      val schema = SchemaFor[Recursive]()
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive.avsc"))
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support mutually recursive types" in {
-      val schema = SchemaFor[MutRec1]()
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.avsc"))
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate schema for underlying field in a value class" in {
-      val schema = SchemaFor[ValueClass]()
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/value_class.avsc"))
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support unions and unions of unions" in {
-      val single = SchemaFor[Union]()
-      val unionOfUnions = SchemaFor[UnionOfUnions]()
 
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/union.avsc"))
-
-      single.toString(true) shouldBe expected.toString(true)
-      unionOfUnions.toString(true) shouldBe expected.toString(true).replace("Union", "UnionOfUnions")
-    }
-    "support mixing optionals with unions, merging appropriately" in {
-      val outsideOptional = SchemaFor[OptionalUnion]()
-      val insideOptional = SchemaFor[UnionOfOptional]()
-      val bothOptional = SchemaFor[AllOptionals]()
-
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optionalunion.avsc"))
-
-      outsideOptional.toString(true) shouldBe expected.toString(true)
-      insideOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "UnionOfOptional")
-      bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
-    }
-    "generate array type for a vector of primitives" in {
-      case class VectorPrim(booleans: Vector[Boolean])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/vector_prim.avsc"))
-      val schema = SchemaFor[VectorPrim]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for an vector of records" in {
-      case class VectorRecord(records: Vector[Record])
-      case class Record(str: String, double: Double)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/vector_records.avsc"))
-      val schema = SchemaFor[VectorRecord]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support types nested in uppercase packages" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_in_uppercase_pkg.avsc"))
-      val schema = SchemaFor[examples.UppercasePkg.Data]()
-      schema.toString(true) shouldBe expected.toString(true)
+    "support namespace annotations on records" in {
+      @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String)
+      val schema = SchemaFor[AnnotatedNamespace]()
+      schema.getNamespace shouldBe "com.yuval"
     }
   }
-}
 
+  "support scala enums" in {
+    val schema = SchemaFor[ScalaEnums]()
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/scalaenums.avsc"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+  "support default values" in {
+    val schema = SchemaFor[DefaultValues]()
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/defaultvalues.avsc"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+  "support default option values" in {
+    val schema = SchemaFor[OptionDefaultValues]()
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optiondefaultvalues.avsc"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+  "support recursive types" in {
+    val schema = SchemaFor[Recursive]()
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive.avsc"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+  "support mutually recursive types" in {
+    val schema = SchemaFor[MutRec1]()
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.avsc"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+  "generate schema for underlying field in a value class" in {
+    val schema = SchemaFor[ValueClass]()
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/value_class.avsc"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+  "support unions and unions of unions" in {
+    val single = SchemaFor[Union]()
+    val unionOfUnions = SchemaFor[UnionOfUnions]()
+
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/union.avsc"))
+
+    single.toString(true) shouldBe expected.toString(true)
+    unionOfUnions.toString(true) shouldBe expected.toString(true).replace("Union", "UnionOfUnions")
+  }
+  "support mixing optionals with unions, merging appropriately" in {
+    val outsideOptional = SchemaFor[OptionalUnion]()
+    val insideOptional = SchemaFor[UnionOfOptional]()
+    val bothOptional = SchemaFor[AllOptionals]()
+
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optionalunion.avsc"))
+
+    outsideOptional.toString(true) shouldBe expected.toString(true)
+    insideOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "UnionOfOptional")
+    bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
+  }
+  "generate array type for a vector of primitives" in {
+    case class VectorPrim(booleans: Vector[Boolean])
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/vector_prim.avsc"))
+    val schema = SchemaFor[VectorPrim]()
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+  "generate array type for an vector of records" in {
+    case class VectorRecord(records: Vector[Record])
+    case class Record(str: String, double: Double)
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/vector_records.avsc"))
+    val schema = SchemaFor[VectorRecord]()
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+  "support types nested in uppercase packages" in {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_in_uppercase_pkg.avsc"))
+    val schema = SchemaFor[examples.UppercasePkg.Data]()
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+}
 
 case class OptionDefaultValues(
   name: String = "sammy",
@@ -384,5 +398,4 @@ case class DefaultValues(
   traits: Seq[String] = Seq("Adventurous", "Helpful"),
   favoriteWine: Wine = Wine.CabSav
 )
-
 
