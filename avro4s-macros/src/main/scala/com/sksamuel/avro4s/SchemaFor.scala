@@ -379,6 +379,8 @@ object SchemaFor {
   // returns any aliases present in the list of annotations
   def aliases(annos: Seq[Anno]): Seq[String] = annotationsFor(classOf[AvroAlias], annos).flatMap(_.values.headOption)
 
+  def namespace(annos: Seq[Anno]): Option[String] = annotationsFor(classOf[AvroNamespace], annos).headOption.flatMap(_.values.headOption)
+
   def fixed(annos: Seq[Anno]): Option[Int] = annotationsFor(classOf[AvroFixed], annos).headOption.map(_.values.head.toInt)
 
   def addProps(annos: Seq[Anno], f: (String, String) => Unit): Unit = {
@@ -430,7 +432,8 @@ object SchemaFor {
 
     import scala.collection.JavaConverters._
 
-    val schema = org.apache.avro.Schema.createRecord(name, doc(annos), pack, false)
+    val maybeNamespace = namespace(annos)
+    val schema = org.apache.avro.Schema.createRecord(name, doc(annos), maybeNamespace.getOrElse(pack), false)
     // In recursive fields, the definition of the field depends on the
     // schema, but the definition of the schema depends on the
     // field. Furthermore, Schema and Field are java classes, strict
