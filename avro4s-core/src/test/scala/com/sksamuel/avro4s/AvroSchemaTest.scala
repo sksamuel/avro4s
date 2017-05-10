@@ -6,23 +6,35 @@ import org.scalatest.{Matchers, WordSpec}
 import shapeless.{:+:, CNil}
 
 sealed trait Wibble
+
 case class Wobble(str: String) extends Wibble
+
 case class Wabble(dbl: Double) extends Wibble
+
 case class Wrapper(wibble: Wibble)
 
 sealed trait Tibble
+
 case class Tobble(str: String, place: String) extends Tibble
+
 case class Tabble(str: Double, age: Int) extends Tibble
+
 case class Trapper(tibble: Tibble)
 
 sealed trait Nibble
+
 case class Nobble(str: String, place: String) extends Nibble
+
 case class Nabble(str: String, age: Int) extends Nibble
+
 case class Napper(nibble: Nibble)
 
 case class Level4(str: Map[String, String])
+
 case class Level3(level4: Level4)
+
 case class Level2(level3: Level3)
+
 case class Level1(level2: Level2)
 
 case class Ids(myid: UUID)
@@ -30,12 +42,17 @@ case class Ids(myid: UUID)
 case class Recursive(payload: Int, next: Option[Recursive])
 
 case class MutRec1(payload: Int, children: List[MutRec2])
+
 case class MutRec2(payload: String, children: List[MutRec1])
 
 case class Union(union: Int :+: String :+: Boolean :+: CNil)
+
 case class UnionOfUnions(union: (Int :+: String :+: CNil) :+: Boolean :+: CNil)
+
 case class OptionalUnion(union: Option[Int :+: String :+: CNil])
+
 case class UnionOfOptional(union: Option[Int] :+: String :+: CNil)
+
 case class AllOptionals(union: Option[Option[Int] :+: Option[String] :+: CNil])
 
 class AvroSchemaTest extends WordSpec with Matchers {
@@ -380,22 +397,22 @@ class AvroSchemaTest extends WordSpec with Matchers {
 }
 
 case class OptionDefaultValues(
-  name: String = "sammy",
-  description: Option[String] = None,
-  currency: Option[String] = Some("$")
-)
+                                name: String = "sammy",
+                                description: Option[String] = None,
+                                currency: Option[String] = Some("$")
+                              )
 
 case class DefaultValues(
-  name: String = "sammy",
-  age: Int = 21,
-  isFemale: Boolean = false,
-  length: Double = 6.2,
-  timestamp: Long = 1468920998000l,
-  address: Map[String, String] = Map(
-    "home" -> "sammy's home address",
-    "work" -> "sammy's work address"
-  ),
-  traits: Seq[String] = Seq("Adventurous", "Helpful"),
-  favoriteWine: Wine = Wine.CabSav
-)
+                          name: String = "sammy",
+                          age: Int = 21,
+                          isFemale: Boolean = false,
+                          length: Double = 6.2,
+                          timestamp: Long = 1468920998000l,
+                          address: Map[String, String] = Map(
+                            "home" -> "sammy's home address",
+                            "work" -> "sammy's work address"
+                          ),
+                          traits: Seq[String] = Seq("Adventurous", "Helpful"),
+                          favoriteWine: Wine = Wine.CabSav
+                        )
 
