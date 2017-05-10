@@ -1,0 +1,20 @@
+{
+  "type" : "record",
+  "name" : "AnnotatedNamespace",
+  "namespace" : "com.yuval",
+  "fields" : [ {
+    "name" : "s",
+    "type" : "string"
+  }, {
+    "name" : "internal",
+    "type" : {
+      "type" : "record",
+      "name" : "InternalAnnotated",
+      "namespace" : "com.yuval.internal",
+      "fields" : [ {
+        "name" : "i",
+        "type" : "int"
+      } ]
+    }
+  } ]
+}

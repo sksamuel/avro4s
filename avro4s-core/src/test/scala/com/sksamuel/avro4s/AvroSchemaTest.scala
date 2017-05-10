@@ -299,6 +299,14 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[AnnotatedNamespace]()
       schema.getNamespace shouldBe "com.yuval"
     }
+
+    "support namespace annotations in nested records" in {
+      @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String, internal: InternalAnnotated)
+      @AvroNamespace("com.yuval.internal") case class InternalAnnotated(i: Int)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
+      val schema = SchemaFor[AnnotatedNamespace]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 
   "support scala enums" in {
