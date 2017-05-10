@@ -41,21 +41,13 @@ case class AllOptionals(union: Option[Option[Int] :+: Option[String] :+: CNil])
 class AvroSchemaTest extends WordSpec with Matchers {
 
   case class NestedListString(list: List[String])
-
   case class NestedSetDouble(set: Set[Double])
-
   case class NestedSet(set: Set[Nested])
-
   case class Nested(goo: String)
-
   case class NestedBoolean(b: Boolean)
-
   case class NestedTest(foo: String, nested: Nested)
-
   case class Inner(goo: String)
-
   case class Middle(inner: Inner)
-
   case class Outer(middle: Middle)
 
   "AvroSchema" should {
