@@ -42,7 +42,7 @@ object FromValue extends LowPriorityFromValue {
   }
 
   implicit object BooleanFromValue extends FromValue[Boolean] {
-    override def apply(value: Any, field: Field): Boolean = value.toString.toBoolean
+    override def apply(value: Any, field: Field): Boolean = value.asInstanceOf[Boolean]
   }
 
   implicit object ByteArrayFromValue extends FromValue[Array[Byte]] {
@@ -50,19 +50,19 @@ object FromValue extends LowPriorityFromValue {
   }
 
   implicit object DoubleFromValue extends FromValue[Double] {
-    override def apply(value: Any, field: Field): Double = value.toString.toDouble
+    override def apply(value: Any, field: Field): Double = value.asInstanceOf[Double]
   }
 
   implicit object FloatFromValue extends FromValue[Float] {
-    override def apply(value: Any, field: Field): Float = value.toString.toFloat
+    override def apply(value: Any, field: Field): Float = value.asInstanceOf[Float]
   }
 
   implicit object IntFromValue extends FromValue[Int] {
-    override def apply(value: Any, field: Field): Int = value.toString.toInt
+    override def apply(value: Any, field: Field): Int = value.asInstanceOf[Int]
   }
 
   implicit object LongFromValue extends FromValue[Long] {
-    override def apply(value: Any, field: Field): Long = value.toString.toLong
+    override def apply(value: Any, field: Field): Long = value.asInstanceOf[Long]
   }
 
   implicit object StringFromValue extends FromValue[String] {
