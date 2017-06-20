@@ -49,7 +49,7 @@ class AvroDataInputStream[T](in: SeekableInput)
                             (implicit schemaFor: SchemaFor[T], fromRecord: FromRecord[T])
   extends AvroInputStream[T] {
 
-  val datumReader = new GenericDatumReader[GenericRecord](schemaFor())
+  val datumReader = new GenericDatumReader[GenericRecord]()
   val dataFileReader = new DataFileReader[GenericRecord](in, datumReader)
 
   override def iterator: Iterator[T] = new Iterator[T] {
