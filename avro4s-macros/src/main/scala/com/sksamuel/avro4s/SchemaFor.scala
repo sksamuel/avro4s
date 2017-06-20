@@ -235,6 +235,7 @@ object SchemaFor {
   def applyImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
     import c.universe
     import c.universe._
+    val helper = TypeHelper(c)
     val tType = weakTypeOf[T]
     require(tType.typeSymbol.isClass, tType + " is not a class but is " + tType.typeSymbol.fullName)
 
@@ -251,12 +252,6 @@ object SchemaFor {
         }
     }
 
-    def fieldsForType(atype: c.universe.Type): List[c.universe.Symbol] = {
-      atype.decls.collectFirst {
-        case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.head
-      }.getOrElse(Nil)
-    }
-
     val valueClass = tType.typeSymbol.isClass && tType.typeSymbol.asClass.isDerivedValueClass && fixedAnnotation.isEmpty
     val underlyingType = if (valueClass) {
       tType.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head.typeSignature
@@ -269,19 +264,14 @@ object SchemaFor {
       c.abort(c.prefix.tree.pos, "Sealed traits/classes should be handled by coproduct generic!")
     } else {
 
-      val ctr = underlyingType.decls.collectFirst {
-        case m: MethodSymbol if m.isPrimaryConstructor => m
-      }.get
+      val fields = helper.fieldsOf(underlyingType)
 
-      val fields = ctr.paramLists.head
-
-      fields.zipWithIndex.map { case (f, index) =>
+      fields.zipWithIndex.map { case ((f, sig), index) =>
         val name = f.name
         // the simple name of the field
         val fieldName = name.decodedName.toString.trim
         // the full path of the field, eg a.b.c.Class.value
         val fieldPath = f.fullName
-        val sig = f.typeSignature
         val annos = annotations(f)
 
         // this gets the method that generates the default value for this field

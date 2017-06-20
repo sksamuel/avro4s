@@ -42,7 +42,7 @@ object FromValue extends LowPriorityFromValue {
   }
 
   implicit object BooleanFromValue extends FromValue[Boolean] {
-    override def apply(value: Any, field: Field): Boolean = value.toString.toBoolean
+    override def apply(value: Any, field: Field): Boolean = value.asInstanceOf[Boolean]
   }
 
   implicit object ByteArrayFromValue extends FromValue[Array[Byte]] {
@@ -50,19 +50,19 @@ object FromValue extends LowPriorityFromValue {
   }
 
   implicit object DoubleFromValue extends FromValue[Double] {
-    override def apply(value: Any, field: Field): Double = value.toString.toDouble
+    override def apply(value: Any, field: Field): Double = value.asInstanceOf[Double]
   }
 
   implicit object FloatFromValue extends FromValue[Float] {
-    override def apply(value: Any, field: Field): Float = value.toString.toFloat
+    override def apply(value: Any, field: Field): Float = value.asInstanceOf[Float]
   }
 
   implicit object IntFromValue extends FromValue[Int] {
-    override def apply(value: Any, field: Field): Int = value.toString.toInt
+    override def apply(value: Any, field: Field): Int = value.asInstanceOf[Int]
   }
 
   implicit object LongFromValue extends FromValue[Long] {
-    override def apply(value: Any, field: Field): Long = value.toString.toLong
+    override def apply(value: Any, field: Field): Long = value.asInstanceOf[Long]
   }
 
   implicit object StringFromValue extends FromValue[String] {
@@ -245,19 +245,14 @@ object FromRecord {
 
   def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[FromRecord[T]] = {
     import c.universe._
+    val helper = TypeHelper(c)
     val tpe = weakTypeTag[T].tpe
     require(tpe.typeSymbol.asClass.isCaseClass, s"Require a case class but $tpe is not")
 
-    def fieldsForType(tpe: c.universe.Type): List[c.universe.Symbol] = {
-      tpe.decls.collectFirst {
-        case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.head
-      }.getOrElse(Nil)
-    }
-
     val companion = tpe.typeSymbol.companion
 
-    val converters: Seq[Tree] = fieldsForType(tpe).map { f =>
-      val sig = f.typeSignature
+    val fields = helper.fieldsOf(tpe)
+    val converters: Seq[Tree] = fields.map { case (_, sig) =>
       val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
         case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
           anno.tree.children.tail match {
@@ -276,11 +271,10 @@ object FromRecord {
       }
     }
 
-    val fromValues: Seq[Tree] = fieldsForType(tpe).zipWithIndex.map {
-      case (f, idx) =>
+    val fromValues: Seq[Tree] = fields.zipWithIndex.map {
+      case ((f, sig), idx) =>
         val name = f.name.asInstanceOf[c.TermName]
         val decoded: String = name.decodedName.toString
-        val sig = f.typeSignature
         val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
           case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
             anno.tree.children.tail match {
