@@ -16,7 +16,7 @@ class VersioningTest extends WordSpec with Matchers with TimeLimits {
     PersonV2("p2", 20, None)
   )
 
-  "read vectors of records" in {
+  "write version2 and read version1 and read version3" in {
     val file = new File("target/peoplev2.avro")
     val os = AvroOutputStream.data[PersonV2](file)
     os.write(peopleV2)
