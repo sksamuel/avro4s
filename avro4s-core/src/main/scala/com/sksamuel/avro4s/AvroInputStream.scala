@@ -16,11 +16,12 @@ trait AvroInputStream[T] {
   def tryIterator(): Iterator[Try[T]]
 }
 
-class AvroBinaryInputStream[T](in: InputStream, writerSchema: Option[Schema] = None)
+class AvroBinaryInputStream[T](in: InputStream, writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)
                               (implicit schemaFor: SchemaFor[T], fromRecord: FromRecord[T])
   extends AvroInputStream[T] {
   val wSchema = writerSchema.getOrElse(schemaFor())
-  val datumReader = new GenericDatumReader[GenericRecord](wSchema, schemaFor())
+  val rSchema = readerSchema.getOrElse(schemaFor())
+  val datumReader = new GenericDatumReader[GenericRecord](wSchema, rSchema)
   val binDecoder = DecoderFactory.get().binaryDecoder(in, null)
   val records = new java.util.ArrayList[GenericRecord]()
 
@@ -45,11 +46,14 @@ class AvroBinaryInputStream[T](in: InputStream, writerSchema: Option[Schema] = N
   override def close(): Unit = in.close()
 }
 
-class AvroDataInputStream[T](in: SeekableInput)
-                            (implicit schemaFor: SchemaFor[T], fromRecord: FromRecord[T])
+class AvroDataInputStream[T](in: SeekableInput, writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)
+                            (implicit fromRecord: FromRecord[T])
   extends AvroInputStream[T] {
-
-  val datumReader = new GenericDatumReader[GenericRecord](schemaFor())
+  val datumReader =
+    if(writerSchema.isEmpty && readerSchema.isEmpty) new GenericDatumReader[GenericRecord]()
+    else if(writerSchema.isDefined && readerSchema.isDefined) new GenericDatumReader[GenericRecord](writerSchema.get, readerSchema.get)
+    else if(writerSchema.isDefined) new GenericDatumReader[GenericRecord](writerSchema.get)
+    else new GenericDatumReader[GenericRecord](readerSchema.get)
   val dataFileReader = new DataFileReader[GenericRecord](in, datumReader)
 
   override def iterator: Iterator[T] = new Iterator[T] {
@@ -65,13 +69,14 @@ class AvroDataInputStream[T](in: SeekableInput)
   override def close(): Unit = in.close()
 }
 
-final case class AvroJsonInputStream[T](in: InputStream)
+final case class AvroJsonInputStream[T](in: InputStream, writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)
                                        (implicit schemaFor: SchemaFor[T], fromRecord: FromRecord[T])
   extends AvroInputStream[T] {
 
-  private val schema = schemaFor()
-  private val dataumReader = new GenericDatumReader[GenericRecord](schema)
-  private val jsonDecoder = DecoderFactory.get.jsonDecoder(schema, in)
+  val wSchema = writerSchema.getOrElse(schemaFor())
+  val rSchema = readerSchema.getOrElse(schemaFor())
+  private val dataumReader = new GenericDatumReader[GenericRecord](wSchema, rSchema)
+  private val jsonDecoder = DecoderFactory.get.jsonDecoder(wSchema, in)
 
   def iterator: Iterator[T] = Iterator.continually(Try{dataumReader.read(null, jsonDecoder)})
     .takeWhile(_.isSuccess)
@@ -109,10 +114,89 @@ object AvroInputStream {
   def binary[T: SchemaFor : FromRecord](path: String): AvroBinaryInputStream[T] = binary(Paths.get(path))
   def binary[T: SchemaFor : FromRecord](path: Path): AvroBinaryInputStream[T] = binary(path.toFile)
 
-  def data[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableByteArrayInput(bytes))
-  def data[T: SchemaFor : FromRecord](file: File): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableFileInput(file))
-  def data[T: SchemaFor : FromRecord](path: String): AvroDataInputStream[T] = data(Paths.get(path))
-  def data[T: SchemaFor : FromRecord](path: Path): AvroDataInputStream[T] = data(path.toFile)
+  def data[T: FromRecord](bytes: Array[Byte]): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableByteArrayInput(bytes))
+  def data[T: FromRecord](file: File): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableFileInput(file))
+  def data[T: FromRecord](path: String): AvroDataInputStream[T] = data(Paths.get(path))
+  def data[T: FromRecord](path: Path): AvroDataInputStream[T] = data(path.toFile)
+
+  sealed trait AvroFormat {
+    def newBuilder[T: SchemaFor: FromRecord](): AvroInputStreamBuilder[T]
+  }
+  object JsonFormat extends AvroFormat {
+    override def newBuilder[T: SchemaFor: FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderJson[T]()
+  }
+  object BinaryFormat extends AvroFormat {
+    override def newBuilder[T: SchemaFor: FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderBinary[T]()
+  }
+  object DataFormat extends AvroFormat {
+    override def newBuilder[T: SchemaFor: FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderData[T]()
+  }
+
+  def builder[T: SchemaFor: FromRecord](format: AvroFormat): AvroInputStreamBuilder[T] = format.newBuilder[T]()
+
+  abstract class AvroInputStreamBuilder[T: SchemaFor: FromRecord] {
+    protected var writerSchema: Option[Schema] = None
+    protected var readerSchema: Option[Schema] = None
+    protected var inputStream: InputStream = _
+    protected var seekableInput: SeekableInput = _
+
+    def from(path: Path): this.type =
+      from(path.toFile)
+
+    def from(path: String): this.type =
+      from(Paths.get(path))
+
+    def from(file: File): this.type = {
+      val in = new SeekableFileInput(file)
+      this.inputStream = in
+      this.seekableInput = in
+      this
+    }
+
+    def from(bytes: Array[Byte]): this.type = {
+      val in = new SeekableByteArrayInput(bytes)
+      this.inputStream = in
+      this.seekableInput = in
+      this
+    }
+
+    def schema(writerSchema: Schema, readerSchema: Schema): this.type = {
+      this.writerSchema = Some(writerSchema)
+      this.readerSchema = Some(readerSchema)
+      this
+    }
+
+    def schema(schema: Schema): this.type =
+      this.schema(schema, schema)
+
+    def schemaWriterReader[Writer, Reader]()(implicit writerSchema: SchemaFor[Writer], readerSchema: SchemaFor[Reader]): this.type =
+      this.schema(writerSchema(), readerSchema())
+
+    def schema()(implicit schema: SchemaFor[T]): this.type =
+      this.schema(schema(), schema())
+
+    def build(): AvroInputStream[T]
+  }
+
+  trait FromInputStream { this: AvroInputStreamBuilder[_] =>
+    def from(in: InputStream): this.type = {
+      this.inputStream = in
+      this
+    }
+  }
+
+  class AvroInputStreamBuilderJson[T: SchemaFor: FromRecord] extends AvroInputStreamBuilder[T] with FromInputStream {
+    override def build(): AvroInputStream[T] =
+      new AvroJsonInputStream[T](inputStream, writerSchema, readerSchema)
+  }
+  class AvroInputStreamBuilderBinary[T: SchemaFor: FromRecord] extends AvroInputStreamBuilder[T] with FromInputStream {
+    override def build(): AvroInputStream[T] =
+      new AvroBinaryInputStream[T](inputStream, writerSchema, readerSchema)
+  }
+  class AvroInputStreamBuilderData[T: SchemaFor: FromRecord] extends AvroInputStreamBuilder[T] {
+    override def build(): AvroInputStream[T] =
+      new AvroDataInputStream[T](seekableInput, writerSchema, readerSchema)
+  }
 
   @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
   def apply[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroInputStream[T] = new AvroBinaryInputStream[T](new SeekableByteArrayInput(bytes))
