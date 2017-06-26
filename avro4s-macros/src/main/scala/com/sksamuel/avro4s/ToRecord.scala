@@ -27,6 +27,8 @@ trait LowPriorityToValue {
   }
 
   def fixed[T]: ToValue[T] = macro LowPriorityToValue.fixedImpl[T]
+
+  def fixedWithSchemaFor[T](schemaFor: SchemaFor[T]): ToValue[T] = macro LowPriorityToValue.fixedImplWithSchemaFor[T]
 }
 
 object LowPriorityToValue {
@@ -45,6 +47,30 @@ object LowPriorityToValue {
       q"""
         {
           val schema = com.sksamuel.avro4s.SchemaFor[$tpe]()
+          new com.sksamuel.avro4s.ToValue[$tpe] {
+            override def apply(t: $tpe): org.apache.avro.generic.GenericFixed = {
+              new org.apache.avro.generic.GenericData.Fixed(schema, t.bytes.array)
+            }
+          }
+        }
+      """)
+  }
+
+  def fixedImplWithSchemaFor[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context)(schemaFor: c.Expr[SchemaFor[T]]): c.Expr[ToValue[T]] = {
+    import c.universe._
+    val tpe = weakTypeTag[T].tpe
+
+    val fixedAnnotation: Option[AvroFixed] = tpe.typeSymbol.annotations.collectFirst {
+      case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+        anno.tree.children.tail match {
+          case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+        }
+    }
+
+    c.Expr[ToValue[T]](
+      q"""
+        {
+          val schema = $schemaFor()
           new com.sksamuel.avro4s.ToValue[$tpe] {
             override def apply(t: $tpe): org.apache.avro.generic.GenericFixed = {
               new org.apache.avro.generic.GenericData.Fixed(schema, t.bytes.array)
@@ -163,6 +189,7 @@ trait ToRecord[T] extends Serializable {
 object ToRecord {
 
   implicit def apply[T]: ToRecord[T] = macro applyImpl[T]
+  def withSchemaFor[T](schemaFor: SchemaFor[T]): ToRecord[T] = macro withSchemaForImpl[T]
 
   def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[ToRecord[T]] = {
     import c.universe._
@@ -235,6 +262,90 @@ object ToRecord {
     c.Expr[ToRecord[T]](
       q"""new com.sksamuel.avro4s.ToRecord[$tpe] {
             private val schemaFor : com.sksamuel.avro4s.SchemaFor[$tpe] = com.sksamuel.avro4s.SchemaFor[$tpe]
+            private val converters : Array[shapeless.Lazy[com.sksamuel.avro4s.ToValue[_]]] = Array(..$converters)
+
+            def apply(t : $tpe): org.apache.avro.generic.GenericRecord = {
+
+              val record = new org.apache.avro.generic.GenericData.Record(schemaFor())
+              ..$puts
+              record
+            }
+          }
+        """
+    )
+  }
+
+  def withSchemaForImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context)(schemaFor: c.Expr[SchemaFor[T]]): c.Expr[ToRecord[T]] = {
+    import c.universe._
+    val helper = TypeHelper(c)
+    val tpe = weakTypeTag[T].tpe
+
+    val constructorArgumentsWithTypes = helper.fieldsOf(tpe)
+    val converters: Seq[Tree] = constructorArgumentsWithTypes.map { case (sym, sig) =>
+
+      val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
+        case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+          anno.tree.children.tail match {
+            case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+          }
+      }
+
+      fixedAnnotation match {
+        case Some(AvroFixed(size)) =>
+          q"""{
+            shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixedWithSchemaFor[$sig]($schemaFor))
+          }
+          """
+        case None =>
+          q"""com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
+      }
+    }
+
+    val puts: Seq[Tree] = constructorArgumentsWithTypes.zipWithIndex.map {
+      case ((f, sig), idx) =>
+        val name = f.name.asInstanceOf[c.TermName]
+        val fieldName: String = name.decodedName.toString
+        val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
+          case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+            anno.tree.children.tail match {
+              case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+            }
+        }
+
+        val valueClass = sig.typeSymbol.isClass && sig.typeSymbol.asClass.isDerivedValueClass
+
+        // if a field is a value class we need to handle it here, using a converter
+        // for the underlying value rather than the actual value class
+        if (fixedAnnotation.nonEmpty) {
+          q"""
+          {
+            val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.ToValue[$sig]]]
+            record.put($fieldName, converter.value(t.$name : $sig))
+          }
+          """
+        } else if (valueClass) {
+          val valueCstr = sig.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+          val valueFieldType = valueCstr.typeSignature
+          val valueFieldName = valueCstr.name.asInstanceOf[c.TermName]
+          q"""
+          {
+            val converter = com.sksamuel.avro4s.ToRecord.lazyConverter[$valueFieldType]
+            record.put($fieldName, converter.value(t.$name.$valueFieldName : $valueFieldType))
+          }
+          """
+        } else {
+          q"""
+          {
+            val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.ToValue[$sig]]]
+            record.put($fieldName, converter.value(t.$name : $sig))
+          }
+          """
+        }
+    }
+
+    c.Expr[ToRecord[T]](
+      q"""new com.sksamuel.avro4s.ToRecord[$tpe] {
+            private val schemaFor : com.sksamuel.avro4s.SchemaFor[$tpe] = $schemaFor
             private val converters : Array[shapeless.Lazy[com.sksamuel.avro4s.ToValue[_]]] = Array(..$converters)
 
             def apply(t : $tpe): org.apache.avro.generic.GenericRecord = {
