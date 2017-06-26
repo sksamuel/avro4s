@@ -11,4 +11,11 @@ class ToRecordTest extends FlatSpec with Matchers {
     val record = ToRecord[WithBigDecimal](obj)
     record.toString shouldBe """{"decimal": {"bytes": "12.34"}}"""
   }
+
+  "ToRecord with the derived schema passed in" should "result in the same" in {
+    val obj = WithBigDecimal(12.34)
+    val schemaFor = SchemaFor[WithBigDecimal]
+    val record = ToRecord.withSchemaFor[WithBigDecimal](schemaFor)(obj)
+    record.toString shouldBe """{"decimal": {"bytes": "12.34"}}"""
+  }
 }
