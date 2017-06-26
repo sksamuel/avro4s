@@ -27,6 +27,8 @@ trait LowPriorityToValue {
   }
 
   def fixed[T]: ToValue[T] = macro LowPriorityToValue.fixedImpl[T]
+
+  def fixedWithSchemaFor[T](schemaFor: SchemaFor[T]): ToValue[T] = macro LowPriorityToValue.fixedImplWithSchemaFor[T]
 }
 
 object LowPriorityToValue {
@@ -45,6 +47,30 @@ object LowPriorityToValue {
       q"""
         {
           val schema = com.sksamuel.avro4s.SchemaFor[$tpe]()
+          new com.sksamuel.avro4s.ToValue[$tpe] {
+            override def apply(t: $tpe): org.apache.avro.generic.GenericFixed = {
+              new org.apache.avro.generic.GenericData.Fixed(schema, t.bytes.array)
+            }
+          }
+        }
+      """)
+  }
+
+  def fixedImplWithSchemaFor[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context)(schemaFor: c.Expr[SchemaFor[T]]): c.Expr[ToValue[T]] = {
+    import c.universe._
+    val tpe = weakTypeTag[T].tpe
+
+    val fixedAnnotation: Option[AvroFixed] = tpe.typeSymbol.annotations.collectFirst {
+      case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+        anno.tree.children.tail match {
+          case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+        }
+    }
+
+    c.Expr[ToValue[T]](
+      q"""
+        {
+          val schema = $schemaFor()
           new com.sksamuel.avro4s.ToValue[$tpe] {
             override def apply(t: $tpe): org.apache.avro.generic.GenericFixed = {
               new org.apache.avro.generic.GenericData.Fixed(schema, t.bytes.array)
@@ -267,7 +293,7 @@ object ToRecord {
       fixedAnnotation match {
         case Some(AvroFixed(size)) =>
           q"""{
-            shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixed[$sig])
+            shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixedWithSchemaFor[$sig]($schemaFor))
           }
           """
         case None =>
