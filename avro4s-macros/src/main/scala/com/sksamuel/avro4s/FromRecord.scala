@@ -152,7 +152,8 @@ object FromValue extends LowPriorityFromValue {
     }
 
     value match {
-      case utf8: Utf8 if tpe <:< typeOf[java.lang.String] => Some(from(value))
+      case _: Utf8 if tpe <:< typeOf[java.lang.String] => Some(from(value))
+      case _: String if tpe <:< typeOf[java.lang.String] => Some(from(value))
       case true | false if tpe <:< typeOf[Boolean] => Some(from(value))
       case _: Int if tpe <:< typeOf[Int] => Some(from(value))
       case _: Long if tpe <:< typeOf[Long] => Some(from(value))
