@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import org.scalatest.{Matchers, WordSpec}
-import shapeless.{Inl, Inr}
+import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 class RecordFormatTest extends WordSpec with Matchers {
   case class Composer(name: String, birthplace: String, compositions: Seq[String])
@@ -37,6 +37,23 @@ class RecordFormatTest extends WordSpec with Matchers {
       val author1 = Author[Book]("Heraclitus", "Ephesus", Seq(Book("Panta Rhei")))
       val fmt = RecordFormat[Author[Book]]
       fmt.from(fmt.to(author1)) shouldBe author1
+    }
+
+    "strings handled if not instances of 'Utf8' class" in {
+      type Value = Int :+: String :+: Boolean :+: CNil
+      val format = RecordFormat[Union]
+
+      val first = Union(Coproduct[Value]("ryan"))
+      val second = Union(Coproduct[Value](35))
+
+      val record1 = format.to(first)
+      val record2 = format.to(second)
+
+      val result1 = format.from(record1)
+      val result2 = format.from(record2)
+
+      result1 should be (first)
+      result2 should be (second)
     }
   }
 }
