@@ -3,8 +3,10 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.util.UUID
 
+import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecision
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
+import org.apache.avro.{Conversions, LogicalTypes}
 import shapeless.ops.coproduct.Reify
 import shapeless.{:+:, CNil, Coproduct, Generic, Inl, Inr, Lazy}
 
@@ -73,8 +75,14 @@ object ToValue extends LowPriorityToValue {
     override def apply(value: UUID): String = value.toString
   }
 
-  implicit object BigDecimalToValue extends ToValue[BigDecimal] {
-    override def apply(value: BigDecimal): ByteBuffer = ByteBuffer.wrap(value.toString.getBytes)
+  implicit def BigDecimalToValue(implicit sp: ScaleAndPrecision = defaultScaleAndPrecision): ToValue[BigDecimal] = {
+    val decimalConversion = new Conversions.DecimalConversion
+    val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
+    new ToValue[BigDecimal] {
+      override def apply(value: BigDecimal): ByteBuffer = {
+        decimalConversion.toBytes(value.bigDecimal, null, decimalType)
+      }
+    }
   }
 
   implicit def ListToValue[T](implicit tovalue: ToValue[T]): ToValue[List[T]] = new ToValue[List[T]] {

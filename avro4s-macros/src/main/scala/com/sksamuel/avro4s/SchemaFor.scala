@@ -39,7 +39,9 @@ object ToSchema extends LowPriorityToSchema {
     protected val schema = Schema.create(Schema.Type.BOOLEAN)
   }
 
-  implicit def BigDecimalToSchema(implicit sp: ScaleAndPrecision = ScaleAndPrecision(2, 8)): ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
+  lazy val defaultScaleAndPrecision = ScaleAndPrecision(2, 8)
+
+  implicit def BigDecimalToSchema(implicit sp: ScaleAndPrecision = defaultScaleAndPrecision): ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
     protected val schema = {
       val schema = Schema.create(Schema.Type.BYTES)
       LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(schema)
@@ -162,7 +164,7 @@ object ToSchema extends LowPriorityToSchema {
   }
 
   private def createUnion(schemas: Schema*): Schema = {
-    import scala.util.{Try, Success, Failure}
+    import scala.util.{Failure, Success, Try}
 
     // union schemas can't contain other union schemas as a direct
     // child, so whenever we create a union, we need to check if our

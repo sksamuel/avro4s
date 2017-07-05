@@ -3,16 +3,18 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.util.UUID
 
+import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecision
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
+import org.apache.avro.{Conversions, LogicalTypes}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inr, Lazy}
 
+import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
 
 // turns an avro value into a scala value
 // type T is the target scala type
@@ -37,9 +39,12 @@ trait LowPriorityFromValue {
 
 object FromValue extends LowPriorityFromValue {
 
-  implicit object BigDecimalFromValue extends FromValue[BigDecimal] {
-    override def apply(value: Any, field: Field): BigDecimal = BigDecimal(new String(value.asInstanceOf[ByteBuffer].array))
+  implicit def BigDecimalFromValue(implicit sp: ScaleAndPrecision = defaultScaleAndPrecision): FromValue[BigDecimal] = {
+    val decimalConversion = new Conversions.DecimalConversion
+    val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
+    (value: Any, _: Field) => decimalConversion.fromBytes(value.asInstanceOf[ByteBuffer], null, decimalType)
   }
+
 
   implicit object BooleanFromValue extends FromValue[Boolean] {
     override def apply(value: Any, field: Field): Boolean = value.asInstanceOf[Boolean]

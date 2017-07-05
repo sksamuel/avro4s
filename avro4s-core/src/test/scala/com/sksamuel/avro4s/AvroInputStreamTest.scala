@@ -2,10 +2,10 @@ package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
 import java.util.UUID
+
 import org.scalatest.concurrent.TimeLimits
 import org.scalatest.{Matchers, WordSpec}
-
-import shapeless.{:+:, Coproduct, CNil}
+import shapeless.{:+:, CNil, Coproduct}
 
 class AvroInputStreamTest extends WordSpec with Matchers with TimeLimits {
 
@@ -75,7 +75,7 @@ class AvroInputStreamTest extends WordSpec with Matchers with TimeLimits {
       in.close()
     }
     "read big decimals" in {
-      val data = Seq(BigDecimalTest(1235.52344), BigDecimalTest(1234))
+      val data = Seq(BigDecimalTest(1235.52), BigDecimalTest(1234.68))
       val bytes = write(data)
 
       val in = AvroInputStream.data[BigDecimalTest](bytes)

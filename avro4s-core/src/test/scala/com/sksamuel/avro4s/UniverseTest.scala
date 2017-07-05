@@ -35,9 +35,9 @@ class UniverseTest extends WordSpec with Matchers {
 
   val g = Universe(
     factions = Seq(
-      Faction("Imperial", true, homeworld = Option(earth), shipRanks = Map(("baron", clipper)), area = 4461244.553),
-      Faction("Federation", true, homeworld = Option(earth), area = 3969244.184),
-      Faction("Independant", false, homeworld = None, area = 15662.186)
+      Faction("Imperial", true, homeworld = Option(earth), shipRanks = Map(("baron", clipper)), area = 4461244.55),
+      Faction("Federation", true, homeworld = Option(earth), area = 3969244.18),
+      Faction("Independant", false, homeworld = None, area = 15662.18)
     ),
     rankings = Seq("harmless", "competent", "deadly", "dangerous", "elite"),
     nebulae = Set("horsehead", "orion", "barnards loop"),

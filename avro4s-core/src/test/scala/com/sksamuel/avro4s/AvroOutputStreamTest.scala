@@ -9,9 +9,9 @@ import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.concurrent.TimeLimits
 import org.scalatest.{Matchers, WordSpec}
+import shapeless.{:+:, CNil, Coproduct}
 
 import scala.collection.JavaConverters._
-import shapeless.{:+:, CNil, Coproduct}
 
 sealed trait Dibble
 case class Dobble(str: String) extends Dibble
@@ -73,11 +73,14 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
 
       val output = new ByteArrayOutputStream
       val avro = AvroOutputStream.data[Test2](output)
-      avro.write(Test2(123.456789))
+      avro.write(Test2(123.45))
       avro.close()
 
       val record = read[Test2](output)
-      new String(record.get("dec").asInstanceOf[ByteBuffer].array) shouldBe "123.456789"
+      val buffer = record.get("dec").asInstanceOf[ByteBuffer]
+      val bytes = Array.ofDim[Byte](buffer.remaining())
+      buffer.get(bytes)
+      BigDecimal(BigInt(bytes), 2) shouldBe BigDecimal(123.45)
     }
     "write out strings" in {
       case class Test(str: String)
@@ -171,7 +174,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
       avro2.close()
 
       val record2 = read[EitherCaseClasses](output2)
-      record2.get("e").toString shouldBe """{"dec": {"bytes": "14.56"}}"""
+      record2.get("e").toString shouldBe """{"dec": {"bytes": """" + """\""" + """u0005°"}}"""
     }
     "write a Some as populated union" in {
       case class Test(opt: Option[Double])
@@ -211,7 +214,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
       avro.close
 
       val record = read[CPWrapper](output)
-      record.get("u").toString shouldBe """{"dec": {"bytes": "34.98"}}"""
+      record.get("u").toString shouldBe """{"dec": {"bytes": """" + """\""" + """rª"}}"""
     }
     "write out Nones in coproducts as nulls" in {
       val output = new ByteArrayOutputStream
