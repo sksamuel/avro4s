@@ -40,11 +40,14 @@ trait LowPriorityFromValue {
 object FromValue extends LowPriorityFromValue {
 
   implicit def BigDecimalFromValue(implicit sp: ScaleAndPrecision = defaultScaleAndPrecision): FromValue[BigDecimal] = {
-    val decimalConversion = new Conversions.DecimalConversion
-    val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
-    (value: Any, _: Field) => decimalConversion.fromBytes(value.asInstanceOf[ByteBuffer], null, decimalType)
+    new FromValue[BigDecimal] {
+      val decimalConversion = new Conversions.DecimalConversion
+      val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
+      override def apply(value: Any, field: Field): BigDecimal = {
+        decimalConversion.fromBytes(value.asInstanceOf[ByteBuffer], null, decimalType)
+      }
+    }
   }
-
 
   implicit object BooleanFromValue extends FromValue[Boolean] {
     override def apply(value: Any, field: Field): Boolean = value.asInstanceOf[Boolean]
