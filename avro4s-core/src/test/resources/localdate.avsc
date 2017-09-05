@@ -1,0 +1,9 @@
+{
+  "type" : "record",
+  "name" : "LocalDateTest",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "localDate",
+    "type" : "string"
+  } ]
+}

@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
+import java.time.LocalDate
 import java.util.UUID
 
 import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecision
@@ -79,6 +80,10 @@ object FromValue extends LowPriorityFromValue {
 
   implicit object UUIDFromValue extends FromValue[UUID] {
     override def apply(value: Any, field: Field): UUID = UUID.fromString(value.toString)
+  }
+
+  implicit object LocalDateFromValue extends FromValue[LocalDate] {
+    override def apply(value: Any, field: Field): LocalDate = LocalDate.parse(value.toString)
   }
 
   implicit def OptionFromValue[T](implicit fromvalue: FromValue[T]) = new FromValue[Option[T]] {

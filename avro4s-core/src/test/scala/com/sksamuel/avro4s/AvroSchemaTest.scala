@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import java.time.LocalDate
 import java.util.UUID
 
 import org.scalatest.{Matchers, WordSpec}
@@ -26,6 +27,8 @@ case class Level2(level3: Level3)
 case class Level1(level2: Level2)
 
 case class Ids(myid: UUID)
+
+case class LocalDateTest(localDate: LocalDate)
 
 case class Recursive(payload: Int, next: Option[Recursive])
 
@@ -142,6 +145,11 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "accept UUIDs" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid.avsc"))
       val schema = SchemaFor[Ids]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "accept LocalDate" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/localdate.avsc"))
+      val schema = SchemaFor[LocalDateTest]()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate option as Union[T, Null]" in {

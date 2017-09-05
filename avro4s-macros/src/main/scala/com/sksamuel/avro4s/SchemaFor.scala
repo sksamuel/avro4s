@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import java.time.LocalDate
 import java.util
 
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
@@ -87,6 +88,10 @@ object ToSchema extends LowPriorityToSchema {
   }
 
   implicit object UUIDToSchema extends ToSchema[java.util.UUID] {
+    protected val schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object LocalDateToSchema extends ToSchema[LocalDate] {
     protected val schema = Schema.create(Schema.Type.STRING)
   }
 

@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
+import java.time.LocalDate
 import java.util.UUID
 
 import org.scalatest.concurrent.TimeLimits
@@ -458,6 +459,15 @@ class AvroInputStreamTest extends WordSpec with Matchers with TimeLimits {
       val bytes = write(data)
 
       val in = AvroInputStream.data[Ids](bytes)
+      in.iterator.toList shouldBe data.toList
+      in.close()
+    }
+    "read LocalDates" in {
+
+      val data = Seq(LocalDateTest(LocalDate.now()), LocalDateTest(LocalDate.now()))
+      val bytes = write(data)
+
+      val in = AvroInputStream.data[LocalDateTest](bytes)
       in.iterator.toList shouldBe data.toList
       in.close()
     }
