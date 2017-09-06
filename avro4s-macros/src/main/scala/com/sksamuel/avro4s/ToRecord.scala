@@ -1,6 +1,8 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecision
@@ -73,6 +75,10 @@ object ToValue extends LowPriorityToValue {
 
   implicit object UUIDToValue extends ToValue[UUID] {
     override def apply(value: UUID): String = value.toString
+  }
+
+  implicit object LocalDateToValue extends ToValue[LocalDate] {
+    override def apply(value: LocalDate): String = value.format(DateTimeFormatter.ISO_LOCAL_DATE)
   }
 
   implicit def BigDecimalToValue(implicit sp: ScaleAndPrecision = defaultScaleAndPrecision): ToValue[BigDecimal] = {

@@ -2,6 +2,7 @@ package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
+import java.time.LocalDate
 import java.util.UUID
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
@@ -397,6 +398,17 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
 
       val record = read[Ids](output)
       UUID.fromString(record.get("myid").toString) shouldBe instance.myid
+    }
+    "support LocalDates" in {
+      val instance = LocalDateTest(LocalDate.now())
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[LocalDateTest](output)
+      avro.write(instance)
+      avro.close()
+
+      val record = read[LocalDateTest](output)
+      LocalDate.parse(record.get("localDate").toString) shouldBe instance.localDate
     }
     "write Vector of primitives as arrays" in {
       case class VectorPrim(ints: Vector[Int])
