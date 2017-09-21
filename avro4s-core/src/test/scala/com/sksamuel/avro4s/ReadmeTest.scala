@@ -1,7 +1,10 @@
 package com.sksamuel.avro4s
 
 import java.io.File
+
 import org.scalatest.{Matchers, WordSpec}
+
+import scala.math.BigDecimal.RoundingMode.HALF_EVEN
 
 case class Pizza(name: String, ingredients: Seq[Ingredient], vegetarian: Boolean, vegan: Boolean, calories: Int)
 case class Ingredient(name: String, sugar: Double, fat: Double)
@@ -10,12 +13,12 @@ case class Product(name: String, price: Price, litres: BigDecimal)
 case class Price(currency: String, amount: BigDecimal)
 
 object Price {
-  implicit val sp = ScaleAndPrecision(2,8)
+  implicit val sp = ScaleAndPrecisionAndRoundingMode(2, 8, HALF_EVEN)
   implicit val schema = SchemaFor[Price]
 }
 
 object Product {
-  implicit val sp = ScaleAndPrecision(3,8)
+  implicit val sp = ScaleAndPrecisionAndRoundingMode(3, 8, HALF_EVEN)
   implicit val schema = SchemaFor[Product]
 }
 

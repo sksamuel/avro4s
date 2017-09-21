@@ -1,9 +1,11 @@
 package com.sksamuel.avro4s.macros
 
 import com.sksamuel.avro4s.FromValue.BigDecimalFromValue
-import com.sksamuel.avro4s.ScaleAndPrecision
+import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
 import com.sksamuel.avro4s.ToValue.BigDecimalToValue
 import org.scalatest.{Matchers, WordSpec}
+
+import scala.math.BigDecimal.RoundingMode.HALF_EVEN
 
 class BigDecimalToValueTest extends WordSpec with Matchers {
 
@@ -13,17 +15,15 @@ class BigDecimalToValueTest extends WordSpec with Matchers {
       BigDecimalFromValue.apply(BigDecimalToValue.apply(n)) shouldBe n
     }
 
-    "convert a BigDecimal into ByteBuffer (and back) defining scale and precision" in {
-      implicit val sp: ScaleAndPrecision = ScaleAndPrecision(3, 8)
-      val n = BigDecimal(7.851).setScale(3)
-      BigDecimalFromValue(sp)(BigDecimalToValue(sp)(n)) shouldBe n
+    "convert a BigDecimal into ByteBuffer (and back) defining scale and precision and rounding mode" in {
+      implicit val sp: ScaleAndPrecisionAndRoundingMode = ScaleAndPrecisionAndRoundingMode(3, 8, HALF_EVEN)
+      val n = BigDecimal(7.8516)
+      BigDecimalFromValue(sp)(BigDecimalToValue(sp)(n)) shouldBe BigDecimal(7.852)
     }
 
-    "fail when trying to convert a BigDecimal into ByteBuffer without specifying the scale and precision" in {
+    "convert a BigDecimal into ByteBuffer without explicitly specifying the scale and precision and rounding mode" in {
       val n = BigDecimal(7.851)
-      the[java.lang.ArithmeticException] thrownBy {
-        BigDecimalFromValue.apply(BigDecimalToValue.apply(n))
-      } should have message "Rounding necessary"
+      BigDecimalFromValue.apply(BigDecimalToValue.apply(n)) shouldBe BigDecimal(7.85)
     }
   }
 }
