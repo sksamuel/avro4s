@@ -11,7 +11,7 @@ import shapeless.{:+:, CNil, Coproduct, Generic, HList, Lazy}
 import scala.annotation.implicitNotFound
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
-import scala.math.BigDecimal.RoundingMode.{HALF_EVEN, RoundingMode}
+import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
@@ -41,7 +41,7 @@ object ToSchema extends LowPriorityToSchema {
     protected val schema = Schema.create(Schema.Type.BOOLEAN)
   }
 
-  lazy val defaultScaleAndPrecisionAndRoundingMode = ScaleAndPrecisionAndRoundingMode(2, 8, HALF_EVEN)
+  lazy val defaultScaleAndPrecisionAndRoundingMode = ScaleAndPrecisionAndRoundingMode(2, 8, UNNECESSARY)
 
   implicit def BigDecimalToSchema(implicit sp: ScaleAndPrecisionAndRoundingMode = defaultScaleAndPrecisionAndRoundingMode): ToSchema[BigDecimal] = new ToSchema[BigDecimal] {
     protected val schema = {

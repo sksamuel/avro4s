@@ -86,7 +86,7 @@ object ToValue extends LowPriorityToValue {
     val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
     new ToValue[BigDecimal] {
       override def apply(value: BigDecimal): ByteBuffer = {
-        val scaledValue = value.setScale(sp.scale, defaultScaleAndPrecisionAndRoundingMode.roundingMode)
+        val scaledValue = value.setScale(sp.scale, sp.roundingMode)
         decimalConversion.toBytes(scaledValue.bigDecimal, null, decimalType)
       }
     }
