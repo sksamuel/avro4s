@@ -284,6 +284,7 @@ import shapeless.{:+:, CNil}
 |Float|float|
 |java.util.UUID|string|
 |java.time.LocalDate|string|
+|java.time.LocalDateTime|string|
 |Java Enums|enum|
 |sealed trait T|union|
 |sealed trait with only case objects|enum|

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 import org.scalatest.{Matchers, WordSpec}
@@ -29,6 +29,7 @@ case class Level1(level2: Level2)
 case class Ids(myid: UUID)
 
 case class LocalDateTest(localDate: LocalDate)
+case class LocalDateTimeTest(localDate: LocalDateTime)
 
 case class Recursive(payload: Int, next: Option[Recursive])
 
