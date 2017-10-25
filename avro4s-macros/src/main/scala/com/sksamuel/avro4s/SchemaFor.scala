@@ -301,8 +301,7 @@ object SchemaFor {
                     q"""{ com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $member) }"""
                 } else if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
                     val enumClass = f.typeSignature.toString.stripSuffix(".Value")
-                    q"""{ com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }
-           """
+                    q"""{ com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }"""
                 } else {
                     q"""{ com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), null) }"""
                 }
@@ -337,15 +336,12 @@ object SchemaFor {
             fixedAnnotation match {
                 case Some(AvroFixed(size)) =>
                     val expr = c.Expr[SchemaFor[T]](
-                        q"""
-              com.sksamuel.avro4s.SchemaFor.fixedSchemaFor[$tType]($name, Seq(..$annos), $pack, $size)
-            """
+                        q"""com.sksamuel.avro4s.SchemaFor.fixedSchemaFor[$tType]($name, Seq(..$annos), $pack, $size)"""
                     )
                     expr
                 case None =>
                     c.Expr[SchemaFor[T]](
-                        q"""
-            new com.sksamuel.avro4s.SchemaFor[$tType] {
+                        q"""new com.sksamuel.avro4s.SchemaFor[$tType] {
               val (incompleteSchema: org.apache.avro.Schema, completeSchema: shapeless.Lazy[org.apache.avro.Schema]) = {
                 com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
                   $name,
