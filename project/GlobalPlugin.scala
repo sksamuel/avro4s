@@ -19,7 +19,7 @@ object GlobalPlugin extends AutoPlugin {
     override def projectSettings = publishingSettings ++ Seq(
         organization := org,
         scalaVersion := ScalaVersion,
-        //crossScalaVersions := Seq("2.11.8", "2.12.1"),
+        crossScalaVersions := Seq("2.11.8", "2.12.4"),
         resolvers += Resolver.mavenLocal,
         parallelExecution in Test := false,
         scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-Ywarn-unused-import",
@@ -42,12 +42,33 @@ object GlobalPlugin extends AutoPlugin {
         ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
         ReleasePlugin.autoImport.releaseCrossBuild := true,
         publishTo := {
-            val corporateRepo = "http://toucan.simplesys.lan/"
-            if (isSnapshot.value)
-                Some("snapshots" at corporateRepo + "artifactory/libs-snapshot-local")
-            else
-                Some("releases" at corporateRepo + "artifactory/libs-release-local")
+            val nexus = "https://oss.sonatype.org/"
+            if (isSnapshot.value) {
+                Some("snapshots" at s"${nexus}content/repositories/snapshots")
+            } else {
+                Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
+            }
         },
-        credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
+        pomExtra := {
+            <url>https://github.com/sksamuel/avro4s</url>
+              <licenses>
+                  <license>
+                      <name>MIT</name>
+                      <url>https://opensource.org/licenses/MIT</url>
+                      <distribution>repo</distribution>
+                  </license>
+              </licenses>
+              <scm>
+                  <url>git@github.com:sksamuel/avro4s.git</url>
+                  <connection>scm:git@github.com:sksamuel/avro4s.git</connection>
+              </scm>
+              <developers>
+                  <developer>
+                      <id>sksamuel</id>
+                      <name>sksamuel</name>
+                      <url>http://github.com/sksamuel</url>
+                  </developer>
+              </developers>
+        }
     )
 }
