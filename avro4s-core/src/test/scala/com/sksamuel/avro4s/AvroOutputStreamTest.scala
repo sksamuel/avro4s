@@ -441,4 +441,6 @@ object Colours extends Enumeration {
 }
 case class ScalaEnums(value: Colours.Value)
 
+case class ScalaOptionEnums(value: Option[Colours.Value])
+
 

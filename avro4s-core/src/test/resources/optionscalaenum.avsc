@@ -1,0 +1,13 @@
+{
+  "type" : "record",
+  "name" : "ScalaOptionEnums",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "value",
+    "type" : [ "null", {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green" ]
+    } ]
+  } ]
+}

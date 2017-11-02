@@ -24,6 +24,7 @@ import org.scalatest.{Matchers, WordSpec}
   * - Sets of Strings
   * - Options of Strings
   * - Options of Case classes
+  * - Options of enumerations
   * - Either[A,B] where A and B are both case classes
   * - Either[A,B] where A and B are both primitives
   */
@@ -67,7 +68,6 @@ class UniverseTest extends WordSpec with Matchers {
     //  schema.toString(true) shouldBe expected.toString(true)
     }
     "support complex write" in {
-      val schemaFor = SchemaFor[Planet]
       val output = new FileOutputStream("universe.avro")
       val avro = AvroOutputStream.data[Universe](output)
       avro.write(g)
