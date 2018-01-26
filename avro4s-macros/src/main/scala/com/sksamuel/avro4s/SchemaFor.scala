@@ -348,7 +348,7 @@ object SchemaFor {
                   $pack,
                   shapeless.Lazy {
                     val selfSchema = incompleteSchema
-                    implicit val selfToSchema: com.sksamuel.avro4s.ToSchema[$tType] = new com.sksamuel.avro4s.ToSchema[$tType] {
+                    implicit val _: com.sksamuel.avro4s.ToSchema[$tType] = new com.sksamuel.avro4s.ToSchema[$tType] {
                       val schema: org.apache.avro.Schema = selfSchema
                     }
                     Seq(..$fieldSchemaPartTrees)
