@@ -1,4 +1,5 @@
-import sbt._
+import com.typesafe.sbt.SbtPgp
+import sbt.{Global, _}
 import sbt.Keys._
 import sbtrelease.ReleasePlugin
 import com.typesafe.sbt.pgp.PgpKeys
@@ -19,7 +20,7 @@ object GlobalPlugin extends AutoPlugin {
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.11.8", "2.12.1"),
+    crossScalaVersions := Seq("2.11.12", "2.12.4"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-Ywarn-unused-import",
@@ -39,8 +40,10 @@ object GlobalPlugin extends AutoPlugin {
   val publishingSettings = Seq(
     publishMavenStyle := true,
     publishArtifact in Test := false,
-    ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-    ReleasePlugin.autoImport.releaseCrossBuild := true,
+    SbtPgp.autoImport.useGpg := true,
+    SbtPgp.autoImport.useGpgAgent := true,
+    sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+    sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
       if (isSnapshot.value) {
