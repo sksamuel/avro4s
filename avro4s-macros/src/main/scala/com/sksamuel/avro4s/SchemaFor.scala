@@ -14,6 +14,7 @@ import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
+import scala.reflect.runtime.universe._
 
 trait ToSchema[T] {
   protected val schema: Schema
@@ -69,6 +70,12 @@ object ToSchema extends LowPriorityToSchema {
       val values = tag.runtimeClass.getEnumConstants.map(_.toString)
       Schema.createEnum(tag.runtimeClass.getSimpleName, null, tag.runtimeClass.getPackage.getName, values.toList.asJava)
     }
+  }
+
+  implicit def ScalaEnumToSchema[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): ToSchema[E] = new ToSchema[E] {
+    val typeRef = tag.tpe match { case t @ TypeRef(_, _, _) => t}
+
+    protected val schema = SchemaFor.schemaForEnumClass(typeRef.pre.typeSymbol.asClass.fullName.stripSuffix(".Value"))
   }
 
   implicit val FloatToSchema: ToSchema[Float] = new ToSchema[Float] {
@@ -392,11 +399,16 @@ object SchemaFor {
     * and probing that for enum values
     */
   def enumBuilder(name: String, enumClassName: String): Schema.Field = {
-    val enumClass = Class.forName(enumClassName)
-    val values = enumClass.getMethod("values").invoke(null).asInstanceOf[scala.Enumeration#ValueSet].iterator.toList.map(_.toString)
-    val schema = Schema.createEnum(enumClass.getSimpleName, null, enumClass.getPackage.getName, values.asJava)
+    val schema = schemaForEnumClass(enumClassName)
     new Schema.Field(name, schema, null: String, null: Object)
   }
+
+  def schemaForEnumClass(enumClassName: String): Schema = {
+    val enumClass = Class.forName(enumClassName)
+    val values = enumClass.getMethod("values").invoke(null).asInstanceOf[scala.Enumeration#ValueSet].iterator.toList.map(_.toString)
+    Schema.createEnum(enumClass.getSimpleName, null, enumClass.getPackage.getName, values.asJava)
+  }
+
 
   // given a name and a type T, builds the schema field for that type T. A schema field might itself contain
   // a nested record schema if T is a class. The provided annos are a wrapper around annotations.

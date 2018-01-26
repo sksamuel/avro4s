@@ -332,6 +332,11 @@ class AvroSchemaTest extends WordSpec with Matchers {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optiondefaultvalues.avsc"))
     schema.toString(true) shouldBe expected.toString(true)
   }
+  "support default options of scala enum values" in {
+    val schema = SchemaFor[ScalaOptionEnums]()
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optionscalaenum.avsc"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
   "support recursive types" in {
     val schema = SchemaFor[Recursive]()
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive.avsc"))

@@ -16,6 +16,7 @@ import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inr, Lazy}
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
+import scala.reflect.runtime.universe._
 
 // turns an avro value into a scala value
 // type T is the target scala type
@@ -94,11 +95,13 @@ object FromValue extends LowPriorityFromValue {
     override def apply(value: Any, field: Field): E = Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], value.toString)
   }
 
-  implicit def ScalaEnumFromValue[E <: Enumeration#Value] = new FromValue[E] {
+  implicit def ScalaEnumFromValue[E <: Enumeration#Value](implicit tag: TypeTag[E]) = new FromValue[E] {
+    val typeRef = tag.tpe match { case t @ TypeRef(_, _, _) => t}
+    val klass = Class.forName(typeRef.pre.typeSymbol.asClass.fullName + "$")
+    import scala.reflect.NameTransformer._
+    val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
+
     override def apply(value: Any, field: Field): E = {
-      val klass = Class.forName(field.schema.getFullName + "$")
-      import scala.reflect.NameTransformer._
-      val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
       enum.withName(value.toString).asInstanceOf[E]
     }
   }
