@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.time.LocalDate
 import java.util
 
+import org.apache.avro.Schema.Field
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
@@ -431,7 +432,9 @@ object SchemaFor {
 
     val defaultValue = if (default == null) null else toDefaultValue(default)
 
-    val field = new Schema.Field(name, schema, doc(annos), defaultValue)
+    val maybeOverrideNamespace = namespace(annos).map(overrideNamespace(schema, _)).getOrElse(schema)
+
+    val field = new Schema.Field(name, maybeOverrideNamespace, doc(annos), defaultValue)
     aliases(annos).foreach(field.addAlias)
     addProps(annos, field.addProp)
     field
@@ -462,4 +465,18 @@ object SchemaFor {
     }
     (schema, fullSchema)
   }
+
+  private def overrideNamespace(schema: Schema, namespace: String): Schema =
+    schema.getType match {
+      case Schema.Type.RECORD =>
+        val fields = schema.getFields.asScala.map(field =>
+          new Field(field.name(), overrideNamespace(field.schema(), namespace), field.doc, field.defaultVal, field.order))
+        Schema.createRecord(schema.getName, schema.getDoc, namespace, schema.isError, fields.asJava)
+      case Schema.Type.UNION => Schema.createUnion(schema.getTypes.asScala.map(overrideNamespace(_, namespace)).asJava)
+      case Schema.Type.ENUM => Schema.createEnum(schema.getName, schema.getDoc, namespace, schema.getEnumSymbols)
+      case Schema.Type.FIXED => Schema.createFixed(schema.getName, schema.getDoc, namespace, schema.getFixedSize)
+      case Schema.Type.MAP => Schema.createMap(overrideNamespace(schema.getValueType, namespace))
+      case Schema.Type.ARRAY => Schema.createArray(overrideNamespace(schema.getElementType, namespace))
+      case _ => schema
+    }
 }
