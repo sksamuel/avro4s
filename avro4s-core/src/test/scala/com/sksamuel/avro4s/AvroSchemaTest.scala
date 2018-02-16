@@ -301,37 +301,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[Annotated]()
       schema.toString(true) shouldBe expected.toString(true)
     }
-
-    "support namespace annotations on records" in {
-      @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String)
-      val schema = SchemaFor[AnnotatedNamespace]()
-      schema.getNamespace shouldBe "com.yuval"
-    }
-
-    "support namespace annotations in nested records" in {
-      @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String, internal: InternalAnnotated)
-      @AvroNamespace("com.yuval.internal") case class InternalAnnotated(i: Int)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
-      val schema = SchemaFor[AnnotatedNamespace]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-
-    "support namespace annotations on field" in {
-      case class InternalAnnotated(i: Int)
-      @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String, @AvroNamespace("com.yuval.internal") internal: InternalAnnotated)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
-      val schema = SchemaFor[AnnotatedNamespace]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-
-    "favour namespace annotations on field over record" in {
-      @AvroNamespace("ignore")
-      case class InternalAnnotated(i: Int)
-      @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String, @AvroNamespace("com.yuval.internal") internal: InternalAnnotated)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
-      val schema = SchemaFor[AnnotatedNamespace]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
   }
 
   "support scala enums" in {

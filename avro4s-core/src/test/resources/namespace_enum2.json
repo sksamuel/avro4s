@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "Location",
+  "namespace": "wibble",
+  "fields": [
+    {
+      "name": "africa",
+      "type": {
+        "type": "enum",
+        "name": "Africa",
+        "namespace": "wobble",
+        "symbols": [
+          "Cameroon",
+          "Chad",
+          "Comoros"
+        ]
+      }
+    }
+  ]
+}
