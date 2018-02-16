@@ -38,7 +38,7 @@ case class ScaleAndPrecision(scale: Int, precision: Int)
 
 object ToSchema extends LowPriorityToSchema {
 
-  implicit val BooleanToSchema: ToSchema[Boolean] = new ToSchema[Boolean] {
+  implicit object BooleanToSchema extends ToSchema[Boolean] {
     protected val schema = Schema.create(Schema.Type.BOOLEAN)
   }
 
@@ -52,11 +52,11 @@ object ToSchema extends LowPriorityToSchema {
     }
   }
 
-  implicit val ByteArrayToSchema: ToSchema[Array[Byte]] = new ToSchema[Array[Byte]] {
+  implicit object ByteArrayToSchema extends ToSchema[Array[Byte]] {
     protected val schema = Schema.create(Schema.Type.BYTES)
   }
 
-  implicit val DoubleToSchema: ToSchema[Double] = new ToSchema[Double] {
+  implicit object DoubleToSchema extends ToSchema[Double] {
     protected val schema = Schema.create(Schema.Type.DOUBLE)
   }
 
@@ -79,19 +79,19 @@ object ToSchema extends LowPriorityToSchema {
     protected val schema = SchemaFor.schemaForEnumClass(typeRef.pre.typeSymbol.asClass.fullName.stripSuffix(".Value"))
   }
 
-  implicit val FloatToSchema: ToSchema[Float] = new ToSchema[Float] {
+  implicit object FloatToSchema extends ToSchema[Float] {
     protected val schema = Schema.create(Schema.Type.FLOAT)
   }
 
-  implicit val IntToSchema: ToSchema[Int] = new ToSchema[Int] {
+  implicit object IntToSchema extends ToSchema[Int] {
     protected val schema = Schema.create(Schema.Type.INT)
   }
 
-  implicit val LongToSchema: ToSchema[Long] = new ToSchema[Long] {
+  implicit object LongToSchema extends ToSchema[Long] {
     protected val schema = Schema.create(Schema.Type.LONG)
   }
 
-  implicit val StringToSchema: ToSchema[String] = new ToSchema[String] {
+  implicit object StringToSchema extends ToSchema[String] {
     protected val schema = Schema.create(Schema.Type.STRING)
   }
 
@@ -147,6 +147,25 @@ object ToSchema extends LowPriorityToSchema {
 
   implicit def SeqToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Seq[S]] = new ToSchema[Seq[S]] {
     protected val schema = Schema.createArray(subschema())
+  }
+
+  implicit def Tuple2ToSchema[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]) = new ToSchema[(A, B)] {
+    override protected val schema: Schema = {
+      val _1 = new Schema.Field("_1", a(), null, null: Object)
+      val _2 = new Schema.Field("_2", b(), null, null: Object)
+      Schema.createRecord("element", null, null, false, Seq(_1, _2).asJava)
+    }
+  }
+
+  implicit def Tuple3ToSchema[A, B, C](implicit a: SchemaFor[A],
+                                       b: SchemaFor[B],
+                                       c: SchemaFor[C]) = new ToSchema[(A, B, C)] {
+    override protected val schema: Schema = {
+      val _1 = new Schema.Field("_1", a(), null, null: Object)
+      val _2 = new Schema.Field("_2", b(), null, null: Object)
+      val _3 = new Schema.Field("_3", c(), null, null: Object)
+      Schema.createRecord("element", null, null, false, Seq(_1, _2, _3).asJava)
+    }
   }
 
   // A coproduct is a union, or a generalised either.
@@ -413,9 +432,22 @@ object SchemaFor {
     Schema.createEnum(enumClass.getSimpleName, null, enumClass.getPackage.getName, values.asJava)
   }
 
-  // given a name and a type T, builds the schema field for that type T. A schema field might itself contain
-  // a nested record schema if T is a class. The provided annos are a wrapper around annotations.
-  def fieldBuilder[T](name: String, annos: Seq[Anno], default: Any)(implicit toSchema: Lazy[ToSchema[T]]): Schema.Field = {
+  /**
+    * Builds an Avro Field for a field of type T in a Scala type.
+    *
+    * A schema field might map to a record schema type if the type T is itself a complex type.
+    *
+    * Requires an implicit ToSchema which is a typeclass that will generate a field for a given type T.
+    * To add support for new types, it should be sufficient to bring into scope an implementation
+    * of the ToSchema typeclass.
+    *
+    * @param name    the name of the underlying field in Scala.
+    * @param annos   any annotations declared on the field
+    * @param default if a default value has been declared using scala's default overloads
+    *
+    */
+  def fieldBuilder[T](name: String, annos: Seq[Anno], default: Any)
+                     (implicit toSchema: Lazy[ToSchema[T]]): Schema.Field = {
     fieldBuilder(name, annos, toSchema.value.apply(), default)
   }
 

@@ -13,6 +13,7 @@ The features of the library are:
 * Boilerplate free deserialization of Avro to classes
 
 ## Changelog
+* 1.8.2 - Added support for @AvroName annotation #159
 * 1.6.4 - Added support for Vectors
 * 1.6.3 - Fixed issue with decimal schema using strings instead of ints for scale and precision
 * 1.6.2 - Removed unused imports, fixed compiler warnings

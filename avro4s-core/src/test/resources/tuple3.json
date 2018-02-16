@@ -1,0 +1,66 @@
+{
+  "type": "record",
+  "name": "TupleTest3",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "first",
+      "type": "string"
+    },
+    {
+      "name": "second",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "element",
+          "namespace": "",
+          "fields": [
+            {
+              "name": "_1",
+              "type": {
+                "type": "record",
+                "name": "TupleTestA",
+                "namespace": "com.sksamuel.avro4s",
+                "fields": [
+                  {
+                    "name": "parameter",
+                    "type": "int"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "_2",
+              "type": {
+                "type": "record",
+                "name": "TupleTestB",
+                "namespace": "com.sksamuel.avro4s",
+                "fields": [
+                  {
+                    "name": "parameter",
+                    "type": "int"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "_3",
+              "type": {
+                "type": "record",
+                "name": "TupleTestC",
+                "namespace": "com.sksamuel.avro4s",
+                "fields": [
+                  {
+                    "name": "parameter",
+                    "type": "int"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
