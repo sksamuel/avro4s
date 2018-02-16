@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+     {
+       "name" : "wibble",
+       "type" : "string"
+     },
+     {
+       "name" : "wubble",
+       "type" : "string"
+     }
+  ]
+}

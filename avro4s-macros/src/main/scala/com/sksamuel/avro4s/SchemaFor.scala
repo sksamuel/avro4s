@@ -384,6 +384,9 @@ object SchemaFor {
   // returns any aliases present in the list of annotations
   def aliases(annos: Seq[Anno]): Seq[String] = annotationsFor(classOf[AvroAlias], annos).flatMap(_.values.headOption)
 
+  // returns an optioanl avroname annotation present in the list of annotations
+  def avroname(annos: Seq[Anno]): Option[String] = annotationsFor(classOf[AvroName], annos).headOption.flatMap(_.values.headOption)
+
   def namespace(annos: Seq[Anno]): Option[String] = annotationsFor(classOf[AvroNamespace], annos).headOption.flatMap(_.values.headOption)
 
   def fixed(annos: Seq[Anno]): Option[Int] = annotationsFor(classOf[AvroFixed], annos).headOption.map(_.values.head.toInt)
@@ -410,7 +413,6 @@ object SchemaFor {
     Schema.createEnum(enumClass.getSimpleName, null, enumClass.getPackage.getName, values.asJava)
   }
 
-
   // given a name and a type T, builds the schema field for that type T. A schema field might itself contain
   // a nested record schema if T is a class. The provided annos are a wrapper around annotations.
   def fieldBuilder[T](name: String, annos: Seq[Anno], default: Any)(implicit toSchema: Lazy[ToSchema[T]]): Schema.Field = {
@@ -431,10 +433,10 @@ object SchemaFor {
     }
 
     val defaultValue = if (default == null) null else toDefaultValue(default)
-
+    val finalAvroName = avroname(annos).getOrElse(name)
     val maybeOverrideNamespace = namespace(annos).map(overrideNamespace(schema, _)).getOrElse(schema)
 
-    val field = new Schema.Field(name, maybeOverrideNamespace, doc(annos), defaultValue)
+    val field = new Schema.Field(finalAvroName, maybeOverrideNamespace, doc(annos), defaultValue)
     aliases(annos).foreach(field.addAlias)
     addProps(annos, field.addProp)
     field
