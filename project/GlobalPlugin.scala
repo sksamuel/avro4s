@@ -1,8 +1,8 @@
 import com.typesafe.sbt.SbtPgp
-import sbt.{Global, _}
-import sbt.Keys._
-import sbtrelease.ReleasePlugin
 import com.typesafe.sbt.pgp.PgpKeys
+import sbt.Keys._
+import sbt._
+import sbtrelease.ReleasePlugin
 
 /** Adds common settings automatically to all subprojects */
 object GlobalPlugin extends AutoPlugin {
@@ -40,8 +40,8 @@ object GlobalPlugin extends AutoPlugin {
   val publishingSettings = Seq(
     publishMavenStyle := true,
     publishArtifact in Test := false,
-    SbtPgp.autoImport.useGpg := true,
-    SbtPgp.autoImport.useGpgAgent := true,
+    SbtPgp.useGpg := true,
+    SbtPgp.useGpgAgent := true,
     sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
     publishTo := {
