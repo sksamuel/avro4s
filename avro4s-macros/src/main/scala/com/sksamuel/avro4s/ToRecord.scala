@@ -5,7 +5,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecision
+import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.{Conversions, LogicalTypes}
@@ -81,12 +81,13 @@ object ToValue extends LowPriorityToValue {
     override def apply(value: LocalDate): String = value.format(DateTimeFormatter.ISO_LOCAL_DATE)
   }
 
-  implicit def BigDecimalToValue(implicit sp: ScaleAndPrecision = defaultScaleAndPrecision): ToValue[BigDecimal] = {
+  implicit def BigDecimalToValue(implicit sp: ScaleAndPrecisionAndRoundingMode = defaultScaleAndPrecisionAndRoundingMode): ToValue[BigDecimal] = {
     val decimalConversion = new Conversions.DecimalConversion
     val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
     new ToValue[BigDecimal] {
       override def apply(value: BigDecimal): ByteBuffer = {
-        decimalConversion.toBytes(value.setScale(sp.scale).bigDecimal, null, decimalType)
+        val scaledValue = value.setScale(sp.scale, sp.roundingMode)
+        decimalConversion.toBytes(scaledValue.bigDecimal, null, decimalType)
       }
     }
   }

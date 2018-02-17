@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 import java.time.LocalDate
 import java.util.UUID
 
-import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecision
+import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
@@ -41,7 +41,7 @@ trait LowPriorityFromValue {
 
 object FromValue extends LowPriorityFromValue {
 
-  implicit def BigDecimalFromValue(implicit sp: ScaleAndPrecision = defaultScaleAndPrecision): FromValue[BigDecimal] = {
+  implicit def BigDecimalFromValue(implicit sp: ScaleAndPrecisionAndRoundingMode = defaultScaleAndPrecisionAndRoundingMode): FromValue[BigDecimal] = {
     new FromValue[BigDecimal] {
       val decimalConversion = new Conversions.DecimalConversion
       val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
