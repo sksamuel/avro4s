@@ -87,8 +87,9 @@ object ToSchema extends LowPriorityToSchema {
   }
 
   implicit def ScalaEnumToSchema[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): ToSchema[E] = new ToSchema[E] {
-    val typeRef = tag.tpe match { case t @ TypeRef(_, _, _) => t}
-
+    val typeRef = tag.tpe match {
+      case t@TypeRef(_, _, _) => t
+    }
     protected val schema = SchemaFor.schemaForEnumClass(typeRef.pre.typeSymbol.asClass.fullName.stripSuffix(".Value"))
   }
 
@@ -202,15 +203,19 @@ object ToSchema extends LowPriorityToSchema {
 
   // This ToSchema is used for sealed traits of objects
   implicit def genTraitObjectEnum[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
+                                                                 tag: TypeTag[T],
                                                                  gen: Generic.Aux[T, C],
-                                                            //     namespaces: Annotations.Aux[AvroNamespace, T, L],
                                                                  objs: Reify.Aux[C, L],
                                                                  toList: ToList[L, T]): ToSchema[T] = new ToSchema[T] {
     protected val schema: Schema = {
+      val tpe = weakTypeTag[T]
+      val namespace = tpe.tpe.typeSymbol.annotations.map(_.toString)
+        .find(_.startsWith("com.sksamuel.avro4s.AvroNamespace"))
+        .map(_.stripPrefix("com.sksamuel.avro4s.AvroNamespace(\"").stripSuffix("\")"))
+        .getOrElse(ct.runtimeClass.getPackage.getName)
       val name = ct.runtimeClass.getSimpleName
-      val namespace = ct.runtimeClass.getPackage.getName //namespaces.toString // ct.runtimeClass.getPackage.getName
       val symbols = toList(objs()).map(_.toString).asJava
-      Schema.createEnum(name, null, namespace, symbols)
+      Schema.createEnum(name, null, namespace.toString, symbols)
     }
   }
 
