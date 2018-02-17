@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "FixedString",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "mystring",
+      "type": {
+        "type": "fixed",
+        "name": "mystring",
+        "size": 7
+      }
+    }
+  ]
+}

@@ -10,7 +10,7 @@ class FixedTypeTest extends WordSpec with Matchers {
     QuarterSHA256(new scala.collection.mutable.WrappedArray.ofByte(Array[Byte](0, 1, 2, 3, 4, 5, 6, 7))),
     Array[Byte](0, 1, 2, 3))
 
-  "Avro4s" should {
+  "AvroFixed" should {
     "generate fixed(n) type for @AvroFixed(n) case class" in {
       val schema = SchemaFor[QuarterSHA256]()
       schema.getType shouldBe Type.FIXED
@@ -39,8 +39,15 @@ class FixedTypeTest extends WordSpec with Matchers {
       decoded.schema shouldBe m.schema
       decoded.payload.toSeq shouldBe m.payload.toSeq
     }
+    "support usage on arbitary types" in {
+      val schema = SchemaFor[FixedString]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/fixed_string.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
+
+case class FixedString(@AvroFixed(7) mystring: String)
 
 @AvroFixed(8)
 case class QuarterSHA256(bytes: scala.collection.mutable.WrappedArray.ofByte) extends AnyVal

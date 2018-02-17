@@ -2,6 +2,7 @@ package com.sksamuel.avro4s.json
 
 import java.util
 
+import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.codehaus.jackson.node.TextNode
 
@@ -19,7 +20,7 @@ import org.codehaus.jackson.node.TextNode
   */
 class JsonToAvroConverter(namespace: String,
                           avroStringTypeIsString: Boolean = false,
-                          jsonNamingStrategy: JsonNamingStrategy = CamelCase) {
+                          jsonNamingStrategy: NamingStrategy = CamelCase) {
 
   import org.json4s._
   import org.json4s.native.JsonMethods._
@@ -60,7 +61,7 @@ class JsonToAvroConverter(namespace: String,
     schema
   }
 
-  private def toCamelCase(s: String, from: JsonNamingStrategy): String = {
+  private def toCamelCase(s: String, from: NamingStrategy): String = {
     def fromDelimited(sep: String, s: String): String = {
       val head :: tail = s.split(sep).toList
       head ++ tail.foldLeft("")((acc, word) => acc ++ word.capitalize)

@@ -331,6 +331,15 @@ object SchemaFor {
     }
     val sealedTraitOrClass = underlyingType.typeSymbol.isClass && underlyingType.typeSymbol.asClass.isSealed
 
+    // name of the actual class we are building
+    val name = underlyingType.typeSymbol.name.decodedName.toString
+
+    // the default namespace is just the package name
+    val defaultNamespace = Stream.iterate(underlyingType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
+
+    // we read all annotations into quasi-quotable Anno dtos
+    val annos = annotations(underlyingType.typeSymbol)
+
     val fieldSchemaPartTrees: Seq[Tree] = if (sealedTraitOrClass) {
       c.abort(c.prefix.tree.pos, "Sealed traits/classes should be handled by coproduct generic!")
     } else {
@@ -353,20 +362,15 @@ object SchemaFor {
         val member = underlyingType.companion.member(defaultGetterName)
 
         if (f.isTerm && f.asTerm.isParamWithDefault && member.isMethod) {
-          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $member) }"""
+          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $member, $defaultNamespace) }"""
         } else if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
           val enumClass = f.typeSignature.toString.stripSuffix(".Value")
           q"""{ _root_.com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }"""
         } else {
-          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), null) }"""
+          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), null, $defaultNamespace) }"""
         }
       }
     }
-
-    // name of the actual class
-    val name = underlyingType.typeSymbol.name.decodedName.toString
-    val pack = Stream.iterate(underlyingType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
-    val annos = annotations(underlyingType.typeSymbol)
 
     // we create an explicit ToSchema[T] in the scope of any
     // fieldBuilder calls, containing the incomplete schema
@@ -391,7 +395,7 @@ object SchemaFor {
       fixedAnnotation match {
         case Some(AvroFixed(size)) =>
           val expr = c.Expr[SchemaFor[T]](
-            q"""_root_.com.sksamuel.avro4s.SchemaFor.fixedSchemaFor[$tType]($name, Seq(..$annos), $pack, $size)"""
+            q"""_root_.com.sksamuel.avro4s.SchemaFor.fixedSchemaFor[$tType]($name, Seq(..$annos), $defaultNamespace, $size)"""
           )
           expr
         case None =>
@@ -401,7 +405,7 @@ object SchemaFor {
               val (incompleteSchema: _root_.org.apache.avro.Schema, completeSchema: _root_.shapeless.Lazy[_root_.org.apache.avro.Schema]) = {
                _root_.com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
                   $name,
-                  $pack,
+                  $defaultNamespace,
                _root_.shapeless.Lazy {
                     val selfSchema = incompleteSchema
                     implicit val _: _root_.com.sksamuel.avro4s.ToSchema[$tType] = new _root_.com.sksamuel.avro4s.ToSchema[$tType] {
@@ -478,12 +482,17 @@ object SchemaFor {
     * @param default if a default value has been declared using scala's default overloads
     *
     */
-  def fieldBuilder[T](name: String, annos: Seq[Anno], default: Any)
+  def fieldBuilder[T](name: String, annos: Seq[Anno], default: Any, parentNamespace: String)
                      (implicit toSchema: Lazy[ToSchema[T]]): Schema.Field = {
-    fieldBuilder(name, annos, toSchema.value.apply(), default)
+    fieldBuilder(name, annos, toSchema.value.apply(), default, parentNamespace)
   }
 
-  private def fieldBuilder(name: String, annos: Seq[Anno], schema: Schema, default: Any): Schema.Field = {
+  private def fieldBuilder(name: String,
+                           annos: Seq[Anno],
+                           implicitSchema: Schema, // the schema picked up via implicit resolution of ToSchema
+                           default: Any,
+                           parentNamespace: String): Schema.Field = {
+
     def toDefaultValue(value: Any): Any = value match {
       case x: Int => x
       case x: Long => x
@@ -499,12 +508,13 @@ object SchemaFor {
     val defaultValue = if (default == null) null else toDefaultValue(default)
     val finalAvroName = avroname(annos).getOrElse(name)
 
-    // we may have annotated our field with @AvroNamespace but this namespace should be applied
-    // to any schemas generated for the field, so we override if needed
-    val schemaWithResolvedNamespace = namespace(annos).map(overrideNamespace(schema, _)).getOrElse(schema)
+    // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
+    // we need to take the namespace from the parent
+    val schema = fixed(annos).map { size => Schema.createFixed(name, doc(annos), parentNamespace, size) }.getOrElse(implicitSchema)
 
-    // the schema we were given might have been generated by a ToSchema which does not have
-    // visibility over annotations itself.
+    // we may have annotated our field with @AvroNamespace so this namespace should be applied
+    // to any schemas we have generated for this field
+    val schemaWithResolvedNamespace = namespace(annos).map(overrideNamespace(schema, _)).getOrElse(schema)
 
     val field = new Schema.Field(finalAvroName, schemaWithResolvedNamespace, doc(annos), defaultValue)
     aliases(annos).foreach(field.addAlias)
@@ -512,12 +522,14 @@ object SchemaFor {
     field
   }
 
-  def recordBuilder[T](name: String, pack: String, fields: Lazy[Seq[Schema.Field]], annos: Seq[Anno]): (Schema, Lazy[Schema]) = {
+  def recordBuilder[T](name: String,
+                       parentNamespace: String,
+                       fields: Lazy[Seq[Schema.Field]],
+                       annos: Seq[Anno]): (Schema, Lazy[Schema]) = {
 
     import scala.collection.JavaConverters._
 
-    val maybeNamespace = namespace(annos)
-    val schema = org.apache.avro.Schema.createRecord(name, doc(annos), maybeNamespace.getOrElse(pack), false)
+    val schema = org.apache.avro.Schema.createRecord(name, doc(annos), namespace(annos).getOrElse(parentNamespace), false)
     // In recursive fields, the definition of the field depends on the
     // schema, but the definition of the schema depends on the
     // field. Furthermore, Schema and Field are java classes, strict

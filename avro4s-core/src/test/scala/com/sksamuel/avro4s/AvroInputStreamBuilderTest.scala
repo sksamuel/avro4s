@@ -50,12 +50,12 @@ class AvroInputStreamBuilderTest extends WordSpec with Matchers with TimeLimits 
   }
 
   private def testReadPeopleData(is: AvroInputStream[Person]): Unit = {
-    is.iterator().toList shouldBe people
+    is.iterator.toList shouldBe people
     is.close()
   }
 
   private def testReadPeopleV3Data(is: AvroInputStream[PersonV3]): Unit = {
-    is.iterator().toList shouldBe peopleV3
+    is.iterator.toList shouldBe peopleV3
     is.close()
   }
 

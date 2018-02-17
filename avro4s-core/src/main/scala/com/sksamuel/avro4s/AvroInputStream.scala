@@ -3,17 +3,17 @@ package com.sksamuel.avro4s
 import java.io.{EOFException, File, InputStream}
 import java.nio.file.{Path, Paths}
 
-import org.apache.avro.Schema
+import org.apache.avro.{AvroTypeException, Schema}
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput, SeekableFileInput, SeekableInput}
-import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
-import org.apache.avro.io.DecoderFactory
+import org.apache.avro.generic.{GenericData, GenericDatumReader, GenericRecord}
+import org.apache.avro.io.{DecoderFactory, ResolvingDecoder}
 
 import scala.util.Try
 
 trait AvroInputStream[T] {
   def close(): Unit
-  def iterator(): Iterator[T]
-  def tryIterator(): Iterator[Try[T]]
+  def iterator: Iterator[T]
+  def tryIterator: Iterator[Try[T]]
 }
 
 class AvroBinaryInputStream[T](in: InputStream, writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)
@@ -50,9 +50,9 @@ class AvroDataInputStream[T](in: SeekableInput, writerSchema: Option[Schema] = N
                             (implicit fromRecord: FromRecord[T])
   extends AvroInputStream[T] {
   val datumReader =
-    if(writerSchema.isEmpty && readerSchema.isEmpty) new GenericDatumReader[GenericRecord]()
-    else if(writerSchema.isDefined && readerSchema.isDefined) new GenericDatumReader[GenericRecord](writerSchema.get, readerSchema.get)
-    else if(writerSchema.isDefined) new GenericDatumReader[GenericRecord](writerSchema.get)
+    if (writerSchema.isEmpty && readerSchema.isEmpty) new GenericDatumReader[GenericRecord]()
+    else if (writerSchema.isDefined && readerSchema.isDefined) new GenericDatumReader[GenericRecord](writerSchema.get, readerSchema.get)
+    else if (writerSchema.isDefined) new GenericDatumReader[GenericRecord](writerSchema.get)
     else new GenericDatumReader[GenericRecord](readerSchema.get)
   val dataFileReader = new DataFileReader[GenericRecord](in, datumReader)
 
@@ -69,26 +69,56 @@ class AvroDataInputStream[T](in: SeekableInput, writerSchema: Option[Schema] = N
   override def close(): Unit = in.close()
 }
 
+class DefaultAwareGenericData extends GenericData {
+  override def newRecord(old: scala.Any, schema: Schema): AnyRef = {
+    import scala.collection.JavaConverters._
+    schema.getFields.asScala.foldLeft(new GenericData.Record(schema)) { case (record, field) =>
+      record.put(field.name, field.defaultVal())
+      record
+    }
+  }
+}
+
+class DefaultAwareDatumReader[T](writer: Schema, reader: Schema, data: GenericData)
+  extends GenericDatumReader[T](writer, reader, data) {
+  override def readField(r: scala.Any,
+                         f: Schema.Field,
+                         oldDatum: scala.Any,
+                         in: ResolvingDecoder,
+                         state: scala.Any): Unit = {
+    try {
+      super.readField(r, f, oldDatum, in, state)
+    } catch {
+      case t: AvroTypeException =>
+        if (f.defaultVal == null) throw t else getData.setField(r, f.name, f.pos, f.defaultVal)
+    }
+  }
+}
+
 final case class AvroJsonInputStream[T](in: InputStream, writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)
                                        (implicit schemaFor: SchemaFor[T], fromRecord: FromRecord[T])
   extends AvroInputStream[T] {
 
   val wSchema = writerSchema.getOrElse(schemaFor())
   val rSchema = readerSchema.getOrElse(schemaFor())
-  private val dataumReader = new GenericDatumReader[GenericRecord](wSchema, rSchema)
+  private val datumReader = new DefaultAwareDatumReader[GenericRecord](wSchema, rSchema, new DefaultAwareGenericData)
   private val jsonDecoder = DecoderFactory.get.jsonDecoder(wSchema, in)
 
-  def iterator: Iterator[T] = Iterator.continually(Try{dataumReader.read(null, jsonDecoder)})
+  private def next = Try {
+    datumReader.read(null, jsonDecoder)
+  }
+
+  def iterator: Iterator[T] = Iterator.continually(next)
     .takeWhile(_.isSuccess)
     .map(_.get)
     .map(fromRecord.apply)
 
-  def tryIterator: Iterator[Try[T]] = Iterator.continually(Try(dataumReader.read(null, jsonDecoder)))
+  def tryIterator: Iterator[Try[T]] = Iterator.continually(next)
     .takeWhile(_.isSuccess)
     .map(_.get)
     .map(record => Try(fromRecord(record)))
 
-  def singleEntity: Try[T] = Try{dataumReader.read(null, jsonDecoder)}.map(fromRecord.apply)
+  def singleEntity: Try[T] = next.map(fromRecord.apply)
 
   override def close(): Unit = in.close()
 }
@@ -120,21 +150,21 @@ object AvroInputStream {
   def data[T: FromRecord](path: Path): AvroDataInputStream[T] = data(path.toFile)
 
   sealed trait AvroFormat {
-    def newBuilder[T: SchemaFor: FromRecord](): AvroInputStreamBuilder[T]
+    def newBuilder[T: SchemaFor : FromRecord](): AvroInputStreamBuilder[T]
   }
   object JsonFormat extends AvroFormat {
-    override def newBuilder[T: SchemaFor: FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderJson[T]()
+    override def newBuilder[T: SchemaFor : FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderJson[T]()
   }
   object BinaryFormat extends AvroFormat {
-    override def newBuilder[T: SchemaFor: FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderBinary[T]()
+    override def newBuilder[T: SchemaFor : FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderBinary[T]()
   }
   object DataFormat extends AvroFormat {
-    override def newBuilder[T: SchemaFor: FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderData[T]()
+    override def newBuilder[T: SchemaFor : FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderData[T]()
   }
 
-  def builder[T: SchemaFor: FromRecord](format: AvroFormat): AvroInputStreamBuilder[T] = format.newBuilder[T]()
+  def builder[T: SchemaFor : FromRecord](format: AvroFormat): AvroInputStreamBuilder[T] = format.newBuilder[T]()
 
-  abstract class AvroInputStreamBuilder[T: SchemaFor: FromRecord] {
+  abstract class AvroInputStreamBuilder[T: SchemaFor : FromRecord] {
     protected var writerSchema: Option[Schema] = None
     protected var readerSchema: Option[Schema] = None
     protected var inputStream: InputStream = _
@@ -178,32 +208,24 @@ object AvroInputStream {
     def build(): AvroInputStream[T]
   }
 
-  trait FromInputStream { this: AvroInputStreamBuilder[_] =>
+  trait FromInputStream {
+    this: AvroInputStreamBuilder[_] =>
     def from(in: InputStream): this.type = {
       this.inputStream = in
       this
     }
   }
 
-  class AvroInputStreamBuilderJson[T: SchemaFor: FromRecord] extends AvroInputStreamBuilder[T] with FromInputStream {
+  class AvroInputStreamBuilderJson[T: SchemaFor : FromRecord] extends AvroInputStreamBuilder[T] with FromInputStream {
     override def build(): AvroInputStream[T] =
       new AvroJsonInputStream[T](inputStream, writerSchema, readerSchema)
   }
-  class AvroInputStreamBuilderBinary[T: SchemaFor: FromRecord] extends AvroInputStreamBuilder[T] with FromInputStream {
+  class AvroInputStreamBuilderBinary[T: SchemaFor : FromRecord] extends AvroInputStreamBuilder[T] with FromInputStream {
     override def build(): AvroInputStream[T] =
       new AvroBinaryInputStream[T](inputStream, writerSchema, readerSchema)
   }
-  class AvroInputStreamBuilderData[T: SchemaFor: FromRecord] extends AvroInputStreamBuilder[T] {
+  class AvroInputStreamBuilderData[T: SchemaFor : FromRecord] extends AvroInputStreamBuilder[T] {
     override def build(): AvroInputStream[T] =
       new AvroDataInputStream[T](seekableInput, writerSchema, readerSchema)
   }
-
-  @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
-  def apply[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroInputStream[T] = new AvroBinaryInputStream[T](new SeekableByteArrayInput(bytes))
-  @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
-  def apply[T: SchemaFor : FromRecord](path: String): AvroInputStream[T] = apply(new File(path))
-  @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
-  def apply[T: SchemaFor : FromRecord](path: Path): AvroInputStream[T] = apply(path.toFile)
-  @deprecated("Use .json .data or .binary to make it explicit which type of output you want", "1.5.0")
-  def apply[T: SchemaFor : FromRecord](file: File): AvroInputStream[T] = new AvroDataInputStream[T](new SeekableFileInput(file))
 }

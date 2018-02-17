@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.json
 
+import com.sksamuel.avro4s.{LispCase, PascalCase, SnakeCase}
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.io.Source
