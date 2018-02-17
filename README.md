@@ -17,6 +17,8 @@ The features of the library are:
 #### 1.8.2
 - Added support for @AvroName annotation #159
 - Tuple2 and Tuple3 now supported in Schema generation
+- Added support for LocalDateTime
+- Added native support for Seq[Byte] mapped to Schema.Type.Bytes
 
 * 1.6.4 - Added support for Vectors
 * 1.6.3 - Fixed issue with decimal schema using strings instead of ints for scale and precision
@@ -289,6 +291,7 @@ import shapeless.{:+:, CNil}
 |Float|float|
 |java.util.UUID|string|
 |java.time.LocalDate|string|
+|java.time.LocalDateTime|string|
 |Java Enums|enum|
 |sealed trait T|union|
 |sealed trait with only case objects|enum|

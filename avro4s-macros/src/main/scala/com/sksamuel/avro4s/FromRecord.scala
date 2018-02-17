@@ -55,8 +55,20 @@ object FromValue extends LowPriorityFromValue {
     override def apply(value: Any, field: Field): Boolean = value.asInstanceOf[Boolean]
   }
 
+  implicit object ByteFromValue extends FromValue[Byte] {
+    override def apply(value: Any, field: Field): Byte = value.asInstanceOf[Int].toByte
+  }
+
+  implicit object ShortFromValue extends FromValue[Short] {
+    override def apply(value: Any, field: Field): Short = value.asInstanceOf[Int].toShort
+  }
+
   implicit object ByteArrayFromValue extends FromValue[Array[Byte]] {
     override def apply(value: Any, field: Field): Array[Byte] = value.asInstanceOf[ByteBuffer].array
+  }
+
+  implicit object ByteSeqFromValue extends FromValue[Seq[Byte]] {
+    override def apply(value: Any, field: Field): Seq[Byte] = value.asInstanceOf[ByteBuffer].array().toSeq
   }
 
   implicit object DoubleFromValue extends FromValue[Double] {

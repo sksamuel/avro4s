@@ -40,7 +40,7 @@ case class AvroDataOutputStream[T](os: OutputStream, codec: CodecFactory = Codec
 
   val schema = schemaFor()
   val (writer, writeFn) = schema.getType match {
-    case Schema.Type.DOUBLE | Schema.Type.LONG | Schema.Type.BOOLEAN | Schema.Type.STRING =>
+    case Schema.Type.DOUBLE | Schema.Type.LONG | Schema.Type.BOOLEAN | Schema.Type.STRING | Schema.Type.INT | Schema.Type.FLOAT =>
       val datumWriter = new GenericDatumWriter[T](schema)
       val dataFileWriter = new DataFileWriter[T](datumWriter)
       dataFileWriter.setCodec(codec)

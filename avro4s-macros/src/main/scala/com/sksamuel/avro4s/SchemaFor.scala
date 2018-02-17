@@ -53,7 +53,19 @@ object ToSchema extends LowPriorityToSchema {
     }
   }
 
+  implicit object ByteToSchema extends ToSchema[Byte] {
+    protected val schema = Schema.create(Schema.Type.INT)
+  }
+
+  implicit object ShortToSchema extends ToSchema[Short] {
+    protected val schema = Schema.create(Schema.Type.INT)
+  }
+
   implicit object ByteArrayToSchema extends ToSchema[Array[Byte]] {
+    protected val schema = Schema.create(Schema.Type.BYTES)
+  }
+
+  implicit object ByteSeqToSchema extends ToSchema[Seq[Byte]] {
     protected val schema = Schema.create(Schema.Type.BYTES)
   }
 
@@ -63,7 +75,7 @@ object ToSchema extends LowPriorityToSchema {
 
   implicit def EitherToSchema[A, B](implicit aSchema: ToSchema[A], bSchema: ToSchema[B]): ToSchema[Either[A, B]] = {
     new ToSchema[Either[A, B]] {
-      protected val schema = Schema.createUnion(util.Arrays.asList(aSchema.apply, bSchema.apply))
+      protected val schema = Schema.createUnion(util.Arrays.asList(aSchema(), bSchema()))
     }
   }
 
@@ -118,31 +130,31 @@ object ToSchema extends LowPriorityToSchema {
 
   implicit def ArrayToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Array[S]] = {
     new ToSchema[Array[S]] {
-      protected val schema = Schema.createArray(subschema.apply)
+      protected val schema = Schema.createArray(subschema())
     }
   }
 
   implicit def IterableToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Iterable[S]] = {
     new ToSchema[Iterable[S]] {
-      protected val schema = Schema.createArray(subschema.apply)
+      protected val schema = Schema.createArray(subschema())
     }
   }
 
   implicit def ListToSchema[S](implicit subschema: ToSchema[S]): ToSchema[List[S]] = {
     new ToSchema[List[S]] {
-      protected val schema = Schema.createArray(subschema.apply)
+      protected val schema = Schema.createArray(subschema())
     }
   }
 
   implicit def SetToSchema[S](implicit subschema: ToSchema[S]): ToSchema[Set[S]] = {
     new ToSchema[Set[S]] {
-      protected val schema = Schema.createArray(subschema.apply)
+      protected val schema = Schema.createArray(subschema())
     }
   }
 
   implicit def VectorToSchema[S](implicit toschema: ToSchema[S]): ToSchema[Vector[S]] = {
     new ToSchema[Vector[S]] {
-      protected val schema = Schema.createArray(toschema.apply)
+      protected val schema = Schema.createArray(toschema())
     }
   }
 
@@ -230,6 +242,16 @@ trait SchemaFor[T] {
 }
 
 object SchemaFor {
+
+  implicit object ByteSchemaFor extends SchemaFor[Byte] {
+    private val schema = SchemaBuilder.builder().intType()
+    def apply(): org.apache.avro.Schema = schema
+  }
+
+  implicit object ShortSchemaFor extends SchemaFor[Short] {
+    private val schema = SchemaBuilder.builder().intType()
+    def apply(): org.apache.avro.Schema = schema
+  }
 
   implicit object LongSchemaFor extends SchemaFor[Long] {
     private val schema = SchemaBuilder.builder().longType()

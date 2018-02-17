@@ -203,7 +203,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
       val output = new ByteArrayOutputStream
       val avro = AvroOutputStream.data[CPWrapper](output)
       avro.write(CPWrapper(Some(Coproduct[CPWrapper.ISTTB](4))))
-      avro.close
+      avro.close()
 
       val record = read[CPWrapper](output)
       record.get("u").toString shouldBe "4"
@@ -212,7 +212,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
       val output = new ByteArrayOutputStream
       val avro = AvroOutputStream.data[CPWrapper](output)
       avro.write(CPWrapper(Some(Coproduct[CPWrapper.ISTTB](Test2(34.98)))))
-      avro.close
+      avro.close()
 
       val record = read[CPWrapper](output)
       record.get("u").toString shouldBe """{"dec": {"bytes": """" + """\""" + """rª"}}"""
@@ -221,7 +221,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
       val output = new ByteArrayOutputStream
       val avro = AvroOutputStream.data[CPWrapper](output)
       avro.write(CPWrapper(None))
-      avro.close
+      avro.close()
 
       val record = read[CPWrapper](output)
       record.get("u") shouldBe null
@@ -432,6 +432,26 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
       val actual = record.get("records").asInstanceOf[java.util.List[GenericRecord]].asScala.toSet
       actual.map(_.get("str").toString) shouldBe Set("sam", "ham")
       actual.map(_.get("b").toString.toBoolean) shouldBe Set(true, false)
+    }
+    "support bytes" in {
+      case class ByteWrapper(b: Byte)
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[ByteWrapper](output)
+      avro.write(ByteWrapper(3))
+      avro.close()
+
+      val record = read[ByteWrapper](output)
+      record.get("b").asInstanceOf[java.lang.Integer] shouldBe 3
+    }
+    "support Seq[Byte]" in {
+      case class ByteSeq(d: Seq[Byte])
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[ByteSeq](output)
+      avro.write(ByteSeq(Seq[Byte](1, 1, 2, 3, 5, 8)))
+      avro.close()
+
+      val record = read[ByteSeq](output)
+      record.get("d").asInstanceOf[java.nio.ByteBuffer].array().toVector shouldBe Vector[Byte](1, 1, 2, 3, 5, 8)
     }
   }
 }

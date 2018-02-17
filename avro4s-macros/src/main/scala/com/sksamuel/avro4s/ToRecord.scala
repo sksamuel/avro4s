@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
@@ -119,8 +119,20 @@ object ToValue extends LowPriorityToValue {
     }
   }
 
+  implicit object ByteToValue extends ToValue[Byte] {
+    override def apply(value: Byte) = value.toInt
+  }
+
+  implicit object ShortToValue extends ToValue[Short] {
+    override def apply(value: Short) = value.toInt
+  }
+
   implicit object ByteArrayToValue extends ToValue[Array[Byte]] {
     override def apply(value: Array[Byte]): ByteBuffer = ByteBuffer.wrap(value)
+  }
+
+  implicit object ByteSeqToValue extends ToValue[Seq[Byte]] {
+    override def apply(value: Seq[Byte]): ByteBuffer = ByteBuffer.wrap(value.toArray[Byte])
   }
 
   implicit def MapToValue[T](implicit tovalue: ToValue[T]) = new ToValue[Map[String, T]] {
