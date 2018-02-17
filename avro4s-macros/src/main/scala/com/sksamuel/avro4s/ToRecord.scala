@@ -212,12 +212,9 @@ object ToRecord {
 
       fixedAnnotation match {
         case Some(AvroFixed(size)) =>
-          q"""{
-            shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixed[$sig])
-          }
-          """
+          q"""{_root_.shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixed[$sig])}"""
         case None =>
-          q"""com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
+          q"""_root_.com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
       }
     }
 
@@ -239,7 +236,7 @@ object ToRecord {
         if (fixedAnnotation.nonEmpty) {
           q"""
           {
-            val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.ToValue[$sig]]]
+            val converter = converters($idx).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.ToValue[$sig]]]
             record.put($fieldName, converter.value(t.$name : $sig))
           }
           """
@@ -249,14 +246,14 @@ object ToRecord {
           val valueFieldName = valueCstr.name.asInstanceOf[c.TermName]
           q"""
           {
-            val converter = com.sksamuel.avro4s.ToRecord.lazyConverter[$valueFieldType]
+            val converter = _root_.com.sksamuel.avro4s.ToRecord.lazyConverter[$valueFieldType]
             record.put($fieldName, converter.value(t.$name.$valueFieldName : $valueFieldType))
           }
           """
         } else {
           q"""
           {
-            val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.ToValue[$sig]]]
+            val converter = converters($idx).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.ToValue[$sig]]]
             record.put($fieldName, converter.value(t.$name : $sig))
           }
           """
@@ -264,13 +261,13 @@ object ToRecord {
     }
 
     c.Expr[ToRecord[T]](
-      q"""new com.sksamuel.avro4s.ToRecord[$tpe] {
-            private val schemaFor : com.sksamuel.avro4s.SchemaFor[$tpe] = com.sksamuel.avro4s.SchemaFor[$tpe]
-            private val converters : Array[shapeless.Lazy[com.sksamuel.avro4s.ToValue[_]]] = Array(..$converters)
+      q"""new _root_.com.sksamuel.avro4s.ToRecord[$tpe] {
+            private val schemaFor : _root_.com.sksamuel.avro4s.SchemaFor[$tpe] = _root_.com.sksamuel.avro4s.SchemaFor[$tpe]
+            private val converters : Array[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.ToValue[_]]] = Array(..$converters)
 
-            def apply(t : $tpe): org.apache.avro.generic.GenericRecord = {
+            def apply(t : $tpe): _root_.org.apache.avro.generic.GenericRecord = {
 
-              val record = new org.apache.avro.generic.GenericData.Record(schemaFor())
+              val record = new _root_.org.apache.avro.generic.GenericData.Record(schemaFor())
               ..$puts
               record
             }

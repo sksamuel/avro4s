@@ -295,12 +295,9 @@ object FromRecord {
 
       fixedAnnotation match {
         case Some(fixed) =>
-          q"""{
-            null
-          }
-          """
+          q"""{null}"""
         case None =>
-          q"""com.sksamuel.avro4s.FromRecord.lazyConverter[$sig]"""
+          q"""_root_.com.sksamuel.avro4s.FromRecord.lazyConverter[$sig]"""
       }
     }
 
@@ -319,7 +316,7 @@ object FromRecord {
         if (fixedAnnotation.nonEmpty) {
           q"""
           {
-            val value = record.get($decoded).asInstanceOf[org.apache.avro.generic.GenericData.Fixed]
+            val value = record.get($decoded).asInstanceOf[_root_.org.apache.avro.generic.GenericData.Fixed]
             new $sig(new scala.collection.mutable.WrappedArray.ofByte(value.bytes()))
           }
           """
@@ -331,7 +328,7 @@ object FromRecord {
           // that refers to the value class itself, and not the variable inside the value class
           q"""
           {
-            val converter = com.sksamuel.avro4s.FromRecord.lazyConverter[$valueFieldType]
+            val converter = _root_.com.sksamuel.avro4s.FromRecord.lazyConverter[$valueFieldType]
             val value = converter.value(record.get($decoded), record.getSchema.getField($decoded))
             new $sig(value)
           }
@@ -339,7 +336,7 @@ object FromRecord {
         } else {
           q"""
           {
-            val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.FromValue[$sig]]]
+            val converter = converters($idx).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.FromValue[$sig]]]
             converter.value(record.get($decoded), record.getSchema.getField($decoded))
           }
           """
@@ -347,10 +344,9 @@ object FromRecord {
     }
 
     c.Expr[FromRecord[T]](
-      q"""new com.sksamuel.avro4s.FromRecord[$tpe] {
-            private val converters: Array[shapeless.Lazy[com.sksamuel.avro4s.FromValue[_]]] = Array(..$converters)
-
-            def apply(record: org.apache.avro.generic.GenericRecord): $tpe = {
+      q"""new _root_.com.sksamuel.avro4s.FromRecord[$tpe] {
+            private val converters: Array[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.FromValue[_]]] = Array(..$converters)
+            def apply(record: _root_.org.apache.avro.generic.GenericRecord): $tpe = {
               $companion.apply(..$fromValues)
             }
           }

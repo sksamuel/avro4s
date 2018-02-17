@@ -313,7 +313,7 @@ object SchemaFor {
     def annotations(sym: Symbol): Seq[c.Tree] = sym.annotations.map { a =>
       val name = a.tree.tpe.typeSymbol.fullName
       val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-      q"com.sksamuel.avro4s.Anno($name, $args)"
+      q"_root_.com.sksamuel.avro4s.Anno($name, $args)"
     }
 
     lazy val fixedAnnotation: Option[AvroFixed] = tType.typeSymbol.annotations.collectFirst {
@@ -353,12 +353,12 @@ object SchemaFor {
         val member = underlyingType.companion.member(defaultGetterName)
 
         if (f.isTerm && f.asTerm.isParamWithDefault && member.isMethod) {
-          q"""{ com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $member) }"""
+          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $member) }"""
         } else if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
           val enumClass = f.typeSignature.toString.stripSuffix(".Value")
-          q"""{ com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }"""
+          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }"""
         } else {
-          q"""{ com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), null) }"""
+          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), null) }"""
         }
       }
     }
@@ -381,9 +381,9 @@ object SchemaFor {
     if (valueClass) {
       c.Expr[SchemaFor[T]](
         q"""
-        new com.sksamuel.avro4s.SchemaFor[$tType] {
-          private val schema: org.apache.avro.Schema = com.sksamuel.avro4s.SchemaFor.valueInvoker[$underlyingType]
-          def apply(): org.apache.avro.Schema = schema
+        new _root_.com.sksamuel.avro4s.SchemaFor[$tType] {
+          private val schema: _root_.org.apache.avro.Schema = _root_.com.sksamuel.avro4s.SchemaFor.valueInvoker[$underlyingType]
+          def apply(): _root_.org.apache.avro.Schema = schema
         }
       """
       )
@@ -391,23 +391,21 @@ object SchemaFor {
       fixedAnnotation match {
         case Some(AvroFixed(size)) =>
           val expr = c.Expr[SchemaFor[T]](
-            q"""
-              com.sksamuel.avro4s.SchemaFor.fixedSchemaFor[$tType]($name, Seq(..$annos), $pack, $size)
-            """
+            q"""_root_.com.sksamuel.avro4s.SchemaFor.fixedSchemaFor[$tType]($name, Seq(..$annos), $pack, $size)"""
           )
           expr
         case None =>
           c.Expr[SchemaFor[T]](
             q"""
-            new com.sksamuel.avro4s.SchemaFor[$tType] {
-              val (incompleteSchema: org.apache.avro.Schema, completeSchema: shapeless.Lazy[org.apache.avro.Schema]) = {
-                com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
+            new _root_.com.sksamuel.avro4s.SchemaFor[$tType] {
+              val (incompleteSchema: _root_.org.apache.avro.Schema, completeSchema: _root_.shapeless.Lazy[_root_.org.apache.avro.Schema]) = {
+               _root_.com.sksamuel.avro4s.SchemaFor.recordBuilder[$tType](
                   $name,
                   $pack,
-                  shapeless.Lazy {
+               _root_.shapeless.Lazy {
                     val selfSchema = incompleteSchema
-                    implicit val _: com.sksamuel.avro4s.ToSchema[$tType] = new com.sksamuel.avro4s.ToSchema[$tType] {
-                      val schema: org.apache.avro.Schema = selfSchema
+                    implicit val _: _root_.com.sksamuel.avro4s.ToSchema[$tType] = new _root_.com.sksamuel.avro4s.ToSchema[$tType] {
+                      val schema: _root_.org.apache.avro.Schema = selfSchema
                     }
                     Seq(..$fieldSchemaPartTrees)
                   },
