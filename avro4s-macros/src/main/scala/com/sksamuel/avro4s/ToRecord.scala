@@ -202,19 +202,10 @@ object ToRecord {
 
     val constructorArgumentsWithTypes = helper.fieldsOf(tpe)
     val converters: Seq[Tree] = constructorArgumentsWithTypes.map { case (sym, sig) =>
-
-      val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
-        case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
-          anno.tree.children.tail match {
-            case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
-          }
-      }
-
-      fixedAnnotation match {
-        case Some(AvroFixed(size)) =>
-          q"""{_root_.shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixed[$sig])}"""
-        case None =>
-          q"""_root_.com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
+      val fixed = helper.fixed(sym)
+      fixed match {
+        case Some(_) =>q"""{_root_.shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixed[$sig])}"""
+        case None => q"""_root_.com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
       }
     }
 
@@ -222,18 +213,12 @@ object ToRecord {
       case ((f, sig), idx) =>
         val name = f.name.asInstanceOf[c.TermName]
         val fieldName: String = name.decodedName.toString
-        val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
-          case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
-            anno.tree.children.tail match {
-              case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
-            }
-        }
-
+        val fixed = helper.fixed(f)
         val valueClass = sig.typeSymbol.isClass && sig.typeSymbol.asClass.isDerivedValueClass
 
         // if a field is a value class we need to handle it here, using a converter
         // for the underlying value rather than the actual value class
-        if (fixedAnnotation.nonEmpty) {
+        if (fixed.nonEmpty) {
           q"""
           {
             val converter = converters($idx).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.ToValue[$sig]]]
