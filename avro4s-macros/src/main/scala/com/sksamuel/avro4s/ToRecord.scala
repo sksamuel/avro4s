@@ -81,6 +81,10 @@ object ToValue extends LowPriorityToValue {
     override def apply(value: LocalDate): String = value.format(DateTimeFormatter.ISO_LOCAL_DATE)
   }
 
+  implicit object LocalDateTimeToValue extends ToValue[LocalDateTime] {
+    override def apply(value: LocalDateTime): String = value.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+  }
+
   implicit def BigDecimalToValue(implicit sp: ScaleAndPrecisionAndRoundingMode = defaultScaleAndPrecisionAndRoundingMode): ToValue[BigDecimal] = {
     val decimalConversion = new Conversions.DecimalConversion
     val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)

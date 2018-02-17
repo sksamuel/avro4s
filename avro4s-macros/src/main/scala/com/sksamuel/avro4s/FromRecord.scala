@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
@@ -97,6 +97,10 @@ object FromValue extends LowPriorityFromValue {
 
   implicit object LocalDateFromValue extends FromValue[LocalDate] {
     override def apply(value: Any, field: Field): LocalDate = LocalDate.parse(value.toString)
+  }
+
+  implicit object LocalDateTimeToValue extends FromValue[LocalDateTime] {
+    override def apply(value: Any, field: Field): LocalDateTime = LocalDateTime.parse(value.toString)
   }
 
   implicit def OptionFromValue[T](implicit fromvalue: FromValue[T]) = new FromValue[Option[T]] {
