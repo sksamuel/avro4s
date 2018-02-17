@@ -8,7 +8,7 @@ import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, LogicalTypes}
+import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inr, Lazy}
@@ -46,7 +46,11 @@ object FromValue extends LowPriorityFromValue {
       val decimalConversion = new Conversions.DecimalConversion
       val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
       override def apply(value: Any, field: Field): BigDecimal = {
-        decimalConversion.fromBytes(value.asInstanceOf[ByteBuffer], null, decimalType)
+        if (value == null && field.defaultVal() != null) {
+          decimalConversion.fromBytes(ByteBuffer.wrap(field.defaultVal.asInstanceOf[Array[Byte]]), null, decimalType)
+        } else {
+          decimalConversion.fromBytes(value.asInstanceOf[ByteBuffer], null, decimalType)
+        }
       }
     }
   }
@@ -56,7 +60,9 @@ object FromValue extends LowPriorityFromValue {
   }
 
   implicit object ByteArrayFromValue extends FromValue[Array[Byte]] {
-    override def apply(value: Any, field: Field): Array[Byte] = value.asInstanceOf[ByteBuffer].array
+    override def apply(value: Any, field: Field): Array[Byte] = {
+      value.asInstanceOf[ByteBuffer].array
+    }
   }
 
   implicit object DoubleFromValue extends FromValue[Double] {
@@ -76,7 +82,13 @@ object FromValue extends LowPriorityFromValue {
   }
 
   implicit object StringFromValue extends FromValue[String] {
-    override def apply(value: Any, field: Field): String = value.toString
+    override def apply(value: Any, field: Field): String = {
+      if (value == null && field.defaultVal != null) {
+        field.defaultVal.toString
+      } else {
+        value.toString
+      }
+    }
   }
 
   implicit object UUIDFromValue extends FromValue[UUID] {
@@ -260,7 +272,22 @@ object FromRecord {
 
   implicit def apply[T]: FromRecord[T] = macro applyImpl[T]
 
+  def withReaderSchema[T](implicit readerSchema: Option[Schema]): FromRecord[T] = macro applyImplWithReaderSchema[T]
+
+  def withInferredReaderSchema[T]: FromRecord[T] = macro applyImplWithInferredReaderSchema[T]
+
   def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[FromRecord[T]] = {
+    import c.universe._
+    applyImplWithReaderSchema[T](c)(c.Expr[Option[Schema]](q"None"))
+  }
+
+  def applyImplWithInferredReaderSchema[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[FromRecord[T]] = {
+    import c.universe._
+    val schemaFor = SchemaFor.applyImpl[T](c)
+    applyImplWithReaderSchema[T](c)(c.Expr[Option[Schema]](q"Some($schemaFor.apply())"))
+  }
+
+  def applyImplWithReaderSchema[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context)(readerSchema: c.Expr[Option[Schema]]): c.Expr[FromRecord[T]] = {
     import c.universe._
     val helper = TypeHelper(c)
     val tpe = weakTypeTag[T].tpe
@@ -316,7 +343,7 @@ object FromRecord {
           q"""
           {
             val converter = com.sksamuel.avro4s.FromRecord.lazyConverter[$valueFieldType]
-            val value = converter.value(record.get($decoded), record.getSchema.getField($decoded))
+            val value = converter.value(record.get($decoded), schema.getField($decoded))
             new $sig(value)
           }
           """
@@ -324,7 +351,7 @@ object FromRecord {
           q"""
           {
             val converter = converters($idx).asInstanceOf[shapeless.Lazy[com.sksamuel.avro4s.FromValue[$sig]]]
-            converter.value(record.get($decoded), record.getSchema.getField($decoded))
+            converter.value(record.get($decoded), schema.getField($decoded))
           }
           """
         }
@@ -332,9 +359,11 @@ object FromRecord {
 
     c.Expr[FromRecord[T]](
       q"""new com.sksamuel.avro4s.FromRecord[$tpe] {
+
             private val converters: Array[shapeless.Lazy[com.sksamuel.avro4s.FromValue[_]]] = Array(..$converters)
 
             def apply(record: org.apache.avro.generic.GenericRecord): $tpe = {
+              val schema = $readerSchema.getOrElse(record.getSchema)
               $companion.apply(..$fromValues)
             }
           }
