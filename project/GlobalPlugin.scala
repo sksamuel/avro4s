@@ -11,8 +11,8 @@ object GlobalPlugin extends AutoPlugin {
 
   val AvroVersion = "1.8.2"
   val Log4jVersion = "1.2.17"
-  val ScalatestVersion = "3.0.0"
-  val ScalaVersion = "2.12.1"
+  val ScalatestVersion = "3.0.1"
+  val ScalaVersion = "2.11.12"
   val Slf4jVersion = "1.7.12"
 
   override def requires = ReleasePlugin
