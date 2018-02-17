@@ -215,7 +215,7 @@ object ToSchema extends LowPriorityToSchema {
         .getOrElse(ct.runtimeClass.getPackage.getName)
       val name = ct.runtimeClass.getSimpleName
       val symbols = toList(objs()).map(_.toString).asJava
-      Schema.createEnum(name, null, namespace.toString, symbols)
+      Schema.createEnum(name, null, namespace, symbols)
     }
   }
 
@@ -463,7 +463,7 @@ object SchemaFor {
   def schemaForEnumClass(enumClassName: String): Schema = {
     val enumClass = Class.forName(enumClassName)
     val values = enumClass.getMethod("values").invoke(null).asInstanceOf[scala.Enumeration#ValueSet].iterator.toList.map(_.toString)
-    Schema.createEnum(enumClass.getSimpleName, null, null, values.asJava)
+    Schema.createEnum(enumClass.getSimpleName, null, enumClass.getPackage.getName, values.asJava)
   }
 
   /**
