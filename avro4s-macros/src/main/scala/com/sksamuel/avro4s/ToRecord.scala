@@ -224,8 +224,13 @@ object ToRecord {
           """
           // else if the field has been annotated with fixed, then we need to convert
           // the field value into a byte array
+        } else if (fieldFixed.nonEmpty) {
+          val size = fieldFixed.get.size
+          q"""
+          {
 
-
+          }
+          """
           // if a field is a value class we need to handle it here, using a converter
           // for the underlying value rather than the actual value class
         } else if (valueClass) {
@@ -250,15 +255,16 @@ object ToRecord {
 
     c.Expr[ToRecord[T]](
       q"""new _root_.com.sksamuel.avro4s.ToRecord[$tpe] {
-            private val schema = _root_.com.sksamuel.avro4s.SchemaFor[$tpe]()
+            private val schemaFor : _root_.com.sksamuel.avro4s.SchemaFor[$tpe] = _root_.com.sksamuel.avro4s.SchemaFor[$tpe]
             private val converters : Array[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.ToValue[_]]] = Array(..$converters)
+
             def apply(t : $tpe): _root_.org.apache.avro.generic.GenericRecord = {
-              val record = new _root_.org.apache.avro.generic.GenericData.Record(schema)
+
+              val record = new _root_.org.apache.avro.generic.GenericData.Record(schemaFor())
               ..$puts
               record
             }
-          }
-        """
+          }"""
     )
   }
 
