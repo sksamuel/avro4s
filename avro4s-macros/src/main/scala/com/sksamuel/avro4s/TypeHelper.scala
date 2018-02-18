@@ -1,13 +1,22 @@
 package com.sksamuel.avro4s
 
-import scala.reflect.macros.whitebox.Context
+import scala.reflect.macros.whitebox
 
-class TypeHelper[C <: Context](val c: C) {
-  def fieldsOf(tpe: c.universe.Type) = {
-    import c.universe._
-    val primaryConstructorOpt = tpe.members.collectFirst {
-      case method: MethodSymbolApi if method.isPrimaryConstructor => method
+class TypeHelper[C <: whitebox.Context](val c: C) {
+
+  import c.universe._
+
+  def primaryConstructor(tpe: c.Type): Option[MethodSymbol] = {
+    val constructorSymbol = tpe.decl(termNames.CONSTRUCTOR)
+    if (constructorSymbol.isMethod) Some(constructorSymbol.asMethod)
+    else {
+      val ctors = constructorSymbol.asTerm.alternatives
+      ctors.map(_.asMethod).find(_.isPrimaryConstructor)
     }
+  }
+
+  def fieldsOf(tpe: c.universe.Type) = {
+    val primaryConstructorOpt = primaryConstructor(tpe)
 
     primaryConstructorOpt.map { constructor =>
       val constructorTypeContext = constructor.typeSignatureIn(tpe).dealias
@@ -17,8 +26,29 @@ class TypeHelper[C <: Context](val c: C) {
       }.getOrElse(Nil)
     }.getOrElse(Nil)
   }
+
+  def primaryConstructorParams(tpe: c.Type): List[(c.Symbol, c.Type)] = {
+    val constructorTypeContext = primaryConstructor(tpe).get.typeSignatureIn(tpe).dealias
+    val constructorArguments = constructorTypeContext.paramLists.reduce(_ ++ _)
+    constructorArguments.map { symbol =>
+      symbol -> symbol.typeSignatureIn(constructorTypeContext).dealias
+    }
+  }
+
+  def findAnnotation[A <: scala.annotation.Annotation, B](sym: c.Symbol)(f: PartialFunction[List[c.Tree], B]): Option[B] = {
+    sym.annotations.collectFirst {
+      case anno if anno.tree.tpe <:< c.weakTypeOf[A] => f(anno.tree.children.tail)
+    }
+  }
+
+  def fixed(sym: c.Symbol): Option[AvroFixed] = sym.annotations.collectFirst {
+    case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
+      anno.tree.children.tail match {
+        case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
+      }
+  }
 }
 
 object TypeHelper {
-  def apply[C <: Context](c: C): TypeHelper[c.type] = new TypeHelper[c.type](c)
+  def apply[C <: whitebox.Context](c: C): TypeHelper[c.type] = new TypeHelper[c.type](c)
 }

@@ -202,19 +202,9 @@ object ToRecord {
 
     val constructorArgumentsWithTypes = helper.fieldsOf(tpe)
     val converters: Seq[Tree] = constructorArgumentsWithTypes.map { case (sym, sig) =>
-
-      val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
-        case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
-          anno.tree.children.tail match {
-            case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
-          }
-      }
-
-      fixedAnnotation match {
-        case Some(AvroFixed(size)) =>
-          q"""{_root_.shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixed[$sig])}"""
-        case None =>
-          q"""_root_.com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
+      helper.fixed(sig.typeSymbol) match {
+        case Some(AvroFixed(_)) => q"""{_root_.shapeless.Lazy(com.sksamuel.avro4s.ToValue.fixed[$sig])}"""
+        case None => q"""_root_.com.sksamuel.avro4s.ToRecord.lazyConverter[$sig]"""
       }
     }
 
