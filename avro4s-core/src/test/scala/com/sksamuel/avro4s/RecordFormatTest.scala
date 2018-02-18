@@ -3,12 +3,25 @@ package com.sksamuel.avro4s
 import org.scalatest.{Matchers, WordSpec}
 import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
+case class Department(name: String, head: Employee)
+sealed trait Employee {
+  def name: String
+}
+final case class RankAndFile(name: String, jobTitle: String) extends Employee
+final case class BigBoss(name: String) extends Employee
+
 class RecordFormatTest extends WordSpec with Matchers {
   case class Composer(name: String, birthplace: String, compositions: Seq[String])
 
   case class Book(title: String)
   case class Song(title: String, lyrics: String)
   case class Author[T](name: String, birthplace: String, work: Seq[T])
+
+  val joe = RankAndFile("Joe", "grunt")
+  val bob = BigBoss("Bob")
+
+  val sales = Department("sales", bob)
+  val floor = Department("floor", joe)
 
   "RecordFormat" should {
     "convert to/from record" in {
@@ -33,6 +46,12 @@ class RecordFormatTest extends WordSpec with Matchers {
       fmt.from(fmt.to(wrapper2)) shouldBe wrapper2
     }
 
+    "support sealed traits with members" in {
+      val fmt = RecordFormat[Department]
+      fmt.from(fmt.to(sales)) shouldBe sales
+      fmt.from(fmt.to(floor)) shouldBe floor
+    }
+
     "convert to/from records of generic classes" in {
       val author1 = Author[Book]("Heraclitus", "Ephesus", Seq(Book("Panta Rhei")))
       val fmt = RecordFormat[Author[Book]]
@@ -52,8 +71,8 @@ class RecordFormatTest extends WordSpec with Matchers {
       val result1 = format.from(record1)
       val result2 = format.from(record2)
 
-      result1 should be (first)
-      result2 should be (second)
+      result1 should be(first)
+      result2 should be(second)
     }
   }
 }

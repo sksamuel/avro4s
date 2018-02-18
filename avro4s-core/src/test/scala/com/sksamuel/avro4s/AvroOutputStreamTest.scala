@@ -7,18 +7,13 @@ import java.util.UUID
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.io.DecoderFactory
 import org.apache.avro.util.Utf8
 import org.scalatest.concurrent.TimeLimits
 import org.scalatest.{Matchers, WordSpec}
 import shapeless.{:+:, CNil, Coproduct}
 
 import scala.collection.JavaConverters._
-
-sealed trait Dibble
-case class Dobble(str: String) extends Dibble
-case class Dabble(dbl: Double) extends Dibble
-
-case class Drapper(dibble: Dibble)
 
 case class Test1(wine: Wine)
 case class Test2(dec: BigDecimal)
@@ -53,10 +48,17 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
   def read[T](bytes: Array[Byte])(implicit schema: SchemaFor[T]): GenericRecord = {
     val datumReader = new GenericDatumReader[GenericRecord](schema())
     val dataFileReader = new DataFileReader[GenericRecord](new SeekableByteArrayInput(bytes), datumReader)
-     new Iterator[GenericRecord] {
+    new Iterator[GenericRecord] {
       override def hasNext: Boolean = dataFileReader.hasNext
       override def next(): GenericRecord = dataFileReader.next
     }.toList.head
+  }
+
+  def readB[T](out: ByteArrayOutputStream)(implicit schema: SchemaFor[T]): GenericRecord = readB(out.toByteArray)
+  def readB[T](bytes: Array[Byte])(implicit schema: SchemaFor[T]): GenericRecord = {
+    val datumReader = new GenericDatumReader[GenericRecord](schema())
+    val decoder = DecoderFactory.get().binaryDecoder(bytes, null)
+    datumReader.read(null, decoder)
   }
 
   "AvroOutputStream" should {
@@ -453,8 +455,59 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
       val record = read[ByteSeq](output)
       record.get("d").asInstanceOf[java.nio.ByteBuffer].array().toVector shouldBe Vector[Byte](1, 1, 2, 3, 5, 8)
     }
+    "support sealed traits with members" in {
+      {
+        val output = new ByteArrayOutputStream
+        val avro = AvroOutputStream.data[Department](output)
+        val sales = Department("sales", BigBoss("Bob"))
+        avro.write(sales)
+        avro.close()
+
+        val record = read[Department](output)
+        record.get("name") shouldBe new Utf8("sales")
+        record.get("head").asInstanceOf[GenericRecord].get("name") shouldBe new Utf8("Bob")
+      }
+      {
+        val output = new ByteArrayOutputStream
+        val avro = AvroOutputStream.data[Department](output)
+        val sales = Department("floor", RankAndFile("Joe", "Foreman"))
+        avro.write(sales)
+        avro.close()
+
+        val record = read[Department](output)
+        record.get("name") shouldBe new Utf8("floor")
+        record.get("head").asInstanceOf[GenericRecord].get("name") shouldBe new Utf8("Joe")
+        record.get("head").asInstanceOf[GenericRecord].get("jobTitle") shouldBe new Utf8("Foreman")
+      }
+    }
+    "support Array[Byte] in Either for data stream" in {
+      val a = EitherWithByte("z", Right("value".getBytes))
+
+      val baos = new ByteArrayOutputStream()
+      val os = AvroOutputStream.data[EitherWithByte](baos)
+      os.write(a)
+      os.close()
+
+      val record = read[EitherWithByte](baos)
+      record.get("key") shouldBe new Utf8("z")
+      record.get("value").asInstanceOf[ByteBuffer].array().toVector shouldBe "value".getBytes.toVector
+    }
+    "support Array[Byte] in Either for a binary stream" in {
+      val a = EitherWithByte("z", Right("value".getBytes))
+
+      val baos = new ByteArrayOutputStream()
+      val os = AvroOutputStream.binary[EitherWithByte](baos)
+      os.write(a)
+      os.close()
+
+      val record = readB[EitherWithByte](baos)
+      record.get("key") shouldBe new Utf8("z")
+      record.get("value").asInstanceOf[ByteBuffer].array().toVector shouldBe "value".getBytes.toVector
+    }
   }
 }
+
+case class EitherWithByte(key: String, value: Either[Int, Array[Byte]])
 
 object Colours extends Enumeration {
   val Red, Amber, Green = Value
@@ -462,5 +515,3 @@ object Colours extends Enumeration {
 case class ScalaEnums(value: Colours.Value)
 
 case class ScalaOptionEnums(value: Option[Colours.Value])
-
-
