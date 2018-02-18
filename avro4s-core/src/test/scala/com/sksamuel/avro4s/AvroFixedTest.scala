@@ -3,9 +3,10 @@ package com.sksamuel.avro4s
 import java.io.ByteArrayOutputStream
 
 import org.apache.avro.Schema.Type
+import org.apache.avro.generic.GenericData
 import org.scalatest.{Matchers, WordSpec}
 
-class FixedTypeTest extends WordSpec with Matchers {
+class AvroFixedTest extends WordSpec with Matchers {
   val m = AvroMessage(
     QuarterSHA256(new scala.collection.mutable.WrappedArray.ofByte(Array[Byte](0, 1, 2, 3, 4, 5, 6, 7))),
     Array[Byte](0, 1, 2, 3))
@@ -39,10 +40,14 @@ class FixedTypeTest extends WordSpec with Matchers {
       decoded.schema shouldBe m.schema
       decoded.payload.toSeq shouldBe m.payload.toSeq
     }
-    "support usage on arbitary types" in {
+    "support usage on strings" in {
       val schema = SchemaFor[FixedString]()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/fixed_string.json"))
       schema.toString(true) shouldBe expected.toString(true)
+
+      val fmt = RecordFormat[FixedString]
+      val a = fmt.to(FixedString("sam"))
+      a.get("mystring").asInstanceOf[GenericData.Fixed].bytes().toVector shouldBe Vector[Byte](115, 97, 109)
     }
   }
 }

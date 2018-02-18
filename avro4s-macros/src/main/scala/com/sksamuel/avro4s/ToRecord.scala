@@ -8,7 +8,7 @@ import java.util.UUID
 import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
-import org.apache.avro.{Conversions, LogicalTypes, Schema}
+import org.apache.avro.{Conversions, LogicalTypes}
 import shapeless.ops.coproduct.Reify
 import shapeless.{:+:, CNil, Coproduct, Generic, Inl, Inr, Lazy}
 
@@ -34,10 +34,6 @@ trait LowPriorityToValue {
 }
 
 object LowPriorityToValue {
-
-  class FixedStringToValue(schema: Schema) extends ToValue[String] {
-    override def apply(str: String): Any = new org.apache.avro.generic.GenericData.Fixed(schema, str.getBytes("UTF-8").array)
-  }
 
   def fixedImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[ToValue[T]] = {
     import c.universe._
@@ -228,7 +224,9 @@ object ToRecord {
           val size = fieldFixed.get.size
           q"""
           {
-
+             val schema = _root_.org.apache.avro.SchemaBuilder.fixed($fieldName).size($size)
+             val f = new _root_.org.apache.avro.generic.GenericData.Fixed(schema, t.$name.getBytes("UTF-8").array)
+             record.put($fieldName, f)
           }
           """
           // if a field is a value class we need to handle it here, using a converter
