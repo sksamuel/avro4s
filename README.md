@@ -19,11 +19,21 @@ The features of the library are:
 
 ##### 1.8.2
 - Added support for @AvroName annotation #159
-- Tuple2 and Tuple3 now supported in Schema generation
+- Tuple2 and Tuple3 now supported in Schema generation #156
 - Added support for LocalDateTime
 - Added native support for Seq[Byte] mapped to Schema.Type.Bytes
+- Bumped Avro library to 1.8.2
+- @AvroFixed support for Strings
+- @AvroNamespace works on traits
+- Support overriding namespace per field #171
 
 ##### 1.8.1
+- Fix NPE in support for Scala enumerations #158
+- Added scaling support for BigDecmials #142
+
+##### 1.8.0
+- Fixed bug with conversions to and from BigDecimal #127
+- Fixed support for value classes in scala 2.11
 
 * 1.6.4 - Added support for Vectors
 * 1.6.3 - Fixed issue with decimal schema using strings instead of ints for scale and precision
