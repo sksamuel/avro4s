@@ -15,7 +15,7 @@ import shapeless.{:+:, CNil, Coproduct}
 
 import scala.collection.JavaConverters._
 
-case class Test1(wine: Wine)
+case class WineCrate(wine: Wine)
 case class Test2(dec: BigDecimal)
 
 case class Foo(str: String, boolean: Boolean)
@@ -35,11 +35,11 @@ case class NestedMapTest(map: Map[String, Foo])
 case class ValueWrapper(valueClass: ValueClass)
 case class ValueClass(value: String) extends AnyVal
 
-case class EitherCaseClasses(e: Either[Test1, Test2])
+case class EitherCaseClasses(e: Either[WineCrate, Test2])
 
 case class CPWrapper(u: Option[CPWrapper.ISTTB])
 object CPWrapper {
-  type ISTTB = Int :+: String :+: Test1 :+: Test2 :+: Boolean :+: CNil
+  type ISTTB = Int :+: String :+: WineCrate :+: Test2 :+: Boolean :+: CNil
 }
 
 class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
@@ -62,16 +62,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
   }
 
   "AvroOutputStream" should {
-    "support java enums" in {
-
-      val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream.data[Test1](output)
-      avro.write(Test1(Wine.Malbec))
-      avro.close()
-
-      val record = read[Test1](output)
-      record.get("wine").toString shouldBe Wine.Malbec.name
-    }
     "write big decimal" in {
 
       val output = new ByteArrayOutputStream
@@ -165,7 +155,7 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
     "write eithers of case classes" in {
       val output1 = new ByteArrayOutputStream
       val avro1 = AvroOutputStream.data[EitherCaseClasses](output1)
-      avro1.write(EitherCaseClasses(Left(Test1(Wine.CabSav))))
+      avro1.write(EitherCaseClasses(Left(WineCrate(Wine.CabSav))))
       avro1.close()
 
       val record1 = read[EitherCaseClasses](output1)

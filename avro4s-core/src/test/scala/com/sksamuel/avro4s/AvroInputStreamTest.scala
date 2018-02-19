@@ -67,14 +67,6 @@ class AvroInputStreamTest extends WordSpec with Matchers with TimeLimits {
   }
 
   "AvroInputStream" should {
-    "read enums" in {
-      val data = Seq(Enums(Wine.Malbec), Enums(Wine.Shiraz))
-      val bytes = write(data)
-
-      val in = AvroInputStream.data[Enums](bytes)
-      in.iterator.toList shouldBe data.toList
-      in.close()
-    }
     "read big decimals" in {
       val data = Seq(BigDecimalTest(1235.52), BigDecimalTest(1234.68))
       val bytes = write(data)

@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "JavaEnumOptional",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "maybewine",
+      "type": [
+        "null",
+        {
+          "type": "enum",
+          "name": "Wine",
+          "symbols": [
+            "Malbec", "Shiraz", "CabSav", "Merlot"
+          ]
+        }
+      ]
+    }
+  ]
+}

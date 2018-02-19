@@ -138,12 +138,12 @@ object ToValue extends LowPriorityToValue {
     }
   }
 
-  implicit def JavaEnumToValue[E <: Enum[_]]: ToValue[E] = new ToValue[E] {
-    override def apply(value: E): Any = new EnumSymbol(null, value)
+  implicit def JavaEnumToValue[E <: Enum[_]](implicit toSchema: ToSchema[E]): ToValue[E] = new ToValue[E] {
+    override def apply(value: E): Any = new EnumSymbol(toSchema(), value)
   }
 
   implicit def ScalaEnumToValue[E <: Enumeration#Value](implicit toSchema: ToSchema[E]): ToValue[E] = new ToValue[E] {
-    override def apply(value: E): Any = new EnumSymbol(toSchema.apply(), value.toString)
+    override def apply(value: E): Any = new EnumSymbol(toSchema(), value.toString)
   }
 
   implicit def EitherToValue[T, U](implicit lefttovalue: ToValue[T], righttovalue: ToValue[U]) = new ToValue[Either[T, U]] {

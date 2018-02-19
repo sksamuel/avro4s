@@ -250,12 +250,7 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[Test]()
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "accept java enums" in {
-      case class Test(wine: Wine)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/enum.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
+
     "support sealed traits" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.avsc"))
       val schema = SchemaFor[Wrapper]()
@@ -302,7 +297,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
   }
-
   "support scala enums" in {
     val schema = SchemaFor[ScalaEnums]()
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/scalaenums.avsc"))
