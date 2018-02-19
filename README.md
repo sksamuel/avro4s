@@ -14,11 +14,16 @@ The features of the library are:
 
 ## Changelog
 
-#### 1.8.2
+##### 1.8.3
+- Fixed issue with serializing optional unions of Java enums
+
+##### 1.8.2
 - Added support for @AvroName annotation #159
 - Tuple2 and Tuple3 now supported in Schema generation
 - Added support for LocalDateTime
 - Added native support for Seq[Byte] mapped to Schema.Type.Bytes
+
+##### 1.8.1
 
 * 1.6.4 - Added support for Vectors
 * 1.6.3 - Fixed issue with decimal schema using strings instead of ints for scale and precision
