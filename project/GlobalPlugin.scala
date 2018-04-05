@@ -1,8 +1,8 @@
-import com.typesafe.sbt.SbtPgp
-import sbt.{Global, _}
-import sbt.Keys._
-import sbtrelease.ReleasePlugin
 import com.typesafe.sbt.pgp.PgpKeys
+import com.typesafe.sbt.SbtPgp
+import sbt.Keys._
+import sbt.{Global, _}
+import sbtrelease.ReleasePlugin
 
 /** Adds common settings automatically to all subprojects */
 object GlobalPlugin extends AutoPlugin {
@@ -12,7 +12,7 @@ object GlobalPlugin extends AutoPlugin {
   val AvroVersion = "1.8.2"
   val Log4jVersion = "1.2.17"
   val ScalatestVersion = "3.0.1"
-  val ScalaVersion = "2.11.12"
+  val ScalaVersion = "2.12.4"
   val Slf4jVersion = "1.7.12"
 
   override def requires = ReleasePlugin
@@ -20,7 +20,7 @@ object GlobalPlugin extends AutoPlugin {
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.11.12", "2.12.4"),
+    crossScalaVersions := Seq("2.11.12", "2.12.5"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-Ywarn-unused-import",

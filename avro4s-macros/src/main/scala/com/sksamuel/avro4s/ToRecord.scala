@@ -1,8 +1,8 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
-import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
@@ -22,11 +22,11 @@ trait ToValue[A] {
 trait LowPriorityToValue {
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                               coproductToValue: ToValue[C]): ToValue[T] = new ToValue[T] {
-    override def apply(value: T): Any = coproductToValue(gen.to(value))
+                                               coproductToValue: Lazy[ToValue[C]]): ToValue[T] = new ToValue[T] {
+    override def apply(value: T): Any = coproductToValue.value(gen.to(value))
   }
 
-  implicit def apply[T](implicit toRecord: ToRecord[T]): ToValue[T] = new ToValue[T] {
+  implicit def applyUsingMacro[T](implicit toRecord: ToRecord[T]): ToValue[T] = new ToValue[T] {
     override def apply(value: T): GenericRecord = toRecord(value)
   }
 
@@ -167,10 +167,10 @@ object ToValue extends LowPriorityToValue {
   }
 
   // A :+: B is either Inl(value: A) or Inr(value: B), continuing the recursion
-  implicit def CoproductToValue[S, T <: Coproduct](implicit curToValue: ToValue[S], restToValue: ToValue[T]): ToValue[S :+: T] = new ToValue[S :+: T] {
+  implicit def CoproductToValue[S, T <: Coproduct](implicit curToValue: Lazy[ToValue[S]], restToValue: Lazy[ToValue[T]]): ToValue[S :+: T] = new ToValue[S :+: T] {
     override def apply(value: S :+: T): Any = value match {
-      case Inl(s) => curToValue(s)
-      case Inr(t) => restToValue(t)
+      case Inl(s) => curToValue.value(s)
+      case Inr(t) => restToValue.value(t)
     }
   }
 

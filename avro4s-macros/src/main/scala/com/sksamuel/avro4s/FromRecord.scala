@@ -5,8 +5,8 @@ import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
-import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.Schema.Field
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes}
 import shapeless.ops.coproduct.Reify
@@ -27,12 +27,12 @@ trait FromValue[T] {
 trait LowPriorityFromValue {
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                               fromCoproduct: FromValue[C]): FromValue[T] = new FromValue[T] {
+                                               fromCoproduct: Lazy[FromValue[C]]): FromValue[T] = new FromValue[T] {
     override def apply(value: Any, field: Field): T =
-      gen.from(fromCoproduct(value, field))
+      gen.from(fromCoproduct.value(value, field))
   }
 
-  implicit def apply[T](implicit fromRecord: FromRecord[T]): FromValue[T] = new FromValue[T] {
+  implicit def applyUsingMacro[T](implicit fromRecord: FromRecord[T]): FromValue[T] = new FromValue[T] {
     override def apply(value: Any, field: Field): T = value match {
       case record: GenericRecord => fromRecord(record)
     }
@@ -172,11 +172,11 @@ object FromValue extends LowPriorityFromValue {
 
   import scala.reflect.runtime.universe.WeakTypeTag
 
-  private def safeFrom[T: WeakTypeTag : FromValue](value: Any): Option[T] = {
+  private def safeFrom[T: WeakTypeTag](value: Any)(implicit fromValue: Lazy[FromValue[T]]): Option[T] = {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
-    val from = implicitly[FromValue[T]]
+    val from = fromValue.value
 
     def typeName: String = {
       val nearestPackage = Stream.iterate(tpe.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head
@@ -251,10 +251,10 @@ object FromValue extends LowPriorityFromValue {
   // rest of the coproduct type T.
 
   // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
-  implicit def CoproductFromValue[S: WeakTypeTag : FromValue, T <: Coproduct : FromValue]: FromValue[S :+: T] = new FromValue[S :+: T] {
+  implicit def CoproductFromValue[S: WeakTypeTag, T <: Coproduct](implicit fromValueS: FromValue[S], fromValueT: FromValue[T]): FromValue[S :+: T] = new FromValue[S :+: T] {
     override def apply(value: Any, field: Field): S :+: T =
       safeFrom[S](value).map(Coproduct[S :+: T](_))
-        .getOrElse(Inr(implicitly[FromValue[T]].apply(value, field)))
+        .getOrElse(Inr(fromValueT(value, field)))
   }
 
   implicit def genTraitObjectEnum[T, C <: Coproduct, L <: HList](implicit gen: Generic.Aux[T, C],
@@ -343,15 +343,19 @@ object FromRecord {
         }
     }
 
-    c.Expr[FromRecord[T]](
-      q"""new _root_.com.sksamuel.avro4s.FromRecord[$tpe] {
-            private val converters: Array[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.FromValue[_]]] = Array(..$converters)
-            def apply(record: _root_.org.apache.avro.generic.GenericRecord): $tpe = {
-              $companion.apply(..$fromValues)
+    def fromRecord(t: Tree) =
+      c.Expr[FromRecord[T]](
+        q"""new _root_.com.sksamuel.avro4s.FromRecord[$tpe] {
+              private val converters: Array[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.FromValue[_]]] = Array(..$converters)
+              def apply(record: _root_.org.apache.avro.generic.GenericRecord): $tpe = {$t}
             }
-          }
-        """
-    )
+          """
+      )
+
+    if(fromValues.isEmpty && companion == NoSymbol)
+      fromRecord(q"${tpe.termSymbol}")
+    else
+      fromRecord(q"$companion.apply(..$fromValues)")
   }
 
   def lazyConverter[T](implicit fromValue: Lazy[FromValue[T]]): Lazy[FromValue[T]] = fromValue
