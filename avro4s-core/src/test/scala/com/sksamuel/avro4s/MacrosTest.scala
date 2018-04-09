@@ -40,5 +40,6 @@ class MacrosTest extends WordSpec with Matchers {
 
       pepperoni2 shouldBe pepperoni
     }
+
   }
 }
