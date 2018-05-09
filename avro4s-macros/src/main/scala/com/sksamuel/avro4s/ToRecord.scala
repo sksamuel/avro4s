@@ -1,14 +1,14 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
-import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, LocalDateTime, Schema}
 import java.util.UUID
 
 import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
-import org.apache.avro.{Conversions, LogicalTypes, Schema}
+import org.apache.avro.{Conversions, LogicalTypes}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inl, Inr, Lazy}
@@ -16,6 +16,7 @@ import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inl, Inr, Lazy}
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
+import scala.reflect.runtime.universe._
 
 trait ToValue[A] {
   def apply(value: A): Any = value
@@ -24,11 +25,11 @@ trait ToValue[A] {
 trait LowPriorityToValue {
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                               coproductToValue: ToValue[C]): ToValue[T] = new ToValue[T] {
-    override def apply(value: T): Any = coproductToValue(gen.to(value))
+                                               coproductToValue: Lazy[ToValue[C]]): ToValue[T] = new ToValue[T] {
+    override def apply(value: T): Any = coproductToValue.value(gen.to(value))
   }
 
-  implicit def apply[T](implicit toRecord: ToRecord[T]): ToValue[T] = new ToValue[T] {
+  implicit def applyUsingMacro[T](implicit toRecord: ToRecord[T]): ToValue[T] = new ToValue[T] {
     override def apply(value: T): GenericRecord = toRecord(value)
   }
 
@@ -169,17 +170,15 @@ object ToValue extends LowPriorityToValue {
   }
 
   // A :+: B is either Inl(value: A) or Inr(value: B), continuing the recursion
-  implicit def CoproductToValue[S, T <: Coproduct](implicit curToValue: ToValue[S], restToValue: ToValue[T]): ToValue[S :+: T] = new ToValue[S :+: T] {
+  implicit def CoproductToValue[S, T <: Coproduct](implicit curToValue: Lazy[ToValue[S]], restToValue: Lazy[ToValue[T]]): ToValue[S :+: T] = new ToValue[S :+: T] {
     override def apply(value: S :+: T): Any = value match {
-      case Inl(s) => curToValue(s)
-      case Inr(t) => restToValue(t)
+      case Inl(s) => curToValue.value(s)
+      case Inr(t) => restToValue.value(t)
     }
   }
 
   implicit def genTraitObjectEnum[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
                                                      objs: Reify.Aux[C, L],toList: ToList[L, T]): ToValue[T] = new ToValue[T] {
-
-    import scala.reflect.runtime.universe._
 
     protected val schema: Schema = {
       val tpe = weakTypeTag[T]
@@ -192,7 +191,7 @@ object ToValue extends LowPriorityToValue {
       Schema.createEnum(name, null, namespace, symbols)
     }
 
-    override def apply(value: T): Any = new EnumSymbol(schema, value.toString)
+    override def apply(value: T): Any = new EnumSymbol(null, value.toString)
   }
 }
 
