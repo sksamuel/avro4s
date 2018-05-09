@@ -191,7 +191,7 @@ object ToValue extends LowPriorityToValue {
       Schema.createEnum(name, null, namespace, symbols)
     }
 
-    override def apply(value: T): Any = new EnumSymbol(null, value.toString)
+    override def apply(value: T): Any = new EnumSymbol(schema, value.toString)
   }
 }
 
