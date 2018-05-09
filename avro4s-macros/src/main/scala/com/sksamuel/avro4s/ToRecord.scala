@@ -2,13 +2,13 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, LocalDateTime, Schema}
+import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
-import org.apache.avro.{Conversions, LogicalTypes}
+import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inl, Inr, Lazy}
