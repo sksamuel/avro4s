@@ -246,16 +246,16 @@ val format = RecordFormat[Composer]
 val ennio = format.from(record)
 ```
 
-## Set a schema's decimal scale and precision
+## Set a schema's decimal scale, precision and rounding mode
 
-Bring an implicit `ScaleAndPrecision` into scope before using `AvroSchema`.
+Bring an implicit `ScaleAndPrecisionAndRoundingMode` into scope before using `AvroSchema`.
 
 ```scala
-import com.sksamuel.avro4s.ScaleAndPrecision
+import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
 
 case class MyDecimal(d: BigDecimal)
 
-implicit val sp = ScaleAndPrecision(8, 20)
+implicit val sp = ScaleAndPrecisionAndRoundingMode(8, 20, RoundingMode.HALF_UP)
 val schema = AvroSchema[MyDecimal]
 ```
 
