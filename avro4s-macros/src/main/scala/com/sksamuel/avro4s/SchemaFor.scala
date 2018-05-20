@@ -26,11 +26,11 @@ trait ToSchema[T] {
 trait LowPriorityToSchema {
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                               coproductSchema: Lazy[ToSchema[C]]): ToSchema[T] = new ToSchema[T] {
-    protected val schema: Schema = coproductSchema.value()
+                                               coproductSchema: ToSchema[C]): ToSchema[T] = new ToSchema[T] {
+    protected val schema: Schema = coproductSchema()
   }
 
-  implicit def applyUsingMacro[T: Manifest](implicit schemaFor: SchemaFor[T]): ToSchema[T] = new ToSchema[T] {
+  implicit def apply[T: Manifest](implicit schemaFor: SchemaFor[T]): ToSchema[T] = new ToSchema[T] {
     protected val schema = schemaFor()
   }
 }
@@ -192,13 +192,13 @@ object ToSchema extends LowPriorityToSchema {
   // Shapeless's implementation builds up the type recursively,
   // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
   // so here we define the schema for the base case of the recursion, C :+: CNil
-  implicit def CoproductBaseSchema[S](implicit subschema: Lazy[ToSchema[S]]): ToSchema[S :+: CNil] = new ToSchema[S :+: CNil] {
-    protected val schema = createUnion(subschema.value())
+  implicit def CoproductBaseSchema[S](implicit subschema: ToSchema[S]): ToSchema[S :+: CNil] = new ToSchema[S :+: CNil] {
+    protected val schema = createUnion(subschema())
   }
 
   // And here we continue the recursion up.
-  implicit def CoproductSchema[S, T <: Coproduct](implicit subschema: Lazy[ToSchema[S]], coproductSchema: Lazy[ToSchema[T]]): ToSchema[S :+: T] = new ToSchema[S :+: T] {
-    protected val schema = createUnion(subschema.value(), coproductSchema.value())
+  implicit def CoproductSchema[S, T <: Coproduct](implicit subschema: ToSchema[S], coproductSchema: ToSchema[T]): ToSchema[S :+: T] = new ToSchema[S :+: T] {
+    protected val schema = createUnion(subschema(), coproductSchema())
   }
 
   // This ToSchema is used for sealed traits of objects
