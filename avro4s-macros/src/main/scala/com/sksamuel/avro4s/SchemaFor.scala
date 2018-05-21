@@ -20,6 +20,7 @@ import scala.reflect.runtime.universe._
 
 trait ToSchema[T] {
   protected val schema: Schema
+
   def apply(): Schema = schema
 }
 
@@ -255,41 +256,49 @@ object SchemaFor {
 
   implicit object ByteSchemaFor extends SchemaFor[Byte] {
     private val schema = SchemaBuilder.builder().intType()
+
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object ShortSchemaFor extends SchemaFor[Short] {
     private val schema = SchemaBuilder.builder().intType()
+
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object LongSchemaFor extends SchemaFor[Long] {
     private val schema = SchemaBuilder.builder().longType()
+
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object IntSchemaFor extends SchemaFor[Int] {
     private val schema = SchemaBuilder.builder().intType()
+
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object FloatSchemaFor extends SchemaFor[Float] {
     private val schema = SchemaBuilder.builder().floatType()
+
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object DoubleSchemaFor extends SchemaFor[Double] {
     private val schema = SchemaBuilder.builder().doubleType()
+
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object BooleanSchemaFor extends SchemaFor[Boolean] {
     private val schema = SchemaBuilder.builder().booleanType()
+
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object StringSchemaFor extends SchemaFor[String] {
     private val schema = SchemaBuilder.builder().stringType()
+
     def apply(): org.apache.avro.Schema = schema
   }
 
@@ -332,7 +341,13 @@ object SchemaFor {
     val sealedTraitOrClass = underlyingType.typeSymbol.isClass && underlyingType.typeSymbol.asClass.isSealed
 
     // name of the actual class we are building
-    val name = underlyingType.typeSymbol.name.decodedName.toString
+    val name =
+      underlyingType.typeArgs match {
+        case Nil => underlyingType.typeSymbol.name.decodedName.toString
+        case typeArgs =>
+          underlyingType.typeSymbol.name.decodedName.toString +
+            typeArgs.map(_.typeSymbol.name.decodedName.toString).mkString("_", "_", "")
+      }
 
     // the default namespace is just the package name
     val defaultNamespace = Stream.iterate(underlyingType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
