@@ -1,0 +1,1 @@
+{"type":"record","name":"MyData","namespace":"com.sksamuel.avro4s","fields":[{"name":"i","type":{"type":"record","name":"MyWrapper_Int","fields":[{"name":"a","type":"int"}]}},{"name":"s","type":["null",{"type":"record","name":"MyWrapper_String","fields":[{"name":"a","type":"string"}]}]}]}
