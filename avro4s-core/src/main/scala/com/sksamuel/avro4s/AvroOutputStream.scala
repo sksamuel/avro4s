@@ -10,6 +10,7 @@ import org.apache.avro.io.EncoderFactory
 
 trait AvroOutputStream[T] {
   def close(): Unit
+  def close(closeUnderlying: Boolean): Unit
   def flush(): Unit
   def fSync(): Unit
   def write(t: T): Unit
@@ -24,9 +25,11 @@ case class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: Schem
   val dataWriter = new GenericDatumWriter[GenericRecord](schemaFor())
   val encoder = EncoderFactory.get().binaryEncoder(os, null)
 
-  override def close(): Unit = {
-    encoder.flush()
-    os.close()
+  override def close(): Unit = close(true)
+  override def close(closeUnderlying: Boolean): Unit = {
+    flush()
+    if (closeUnderlying)
+      os.close()
   }
 
   override def write(t: T): Unit = dataWriter.write(toRecord(t), encoder)
@@ -57,9 +60,12 @@ case class AvroDataOutputStream[T](os: OutputStream, codec: CodecFactory = Codec
       })
   }
 
-  override def close(): Unit = {
+  override def close(): Unit = close(true)
+  override def close(closeUnderlying: Boolean): Unit = {
+    flush()
     writer.close()
-    os.close()
+    if (closeUnderlying)
+      os.close()
   }
 
   override def write(t: T): Unit = {
@@ -77,9 +83,11 @@ case class AvroJsonOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaF
   protected val datumWriter = new GenericDatumWriter[GenericRecord](schema)
   private val encoder = EncoderFactory.get.jsonEncoder(schema, os)
 
-  override def close(): Unit = {
-    encoder.flush()
-    os.close()
+  override def close(): Unit = close(true)
+  override def close(closeUnderlying: Boolean): Unit = {
+    flush()
+    if (closeUnderlying)
+      os.close()
   }
 
   override def write(t: T): Unit = datumWriter.write(toRecord(t), encoder)
