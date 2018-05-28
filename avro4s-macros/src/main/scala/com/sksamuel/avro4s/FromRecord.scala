@@ -20,7 +20,7 @@ import scala.reflect.runtime.universe._
 
 // turns an avro value into a scala value
 // type T is the target scala type
-trait FromValue[T] {
+trait FromValue[T] extends Serializable {
   def apply(value: Any, field: Field = null): T
 }
 
