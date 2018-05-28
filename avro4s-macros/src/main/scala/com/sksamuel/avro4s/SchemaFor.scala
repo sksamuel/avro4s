@@ -354,15 +354,22 @@ object SchemaFor {
         val fieldPath = f.fullName
         val annos = annotations(f)
 
+        val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+
         // this gets the method that generates the default value for this field
         // (if the field has a default value otherwise its a nosymbol)
-        val ds = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-        val defaultGetter = ds.nme.defaultGetterName(ds.nme.CONSTRUCTOR, index + 1)
-        val defaultGetterName = TermName(defaultGetter.toString)
-        val member = underlyingType.companion.member(defaultGetterName)
+        val defaultGetter = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
 
+        // this is a method symbol for the default getter if it exists
+        val member = underlyingType.companion.member(TermName(defaultGetter.toString))
+
+        // if the field is a param with a default value, then we know the getter method will be defined
+        // and so we can use it to generate the default value
         if (f.isTerm && f.asTerm.isParamWithDefault && member.isMethod) {
-          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $member, $defaultNamespace) }"""
+          val ownerTermName = TermName(member.owner.name.toString)
+          q"""{
+              _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $ownerTermName.$member, $defaultNamespace)
+          }"""
         } else if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
           val enumClass = f.typeSignature.toString.stripSuffix(".Value")
           q"""{ _root_.com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }"""

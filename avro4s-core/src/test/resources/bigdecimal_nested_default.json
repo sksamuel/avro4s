@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "BigDecimalNestedDefault",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "decimal",
+      "default" : "964.55",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 8,
+        "scale": 2
+      }
+    }
+  ]
+}

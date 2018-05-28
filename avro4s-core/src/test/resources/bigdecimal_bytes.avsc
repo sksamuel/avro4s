@@ -1,0 +1,14 @@
+{
+  "type" : "record",
+  "name" : "BigDecimalTest",
+  "namespace" : "com.sksamuel.avro4s",
+  "fields" : [ {
+    "name" : "decimal",
+    "type" : {
+      "type" : "bytes",
+      "logicalType" : "decimal",
+      "precision" : 8,
+      "scale" : 2
+    }
+  } ]
+}
