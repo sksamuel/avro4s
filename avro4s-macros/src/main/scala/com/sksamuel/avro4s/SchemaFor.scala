@@ -9,7 +9,7 @@ import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList, Lazy}
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, tailrec}
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
@@ -493,6 +493,7 @@ object SchemaFor {
                            default: Any,
                            parentNamespace: String): Schema.Field = {
 
+    @tailrec
     def toDefaultValue(value: Any): Any = value match {
       case x: Int => x
       case x: Long => x
@@ -500,7 +501,7 @@ object SchemaFor {
       case x: Double => x
       case x: Seq[_] => x.asJava
       case x: Map[_, _] => x.asJava
-      case Some(x) => x
+      case Some(x) => toDefaultValue(x)
       case None => JsonProperties.NULL_VALUE
       case _ => value.toString
     }
