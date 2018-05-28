@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "UUIDTest",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "uuid",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    }
+  ]
+}

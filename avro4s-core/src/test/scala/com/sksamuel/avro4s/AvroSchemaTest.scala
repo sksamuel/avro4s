@@ -143,7 +143,7 @@ class AvroSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "accept UUIDs" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid.json"))
       val schema = SchemaFor[Ids]()
       schema.toString(true) shouldBe expected.toString(true)
     }

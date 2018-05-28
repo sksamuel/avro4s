@@ -110,7 +110,11 @@ object ToSchema extends LowPriorityToSchema {
   }
 
   implicit object UUIDToSchema extends ToSchema[java.util.UUID] {
-    protected val schema = Schema.create(Schema.Type.STRING)
+    protected val schema = {
+      val schema = Schema.create(Schema.Type.STRING)
+      LogicalTypes.uuid().addToSchema(schema)
+      schema
+    }
   }
 
   implicit object LocalDateToSchema extends ToSchema[LocalDate] {

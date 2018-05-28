@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "UUIDSeq",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "uuids",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "logicalType": "uuid"
+        }
+      }
+    }
+  ]
+}
