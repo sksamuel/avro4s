@@ -325,6 +325,25 @@ object SchemaFor {
       q"_root_.com.sksamuel.avro4s.Anno($name, $args)"
     }
 
+    def genericNameSuffix(underlyingType: c.universe.Type): String = {
+      lazy val isAnnotated = underlyingType.typeSymbol.annotations.exists { a =>
+        a.tree.tpe.typeSymbol.fullName match {
+          case "com.sksamuel.avro4s.AvroSpecificGeneric" =>
+            val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+            args match {
+              case head :: Nil => head.toBoolean
+              case _ => false
+            }
+          case _ => false
+        }
+      }
+      if (underlyingType.typeArgs.nonEmpty && isAnnotated) {
+        underlyingType.typeArgs.map(_.typeSymbol.name.decodedName.toString).mkString("_", "_", "")
+      } else {
+        ""
+      }
+    }
+
     lazy val fixedAnnotation: Option[AvroFixed] = tType.typeSymbol.annotations.collectFirst {
       case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
         anno.tree.children.tail match {
@@ -341,13 +360,7 @@ object SchemaFor {
     val sealedTraitOrClass = underlyingType.typeSymbol.isClass && underlyingType.typeSymbol.asClass.isSealed
 
     // name of the actual class we are building
-    val name =
-      underlyingType.typeArgs match {
-        case Nil => underlyingType.typeSymbol.name.decodedName.toString
-        case typeArgs =>
-          underlyingType.typeSymbol.name.decodedName.toString +
-            typeArgs.map(_.typeSymbol.name.decodedName.toString).mkString("_", "_", "")
-      }
+    val name = underlyingType.typeSymbol.name.decodedName.toString + genericNameSuffix(underlyingType)
 
     // the default namespace is just the package name
     val defaultNamespace = Stream.iterate(underlyingType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
@@ -378,7 +391,7 @@ object SchemaFor {
 
         if (f.isTerm && f.asTerm.isParamWithDefault && member.isMethod) {
           q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $member, $defaultNamespace) }"""
-        } else if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
+        } else if (f.typeSignature.<:<(typeOf[Enumeration#Value])) {
           val enumClass = f.typeSignature.toString.stripSuffix(".Value")
           q"""{ _root_.com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }"""
         } else {
