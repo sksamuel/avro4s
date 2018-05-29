@@ -142,11 +142,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[Outer]()
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "accept UUIDs" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid.avsc"))
-      val schema = SchemaFor[Ids]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
     "accept LocalDate" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/localdate.avsc"))
       val schema = SchemaFor[LocalDateTest]()

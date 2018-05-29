@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "BigDecimalOption",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "decimal",
+      "type": [
+        "null",
+        {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 8,
+          "scale": 2
+        }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,6 @@ package com.sksamuel.avro4s
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.time.LocalDate
-import java.util.UUID
 
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
@@ -74,6 +73,20 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
       val bytes = Array.ofDim[Byte](buffer.remaining())
       buffer.get(bytes)
       BigDecimal(BigInt(bytes), 2) shouldBe BigDecimal(123.45)
+    }
+    "write big decimal with default value" in {
+      case class Test(dec: BigDecimal = BigDecimal(1234.56))
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[Test](output)
+      avro.write(Test())
+      avro.close()
+
+      val record = read[Test](output)
+      val buffer = record.get("dec").asInstanceOf[ByteBuffer]
+      val bytes = Array.ofDim[Byte](buffer.remaining())
+      buffer.get(bytes)
+      BigDecimal(BigInt(bytes), 2) shouldBe BigDecimal(1234.56)
     }
     "write out strings" in {
       case class Test(str: String)
@@ -168,6 +181,34 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
 
       val record2 = read[EitherCaseClasses](output2)
       record2.get("e").toString shouldBe """{"dec": {"bytes": """" + """\""" + """u0005°"}}"""
+    }
+    "write a Some as populated union with BigDecimal logical type" in {
+      case class Test(opt: Option[BigDecimal])
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[Test](output)
+      avro.write(Test(Some(123.45)))
+      avro.close()
+
+      val record = read[Test](output)
+      val buffer = record.get("opt").asInstanceOf[ByteBuffer]
+      val bytes = Array.ofDim[Byte](buffer.remaining())
+      buffer.get(bytes)
+      BigDecimal(BigInt(bytes), 2) shouldBe BigDecimal(123.45)
+    }
+    "write a Some as populated union with BigDecimal logical type with default value" in {
+      case class Test(opt: Option[BigDecimal]= Some(1234.56))
+
+      val output = new ByteArrayOutputStream
+      val avro = AvroOutputStream.data[Test](output)
+      avro.write(Test())
+      avro.close()
+
+      val record = read[Test](output)
+      val buffer = record.get("opt").asInstanceOf[ByteBuffer]
+      val bytes = Array.ofDim[Byte](buffer.remaining())
+      buffer.get(bytes)
+      BigDecimal(BigInt(bytes), 2) shouldBe BigDecimal(1234.56)
     }
     "write a Some as populated union" in {
       case class Test(opt: Option[Double])
@@ -379,17 +420,6 @@ class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
 
       val record = read[ScalaEnums](output)
       record.get("value").toString shouldBe "Amber"
-    }
-    "support UUIDs" in {
-      val instance = Ids(UUID.randomUUID())
-
-      val output = new ByteArrayOutputStream
-      val avro = AvroOutputStream.data[Ids](output)
-      avro.write(instance)
-      avro.close()
-
-      val record = read[Ids](output)
-      UUID.fromString(record.get("myid").toString) shouldBe instance.myid
     }
     "support LocalDates" in {
       val instance = LocalDateTest(LocalDate.now())

@@ -9,7 +9,7 @@ import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList, Lazy}
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, tailrec}
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
@@ -20,18 +20,17 @@ import scala.reflect.runtime.universe._
 
 trait ToSchema[T] {
   protected val schema: Schema
-
   def apply(): Schema = schema
 }
 
 trait LowPriorityToSchema {
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                               coproductSchema: Lazy[ToSchema[C]]): ToSchema[T] = new ToSchema[T] {
-    protected val schema: Schema = coproductSchema.value()
+                                               coproductSchema: ToSchema[C]): ToSchema[T] = new ToSchema[T] {
+    protected val schema: Schema = coproductSchema()
   }
 
-  implicit def applyUsingMacro[T: Manifest](implicit schemaFor: SchemaFor[T]): ToSchema[T] = new ToSchema[T] {
+  implicit def apply[T: Manifest](implicit schemaFor: SchemaFor[T]): ToSchema[T] = new ToSchema[T] {
     protected val schema = schemaFor()
   }
 }
@@ -111,7 +110,11 @@ object ToSchema extends LowPriorityToSchema {
   }
 
   implicit object UUIDToSchema extends ToSchema[java.util.UUID] {
-    protected val schema = Schema.create(Schema.Type.STRING)
+    protected val schema = {
+      val schema = Schema.create(Schema.Type.STRING)
+      LogicalTypes.uuid().addToSchema(schema)
+      schema
+    }
   }
 
   implicit object LocalDateToSchema extends ToSchema[LocalDate] {
@@ -193,13 +196,13 @@ object ToSchema extends LowPriorityToSchema {
   // Shapeless's implementation builds up the type recursively,
   // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
   // so here we define the schema for the base case of the recursion, C :+: CNil
-  implicit def CoproductBaseSchema[S](implicit subschema: Lazy[ToSchema[S]]): ToSchema[S :+: CNil] = new ToSchema[S :+: CNil] {
-    protected val schema = createUnion(subschema.value())
+  implicit def CoproductBaseSchema[S](implicit subschema: ToSchema[S]): ToSchema[S :+: CNil] = new ToSchema[S :+: CNil] {
+    protected val schema = createUnion(subschema())
   }
 
   // And here we continue the recursion up.
-  implicit def CoproductSchema[S, T <: Coproduct](implicit subschema: Lazy[ToSchema[S]], coproductSchema: Lazy[ToSchema[T]]): ToSchema[S :+: T] = new ToSchema[S :+: T] {
-    protected val schema = createUnion(subschema.value(), coproductSchema.value())
+  implicit def CoproductSchema[S, T <: Coproduct](implicit subschema: ToSchema[S], coproductSchema: ToSchema[T]): ToSchema[S :+: T] = new ToSchema[S :+: T] {
+    protected val schema = createUnion(subschema(), coproductSchema())
   }
 
   // This ToSchema is used for sealed traits of objects
@@ -256,49 +259,41 @@ object SchemaFor {
 
   implicit object ByteSchemaFor extends SchemaFor[Byte] {
     private val schema = SchemaBuilder.builder().intType()
-
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object ShortSchemaFor extends SchemaFor[Short] {
     private val schema = SchemaBuilder.builder().intType()
-
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object LongSchemaFor extends SchemaFor[Long] {
     private val schema = SchemaBuilder.builder().longType()
-
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object IntSchemaFor extends SchemaFor[Int] {
     private val schema = SchemaBuilder.builder().intType()
-
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object FloatSchemaFor extends SchemaFor[Float] {
     private val schema = SchemaBuilder.builder().floatType()
-
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object DoubleSchemaFor extends SchemaFor[Double] {
     private val schema = SchemaBuilder.builder().doubleType()
-
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object BooleanSchemaFor extends SchemaFor[Boolean] {
     private val schema = SchemaBuilder.builder().booleanType()
-
     def apply(): org.apache.avro.Schema = schema
   }
 
   implicit object StringSchemaFor extends SchemaFor[String] {
     private val schema = SchemaBuilder.builder().stringType()
-
     def apply(): org.apache.avro.Schema = schema
   }
 
@@ -382,16 +377,23 @@ object SchemaFor {
         val fieldPath = f.fullName
         val annos = annotations(f)
 
+        val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+
         // this gets the method that generates the default value for this field
         // (if the field has a default value otherwise its a nosymbol)
-        val ds = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-        val defaultGetter = ds.nme.defaultGetterName(ds.nme.CONSTRUCTOR, index + 1)
-        val defaultGetterName = TermName(defaultGetter.toString)
-        val member = underlyingType.companion.member(defaultGetterName)
+        val defaultGetter = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
 
+        // this is a method symbol for the default getter if it exists
+        val member = underlyingType.companion.member(TermName(defaultGetter.toString))
+
+        // if the field is a param with a default value, then we know the getter method will be defined
+        // and so we can use it to generate the default value
         if (f.isTerm && f.asTerm.isParamWithDefault && member.isMethod) {
-          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $member, $defaultNamespace) }"""
-        } else if (f.typeSignature.<:<(typeOf[Enumeration#Value])) {
+          val ownerTermName = TermName(member.owner.name.toString)
+          q"""{
+              _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $ownerTermName.$member, $defaultNamespace)
+          }"""
+        } else if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
           val enumClass = f.typeSignature.toString.stripSuffix(".Value")
           q"""{ _root_.com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }"""
         } else {
@@ -521,6 +523,7 @@ object SchemaFor {
                            default: Any,
                            parentNamespace: String): Schema.Field = {
 
+    @tailrec
     def toDefaultValue(value: Any): Any = value match {
       case x: Int => x
       case x: Long => x
@@ -528,7 +531,7 @@ object SchemaFor {
       case x: Double => x
       case x: Seq[_] => x.asJava
       case x: Map[_, _] => x.asJava
-      case Some(x) => x
+      case Some(x) => toDefaultValue(x)
       case None => JsonProperties.NULL_VALUE
       case _ => value.toString
     }

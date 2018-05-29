@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "UUIDDefault",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "decimal",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      },
+      "default": "86da265c-95bd-443c-8860-9381efca059d"
+    }
+  ]
+}

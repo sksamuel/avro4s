@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "BigDecimalSeqOption",
+  "namespace": "com.sksamuel.avro4s",
+  "fields": [
+    {
+      "name": "biggies",
+      "type": {
+        "type": "array",
+        "items": [
+          "null",
+          {
+            "type": "bytes",
+            "logicalType": "decimal",
+            "precision": 8,
+            "scale": 2
+          }
+        ]
+      }
+    }
+  ]
+}
