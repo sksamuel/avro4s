@@ -358,7 +358,11 @@ object SchemaFor {
     val name = underlyingType.typeSymbol.name.decodedName.toString + genericNameSuffix(underlyingType)
 
     // the default namespace is just the package name
-    val defaultNamespace = Stream.iterate(underlyingType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
+    val defaultNamespace = Stream
+      .iterate(underlyingType.typeSymbol.owner)(_.owner)
+      .dropWhile(x => !x.isPackage && !x.isModuleClass)
+      .head
+      .fullName
 
     // we read all annotations into quasi-quotable Anno dtos
     val annos = annotations(underlyingType.typeSymbol)
