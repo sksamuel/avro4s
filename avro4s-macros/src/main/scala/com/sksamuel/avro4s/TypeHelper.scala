@@ -47,6 +47,16 @@ class TypeHelper[C <: whitebox.Context](val c: C) {
         case Literal(Constant(size: Int)) :: Nil => AvroFixed(size)
       }
   }
+
+  def avroName(sym: c.Symbol): Option[Tree] =
+    sym
+      .annotations
+      .find(_.tree.tpe == typeOf[AvroName])
+      .map(_.tree).map {
+        case Apply(Select(New(_), _), List(name)) => name
+        case _ =>
+          c.abort(c.enclosingPosition, "Unexpected macro application")
+      }
 }
 
 object TypeHelper {
