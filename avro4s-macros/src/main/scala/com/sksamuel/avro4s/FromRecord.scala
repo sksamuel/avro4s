@@ -302,9 +302,9 @@ object FromRecord {
     }
 
     val fromValues: Seq[Tree] = fields.zipWithIndex.map {
-      case ((f, sig), idx) =>
-        val name = f.name.asInstanceOf[c.TermName]
-        val decoded: String = name.decodedName.toString
+      case ((sym, sig), idx) =>
+        val name = sym.name.asInstanceOf[c.TermName]
+        val decoded: Tree = helper.avroName(sym).getOrElse(q"${name.decodedName.toString}")
         val fixedAnnotation: Option[AvroFixed] = sig.typeSymbol.annotations.collectFirst {
           case anno if anno.tree.tpe <:< c.weakTypeOf[AvroFixed] =>
             anno.tree.children.tail match {
