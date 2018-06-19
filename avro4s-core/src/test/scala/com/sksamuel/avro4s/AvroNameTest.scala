@@ -20,4 +20,13 @@ class AvroNameTest extends WordSpec with Matchers {
       toRecord(Foo("woop", "scoop"))
     }
   }
+
+  "FromRecord" should {
+    "correctly be able to produce a record" in {
+      val fromRecord = FromRecord[Foo]
+      val record = ToRecord[Foo](Foo("woop", "scoop"))
+
+      fromRecord(record)
+    }
+  }
 }
