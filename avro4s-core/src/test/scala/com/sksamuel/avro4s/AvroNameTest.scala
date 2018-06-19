@@ -13,4 +13,11 @@ class AvroNameTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
   }
+
+  "ToRecord" should {
+    "correctly be able to produce a record" in {
+      val toRecord = ToRecord[Foo]
+      toRecord(Foo("woop", "scoop"))
+    }
+  }
 }
