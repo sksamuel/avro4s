@@ -90,7 +90,15 @@ object ToSchema extends LowPriorityToSchema {
     val typeRef = tag.tpe match {
       case t@TypeRef(_, _, _) => t
     }
-    protected val schema = SchemaFor.schemaForEnumClass(typeRef.pre.typeSymbol.asClass.fullName.stripSuffix(".Value"))
+
+    val namespaceOpt = typeRef.pre.typeSymbol.annotations.collectFirst {
+      case a if a.tree.tpe <:< typeOf[AvroNamespace] => a.tree.children.tail.collectFirst {
+        case Literal(Constant(name: String)) => name
+      }
+    }.flatten
+
+    protected val schema =
+      SchemaFor.schemaForEnumClass(typeRef.pre.typeSymbol.asClass.fullName.stripSuffix(".Value"), namespaceOpt)
   }
 
   implicit object FloatToSchema extends ToSchema[Float] {
@@ -395,7 +403,7 @@ object SchemaFor {
           }"""
         } else if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
           val enumClass = f.typeSignature.toString.stripSuffix(".Value")
-          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass) }"""
+          q"""{_root_.com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass, Seq(..$annos))}"""
         } else {
           q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), null, $defaultNamespace) }"""
         }
@@ -487,15 +495,15 @@ object SchemaFor {
     * Given a name and a type T, builds a enum scala by taking the prefix of the .Value class
     * and probing that for enum values
     */
-  def enumBuilder(name: String, enumClassName: String): Schema.Field = {
-    val schema = schemaForEnumClass(enumClassName)
+  def enumBuilder(name: String, enumClassName: String, annos: Seq[Anno]): Schema.Field = {
+    val schema = schemaForEnumClass(enumClassName, namespace(annos))
     new Schema.Field(name, schema, null: String, null: Object)
   }
 
-  def schemaForEnumClass(enumClassName: String): Schema = {
+  def schemaForEnumClass(enumClassName: String, namespaceOpt: Option[String]): Schema = {
     val enumClass = Class.forName(enumClassName)
     val values = enumClass.getMethod("values").invoke(null).asInstanceOf[scala.Enumeration#ValueSet].iterator.toList.map(_.toString)
-    Schema.createEnum(enumClass.getSimpleName, null, enumClass.getPackage.getName, values.asJava)
+    Schema.createEnum(enumClass.getSimpleName, null, namespaceOpt.getOrElse(enumClass.getPackage.getName), values.asJava)
   }
 
   /**
