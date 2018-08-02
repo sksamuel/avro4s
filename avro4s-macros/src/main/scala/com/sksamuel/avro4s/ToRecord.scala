@@ -205,7 +205,7 @@ object ToRecord {
       case ((sym, sig), idx) =>
 
         val name = sym.name.asInstanceOf[c.TermName]
-        val fieldName: String = name.decodedName.toString
+        val fieldName = helper.avroName(sym).getOrElse(q"${name.decodedName.toString}")
         val valueClass = sig.typeSymbol.isClass && sig.typeSymbol.asClass.isDerivedValueClass
         val typeFixed = helper.fixed(sig.typeSymbol)
         val fieldFixed = helper.fixed(sym)
