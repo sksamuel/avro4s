@@ -2,7 +2,6 @@ package com.sksamuel.avro4s
 
 import java.time.{LocalDate, LocalDateTime}
 import java.util
-
 import org.apache.avro.Schema.Field
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
@@ -17,7 +16,6 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe._
-
 trait ToSchema[T] {
   protected val schema: Schema
   def apply(): Schema = schema
@@ -397,10 +395,8 @@ object SchemaFor {
         // if the field is a param with a default value, then we know the getter method will be defined
         // and so we can use it to generate the default value
         if (f.isTerm && f.asTerm.isParamWithDefault && member.isMethod) {
-          val ownerTermName = TermName(member.owner.name.toString)
-          q"""{
-              _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $ownerTermName.$member, $defaultNamespace)
-          }"""
+          val moduleSym = underlyingType.typeSymbol.companion
+          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.fieldBuilder[$sig]($fieldName, Seq(..$annos), $moduleSym.$member, $defaultNamespace) }"""
         } else if (f.typeSignature.<:<(typeOf[scala.Enumeration#Value])) {
           val enumClass = f.typeSignature.toString.stripSuffix(".Value")
           q"""{_root_.com.sksamuel.avro4s.SchemaFor.enumBuilder($fieldName, $enumClass, Seq(..$annos))}"""
@@ -530,7 +526,6 @@ object SchemaFor {
                            implicitSchema: Schema, // the schema picked up via implicit resolution of ToSchema
                            default: Any,
                            parentNamespace: String): Schema.Field = {
-
     @tailrec
     def toDefaultValue(value: Any): Any = value match {
       case x: Int => x
