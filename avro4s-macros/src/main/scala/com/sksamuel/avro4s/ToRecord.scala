@@ -8,12 +8,15 @@ import java.util.UUID
 import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.GenericRecord
-import org.apache.avro.{Conversions, LogicalTypes}
+import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
-import shapeless.{:+:, CNil, Coproduct, Generic, Inl, Inr, Lazy}
+import shapeless.ops.hlist.ToList
+import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inl, Inr, Lazy}
 
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe._
 
 trait ToValue[A] {
   def apply(value: A): Any = value
@@ -174,9 +177,21 @@ object ToValue extends LowPriorityToValue {
     }
   }
 
-  implicit def genTraitObjectEnum[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                                     objs: Reify[C]): ToValue[T] = new ToValue[T] {
-    override def apply(value: T): Any = new EnumSymbol(null, value.toString)
+  implicit def genTraitObjectEnum[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
+                                                     objs: Reify.Aux[C, L],toList: ToList[L, T]): ToValue[T] = new ToValue[T] {
+
+    protected val schema: Schema = {
+      val tpe = weakTypeTag[T]
+      val namespace = tpe.tpe.typeSymbol.annotations.map(_.toString)
+        .find(_.startsWith("com.sksamuel.avro4s.AvroNamespace"))
+        .map(_.stripPrefix("com.sksamuel.avro4s.AvroNamespace(\"").stripSuffix("\")"))
+        .getOrElse(ct.runtimeClass.getPackage.getName)
+      val name = ct.runtimeClass.getSimpleName
+      val symbols = toList(objs()).map(_.toString).asJava
+      Schema.createEnum(name, null, namespace, symbols)
+    }
+
+    override def apply(value: T): Any = new EnumSymbol(schema, value.toString)
   }
 }
 
