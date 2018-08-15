@@ -77,7 +77,7 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
   def annotations(sym: Symbol): List[c.universe.Tree] = sym.annotations.map { a =>
     val name = a.tree.tpe.typeSymbol.fullName
     val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-    q"_root_.com.sksamuel.avro4s.internal.Annotation($name, $args)"
+    q"_root_.com.sksamuel.avro4s.internal.Anno($name, $args)"
   }
 }
 
