@@ -20,6 +20,8 @@ class DataTypeForTest extends FunSuite with Matchers {
     DataTypeFor.apply[Painting].dataType shouldBe
       StructType(
         "com.sksamuel.avro4s.internal.Painting",
+        "",
+        "",
         annotations = List(),
         fields = List(
           StructField("name", StringType, List(), null),
@@ -32,6 +34,8 @@ class DataTypeForTest extends FunSuite with Matchers {
     DataTypeFor.apply[Artist].dataType shouldBe
       StructType(
         "com.sksamuel.avro4s.internal.Artist",
+        "",
+        "",
         annotations = List(Anno("org.apache.avro.specific.FixedSize", List("value = 12"))),
         fields = List(
           StructField("name", StringType, List(Anno("com.sksamuel.avro4s.AvroName", List("foo"))), null),
@@ -39,6 +43,8 @@ class DataTypeForTest extends FunSuite with Matchers {
           StructField("works", ArrayType(
             StructType(
               "com.sksamuel.avro4s.internal.Painting",
+              "",
+              "",
               annotations = List(),
               fields = List(
                 StructField("name", StringType, List(), null),
@@ -54,9 +60,11 @@ class DataTypeForTest extends FunSuite with Matchers {
     DataTypeFor.apply[Movement].dataType shouldBe
       StructType(
         "com.sksamuel.avro4s.internal.Movement",
+        "",
+        "",
         annotations = List(),
         List(
-          StructField("style", EnumType("com.sksamuel.avro4s.internal.Style", List("Impressionist", "Romanticist")), List(), null),
+          StructField("style", EnumType("com.sksamuel.avro4s.internal.Style", List("Impressionist", "Romanticist"), Nil), List(), null),
           StructField("startYear", IntType, List(), null)
         )
       )

@@ -54,78 +54,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
   case class Outer(middle: Middle)
 
   "AvroSchema" should {
-    "support top level Doubles" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_double.avsc"))
-      val schema = AvroSchema[Double]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support top level Booleans" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_boolean.avsc"))
-      val schema = AvroSchema[Boolean]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support top level Longs" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_long.avsc"))
-      val schema = AvroSchema[Long]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support top level Integers" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_integer.avsc"))
-      val schema = AvroSchema[Int]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support top level Strings" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_string.avsc"))
-      val schema = AvroSchema[String]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support top level Floats" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_float.avsc"))
-      val schema = AvroSchema[Float]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "accept booleans" in {
-      case class Test(booly: Boolean)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/boolean.avsc"))
-      val schema = AvroSchema[Test]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "accept bytes" in {
-      case class Test(bytes: Array[Byte])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bytes.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "accept strings" in {
-      case class Test(str: String)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/string.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "accept integer" in {
-      case class Test(inty: Int)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/integer.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "accept longs" in {
-      case class Test(foo: Long)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/long.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "accept double" in {
-      case class Test(double: Double)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/double.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "accept float" in {
-      case class Test(float: Float)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/float.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
     "accept big decimal" in {
       case class Test(decimal: BigDecimal)
       val schema = SchemaFor[Test]()
@@ -221,31 +149,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[Test]()
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "generate map type for a scala.collection.immutable.Map of primitives" in {
-      case class Test(map: Map[String, String])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate map type for a scala.collection.immutable.Map of records" in {
-      case class Test(map: Map[String, Nested])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/maprecord.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate map type for a scala.collection.immutable.Map of Option[Boolean]" in {
-      case class Test(map: Map[String, Option[Boolean]])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mapoption.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support maps of seqs of records" in {
-      case class Test(map: Map[String, Seq[Nested]])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map_seq_nested.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-
     "support sealed traits" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.avsc"))
       val schema = SchemaFor[Wrapper]()
@@ -259,18 +162,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
     "support trait subtypes fields with same name and same type" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.avsc"))
       val schema = SchemaFor[Napper]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support doc annotation on class" in {
-      @AvroDoc("hello its me") case class Annotated(str: String)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation_class.avsc"))
-      val schema = SchemaFor[Annotated]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "support doc annotation on field" in {
-      case class Annotated(@AvroDoc("hello its me") str: String, @AvroDoc("I am a long") long: Long, int: Int)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation_field.avsc"))
-      val schema = SchemaFor[Annotated]()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support prop annotation on class" in {

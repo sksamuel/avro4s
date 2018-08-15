@@ -11,24 +11,29 @@ case object ShortType extends DataType
 case object ByteType extends DataType
 case object BooleanType extends DataType
 case object BinaryType extends DataType
-case object BigDecimalType extends DataType
 case object UUIDType extends DataType
-case object DateType extends DataType
-case object DateTimeType extends DataType
-case object TimeType extends DataType
-case object TimestampType extends DataType
+
 case object DoubleType extends DataType
 case object FloatType extends DataType
 
-case object NullType extends DataType
+case object LocalDateType extends DataType
+case object LocalDateTimeType extends DataType
+case object LocalTimeType extends DataType
+case object TimestampType extends DataType
+
+case class NullableType(elementType: DataType) extends DataType
+
+case class DecimalType(precision: Int, scale: Int) extends DataType
 
 case class MapType(keyType: DataType, valueType: DataType) extends DataType
 case class ArrayType(valueType: DataType) extends DataType
 
-case class EnumType(name: String, symbols: Seq[String]) extends DataType
+case class EnumType(name: String, symbols: Seq[String], annotations: Seq[Anno]) extends DataType
 case class UnionType(types: Seq[DataType]) extends DataType
 
-case class StructType(className: String,
+case class StructType(qualifiedName: String,
+                      simpleName: String,
+                      packageName: String,
                       annotations: Seq[Anno],
                       fields: Seq[StructField]) extends DataType
 

@@ -44,13 +44,17 @@ object DataTypeFor {
     // todo encode generics:: + genericNameSuffix(underlyingType)
     val className = underlyingType.typeSymbol.fullName.toString
 
+    val simpleName = underlyingType.typeSymbol.name.decodedName.toString
+
+    val packageName = Stream.iterate(underlyingType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
+
     // these are annotations on the class itself
     val annos = reflect.annotations(underlyingType.typeSymbol)
 
     c.Expr[DataTypeFor[T]](
       q"""
         new _root_.com.sksamuel.avro4s.internal.DataTypeFor[$tType] {
-          val structType = _root_.com.sksamuel.avro4s.internal.StructType($className, Seq(..$annos), Seq(..$fields))
+          val structType = _root_.com.sksamuel.avro4s.internal.StructType($className, $simpleName, $packageName, Seq(..$annos), Seq(..$fields))
           override def dataType: com.sksamuel.avro4s.internal.DataType = structType
         }
       """
@@ -107,7 +111,7 @@ object DataTypeFor {
 
   implicit def OptionFor[T](implicit elementType: DataTypeFor[T]): DataTypeFor[Option[T]] = {
     new DataTypeFor[Option[T]] {
-      override def dataType: DataType = UnionType(Seq(NullType, elementType.dataType))
+      override def dataType: DataType = NullableType(elementType.dataType)
     }
   }
 
@@ -156,11 +160,11 @@ object DataTypeFor {
   }
 
   implicit object LocalDateFor extends DataTypeFor[LocalDate] {
-    override def dataType: DataType = DateType
+    override def dataType: DataType = LocalDateType
   }
 
   implicit object LocalDateTimeFor extends DataTypeFor[LocalDateTime] {
-    override def dataType: DataType = DateTimeType
+    override def dataType: DataType = LocalDateTimeType
   }
 
   // This DataTypeFor is used for sealed traits of objects
@@ -172,7 +176,7 @@ object DataTypeFor {
     override val dataType: DataType = {
       val name = ct.runtimeClass.getCanonicalName
       val symbols = toList(objs()).map(_.toString)
-      EnumType(name, symbols)
+      EnumType(name, symbols, Nil)
     }
   }
 }

@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "Annotated",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "nested",
+      "doc": "c",
+      "type": {
+        "type": "record",
+        "name": "Nested",
+        "fields": [
+          {
+            "name": "foo",
+            "type": "string",
+            "doc": "b"
+          }
+        ]
+      }
+    }
+  ]
+}

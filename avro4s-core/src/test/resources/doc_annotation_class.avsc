@@ -1,8 +1,8 @@
 {
   "type": "record",
   "name": "Annotated",
-  "namespace": "com.sksamuel.avro4s",
-  "doc" : "hello its me",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "doc" : "hello; is it me youre looking for",
   "fields": [
     {
       "name": "str",
