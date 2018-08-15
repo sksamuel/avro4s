@@ -1,4 +1,4 @@
-package com.sksamuel.avro4s.macros
+package com.sksamuel.avro4s.internal
 
 import com.sksamuel.avro4s.FromValue.BigDecimalFromValue
 import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode

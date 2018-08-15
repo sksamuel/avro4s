@@ -16,6 +16,7 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe._
+
 trait ToSchema[T] {
   protected val schema: Schema
   def apply(): Schema = schema
