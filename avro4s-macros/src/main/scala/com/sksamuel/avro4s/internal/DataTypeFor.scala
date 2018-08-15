@@ -4,8 +4,14 @@ import java.sql.Timestamp
 import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
+import shapeless.ops.coproduct.Reify
+import shapeless.ops.hlist.ToList
+import shapeless.{Coproduct, Generic, HList}
+
 import scala.language.experimental.macros
+import scala.reflect.ClassTag
 import scala.reflect.macros.whitebox
+import scala.reflect.runtime.universe._
 
 trait DataTypeFor[T] {
   def dataType: DataType
@@ -27,7 +33,7 @@ object DataTypeFor {
 
     val underlyingType = reflect.underlyingType(tType)
 
-    val fields = reflect.fieldsOf(underlyingType).zipWithIndex.map { case ((f, fieldTpe), index) =>
+    val fields = reflect.fieldsOf(underlyingType).zipWithIndex.map { case ((f, fieldTpe), _) =>
       // the simple name of the field like "x"
       val fieldName = f.name.decodedName.toString.trim
       val annos = reflect.annotations(f)
@@ -155,5 +161,18 @@ object DataTypeFor {
 
   implicit object LocalDateTimeFor extends DataTypeFor[LocalDateTime] {
     override def dataType: DataType = DateTimeType
+  }
+
+  // This DataTypeFor is used for sealed traits of objects
+  implicit def genTraitObjectEnum[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
+                                                                 tag: TypeTag[T],
+                                                                 gen: Generic.Aux[T, C],
+                                                                 objs: Reify.Aux[C, L],
+                                                                 toList: ToList[L, T]): DataTypeFor[T] = new DataTypeFor[T] {
+    override val dataType: DataType = {
+      val name = ct.runtimeClass.getCanonicalName
+      val symbols = toList(objs()).map(_.toString)
+      EnumType(name, symbols)
+    }
   }
 }

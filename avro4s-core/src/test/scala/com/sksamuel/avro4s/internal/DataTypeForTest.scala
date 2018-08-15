@@ -6,12 +6,17 @@ import org.scalatest.{FunSuite, Matchers}
 
 @FixedSize(12)
 case class Artist(@AvroName("foo") name: String, birthplace: String, works: Seq[Painting])
-
 case class Painting(name: String, @AvroAlias("y") year: Int)
+
+sealed trait Style
+case object Impressionist extends Style
+case object Romanticist extends Style
+
+case class Movement(style: Style, startYear: Int)
 
 class DataTypeForTest extends FunSuite with Matchers {
 
-  test("basic case class") {
+  test("case class") {
     DataTypeFor.apply[Painting].dataType shouldBe
       StructType(
         "com.sksamuel.avro4s.internal.Painting",
@@ -41,6 +46,18 @@ class DataTypeForTest extends FunSuite with Matchers {
               )
             )
           ), List(), null)
+        )
+      )
+  }
+
+  test("ADT of sealed trait with objects") {
+    DataTypeFor.apply[Movement].dataType shouldBe
+      StructType(
+        "com.sksamuel.avro4s.internal.Movement",
+        annotations = List(),
+        List(
+          StructField("style", EnumType("com.sksamuel.avro4s.internal.Style", List("Impressionist", "Romanticist")), List(), null),
+          StructField("startYear", IntType, List(), null)
         )
       )
   }

@@ -25,6 +25,7 @@ case object NullType extends DataType
 case class MapType(keyType: DataType, valueType: DataType) extends DataType
 case class ArrayType(valueType: DataType) extends DataType
 
+case class EnumType(name: String, symbols: Seq[String]) extends DataType
 case class UnionType(types: Seq[DataType]) extends DataType
 
 case class StructType(className: String,
