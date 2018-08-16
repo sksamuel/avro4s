@@ -21,7 +21,8 @@ object RecordEncoder {
       q"""
           new _root_.com.sksamuel.avro4s.internal.RecordEncoder[$tpe] {
             private val schema = _root_.com.sksamuel.avro4s.internal.SchemaEncoder[$tpe].encode
-            override def encode(t: $tpe): _root_.com.sksamuel.avro4s.internal.Record = new _root_.com.sksamuel.avro4s.internal.Record(schema)
+            private val values = Array.empty[AnyRef]
+            override def encode(t: $tpe): _root_.com.sksamuel.avro4s.internal.Record = new _root_.com.sksamuel.avro4s.internal.Record(schema, values)
           }
        """
     )
