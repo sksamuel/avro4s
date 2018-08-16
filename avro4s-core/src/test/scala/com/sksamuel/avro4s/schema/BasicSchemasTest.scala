@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.schema
 
+import com.sksamuel.avro4s._
 import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 
@@ -47,5 +48,51 @@ class BasicSchemasTest extends WordSpec with Matchers {
       val schema = SchemaEncoder[Test].encode
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support recursive types" in {
+      val schema = SchemaFor[Recursive]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive.avsc"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support mutually recursive types" in {
+      val schema = SchemaFor[MutRec1]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.avsc"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support types nested in uppercase packages" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_in_uppercase_pkg.avsc"))
+      val schema = SchemaFor[examples.UppercasePkg.Data]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support default values" in {
+      val schema = SchemaFor[DefaultValues]()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/defaultvalues.avsc"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "accept nested case classes" in {
+      case class Nested(goo: String)
+      case class NestedTest(foo: String, nested: Nested)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested.avsc"))
+      val schema = SchemaFor[NestedTest]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "accept multiple nested case classes" in {
+      case class Inner(goo: String)
+      case class Middle(inner: Inner)
+      case class Outer(middle: Middle)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_multiple.avsc"))
+      val schema = SchemaFor[Outer]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "accept deep nested structure" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/deepnested.avsc"))
+      val schema = SchemaFor[Level1]()
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
+
+
+case class Level4(str: Map[String, String])
+case class Level3(level4: Level4)
+case class Level2(level3: Level3)
+case class Level1(level2: Level2)

@@ -76,5 +76,21 @@ class ArraySchemaTest extends WordSpec with Matchers {
       val schema = SchemaEncoder[NestedSetDouble].encode
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support Seq[Tuple2] issue #156" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple2.json"))
+      val schema = SchemaEncoder[TupleTest2].encode
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support Seq[Tuple3]" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple3.json"))
+      val schema = SchemaEncoder[TupleTest3].encode
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
+
+case class TupleTest2(first: String, second: Seq[(TupleTestA, TupleTestB)])
+case class TupleTest3(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC)])
+case class TupleTestA(parameter: Int)
+case class TupleTestB(parameter: Int)
+case class TupleTestC(parameter: Int)

@@ -1,16 +1,16 @@
 {
   "type": "record",
   "name": "UUIDOption",
-  "namespace": "com.sksamuel.avro4s",
+  "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "uuid",
       "type": [
-        "null",
         {
           "type": "string",
           "logicalType": "uuid"
-        }
+        },
+        "null"
       ]
     }
   ]

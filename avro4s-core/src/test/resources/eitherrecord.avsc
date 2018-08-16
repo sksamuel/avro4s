@@ -1,19 +1,19 @@
 {
   "type" : "record",
   "name" : "Test",
-  "namespace" : "com.sksamuel.avro4s",
+  "namespace" : "com.sksamuel.avro4s.schema",
   "fields" : [ {
     "name" : "either",
     "type" : [ {
       "type" : "record",
-      "name" : "Nested",
+      "name" : "Goo",
       "fields" : [ {
-        "name" : "goo",
+        "name" : "s",
         "type" : "string"
       } ]
     }, {
       "type" : "record",
-      "name" : "NestedBoolean",
+      "name" : "Foo",
       "fields" : [ {
         "name" : "b",
         "type" : "boolean"

@@ -2,7 +2,6 @@ package com.sksamuel.avro4s
 
 import java.io.ByteArrayOutputStream
 
-import org.apache.avro.Schema.Type
 import org.apache.avro.generic.GenericData
 import org.scalatest.{Matchers, WordSpec}
 
@@ -12,11 +11,7 @@ class AvroFixedTest extends WordSpec with Matchers {
     Array[Byte](0, 1, 2, 3))
 
   "AvroFixed" should {
-    "generate fixed(n) type for @AvroFixed(n) case class" in {
-      val schema = SchemaFor[QuarterSHA256]()
-      schema.getType shouldBe Type.FIXED
-      schema.getFixedSize shouldBe 8
-    }
+
     "encode fixed(n) as a plain vector of bytes with fixed length" in {
       val baos = new ByteArrayOutputStream()
       val output = AvroOutputStream.binary[AvroMessage](baos)
