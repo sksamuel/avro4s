@@ -20,11 +20,11 @@ class DataTypeForTest extends FunSuite with Matchers {
     DataTypeFor.apply[Painting].dataType shouldBe
       StructType(
         "com.sksamuel.avro4s.internal.Painting",
-        "",
-        "",
+        "Painting",
+        "com.sksamuel.avro4s.internal",
         annotations = List(),
         fields = List(
-          StructField("name", StringType, List(), null),
+          StructField("name", StringType),
           StructField("year", IntType, List(Anno("com.sksamuel.avro4s.AvroAlias", List("y"))), null)
         )
       )
@@ -34,8 +34,8 @@ class DataTypeForTest extends FunSuite with Matchers {
     DataTypeFor.apply[Artist].dataType shouldBe
       StructType(
         "com.sksamuel.avro4s.internal.Artist",
-        "",
-        "",
+        "Artist",
+        "com.sksamuel.avro4s.internal",
         annotations = List(Anno("org.apache.avro.specific.FixedSize", List("value = 12"))),
         fields = List(
           StructField("name", StringType, List(Anno("com.sksamuel.avro4s.AvroName", List("foo"))), null),
@@ -43,12 +43,12 @@ class DataTypeForTest extends FunSuite with Matchers {
           StructField("works", ArrayType(
             StructType(
               "com.sksamuel.avro4s.internal.Painting",
-              "",
-              "",
+              "Painting",
+              "com.sksamuel.avro4s.internal",
               annotations = List(),
               fields = List(
-                StructField("name", StringType, List(), null),
-                StructField("year", IntType, List(Anno("com.sksamuel.avro4s.AvroAlias", List("y"))), null)
+                StructField("name", StringType),
+                StructField("year", IntType, List(Anno("com.sksamuel.avro4s.AvroAlias", List("y"))))
               )
             )
           ), List(), null)
@@ -60,12 +60,26 @@ class DataTypeForTest extends FunSuite with Matchers {
     DataTypeFor.apply[Movement].dataType shouldBe
       StructType(
         "com.sksamuel.avro4s.internal.Movement",
-        "",
-        "",
+        "Movement",
+        "com.sksamuel.avro4s.internal",
         annotations = List(),
         List(
           StructField("style", EnumType("com.sksamuel.avro4s.internal.Style", List("Impressionist", "Romanticist"), Nil), List(), null),
-          StructField("startYear", IntType, List(), null)
+          StructField("startYear", IntType)
+        )
+      )
+  }
+
+  test("case classes defined inside methods") {
+    case class Foo(a: String)
+    DataTypeFor.apply[Foo].dataType shouldBe
+      StructType(
+        "com.sksamuel.avro4s.internal.DataTypeForTest.Foo",
+        "Foo",
+        "com.sksamuel.avro4s.internal",
+        annotations = List(),
+        List(
+          StructField("a", StringType)
         )
       )
   }

@@ -39,5 +39,5 @@ case class StructType(qualifiedName: String,
 
 case class StructField(name: String,
                        dataType: DataType,
-                       annotations: Seq[Anno],
-                       default: Any)
+                       annotations: Seq[Anno] = Nil,
+                       default: Any = null)
