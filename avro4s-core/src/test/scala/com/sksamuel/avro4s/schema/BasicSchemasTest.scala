@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.schema
 
+import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 
 class BasicSchemasTest extends WordSpec with Matchers {

@@ -4,7 +4,7 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.avro.specific.SpecificRecord
 import org.apache.avro.{AvroRuntimeException, Schema}
 
-class Record(val schema: Schema) extends GenericRecord with SpecificRecord {
+class Record(schema: Schema) extends GenericRecord with SpecificRecord {
 
   private val values = Array.ofDim[AnyRef](schema.getFields.size)
 

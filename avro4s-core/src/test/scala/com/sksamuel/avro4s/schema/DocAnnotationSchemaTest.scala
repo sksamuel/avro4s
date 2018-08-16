@@ -1,10 +1,12 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroDoc
+import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 
 class DocAnnotationSchemaTest extends WordSpec with Matchers {
-  "SchemaEncoder" should {
+
+  "@AvroDoc" should {
     "support doc annotation on class" in {
       @AvroDoc("hello; is it me youre looking for") case class Annotated(str: String)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation_class.avsc"))

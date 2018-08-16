@@ -64,7 +64,7 @@ class DataTypeForTest extends FunSuite with Matchers {
         "com.sksamuel.avro4s.internal",
         annotations = List(),
         List(
-          StructField("style", EnumType("com.sksamuel.avro4s.internal.Style", List("Impressionist", "Romanticist"), Nil), List(), null),
+          StructField("style", EnumType("com.sksamuel.avro4s.internal.Style", "Style", "com.sksamuel.avro4s.internal", List("Impressionist", "Romanticist"), Nil), List(), null),
           StructField("startYear", IntType)
         )
       )

@@ -20,7 +20,8 @@ object RecordEncoder {
     c.Expr[RecordEncoder[T]](
       q"""
           new _root_.com.sksamuel.avro4s.internal.RecordEncoder[$tpe] {
-            override def encode(t: $tpe): Record = null
+            private val schema = _root_.com.sksamuel.avro4s.internal.SchemaEncoder[$tpe].encode
+            override def encode(t: $tpe): _root_.com.sksamuel.avro4s.internal.Record = new _root_.com.sksamuel.avro4s.internal.Record(schema)
           }
        """
     )

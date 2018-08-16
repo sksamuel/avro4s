@@ -61,6 +61,10 @@ object DataTypeFor {
     )
   }
 
+  /**
+    * Builds a [[StructField]] with the data type provided by an implicit instance of [[DataTypeFor]].
+    * There must be a provider in scope for any type we want to support in avro4s.
+    */
   def structField[B](name: String, annos: Seq[Anno], default: Any)(implicit dataTypeFor: DataTypeFor[B]): StructField = {
     StructField(name, dataTypeFor.dataType, annos, default)
   }
@@ -174,9 +178,17 @@ object DataTypeFor {
                                                                  objs: Reify.Aux[C, L],
                                                                  toList: ToList[L, T]): DataTypeFor[T] = new DataTypeFor[T] {
     override val dataType: DataType = {
-      val name = ct.runtimeClass.getCanonicalName
+      val tpe = weakTypeTag[T]
+      val annos = tpe.tpe.typeSymbol.annotations.map { a =>
+        val name = a.tree.tpe.typeSymbol.fullName
+        val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+        Anno(name, args)
+      }
+      val className = ct.runtimeClass.getCanonicalName
+      val packageName = ct.runtimeClass.getPackage.getName
+      val simpleName = ct.runtimeClass.getSimpleName
       val symbols = toList(objs()).map(_.toString)
-      EnumType(name, symbols, Nil)
+      EnumType(className, simpleName, packageName, symbols, annos)
     }
   }
 }

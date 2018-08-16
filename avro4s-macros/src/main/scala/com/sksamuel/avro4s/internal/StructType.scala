@@ -28,7 +28,12 @@ case class DecimalType(precision: Int, scale: Int) extends DataType
 case class MapType(keyType: DataType, valueType: DataType) extends DataType
 case class ArrayType(valueType: DataType) extends DataType
 
-case class EnumType(name: String, symbols: Seq[String], annotations: Seq[Anno]) extends DataType
+case class EnumType(className: String,
+                    simpleName: String,
+                    packageName: String,
+                    symbols: Seq[String],
+                    annotations: Seq[Anno]) extends DataType
+
 case class UnionType(types: Seq[DataType]) extends DataType
 
 case class StructType(qualifiedName: String,
