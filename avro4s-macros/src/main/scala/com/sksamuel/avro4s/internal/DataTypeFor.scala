@@ -4,11 +4,13 @@ import java.sql.Timestamp
 import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
+import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{Coproduct, Generic, HList}
 
 import scala.language.experimental.macros
+import scala.math.BigDecimal.RoundingMode.UNNECESSARY
 import scala.reflect.ClassTag
 import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe._
@@ -31,34 +33,46 @@ object DataTypeFor {
     // we can only encode concrete classes as the top level
     require(tType.typeSymbol.isClass, tType + " is not a class but is " + tType.typeSymbol.fullName)
 
-    val underlyingType = reflect.underlyingType(tType)
+    // if we have a value type then we will just summon an existing DataTypeFor implicitly
+    // otherwise we will create a new instance of the DataTypeFor typeclass which will create
+    // a StructType for each of the fields
+    if (reflect.isValueClass(tType)) {
+      val underlying = reflect.underlyingType(tType)
+      c.Expr[DataTypeFor[T]](
+        q"""
+        new _root_.com.sksamuel.avro4s.internal.DataTypeFor[$tType] {
+          override def dataType: com.sksamuel.avro4s.internal.DataType = implicitly[com.sksamuel.avro4s.internal.DataTypeFor[$underlying]].dataType
+        }
+      """)
+    } else {
 
-    val fields = reflect.fieldsOf(underlyingType).zipWithIndex.map { case ((f, fieldTpe), _) =>
-      // the simple name of the field like "x"
-      val fieldName = f.name.decodedName.toString.trim
-      val annos = reflect.annotations(f)
-      q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
-    }
+      val fields = reflect.fieldsOf(tType).zipWithIndex.map { case ((f, fieldTpe), _) =>
+        // the simple name of the field like "x"
+        val fieldName = f.name.decodedName.toString.trim
+        var annos = reflect.annotations(f)
+        // if the field is a value type, we should include annotations defined on the value type as well
+        if (reflect.isValueClass(fieldTpe))
+          annos = annos ++ reflect.annotations(fieldTpe.typeSymbol)
+        q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
+      }
 
-    // qualified name of the class we are building
-    // todo encode generics:: + genericNameSuffix(underlyingType)
-    val className = underlyingType.typeSymbol.fullName.toString
+      // qualified name of the class we are building
+      // todo encode generics:: + genericNameSuffix(underlyingType)
+      val className = tType.typeSymbol.fullName.toString
+      val simpleName = tType.typeSymbol.name.decodedName.toString
+      val packageName = Stream.iterate(tType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
 
-    val simpleName = underlyingType.typeSymbol.name.decodedName.toString
+      // these are annotations on the class itself
+      val annos = reflect.annotations(tType.typeSymbol)
 
-    val packageName = Stream.iterate(underlyingType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
-
-    // these are annotations on the class itself
-    val annos = reflect.annotations(underlyingType.typeSymbol)
-
-    c.Expr[DataTypeFor[T]](
-      q"""
+      c.Expr[DataTypeFor[T]](
+        q"""
         new _root_.com.sksamuel.avro4s.internal.DataTypeFor[$tType] {
           val structType = _root_.com.sksamuel.avro4s.internal.StructType($className, $simpleName, $packageName, Seq(..$annos), Seq(..$fields))
           override def dataType: com.sksamuel.avro4s.internal.DataType = structType
         }
-      """
-    )
+      """)
+    }
   }
 
   /**
@@ -111,6 +125,18 @@ object DataTypeFor {
 
   implicit object ByteSeqFor extends DataTypeFor[Seq[Byte]] {
     override def dataType: DataType = BinaryType
+  }
+
+  lazy val defaultScaleAndPrecisionAndRoundingMode = ScaleAndPrecisionAndRoundingMode(2, 8, UNNECESSARY)
+
+  implicit def BigDecimalFor(implicit sp: ScaleAndPrecisionAndRoundingMode = defaultScaleAndPrecisionAndRoundingMode): DataTypeFor[BigDecimal] = new DataTypeFor[BigDecimal] {
+    override def dataType: DataType = DecimalType(sp.precision, sp.scale)
+  }
+
+  implicit def EitherFor[A, B](implicit leftFor: DataTypeFor[A], rightFor: DataTypeFor[B]): DataTypeFor[Either[A, B]] = {
+    new DataTypeFor[Either[A, B]] {
+      override def dataType: DataType = UnionType(Seq(leftFor.dataType, rightFor.dataType))
+    }
   }
 
   implicit def OptionFor[T](implicit elementType: DataTypeFor[T]): DataTypeFor[Option[T]] = {

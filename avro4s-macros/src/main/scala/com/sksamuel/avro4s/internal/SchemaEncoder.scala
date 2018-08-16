@@ -34,12 +34,14 @@ object SchemaEncoder {
         val extractor = new AnnotationExtractors(annotations)
         val namespace = extractor.namespace.getOrElse(packageName)
         val doc = extractor.doc.orNull
+        val aliases = extractor.aliases
 
-        val builder = SchemaBuilder.record(simpleName).namespace(namespace).doc(doc).fields()
+        val builder = SchemaBuilder.record(simpleName).namespace(namespace).aliases(aliases: _*).doc(doc).fields()
         fields.foldLeft(builder) { (builder, field) =>
 
           val extractor = new AnnotationExtractors(field.annotations)
           val doc = extractor.doc.orNull
+          val aliases = extractor.aliases
 
           // this is the schema for our field
           val schema = createSchema(field.dataType)
@@ -49,7 +51,7 @@ object SchemaEncoder {
           // to any schemas we have generated for this field
           val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schema, _)).getOrElse(schema)
 
-          val b = builder.name(field.name).doc(doc).`type`(schemaWithResolvedNamespace)
+          val b = builder.name(field.name).doc(doc).aliases(aliases: _*).`type`(schemaWithResolvedNamespace)
           if (field.default == null) b.noDefault() else b.withDefault(field.default)
         }.endRecord()
 
