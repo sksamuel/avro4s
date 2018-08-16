@@ -43,7 +43,6 @@ case class AllOptionals(union: Option[Option[Int] :+: Option[String] :+: CNil])
 
 class AvroSchemaTest extends WordSpec with Matchers {
 
-  case class NestedListString(list: List[String])
   case class NestedSetDouble(set: Set[Double])
   case class NestedSet(set: Set[Nested])
   case class Nested(goo: String)
@@ -79,57 +78,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
       case class Test(option: Option[String])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option.avsc"))
       val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for a scala.collection.immutable.Seq of primitives" in {
-      case class Test(seq: Seq[String])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for an Array of primitives" in {
-      case class Test(array: Array[Boolean])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/array.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for a List of primitives" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/list.avsc"))
-      val schema = SchemaFor[NestedListString]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for a scala.collection.immutable.Seq of records" in {
-      case class Test(seq: Seq[Nested])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seqrecords.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for an Array of records" in {
-      case class Test(array: Array[Nested])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/arrayrecords.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for a List of records" in {
-      case class Test(list: List[Nested])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/listrecords.avsc"))
-      val schema = SchemaFor[Test]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for a Set of records" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setrecords.avsc"))
-      val schema = SchemaFor[NestedSet]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for a Set of strings" in {
-      case class Test(set: Set[String])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setstrings.avsc"))
-      val schema = AvroSchema[Test]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for a Set of doubles" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setdoubles.avsc"))
-      val schema = SchemaFor[NestedSetDouble]()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "accept deep nested structure" in {
@@ -237,19 +185,6 @@ class AvroSchemaTest extends WordSpec with Matchers {
     outsideOptional.toString(true) shouldBe expected.toString(true)
     insideOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "UnionOfOptional")
     bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
-  }
-  "generate array type for a vector of primitives" in {
-    case class VectorPrim(booleans: Vector[Boolean])
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/vector_prim.avsc"))
-    val schema = SchemaFor[VectorPrim]()
-    schema.toString(true) shouldBe expected.toString(true)
-  }
-  "generate array type for an vector of records" in {
-    case class VectorRecord(records: Vector[Record])
-    case class Record(str: String, double: Double)
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/vector_records.avsc"))
-    val schema = SchemaFor[VectorRecord]()
-    schema.toString(true) shouldBe expected.toString(true)
   }
   "support types nested in uppercase packages" in {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_in_uppercase_pkg.avsc"))

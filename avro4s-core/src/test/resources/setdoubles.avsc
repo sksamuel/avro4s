@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "NestedSetDouble",
-  "namespace": "com.sksamuel.avro4s",
+  "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "set",
