@@ -206,6 +206,36 @@ object DataTypeFor {
     override def dataType: DataType = ArrayType(elementType.dataType)
   }
 
+  implicit def Tuple2ToSchema[A, B](implicit a: DataTypeFor[A], b: DataTypeFor[B]) = new DataTypeFor[(A, B)] {
+    override def dataType: DataType = StructType(
+      "",
+      "tuple2",
+      "",
+      Nil,
+      Seq(
+        StructField("_1", a.dataType),
+        StructField("_2", b.dataType)
+      )
+    )
+  }
+
+  implicit def Tuple3ToSchema[A, B, C](implicit
+                                       a: DataTypeFor[A],
+                                       b: DataTypeFor[B],
+                                       c: DataTypeFor[C]) = new DataTypeFor[(A, B, C)] {
+    override def dataType: DataType = StructType(
+      "",
+      "tuple3",
+      "",
+      Nil,
+      Seq(
+        StructField("_1", a.dataType),
+        StructField("_2", b.dataType),
+        StructField("_3", c.dataType)
+      )
+    )
+  }
+
   implicit def MapFor[V](implicit valueType: DataTypeFor[V]): DataTypeFor[Map[String, V]] = {
     new DataTypeFor[Map[String, V]] {
       override def dataType: DataType = MapType(StringType, valueType.dataType)

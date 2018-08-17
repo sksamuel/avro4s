@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "TupleTest2",
-  "namespace": "com.sksamuel.avro4s",
+  "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "first",
@@ -13,7 +13,7 @@
         "type": "array",
         "items": {
           "type": "record",
-          "name": "element",
+          "name": "tuple2",
           "namespace": "",
           "fields": [
             {
@@ -21,7 +21,7 @@
               "type": {
                 "type": "record",
                 "name": "TupleTestA",
-                "namespace": "com.sksamuel.avro4s",
+                "namespace": "com.sksamuel.avro4s.schema",
                 "fields": [
                   {
                     "name": "parameter",
@@ -35,7 +35,7 @@
               "type": {
                 "type": "record",
                 "name": "TupleTestB",
-                "namespace": "com.sksamuel.avro4s",
+                "namespace": "com.sksamuel.avro4s.schema",
                 "fields": [
                   {
                     "name": "parameter",

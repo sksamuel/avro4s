@@ -4,6 +4,7 @@ import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 
 class ArraySchemaTest extends WordSpec with Matchers {
+
   "SchemaEncoder" should {
     "generate array type for a vector of primitives" in {
       case class VectorPrim(booleans: Vector[Boolean])
