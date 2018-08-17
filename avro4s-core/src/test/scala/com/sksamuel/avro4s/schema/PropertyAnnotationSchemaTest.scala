@@ -5,7 +5,8 @@ import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 
 class PropertyAnnotationSchemaTest extends WordSpec with Matchers {
-  "SchemaEncoder" should {
+
+  "@AvroProp" should {
     "support prop annotation on class" in {
       @AvroProp("cold", "play") case class Annotated(str: String)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/props_annotation_class.avsc"))
