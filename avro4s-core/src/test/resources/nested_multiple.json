@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "Outer",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "middle",
+      "type": {
+        "type": "record",
+        "name": "Middle",
+        "fields": [
+          {
+            "name": "inner",
+            "type": {
+              "type": "record",
+              "name": "Inner",
+              "fields": [
+                {
+                  "name": "goo",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

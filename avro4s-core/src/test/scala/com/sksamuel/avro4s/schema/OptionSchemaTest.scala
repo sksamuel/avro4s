@@ -13,11 +13,7 @@ class OptionSchemaTest extends WordSpec with Matchers {
       val schema = SchemaFor[Test]()
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support default option values" in {
-      val schema = SchemaFor[OptionDefaultValues]()
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optiondefaultvalues.avsc"))
-      schema.toString(true) shouldBe expected.toString(true)
-    }
+
     "support mixing optionals with unions, merging appropriately" in {
       val outsideOptional = SchemaFor[OptionalUnion]()
       val insideOptional = SchemaFor[UnionOfOptional]()
@@ -32,9 +28,7 @@ class OptionSchemaTest extends WordSpec with Matchers {
   }
 }
 
-case class OptionDefaultValues(name: String = "sammy",
-                               description: Option[String] = None,
-                               currency: Option[String] = Some("$"))
+
 
 case class Union(union: Int :+: String :+: Boolean :+: CNil)
 case class OptionalUnion(union: Option[Int :+: String :+: CNil])

@@ -12,13 +12,7 @@ class UUIDTest extends FlatSpec with Matchers {
   case class UUIDTest(uuid: UUID)
   case class UUIDOption(uuid: Option[UUID])
 
-  "UUID" should "be represented as a logical type on Strings" in {
-    val schema = SchemaFor[UUIDTest]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid.json"))
-    schema shouldBe expected
-  }
-
-  it should "be serializable" in {
+  "UUID" should "be serializable" in {
 
     val file = Files.createTempFile("UUID", ".avro")
 
@@ -34,13 +28,7 @@ class UUIDTest extends FlatSpec with Matchers {
     in.close()
   }
 
-  "Option[UUID]" should "be represented as a union" in {
-    val schema = SchemaFor[UUIDOption]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid_option.json"))
-    schema shouldBe expected
-  }
-
-  it should "be serializable" in {
+  "Option[UUID]" should "be serializable" in {
 
     val file = Files.createTempFile("uuid_option", ".avro")
 
@@ -57,13 +45,7 @@ class UUIDTest extends FlatSpec with Matchers {
     in.close()
   }
 
-  "UUID with default value" should "be represented as a logical type with default" in {
-    val schema = SchemaFor[UUIDDefault]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid_default.json"))
-    schema shouldBe expected
-  }
-
-  it should "be serializable" in {
+  "UUID with default value" should "be serializable" in {
 
     val file = Files.createTempFile("uuid_default", ".avro")
 
@@ -79,13 +61,7 @@ class UUIDTest extends FlatSpec with Matchers {
     in.close()
   }
 
-  "Seq[UUID]" should "be represented as an array of logical types" in {
-    val schema = SchemaFor[UUIDSeq]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid_seq.json"))
-    schema shouldBe expected
-  }
-
-  it should "be serializable" in {
+  "Seq[UUID]" should "be serializable" in {
 
     val file = Files.createTempFile("uuid_seq", ".avro")
 

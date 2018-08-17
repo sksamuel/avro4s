@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "s",
+      "type": "string",
+      "default" : "wibble"
+    }
+  ]
+}

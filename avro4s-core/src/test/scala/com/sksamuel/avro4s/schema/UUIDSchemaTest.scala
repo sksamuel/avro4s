@@ -9,7 +9,7 @@ class UUIDSchemaTest extends WordSpec with Matchers {
 
   case class UUIDTest(uuid: UUID)
   case class UUIDSeq(uuids: Seq[UUID])
-  case class UUIDDefault(decimal: UUID = UUID.fromString("86da265c-95bd-443c-8860-9381efca059d"))
+  case class UUIDDefault(uuid: UUID = UUID.fromString("86da265c-95bd-443c-8860-9381efca059d"))
   case class UUIDOption(uuid: Option[UUID])
 
   "SchemaEncoder" should {

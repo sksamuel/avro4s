@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "Recursive",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "payload",
+      "type": "int"
+    },
+    {
+      "name": "next",
+      "type": [
+        "null",
+        "Recursive"
+      ]
+    }
+  ]
+}

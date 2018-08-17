@@ -12,6 +12,7 @@ import shapeless.{Coproduct, Generic, HList}
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode.UNNECESSARY
 import scala.reflect.ClassTag
+import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe._
 
@@ -25,6 +26,7 @@ object DataTypeFor {
 
   def applyImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[DataTypeFor[T]] = {
 
+    import c.universe
     import c.universe._
 
     val reflect = ReflectHelper(c)
@@ -46,14 +48,38 @@ object DataTypeFor {
       """)
     } else {
 
-      val fields = reflect.fieldsOf(tType).zipWithIndex.map { case ((f, fieldTpe), _) =>
+      val fields = reflect.fieldsOf(tType).zipWithIndex.map { case ((f, fieldTpe), index) =>
+
         // the simple name of the field like "x"
         val fieldName = f.name.decodedName.toString.trim
+
         var annos = reflect.annotations(f)
         // if the field is a value type, we should include annotations defined on the value type as well
         if (reflect.isValueClass(fieldTpe))
           annos = annos ++ reflect.annotations(fieldTpe.typeSymbol)
-        q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
+
+        val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+
+        // this gets the method that generates the default value for this field
+        // (if the field has a default value otherwise its a nosymbol)
+        val defaultGetter = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+
+        // this is a method symbol for the default getter if it exists
+        val member = tType.companion.member(TermName(defaultGetter.toString))
+
+        // if the field is a param with a default value, then we know the getter method will be defined
+        // and so we can use it to generate the default value
+        if (f.isTerm && f.asTerm.isParamWithDefault) {
+          //val method = reflect.defaultGetter(tType, index + 1)
+          // the default method is defined on the companion object
+          val moduleSym = tType.typeSymbol.companion
+          val qq = q""" {  $tType.apply() } """
+          println("module=" + moduleSym)
+          //   q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$member) }"""
+          q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
+        } else {
+          q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
+        }
       }
 
       // qualified name of the class we are building
@@ -80,6 +106,7 @@ object DataTypeFor {
     * There must be a provider in scope for any type we want to support in avro4s.
     */
   def structField[B](name: String, annos: Seq[Anno], default: Any)(implicit dataTypeFor: DataTypeFor[B]): StructField = {
+    println(s"default for $name = $default")
     StructField(name, dataTypeFor.dataType, annos, default)
   }
 

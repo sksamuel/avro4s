@@ -1,9 +1,0 @@
-{
-  "type" : "record",
-  "name" : "Data",
-  "namespace" : "com.sksamuel.avro4s.examples.UppercasePkg",
-  "fields" : [ {
-    "name" : "payload",
-    "type" : [ "string", "int" ]
-  } ]
-}

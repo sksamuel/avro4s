@@ -14,13 +14,7 @@ class BigDecimalTest extends FlatSpec with Matchers {
   case class BigDecimalTest(decimal: BigDecimal)
   case class BigDecimalOption(decimal: Option[BigDecimal])
 
-  "BigDecimal" should "be represented as a logical type on bytes" in {
-    val schema = SchemaFor[BigDecimalTest]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_bytes.avsc"))
-    schema shouldBe expected
-  }
-
-  it should "be serializable" in {
+  "BigDecimal" should "be serializable" in {
 
     val file = Files.createTempFile("bigdecimal", ".avro")
 
@@ -35,12 +29,6 @@ class BigDecimalTest extends FlatSpec with Matchers {
     val in = AvroInputStream.data[BigDecimalTest](file)
     in.iterator.toList shouldBe List(a, b)
     in.close()
-  }
-
-  "Option[BigDecimal]" should "be represented as a union" in {
-    val schema = SchemaFor[BigDecimalOption]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_option.json"))
-    schema shouldBe expected
   }
 
   it should "be serializable" in {
@@ -60,12 +48,6 @@ class BigDecimalTest extends FlatSpec with Matchers {
     in.close()
   }
 
-  "BigDecimal with default value" should "be represented as a logical type with default" in {
-    val schema = SchemaFor[BigDecimalDefault]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_default.json"))
-    schema shouldBe expected
-  }
-
   it should "be serializable" in {
 
     val file = Files.createTempFile("bigdecimal_default", ".avro")
@@ -81,12 +63,6 @@ class BigDecimalTest extends FlatSpec with Matchers {
     val in = AvroInputStream.data[BigDecimalDefault](file)
     in.iterator.toList shouldBe List(a, b, c)
     in.close()
-  }
-
-  "nested BigDecimal with default value" should "be represented as a logical type with default" in {
-    val schema = SchemaFor[BigDecimalNestedDefault]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_nested_default.json"))
-    schema shouldBe expected
   }
 
   it should "be serializable" in {
@@ -106,11 +82,6 @@ class BigDecimalTest extends FlatSpec with Matchers {
     in.close()
   }
 
-  "Seq[BigDecimal]" should "be represented as an array of logical types" in {
-    val schema = SchemaFor[BigDecimalSeq]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_seq.json"))
-    schema shouldBe expected
-  }
 
   it should "be serializable" in {
 
@@ -126,12 +97,6 @@ class BigDecimalTest extends FlatSpec with Matchers {
     val in = AvroInputStream.data[BigDecimalSeq](file)
     in.iterator.toList shouldBe List(a, b)
     in.close()
-  }
-
-  "Seq[Option[BigDecimal]]" should "be represented as an array of unions" in {
-    val schema = SchemaFor[BigDecimalSeqOption]()
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_seq_option.json"))
-    schema shouldBe expected
   }
 
   it should "be serializable" in {

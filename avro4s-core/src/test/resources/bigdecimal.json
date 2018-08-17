@@ -1,11 +1,10 @@
 {
   "type": "record",
-  "name": "BigDecimalDefault",
+  "name": "Test",
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "decimal",
-      "default": "964.55",
       "type": {
         "type": "bytes",
         "logicalType": "decimal",

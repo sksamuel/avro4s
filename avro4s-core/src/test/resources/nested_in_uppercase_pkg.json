@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "ClassInUppercasePackage",
+  "namespace": "com.sksamuel.avro4s.examples.UppercasePkg",
+  "fields": [
+    {
+      "name": "s",
+      "type": "string"
+    }
+  ]
+}

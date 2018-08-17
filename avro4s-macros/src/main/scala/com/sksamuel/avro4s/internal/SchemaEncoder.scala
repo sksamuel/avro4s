@@ -26,6 +26,18 @@ object SchemaEncoder {
       case _ => schema
     }
 
+  // returns a default value that is compatible with the datatype
+  // for example, we might define a UUID field with a default of UUID.randomUUID(), but
+  // avro is not going to understand what to do with this type
+  def resolveDefault(default: Any, dataType: DataType): Any = {
+    require(default != null)
+    println(s"Resolving default = $default for $dataType")
+    dataType match {
+      case UUIDType => default.toString
+      case _ => default
+    }
+  }
+
   def createSchema(dataType: DataType): Schema = {
     dataType match {
 
@@ -52,7 +64,7 @@ object SchemaEncoder {
           val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schema, _)).getOrElse(schema)
 
           val b = builder.name(field.name).doc(doc).aliases(aliases: _*).`type`(schemaWithResolvedNamespace)
-          if (field.default == null) b.noDefault() else b.withDefault(field.default)
+          if (field.default == null) b.noDefault() else b.withDefault(resolveDefault(field.default, field.dataType))
         }.endRecord()
 
       case DecimalType(precision, scale) =>

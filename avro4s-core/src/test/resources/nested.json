@@ -1,12 +1,12 @@
 {
   "type": "record",
   "name": "NestedTest",
-  "namespace": "com.sksamuel.avro4s",
+  "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
-     {
-        "name": "foo",
-        "type": "string"
-      },
+    {
+      "name": "foo",
+      "type": "string"
+    },
     {
       "name": "nested",
       "type": {
