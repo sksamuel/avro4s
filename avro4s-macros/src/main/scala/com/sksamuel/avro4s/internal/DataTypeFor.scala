@@ -7,7 +7,7 @@ import java.util.UUID
 import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList}
+import shapeless.{:+:, CNil, Coproduct, Generic, HList}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode.UNNECESSARY
@@ -20,7 +20,33 @@ trait DataTypeFor[T] {
   def dataType: DataType
 }
 
-object DataTypeFor {
+trait LowPriorityDataTypeFor {
+
+  // A coproduct is a union, or a generalised either.
+  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
+
+  // Shapeless's implementation builds up the type recursively,
+  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
+  // so here we define the schema for the base case of the recursion, C :+: CNil
+  implicit def coproductBaseSchema[S](implicit basefor: DataTypeFor[S]): DataTypeFor[S :+: CNil] = new DataTypeFor[S :+: CNil] {
+    override def dataType: DataType = UnionType(Seq(basefor.dataType))
+  }
+
+  // And here we continue the recursion up.
+  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: DataTypeFor[S], coproductFor: DataTypeFor[T]): DataTypeFor[S :+: T] = new DataTypeFor[S :+: T] {
+    // union schemas can't contain other union schemas as a direct
+    // child, so whenever we create a union, we need to check if our
+    // children are unions and flatten
+    override def dataType: DataType = UnionType.flatten(basefor.dataType, coproductFor.dataType)
+  }
+
+  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                               coproductFor: DataTypeFor[C]): DataTypeFor[T] = new DataTypeFor[T] {
+    override def dataType: DataType = coproductFor.dataType
+  }
+}
+
+object DataTypeFor extends LowPriorityDataTypeFor {
 
   implicit def apply[T]: DataTypeFor[T] = macro applyImpl[T]
 
@@ -53,10 +79,12 @@ object DataTypeFor {
         // the simple name of the field like "x"
         val fieldName = f.name.decodedName.toString.trim
 
-        var annos = reflect.annotations(f)
         // if the field is a value type, we should include annotations defined on the value type as well
-        if (reflect.isValueClass(fieldTpe))
-          annos = annos ++ reflect.annotations(fieldTpe.typeSymbol)
+        val annos = if (reflect.isValueClass(fieldTpe)) {
+          reflect.annotations(f) ++ reflect.annotations(fieldTpe.typeSymbol)
+        } else {
+          reflect.annotations(f)
+        }
 
         val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
 
@@ -72,9 +100,7 @@ object DataTypeFor {
         if (f.isTerm && f.asTerm.isParamWithDefault) {
           //val method = reflect.defaultGetter(tType, index + 1)
           // the default method is defined on the companion object
-          val moduleSym = tType.typeSymbol.companion
-          val qq = q""" {  $tType.apply() } """
-          println("module=" + moduleSym)
+          // val moduleSym = tType.typeSymbol.companion
           //   q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$member) }"""
           q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
         } else {
@@ -274,4 +300,5 @@ object DataTypeFor {
       EnumType(className, simpleName, packageName, symbols, annos)
     }
   }
+
 }

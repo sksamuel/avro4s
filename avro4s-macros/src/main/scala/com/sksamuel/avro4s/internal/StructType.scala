@@ -36,6 +36,20 @@ case class EnumType(className: String,
 
 case class UnionType(types: Seq[DataType]) extends DataType
 
+object UnionType {
+
+  /**
+    * Takes a list of data types and creates a union from them, flattening any nested union types
+    */
+  def flatten(dataTypes: DataType*): UnionType = {
+    val types = dataTypes.flatMap {
+      case UnionType(tps) => tps
+      case other => Seq(other)
+    }
+    UnionType(types)
+  }
+}
+
 case class StructType(qualifiedName: String,
                       simpleName: String,
                       packageName: String,
