@@ -90,19 +90,19 @@ object DataTypeFor extends LowPriorityDataTypeFor {
 
         // this gets the method that generates the default value for this field
         // (if the field has a default value otherwise its a nosymbol)
-        val defaultGetter = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+        val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
 
         // this is a method symbol for the default getter if it exists
-        val member = tType.companion.member(TermName(defaultGetter.toString))
+        val defaultGetterMethod = tType.companion.member(TermName(defaultGetterName.toString))
 
         // if the field is a param with a default value, then we know the getter method will be defined
         // and so we can use it to generate the default value
-        if (f.isTerm && f.asTerm.isParamWithDefault) {
+        if (f.isTerm && f.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
           //val method = reflect.defaultGetter(tType, index + 1)
           // the default method is defined on the companion object
-          // val moduleSym = tType.typeSymbol.companion
-          //   q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$member) }"""
-          q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
+          val moduleSym = tType.typeSymbol.companion
+          q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+          // q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
         } else {
           q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
         }

@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "ClassWithDefaultFloat",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "f",
+      "type": "float",
+      "default" : "123.456"
+    }
+  ]
+}

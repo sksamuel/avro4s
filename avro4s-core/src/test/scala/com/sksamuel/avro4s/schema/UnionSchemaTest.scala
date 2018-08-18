@@ -1,12 +1,29 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.SchemaFor
+import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 import shapeless.{:+:, CNil}
 
 class UnionSchemaTest extends WordSpec with Matchers {
+
   "SchemaEncoder" should {
-    "support unions and unions of unions" in {
+    "support sealed traits of case classes" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.avsc"))
+      val schema = SchemaEncoder[Wrapper].encode
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support trait subtypes fields with same name" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.avsc"))
+      val schema = SchemaEncoder[Trapper].encode
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support trait subtypes fields with same name and same type" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.avsc"))
+      val schema = SchemaEncoder[Napper].encode
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support coproducts of coproducts" in {
       val single = SchemaFor[Union]()
       val unionOfUnions = SchemaFor[UnionOfUnions]()
 
@@ -19,3 +36,18 @@ class UnionSchemaTest extends WordSpec with Matchers {
 }
 
 case class UnionOfUnions(union: (Int :+: String :+: CNil) :+: Boolean :+: CNil)
+
+sealed trait Wibble
+case class Wobble(str: String) extends Wibble
+case class Wabble(dbl: Double) extends Wibble
+case class Wrapper(wibble: Wibble)
+
+sealed trait Tibble
+case class Tobble(str: String, place: String) extends Tibble
+case class Tabble(str: Double, age: Int) extends Tibble
+case class Trapper(tibble: Tibble)
+
+sealed trait Nibble
+case class Nobble(str: String, place: String) extends Nibble
+case class Nabble(str: String, age: Int) extends Nibble
+case class Napper(nibble: Nibble)

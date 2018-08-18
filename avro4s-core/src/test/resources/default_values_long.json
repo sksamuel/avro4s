@@ -1,12 +1,12 @@
 {
   "type": "record",
-  "name": "Foo",
+  "name": "ClassWithDefaultLong",
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
-      "name": "a",
-      "type": "string",
-      "default" : "sammy"
+      "name": "l",
+      "type": "long",
+      "default" : 1468920998000
     }
   ]
 }

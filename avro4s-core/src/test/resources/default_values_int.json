@@ -1,12 +1,12 @@
 {
   "type": "record",
-  "name": "Foo",
+  "name": "ClassWithDefaultInt",
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
-      "name": "a",
+      "name": "i",
       "type": "int",
-      "default" : "sammy"
+      "default" : 123
     }
   ]
 }

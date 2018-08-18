@@ -39,7 +39,7 @@ class DecimalSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_seq.json"))
       schema shouldBe expected
     }
-    "Seq[Option[BigDecimal]] be represented as an array of unions" in {
+    "Seq[Option[BigDecimal]] be represented as an array of unions of nulls/bigdecimals" in {
       val schema = SchemaFor[BigDecimalSeqOption]()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_seq_option.json"))
       schema shouldBe expected

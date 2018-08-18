@@ -1,12 +1,12 @@
 {
   "type": "record",
-  "name": "Foo",
+  "name": "ClassWithDefaultBoolean",
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "b",
-      "type": "string",
-      "default" : "sammy"
+      "type": "boolean",
+      "default" : true
     }
   ]
 }
