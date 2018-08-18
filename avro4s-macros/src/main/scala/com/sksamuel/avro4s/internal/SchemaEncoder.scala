@@ -61,8 +61,9 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
 
           // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
           // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
-
-          val schema = createSchema(field.dataType)
+          val schema = extractor.fixed.fold(createSchema(field.dataType)) { size =>
+            SchemaBuilder.fixed(name).doc(doc).namespace(namespace).size(size)
+          }
 
           // the field can override the namespace if the Namespace annotation is present on the field
           // we may have annotated our field with @AvroNamespace so this namespace should be applied

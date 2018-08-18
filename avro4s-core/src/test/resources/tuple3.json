@@ -13,8 +13,8 @@
         "type": "array",
         "items": {
           "type": "record",
-          "name": "tuple3",
-          "namespace": "",
+          "name": "Tuple3",
+          "namespace": "scala",
           "fields": [
             {
               "name": "_1",

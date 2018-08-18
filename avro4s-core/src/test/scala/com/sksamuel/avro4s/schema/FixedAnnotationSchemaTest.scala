@@ -13,7 +13,7 @@ class AvroFixedSchemaTest extends WordSpec with Matchers {
       schema.getType shouldBe Type.FIXED
       schema.getFixedSize shouldBe 8
     }
-    "generated fixed field when used on a field" in {
+    "support usage on strings" in {
       val schema = SchemaEncoder[FixedString].encode()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/fixed_string.json"))
       schema.toString(true) shouldBe expected.toString(true)
