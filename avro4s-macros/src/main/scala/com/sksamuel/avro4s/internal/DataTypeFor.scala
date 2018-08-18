@@ -111,8 +111,14 @@ object DataTypeFor extends LowPriorityDataTypeFor {
       // qualified name of the class we are building
       // todo encode generics:: + genericNameSuffix(underlyingType)
       val className = tType.typeSymbol.fullName.toString
+
+      // eg, "Foo" for x.y.Foo
       val simpleName = tType.typeSymbol.name.decodedName.toString
-      val packageName = Stream.iterate(tType.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head.fullName
+      // we iterate up the owner tree until we find an Object or Package
+      val packageName = Stream.iterate(tType.typeSymbol.owner)(_.owner)
+        .dropWhile(x => !x.isPackage && !x.isModuleClass)
+        .head
+        .fullName
 
       // these are annotations on the class itself
       val annos = reflect.annotations(tType.typeSymbol)

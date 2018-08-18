@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "inner",
+      "type": {
+        "type": "record",
+        "namespace": "com.sksamuel.avro4s.schema.NamespaceSchemaTest.Boo",
+        "name": "Inner",
+        "fields": [
+          {
+            "name": "s",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}

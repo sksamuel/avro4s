@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "A",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "inner",
+      "type": {
+        "type": "record",
+        "namespace": "com.sksamuel.avro4s.schema.A",
+        "name": "Inner",
+        "fields": [
+          {
+            "name": "s",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}
