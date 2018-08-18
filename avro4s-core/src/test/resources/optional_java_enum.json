@@ -1,19 +1,19 @@
 {
   "type": "record",
   "name": "JavaEnumOptional",
-  "namespace": "com.sksamuel.avro4s",
+  "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "maybewine",
       "type": [
-        "null",
         {
           "type": "enum",
           "name": "Wine",
           "symbols": [
             "Malbec", "Shiraz", "CabSav", "Merlot"
           ]
-        }
+        },
+        "null"
       ]
     }
   ]

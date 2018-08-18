@@ -1,13 +1,13 @@
 {
   "type": "record",
   "name": "ScalaEnums",
-  "namespace": "com.sksamuel.avro4s",
+  "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "value",
       "type": {
         "type" : "enum",
-        "name" : "com.sksamuel.avro4s.Colours",
+        "name" : "com.sksamuel.avro4s.schema.Colours",
         "symbols" : [ "Red", "Amber", "Green" ]
       }
     }

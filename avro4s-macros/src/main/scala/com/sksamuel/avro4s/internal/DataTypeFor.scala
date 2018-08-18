@@ -286,6 +286,37 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     override def dataType: DataType = LocalDateTimeType
   }
 
+  implicit def javaEnumFor[E <: Enum[_]](implicit tag: ClassTag[E]): DataTypeFor[E] = new DataTypeFor[E] {
+    override def dataType: DataType = {
+      val values = tag.runtimeClass.getEnumConstants.map(_.toString)
+      val annos = tag.runtimeClass.getAnnotations.map { a =>
+        Anno(a.annotationType.getClass.getName, Nil)
+      }
+      EnumType(tag.runtimeClass.getName, tag.runtimeClass.getSimpleName, tag.runtimeClass.getPackage.getName, values, annos)
+    }
+  }
+
+  implicit def scalaEnumToSchema[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): DataTypeFor[E] = new DataTypeFor[E] {
+
+    val typeRef = tag.tpe match {
+      case t@TypeRef(_, _, _) => t
+    }
+
+    val annos = typeRef.pre.typeSymbol.annotations.map { a =>
+      val name = a.tree.tpe.typeSymbol.fullName
+      val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+      com.sksamuel.avro4s.internal.Anno(name, args)
+    }
+
+    val classname = typeRef.pre.typeSymbol.asClass.fullName.stripSuffix(".Value")
+    val clazz = Class.forName(classname)
+
+    val enumClass = Class.forName(classname)
+    val symbols = enumClass.getMethod("values").invoke(null).asInstanceOf[scala.Enumeration#ValueSet].iterator.toList.map(_.toString)
+
+    override def dataType: DataType = EnumType(clazz.getName, clazz.getSimpleName, clazz.getPackage.getName, symbols, annos)
+  }
+
   // This DataTypeFor is used for sealed traits of objects
   implicit def genTraitObjectEnum[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
                                                                  tag: TypeTag[T],
