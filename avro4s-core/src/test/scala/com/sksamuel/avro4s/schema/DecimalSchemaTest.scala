@@ -5,6 +5,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 case class BigDecimalSeqOption(biggies: Seq[Option[BigDecimal]])
 case class BigDecimalSeq(biggies: Seq[BigDecimal])
+case class BigDecimalDefault(decimal: BigDecimal = 964.55)
 
 class DecimalSchemaTest extends WordSpec with Matchers {
 
@@ -16,7 +17,6 @@ class DecimalSchemaTest extends WordSpec with Matchers {
       schema shouldBe expected
     }
     "support big decimal with default" in {
-      case class BigDecimalDefault(decimal: BigDecimal = 964.55)
       val schema = SchemaEncoder[BigDecimalDefault].encode()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_default.json"))
       schema shouldBe expected
@@ -25,12 +25,6 @@ class DecimalSchemaTest extends WordSpec with Matchers {
       case class BigDecimalOption(decimal: Option[BigDecimal])
       val schema = SchemaEncoder[BigDecimalOption].encode()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_option.json"))
-      schema shouldBe expected
-    }
-    "support nested BigDecimal with default value" in {
-      case class BigDecimalNestedDefault(decimal: BigDecimal = 964.55)
-      val schema = SchemaEncoder[BigDecimalNestedDefault].encode()
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_nested_default.json"))
       schema shouldBe expected
     }
     "Seq[BigDecimal] be represented as an array of logical types" in {
@@ -45,3 +39,4 @@ class DecimalSchemaTest extends WordSpec with Matchers {
     }
   }
 }
+

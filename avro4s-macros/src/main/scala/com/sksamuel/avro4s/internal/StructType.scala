@@ -54,7 +54,8 @@ case class StructType(qualifiedName: String,
                       simpleName: String,
                       packageName: String,
                       annotations: Seq[Anno],
-                      fields: Seq[StructField]) extends DataType
+                      fields: Seq[StructField],
+                      valueType: Boolean) extends DataType
 
 case class StructField(name: String,
                        dataType: DataType,

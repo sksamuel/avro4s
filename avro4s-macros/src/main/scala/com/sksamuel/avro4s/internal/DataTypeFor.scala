@@ -61,76 +61,64 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     // we can only encode concrete classes as the top level
     require(tType.typeSymbol.isClass, tType + " is not a class but is " + tType.typeSymbol.fullName)
 
-    // if we have a value type then we will just summon an existing DataTypeFor implicitly
-    // otherwise we will create a new instance of the DataTypeFor typeclass which will create
-    // a StructType for each of the fields
-    if (reflect.isValueClass(tType)) {
-      val underlying = reflect.underlyingType(tType)
-      c.Expr[DataTypeFor[T]](
-        q"""
-        new _root_.com.sksamuel.avro4s.internal.DataTypeFor[$tType] {
-          override def dataType: com.sksamuel.avro4s.internal.DataType = implicitly[com.sksamuel.avro4s.internal.DataTypeFor[$underlying]].dataType
-        }
-      """)
-    } else {
+    val valueType = reflect.isValueClass(tType)
 
-      val fields = reflect.fieldsOf(tType).zipWithIndex.map { case ((f, fieldTpe), index) =>
+    val fields = reflect.fieldsOf(tType).zipWithIndex.map { case ((f, fieldTpe), index) =>
 
-        // the simple name of the field like "x"
-        val fieldName = f.name.decodedName.toString.trim
+      // the simple name of the field like "x"
+      val fieldName = f.name.decodedName.toString.trim
 
-        // if the field is a value type, we should include annotations defined on the value type as well
-        val annos = if (reflect.isValueClass(fieldTpe)) {
-          reflect.annotations(f) ++ reflect.annotations(fieldTpe.typeSymbol)
-        } else {
-          reflect.annotations(f)
-        }
-
-        val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-
-        // this gets the method that generates the default value for this field
-        // (if the field has a default value otherwise its a nosymbol)
-        val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
-
-        // this is a method symbol for the default getter if it exists
-        val defaultGetterMethod = tType.companion.member(TermName(defaultGetterName.toString))
-
-        // if the field is a param with a default value, then we know the getter method will be defined
-        // and so we can use it to generate the default value
-        if (f.isTerm && f.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
-          //val method = reflect.defaultGetter(tType, index + 1)
-          // the default method is defined on the companion object
-          val moduleSym = tType.typeSymbol.companion
-          q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
-          // q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
-        } else {
-          q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
-        }
+      // if the field is a value type, we should include annotations defined on the value type as well
+      val annos = if (reflect.isValueClass(fieldTpe)) {
+        reflect.annotations(f) ++ reflect.annotations(fieldTpe.typeSymbol)
+      } else {
+        reflect.annotations(f)
       }
 
-      // qualified name of the class we are building
-      // todo encode generics:: + genericNameSuffix(underlyingType)
-      val className = tType.typeSymbol.fullName.toString
+      val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
 
-      // eg, "Foo" for x.y.Foo
-      val simpleName = tType.typeSymbol.name.decodedName.toString
-      // we iterate up the owner tree until we find an Object or Package
-      val packageName = Stream.iterate(tType.typeSymbol.owner)(_.owner)
-        .dropWhile(x => !x.isPackage && !x.isModuleClass)
-        .head
-        .fullName
+      // this gets the method that generates the default value for this field
+      // (if the field has a default value otherwise its a nosymbol)
+      val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
 
-      // these are annotations on the class itself
-      val annos = reflect.annotations(tType.typeSymbol)
+      // this is a method symbol for the default getter if it exists
+      val defaultGetterMethod = tType.companion.member(TermName(defaultGetterName.toString))
 
-      c.Expr[DataTypeFor[T]](
-        q"""
+      // if the field is a param with a default value, then we know the getter method will be defined
+      // and so we can use it to generate the default value
+      if (f.isTerm && f.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
+        //val method = reflect.defaultGetter(tType, index + 1)
+        // the default method is defined on the companion object
+        val moduleSym = tType.typeSymbol.companion
+        q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+        // q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
+      } else {
+        q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
+      }
+    }
+
+    // qualified name of the class we are building
+    // todo encode generics:: + genericNameSuffix(underlyingType)
+    val className = tType.typeSymbol.fullName.toString
+
+    // eg, "Foo" for x.y.Foo
+    val simpleName = tType.typeSymbol.name.decodedName.toString
+    // we iterate up the owner tree until we find an Object or Package
+    val packageName = Stream.iterate(tType.typeSymbol.owner)(_.owner)
+      .dropWhile(x => !x.isPackage && !x.isModuleClass)
+      .head
+      .fullName
+
+    // these are annotations on the class itself
+    val annos = reflect.annotations(tType.typeSymbol)
+
+    c.Expr[DataTypeFor[T]](
+      q"""
         new _root_.com.sksamuel.avro4s.internal.DataTypeFor[$tType] {
-          val structType = _root_.com.sksamuel.avro4s.internal.StructType($className, $simpleName, $packageName, Seq(..$annos), Seq(..$fields))
+          val structType = _root_.com.sksamuel.avro4s.internal.StructType($className, $simpleName, $packageName, Seq(..$annos), Seq(..$fields), $valueType)
           override def dataType: com.sksamuel.avro4s.internal.DataType = structType
         }
       """)
-    }
   }
 
   /**
@@ -240,14 +228,15 @@ object DataTypeFor extends LowPriorityDataTypeFor {
 
   implicit def Tuple2ToSchema[A, B](implicit a: DataTypeFor[A], b: DataTypeFor[B]) = new DataTypeFor[(A, B)] {
     override def dataType: DataType = StructType(
-      "",
-      "tuple2",
-      "",
+      "scala.Tuple2",
+      "Tuple2",
+      "scala",
       Nil,
       Seq(
         StructField("_1", a.dataType),
         StructField("_2", b.dataType)
-      )
+      ),
+      false
     )
   }
 
@@ -256,15 +245,16 @@ object DataTypeFor extends LowPriorityDataTypeFor {
                                        b: DataTypeFor[B],
                                        c: DataTypeFor[C]) = new DataTypeFor[(A, B, C)] {
     override def dataType: DataType = StructType(
-      "",
-      "tuple3",
-      "",
+      "scala.Tuple3",
+      "Tuple3",
+      "scala",
       Nil,
       Seq(
         StructField("_1", a.dataType),
         StructField("_2", b.dataType),
         StructField("_3", c.dataType)
-      )
+      ),
+      false
     )
   }
 

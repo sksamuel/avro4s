@@ -22,7 +22,22 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
   def createSchema(dataType: DataType): Schema = {
     dataType match {
 
-      case StructType(_, simpleName, packageName, annotations, fields) =>
+      // if we have a value type then we have only a single field, and we ignore the outer struct type
+      case StructType(_, simpleName, packageName, annotations, fields, true) =>
+
+        val field = fields.head
+
+        // if we have a fixed value type then we create the special FIXED type
+        val extractor = new AnnotationExtractors(annotations)
+
+        val doc = extractor.doc.orNull
+        val namespace = extractor.namespace.getOrElse(packageName)
+
+        extractor.fixed.fold(createSchema(field.dataType)) { size =>
+          SchemaBuilder.fixed(simpleName).doc(doc).namespace(namespace).size(size)
+        }
+
+      case StructType(_, simpleName, packageName, annotations, fields, _) =>
 
         val extractor = new AnnotationExtractors(annotations)
         val namespace = extractor.namespace.getOrElse(packageName)
@@ -33,6 +48,7 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
         val builder = props.foldLeft(SchemaBuilder.record(simpleName).namespace(namespace).aliases(aliases: _*).doc(doc)) { case (builder, (key, value)) =>
           builder.prop(key, value)
         }
+
         fields.foldLeft(builder.fields()) { (builder, field) =>
 
           // the field name needs to be converted with the naming strategy
@@ -43,7 +59,9 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
           val aliases = extractor.aliases
           val props = extractor.props
 
-          // this is the schema for our field
+          // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
+          // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
+
           val schema = createSchema(field.dataType)
 
           // the field can override the namespace if the Namespace annotation is present on the field
@@ -83,6 +101,9 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
       case IntType => Schema.create(Schema.Type.INT)
       case ShortType => Schema.create(Schema.Type.INT)
       case ByteType => Schema.create(Schema.Type.INT)
+
+      // binary type can be handled in two ways, either bytes or fixed
+      // for fixed, we look for the annotation @AvroFixe
       case BinaryType => Schema.create(Schema.Type.BYTES)
 
       case LocalDateType =>

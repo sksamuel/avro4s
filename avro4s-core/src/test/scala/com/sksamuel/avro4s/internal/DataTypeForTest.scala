@@ -26,7 +26,8 @@ class DataTypeForTest extends FunSuite with Matchers {
         fields = List(
           StructField("name", StringType),
           StructField("year", IntType, List(Anno("com.sksamuel.avro4s.AvroAlias", List("y"))), null)
-        )
+        ),
+        false
       )
   }
 
@@ -49,10 +50,12 @@ class DataTypeForTest extends FunSuite with Matchers {
               fields = List(
                 StructField("name", StringType),
                 StructField("year", IntType, List(Anno("com.sksamuel.avro4s.AvroAlias", List("y"))))
-              )
+              ),
+              false
             )
           ), List(), null)
-        )
+        ),
+        false
       )
   }
 
@@ -66,7 +69,8 @@ class DataTypeForTest extends FunSuite with Matchers {
         List(
           StructField("style", EnumType("com.sksamuel.avro4s.internal.Style", "Style", "com.sksamuel.avro4s.internal", List("Impressionist", "Romanticist"), Nil), List(), null),
           StructField("startYear", IntType)
-        )
+        ),
+        false
       )
   }
 
@@ -80,7 +84,8 @@ class DataTypeForTest extends FunSuite with Matchers {
         annotations = List(),
         List(
           StructField("a", StringType)
-        )
+        ),
+        false
       )
   }
 }

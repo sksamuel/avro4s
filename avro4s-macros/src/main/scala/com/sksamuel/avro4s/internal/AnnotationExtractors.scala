@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.internal
 
-import com.sksamuel.avro4s.{AvroAlias, AvroDoc, AvroNamespace, AvroProp}
+import com.sksamuel.avro4s.{AvroAlias, AvroDoc, AvroFixed, AvroNamespace, AvroProp}
 
 class AnnotationExtractors(annos: Seq[Anno]) {
 
@@ -10,6 +10,8 @@ class AnnotationExtractors(annos: Seq[Anno]) {
   def namespace: Option[String] = findFirst(classOf[AvroNamespace])
   def doc: Option[String] = findFirst(classOf[AvroDoc])
   def aliases: Seq[String] = findAll(classOf[AvroAlias])
+
+  def fixed: Option[Int] = findFirst(classOf[AvroFixed]).map(_.toInt)
 
   def props: Map[String, String] = annos.filter(_.name == classOf[AvroProp].getName).map { anno =>
     anno.args.head.toString -> anno.args(1).toString
