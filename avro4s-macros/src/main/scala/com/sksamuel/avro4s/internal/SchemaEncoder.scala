@@ -2,41 +2,22 @@ package com.sksamuel.avro4s.internal
 
 import java.io.Serializable
 
+import com.sksamuel.avro4s.{DefaultNamingStrategy, NamingStrategy}
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 
 trait SchemaEncoder[A] extends Serializable {
-  def encode: Schema
+  def encode(namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema
 }
 
 object SchemaEncoder {
+  implicit def apply[T](implicit dataTypeFor: DataTypeFor[T]): SchemaEncoder[T] = new SchemaEncoder[T] {
+    override def encode(namingStrategy: NamingStrategy): Schema = new SchemaConverter(namingStrategy).createSchema(dataTypeFor.dataType)
+  }
+}
+
+class SchemaConverter(namingStrategy: NamingStrategy) {
 
   import scala.collection.JavaConverters._
-
-  private def overrideNamespace(schema: Schema, namespace: String): Schema =
-    schema.getType match {
-      case Schema.Type.RECORD =>
-        val fields = schema.getFields.asScala.map(field =>
-          new Schema.Field(field.name(), overrideNamespace(field.schema(), namespace), field.doc, field.defaultVal, field.order))
-        Schema.createRecord(schema.getName, schema.getDoc, namespace, schema.isError, fields.asJava)
-      case Schema.Type.UNION => Schema.createUnion(schema.getTypes.asScala.map(overrideNamespace(_, namespace)).asJava)
-      case Schema.Type.ENUM => Schema.createEnum(schema.getName, schema.getDoc, namespace, schema.getEnumSymbols)
-      case Schema.Type.FIXED => Schema.createFixed(schema.getName, schema.getDoc, namespace, schema.getFixedSize)
-      case Schema.Type.MAP => Schema.createMap(overrideNamespace(schema.getValueType, namespace))
-      case Schema.Type.ARRAY => Schema.createArray(overrideNamespace(schema.getElementType, namespace))
-      case _ => schema
-    }
-
-  // returns a default value that is compatible with the datatype
-  // for example, we might define a UUID field with a default of UUID.randomUUID(), but
-  // avro is not going to understand what to do with this type
-  def resolveDefault(default: Any, dataType: DataType): Any = {
-    require(default != null)
-    println(s"Resolving default = $default for $dataType")
-    dataType match {
-      case UUIDType => default.toString
-      case _ => default
-    }
-  }
 
   def createSchema(dataType: DataType): Schema = {
     dataType match {
@@ -54,6 +35,9 @@ object SchemaEncoder {
         }
         fields.foldLeft(builder.fields()) { (builder, field) =>
 
+          // the field name needs to be converted with the naming strategy
+          val name = namingStrategy.to(field.name)
+
           val extractor = new AnnotationExtractors(field.annotations)
           val doc = extractor.doc.orNull
           val aliases = extractor.aliases
@@ -67,7 +51,7 @@ object SchemaEncoder {
           // to any schemas we have generated for this field
           val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schema, _)).getOrElse(schema)
 
-          val b = builder.name(field.name).doc(doc).aliases(aliases: _*)
+          val b = builder.name(name).doc(doc).aliases(aliases: _*)
           val c = props.foldLeft(b) { case (builder, (key, value)) => builder.prop(key, value) }
           val d = b.`type`(schemaWithResolvedNamespace)
 
@@ -132,7 +116,31 @@ object SchemaEncoder {
     }
   }
 
-  implicit def apply[T](implicit dataTypeFor: DataTypeFor[T]): SchemaEncoder[T] = new SchemaEncoder[T] {
-    override val encode: Schema = createSchema(dataTypeFor.dataType)
+  private def overrideNamespace(schema: Schema, namespace: String): Schema =
+    schema.getType match {
+      case Schema.Type.RECORD =>
+        val fields = schema.getFields.asScala.map(field =>
+          new Schema.Field(field.name(), overrideNamespace(field.schema(), namespace), field.doc, field.defaultVal, field.order))
+        Schema.createRecord(schema.getName, schema.getDoc, namespace, schema.isError, fields.asJava)
+      case Schema.Type.UNION => Schema.createUnion(schema.getTypes.asScala.map(overrideNamespace(_, namespace)).asJava)
+      case Schema.Type.ENUM => Schema.createEnum(schema.getName, schema.getDoc, namespace, schema.getEnumSymbols)
+      case Schema.Type.FIXED => Schema.createFixed(schema.getName, schema.getDoc, namespace, schema.getFixedSize)
+      case Schema.Type.MAP => Schema.createMap(overrideNamespace(schema.getValueType, namespace))
+      case Schema.Type.ARRAY => Schema.createArray(overrideNamespace(schema.getElementType, namespace))
+      case _ => schema
+    }
+
+  // returns a default value that is compatible with the datatype
+  // for example, we might define a UUID field with a default of UUID.randomUUID(), but
+  // avro is not going to understand what to do with this type
+  def resolveDefault(default: Any, dataType: DataType): Any = {
+    require(default != null)
+    println(s"Resolving default = $default for $dataType")
+    dataType match {
+      case UUIDType => default.toString
+      case _ => default
+    }
   }
 }
+
+

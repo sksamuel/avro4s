@@ -10,17 +10,17 @@ class UnionSchemaTest extends WordSpec with Matchers {
   "SchemaEncoder" should {
     "support sealed traits of case classes" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.avsc"))
-      val schema = SchemaEncoder[Wrapper].encode
+      val schema = SchemaEncoder[Wrapper].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support trait subtypes fields with same name" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.avsc"))
-      val schema = SchemaEncoder[Trapper].encode
+      val schema = SchemaEncoder[Trapper].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support trait subtypes fields with same name and same type" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.avsc"))
-      val schema = SchemaEncoder[Napper].encode
+      val schema = SchemaEncoder[Napper].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support coproducts of coproducts" in {

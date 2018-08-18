@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "NamingStrategyTest",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "camelCase",
+      "type": "string"
+    },
+    {
+      "name": "lower",
+      "type": "string"
+    },
+    {
+      "name": "multipleWordsInThis",
+      "type": "string"
+    },
+    {
+      "name": "StartsWithUpper",
+      "type": "string"
+    }
+  ]
+}

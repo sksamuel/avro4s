@@ -13,7 +13,7 @@ class AliasAnnotationSchemaTest extends WordSpec with Matchers {
       case class Annotated(str: String)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_types.avsc"))
-      val schema = SchemaEncoder[Annotated].encode
+      val schema = SchemaEncoder[Annotated].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support multiple alias annotations on types" in {
@@ -23,7 +23,7 @@ class AliasAnnotationSchemaTest extends WordSpec with Matchers {
       case class Annotated(str: String)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_types_multiple.avsc"))
-      val schema = SchemaEncoder[Annotated].encode
+      val schema = SchemaEncoder[Annotated].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support alias annotations on field" in {
@@ -31,7 +31,7 @@ class AliasAnnotationSchemaTest extends WordSpec with Matchers {
       case class Annotated(@AvroAlias("cold") str: String, @AvroAlias("kate") @AvroAlias("bush") long: Long, int: Int)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_fields.avsc"))
-      val schema = SchemaEncoder[Annotated].encode
+      val schema = SchemaEncoder[Annotated].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
   }

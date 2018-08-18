@@ -9,7 +9,7 @@ class EitherSchemaTest extends WordSpec with Matchers {
     "generate union:T,U for Either[T,U] of primitives" in {
       case class Test(either: Either[String, Double])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/either.avsc"))
-      val schema = SchemaEncoder[Test].encode
+      val schema = SchemaEncoder[Test].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate union:T,U for Either[T,U] of records" in {
@@ -17,7 +17,7 @@ class EitherSchemaTest extends WordSpec with Matchers {
       case class Foo(b: Boolean)
       case class Test(either: Either[Goo, Foo])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/eitherrecord.avsc"))
-      val schema = SchemaEncoder[Test].encode
+      val schema = SchemaEncoder[Test].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
   }

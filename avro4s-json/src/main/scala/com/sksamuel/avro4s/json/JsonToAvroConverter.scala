@@ -20,7 +20,7 @@ import org.codehaus.jackson.node.TextNode
   */
 class JsonToAvroConverter(namespace: String,
                           avroStringTypeIsString: Boolean = false,
-                          jsonNamingStrategy: NamingStrategy = CamelCase) {
+                          jsonNamingStrategy: NamingStrategy = DefaultNamingStrategy) {
 
   import org.json4s._
   import org.json4s.native.JsonMethods._
@@ -73,7 +73,7 @@ class JsonToAvroConverter(namespace: String,
     }
 
     from match {
-      case CamelCase => s
+      case DefaultNamingStrategy => s
       case PascalCase => decapitalize(s)
       case SnakeCase => fromDelimited("_", s)
       case LispCase => fromDelimited("-", s)
