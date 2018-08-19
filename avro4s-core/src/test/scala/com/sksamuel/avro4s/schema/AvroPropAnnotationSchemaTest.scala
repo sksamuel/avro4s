@@ -4,7 +4,7 @@ import com.sksamuel.avro4s.AvroProp
 import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 
-class PropertyAnnotationSchemaTest extends WordSpec with Matchers {
+class AvroPropAnnotationSchemaTest extends WordSpec with Matchers {
 
   "@AvroProp" should {
     "support prop annotation on class" in {

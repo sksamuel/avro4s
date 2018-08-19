@@ -4,7 +4,7 @@ import com.sksamuel.avro4s.AvroName
 import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 
-class NameAnnotationSchemaTest extends WordSpec with Matchers {
+class AvroNameAnnotationSchemaTest extends WordSpec with Matchers {
   "SchemaEncoder" should {
     "generate field names using @AvroName" in {
       case class Foo(@AvroName("wibble") wobble: String, wubble: String)
