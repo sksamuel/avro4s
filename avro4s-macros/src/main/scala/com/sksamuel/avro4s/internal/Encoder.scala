@@ -57,51 +57,69 @@ object Encoder {
   }
 
   implicit def listEncoder[T](implicit encoder: Encoder[T]): Encoder[List[T]] = new Encoder[List[T]] {
+
+    import scala.collection.JavaConverters._
     override def encode(ts: List[T], schema: Schema): Any = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType)).toArray
+      ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
   }
 
   implicit def SetEncoder[T](implicit encoder: Encoder[T]): Encoder[Set[T]] = new Encoder[Set[T]] {
+
+    import scala.collection.JavaConverters._
+
     override def encode(ts: Set[T], schema: Schema): Any = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType)).toArray
+      ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
   }
 
   implicit def VectorEncoder[T](implicit encoder: Encoder[T]): Encoder[Vector[T]] = new Encoder[Vector[T]] {
+
+    import scala.collection.JavaConverters._
     override def encode(ts: Vector[T], schema: Schema): Any = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType)).toArray
+      ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
   }
 
   implicit def SeqEncoder[T](implicit encoder: Encoder[T]): Encoder[Seq[T]] = new Encoder[Seq[T]] {
+
+    import scala.collection.JavaConverters._
     override def encode(ts: Seq[T], schema: Schema): Any = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType)).toArray
+      ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
   }
 
   implicit def ArrayEncoder[T](implicit encoder: Encoder[T]): Encoder[Array[T]] = new Encoder[Array[T]] {
+
+    import scala.collection.JavaConverters._
     override def encode(ts: Array[T], schema: Schema): Any = ts.headOption match {
       case Some(b: Byte) => ByteBuffer.wrap(ts.asInstanceOf[Array[Byte]])
-      case _ => ts.map(encoder.encode(_, schema.getElementType))
+      case _ => ts.map(encoder.encode(_, schema.getElementType)).toList.asJava
     }
   }
 
-  //  implicit def OptionEncoder[T](implicit Encoder: Encoder[T]) = new Encoder[Option[T]] {
-  //    override def apply(value: Option[T]): Any = value.map(Encoder.apply).orNull
-  //  }
+  implicit def OptionEncoder[T](implicit encoder: Encoder[T]) = new Encoder[Option[T]] {
 
+    import scala.collection.JavaConverters._
+
+    override def encode(t: Option[T], schema: Schema): Any = {
+      // must have a union schema, so we can find the non null part of it
+      val nonNullSchema = schema.getTypes.asScala.find(_.getType != Schema.Type.NULL).get
+      t.map(encoder.encode(_, nonNullSchema)).orNull
+    }
+  }
 
   implicit object DecimalEncoder extends Encoder[BigDecimal] {
 
     override def encode(t: BigDecimal, schema: Schema): ByteBuffer = {
 
-      println("logicalType=" + schema.getLogicalType)
       val decimal = schema.getLogicalType.asInstanceOf[Decimal]
+      require(decimal != null)
+
       val decimalConversion = new Conversions.DecimalConversion
       val decimalType = LogicalTypes.decimal(decimal.getPrecision, decimal.getScale)
 
