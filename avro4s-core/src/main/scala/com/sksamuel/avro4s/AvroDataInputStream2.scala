@@ -23,12 +23,12 @@ class AvroDataInputStream2[T](in: SeekableInput,
 
   override def iterator: Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = dataFileReader.hasNext
-    override def next(): T = fromRecord(dataFileReader.next)
+    override def next(): T = fromRecord.decode(dataFileReader.next)
   }
 
   override def tryIterator: Iterator[Try[T]] = new Iterator[Try[T]] {
     override def hasNext: Boolean = dataFileReader.hasNext
-    override def next(): Try[T] = Try(fromRecord(dataFileReader.next))
+    override def next(): Try[T] = Try(fromRecord.decode(dataFileReader.next))
   }
 
   override def close(): Unit = in.close()

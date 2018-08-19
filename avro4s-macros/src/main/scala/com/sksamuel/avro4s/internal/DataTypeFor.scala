@@ -7,7 +7,7 @@ import java.util.UUID
 import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{:+:, CNil, Coproduct, Generic, HList, Lazy}
+import shapeless.{:+:, CNil, Coproduct, Generic, HList}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode.UNNECESSARY
@@ -28,21 +28,21 @@ trait LowPriorityDataTypeFor {
   // Shapeless's implementation builds up the type recursively,
   // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
   // so here we define the schema for the base case of the recursion, C :+: CNil
-  implicit def coproductBaseSchema[S](implicit basefor: Lazy[DataTypeFor[S]]): DataTypeFor[S :+: CNil] = new DataTypeFor[S :+: CNil] {
-    override def dataType: DataType = UnionType(Seq(basefor.value.dataType))
+  implicit def coproductBaseSchema[S](implicit basefor: DataTypeFor[S]): DataTypeFor[S :+: CNil] = new DataTypeFor[S :+: CNil] {
+    override def dataType: DataType = UnionType(Seq(basefor.dataType))
   }
 
   // And here we continue the recursion up.
-  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: Lazy[DataTypeFor[S]], coproductFor: Lazy[DataTypeFor[T]]): DataTypeFor[S :+: T] = new DataTypeFor[S :+: T] {
+  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: DataTypeFor[S], coproductFor: DataTypeFor[T]): DataTypeFor[S :+: T] = new DataTypeFor[S :+: T] {
     // union schemas can't contain other union schemas as a direct
     // child, so whenever we create a union, we need to check if our
     // children are unions and flatten
-    override def dataType: DataType = UnionType.flatten(basefor.value.dataType, coproductFor.value.dataType)
+    override def dataType: DataType = UnionType.flatten(basefor.dataType, coproductFor.dataType)
   }
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                               coproductFor: Lazy[DataTypeFor[C]]): DataTypeFor[T] = new DataTypeFor[T] {
-    override def dataType: DataType = coproductFor.value.dataType
+                                               coproductFor: DataTypeFor[C]): DataTypeFor[T] = new DataTypeFor[T] {
+    override def dataType: DataType = coproductFor.dataType
   }
 }
 
@@ -56,14 +56,14 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     import c.universe._
 
     val reflect = ReflectHelper(c)
-    val tType = weakTypeOf[T]
+    val tpe = weakTypeOf[T]
 
     // we can only encode concrete classes as the top level
-    require(tType.typeSymbol.isClass, tType + " is not a class but is " + tType.typeSymbol.fullName)
+    require(tpe.typeSymbol.isClass, tpe + " is not a class but is " + tpe.typeSymbol.fullName)
 
-    val valueType = reflect.isValueClass(tType)
+    val valueType = reflect.isValueClass(tpe)
 
-    val fields = reflect.fieldsOf(tType).zipWithIndex.map { case ((f, fieldTpe), index) =>
+    val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
 
       // the simple name of the field like "x"
       val fieldName = f.name.decodedName.toString.trim
@@ -82,14 +82,14 @@ object DataTypeFor extends LowPriorityDataTypeFor {
       val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
 
       // this is a method symbol for the default getter if it exists
-      val defaultGetterMethod = tType.companion.member(TermName(defaultGetterName.toString))
+      val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
 
       // if the field is a param with a default value, then we know the getter method will be defined
       // and so we can use it to generate the default value
       if (f.isTerm && f.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
         //val method = reflect.defaultGetter(tType, index + 1)
         // the default method is defined on the companion object
-        val moduleSym = tType.typeSymbol.companion
+        val moduleSym = tpe.typeSymbol.companion
         q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
         // q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
       } else {
@@ -99,22 +99,22 @@ object DataTypeFor extends LowPriorityDataTypeFor {
 
     // qualified name of the class we are building
     // todo encode generics:: + genericNameSuffix(underlyingType)
-    val className = tType.typeSymbol.fullName.toString
+    val className = tpe.typeSymbol.fullName.toString
 
     // eg, "Foo" for x.y.Foo
-    val simpleName = tType.typeSymbol.name.decodedName.toString
+    val simpleName = tpe.typeSymbol.name.decodedName.toString
     // we iterate up the owner tree until we find an Object or Package
-    val packageName = Stream.iterate(tType.typeSymbol.owner)(_.owner)
+    val packageName = Stream.iterate(tpe.typeSymbol.owner)(_.owner)
       .dropWhile(x => !x.isPackage && !x.isModuleClass)
       .head
       .fullName
 
     // these are annotations on the class itself
-    val annos = reflect.annotations(tType.typeSymbol)
+    val annos = reflect.annotations(tpe.typeSymbol)
 
     c.Expr[DataTypeFor[T]](
       q"""
-        new _root_.com.sksamuel.avro4s.internal.DataTypeFor[$tType] {
+        new _root_.com.sksamuel.avro4s.internal.DataTypeFor[$tpe] {
           val structType = _root_.com.sksamuel.avro4s.internal.StructType($className, $simpleName, $packageName, Seq(..$annos), Seq(..$fields), $valueType)
           override def dataType: com.sksamuel.avro4s.internal.DataType = structType
         }
