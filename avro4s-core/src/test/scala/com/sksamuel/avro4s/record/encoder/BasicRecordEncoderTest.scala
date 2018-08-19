@@ -33,3 +33,5 @@ class BasicRecordEncoderTest extends WordSpec with Matchers {
     }
   }
 }
+
+

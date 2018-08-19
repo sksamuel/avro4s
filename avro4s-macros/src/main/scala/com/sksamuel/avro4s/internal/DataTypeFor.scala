@@ -70,9 +70,9 @@ object DataTypeFor extends LowPriorityDataTypeFor {
 
       // if the field is a value type, we should include annotations defined on the value type as well
       val annos = if (reflect.isValueClass(fieldTpe)) {
-        reflect.annotations(f) ++ reflect.annotations(fieldTpe.typeSymbol)
+        reflect.annotationsqq(f) ++ reflect.annotationsqq(fieldTpe.typeSymbol)
       } else {
-        reflect.annotations(f)
+        reflect.annotationsqq(f)
       }
 
       val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
@@ -110,7 +110,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
       .fullName
 
     // these are annotations on the class itself
-    val annos = reflect.annotations(tpe.typeSymbol)
+    val annos = reflect.annotationsqq(tpe.typeSymbol)
 
     c.Expr[DataTypeFor[T]](
       q"""

@@ -20,10 +20,27 @@ object RecordEncoder {
 
     val reflect = ReflectHelper(c)
     val tpe = weakTypeTag[T].tpe
+    val annos = reflect.annotations(tpe.typeSymbol)
+    val extractor = new AnnotationExtractors(annos)
 
     val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
+
       val name = f.name.asInstanceOf[c.TermName]
-      q"""values.append(t.$name : $fieldTpe)"""
+      val annos = reflect.annotations(tpe.typeSymbol)
+      val extractor = new AnnotationExtractors(annos)
+
+      extractor.fixed match {
+        case Some(fixed) =>
+          q"""
+          {
+             val fixedSchema = _root_.org.apache.avro.SchemaBuilder.fixed($name).size($fixed)
+             val fixed = new _root_.org.apache.avro.generic.GenericData.Fixed(fixedSchema, t.$name.getBytes("UTF-8").array)
+             values.append(fixed : $fieldTpe)
+          }
+          """
+        case None =>
+          q"""values.append(t.$name : $fieldTpe)"""
+      }
     }
 
     c.Expr[RecordEncoder[T]](

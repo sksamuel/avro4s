@@ -78,10 +78,16 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     * Returns all the annotations of the given symbol by encoding them
     * as instances of [Anno].
     */
-  def annotations(sym: Symbol): List[c.universe.Tree] = sym.annotations.map { a =>
+  def annotationsqq(sym: Symbol): List[c.universe.Tree] = sym.annotations.map { a =>
     val name = a.tree.tpe.typeSymbol.fullName
     val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
     q"_root_.com.sksamuel.avro4s.internal.Anno($name, $args)"
+  }
+
+  def annotations(sym: Symbol): List[Anno] = sym.annotations.map { a =>
+    val name = a.tree.tpe.typeSymbol.fullName
+    val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+    com.sksamuel.avro4s.internal.Anno(name, args)
   }
 }
 
