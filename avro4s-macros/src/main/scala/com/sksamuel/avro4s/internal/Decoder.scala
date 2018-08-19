@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import java.util.UUID
 
 import scala.language.experimental.macros
+import scala.reflect.ClassTag
 
 trait Decoder[T] {
   def decode(t: Any): T
@@ -63,6 +64,62 @@ object Decoder {
 
   implicit def OptionDecoder[T](implicit decoder: Decoder[T]) = new Decoder[Option[T]] {
     override def decode(value: Any): Option[T] = if (value == null) None else Option(decoder.decode(value))
+  }
+
+  implicit def VectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = new Decoder[Vector[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def decode(value: Any): Vector[T] = value match {
+      case array: Array[_] => array.map(decoder.decode).toVector
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toVector
+      case other => sys.error("Unsupported vector " + other)
+    }
+  }
+
+  implicit def ArrayDecoder[T](implicit decoder: Decoder[T],
+                               tag: ClassTag[T]): Decoder[Array[T]] = new Decoder[Array[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def decode(value: Any): Array[T] = value match {
+      case array: Array[_] => array.map(decoder.decode)
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toArray
+      case other => sys.error("Unsupported array " + other)
+    }
+  }
+
+  implicit def SetDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] = new Decoder[Set[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def decode(value: Any): Set[T] = value match {
+      case array: Array[_] => array.map(decoder.decode).toSet
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toSet
+      case other => sys.error("Unsupported array " + other)
+    }
+  }
+
+  implicit def ListDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = new Decoder[List[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def decode(value: Any): List[T] = value match {
+      case array: Array[_] => array.map(decoder.decode).toList
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toList
+      case other => sys.error("Unsupported array " + other)
+    }
+  }
+
+  implicit def SeqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = new Decoder[Seq[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def decode(value: Any): Seq[T] = value match {
+      case array: Array[_] => array.map(decoder.decode)
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toSeq
+      case other => sys.error("Unsupported array " + other)
+    }
   }
 
   implicit def apply[T]: Decoder[T] = macro applyImpl[T]

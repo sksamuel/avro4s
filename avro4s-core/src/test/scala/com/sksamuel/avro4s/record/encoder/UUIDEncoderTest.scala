@@ -9,7 +9,7 @@ class UUIDEncoderTest extends WordSpec with Matchers {
 
   import scala.collection.JavaConverters._
 
-  "RecordEncoder" should {
+  "Encoder" should {
     "encode uuids" in {
       val uuid = UUID.randomUUID()
       val schema = SchemaEncoder[UUIDTest].encode()
