@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import java.io.{EOFException, InputStream}
 
-import com.sksamuel.avro4s.internal.RecordDecoder
+import com.sksamuel.avro4s.internal.Decoder
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.io.DecoderFactory
@@ -15,19 +15,19 @@ import scala.util.Try
   * See https://avro.apache.org/docs/current/spec.html#binary_encoding
   *
   * In order to convert the underlying binary data into types of T, this
-  * input stream requires an instance of [[RecordDecoder]].
+  * input stream requires an instance of [[Decoder]].
   */
 class AvroBinaryInputStream2[T](in: InputStream,
-                                fromRecord: RecordDecoder[T],
+                                recordDecoder: Decoder[T],
                                 writerSchema: Schema,
                                 readerSchema: Schema) extends AvroInputStream[T] {
 
   private val datumReader = new GenericDatumReader[GenericRecord](writerSchema, readerSchema)
-  private val decoder = DecoderFactory.get().binaryDecoder(in, null)
+  private val avroBinaryDecoder = DecoderFactory.get().binaryDecoder(in, null)
 
   private val _iter = Iterator.continually {
     try {
-      datumReader.read(null, decoder)
+      datumReader.read(null, avroBinaryDecoder)
     } catch {
       case _: EOFException => null
     }
@@ -38,7 +38,7 @@ class AvroBinaryInputStream2[T](in: InputStream,
     */
   override def iterator: Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = _iter.hasNext
-    override def next(): T = fromRecord.decode(_iter.next)
+    override def next(): T = recordDecoder.decode(_iter.next)
   }
 
   /**
@@ -47,7 +47,7 @@ class AvroBinaryInputStream2[T](in: InputStream,
     */
   override def tryIterator: Iterator[Try[T]] = new Iterator[Try[T]] {
     override def hasNext: Boolean = _iter.hasNext
-    override def next(): Try[T] = Try(fromRecord.decode(_iter.next))
+    override def next(): Try[T] = Try(recordDecoder.decode(_iter.next))
   }
 
   override def close(): Unit = in.close()

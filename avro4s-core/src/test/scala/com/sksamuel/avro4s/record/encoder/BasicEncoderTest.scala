@@ -5,7 +5,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 class BasicEncoderTest extends WordSpec with Matchers {
 
-  "RecordEncoder" should {
+  "Encoder" should {
     "encode strings" in {
       case class Foo(s: String)
       val schema = SchemaEncoder[Foo].encode()

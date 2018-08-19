@@ -173,8 +173,6 @@ object Encoder {
         case None =>
           q"""{
                 val field = schema.getFields.get($index)
-                println("Encoding")
-                println(field)
                 val value = _root_.com.sksamuel.avro4s.internal.Encoder.doField[$fieldTpe](t.$name : $fieldTpe, field)
                 values.append(value)
               }

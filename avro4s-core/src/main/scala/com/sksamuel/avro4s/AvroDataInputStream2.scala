@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.internal.RecordDecoder
+import com.sksamuel.avro4s.internal.Decoder
 import org.apache.avro.Schema
 import org.apache.avro.file.{DataFileReader, SeekableInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
@@ -8,7 +8,7 @@ import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import scala.util.Try
 
 class AvroDataInputStream2[T](in: SeekableInput,
-                              fromRecord: RecordDecoder[T],
+                              fromRecord: Decoder[T],
                               writerSchema: Option[Schema],
                               readerSchema: Option[Schema]) extends AvroInputStream[T] {
 
