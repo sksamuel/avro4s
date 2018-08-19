@@ -72,7 +72,7 @@ object Encoder {
 
     override def encode(ts: Set[T], schema: Schema): Any = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType)).asJava
+      ts.map(encoder.encode(_, schema.getElementType)).toList.asJava
     }
   }
 
