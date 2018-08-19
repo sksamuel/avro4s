@@ -3,6 +3,10 @@ package com.sksamuel.avro4s.internal
 import java.nio.ByteBuffer
 import java.util.UUID
 
+import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
+import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
+import org.apache.avro.{Conversions, LogicalTypes}
+
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 
@@ -62,11 +66,11 @@ object Decoder {
     override def decode(value: Any): UUID = UUID.fromString(value.toString)
   }
 
-  implicit def OptionDecoder[T](implicit decoder: Decoder[T]) = new Decoder[Option[T]] {
+  implicit def optionDecoder[T](implicit decoder: Decoder[T]) = new Decoder[Option[T]] {
     override def decode(value: Any): Option[T] = if (value == null) None else Option(decoder.decode(value))
   }
 
-  implicit def VectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = new Decoder[Vector[T]] {
+  implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = new Decoder[Vector[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -77,7 +81,7 @@ object Decoder {
     }
   }
 
-  implicit def ArrayDecoder[T](implicit decoder: Decoder[T],
+  implicit def arrayDecoder[T](implicit decoder: Decoder[T],
                                tag: ClassTag[T]): Decoder[Array[T]] = new Decoder[Array[T]] {
 
     import scala.collection.JavaConverters._
@@ -89,7 +93,7 @@ object Decoder {
     }
   }
 
-  implicit def SetDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] = new Decoder[Set[T]] {
+  implicit def setDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] = new Decoder[Set[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -100,7 +104,7 @@ object Decoder {
     }
   }
 
-  implicit def ListDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = new Decoder[List[T]] {
+  implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = new Decoder[List[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -111,7 +115,7 @@ object Decoder {
     }
   }
 
-  implicit def SeqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = new Decoder[Seq[T]] {
+  implicit def seqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = new Decoder[Seq[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -119,6 +123,17 @@ object Decoder {
       case array: Array[_] => array.map(decoder.decode)
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toSeq
       case other => sys.error("Unsupported array " + other)
+    }
+  }
+
+  implicit def bigDecimalDecoder(implicit sp: ScaleAndPrecisionAndRoundingMode = defaultScaleAndPrecisionAndRoundingMode): Decoder[BigDecimal] = {
+    new Decoder[BigDecimal] {
+      override def decode(value: Any): BigDecimal = {
+        val decimalConversion = new Conversions.DecimalConversion
+        val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
+        val bytes = value.asInstanceOf[ByteBuffer]
+        decimalConversion.fromBytes(bytes, null, decimalType)
+      }
     }
   }
 
