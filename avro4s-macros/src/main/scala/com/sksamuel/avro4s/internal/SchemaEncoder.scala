@@ -51,13 +51,13 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
 
         fields.foldLeft(builder.fields()) { (builder, field) =>
 
-          // the field name needs to be converted with the naming strategy
-          val name = namingStrategy.to(field.name)
-
           val extractor = new AnnotationExtractors(field.annotations)
           val doc = extractor.doc.orNull
           val aliases = extractor.aliases
           val props = extractor.props
+
+          // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
+          val name = extractor.name.fold(namingStrategy.to(field.name))(namingStrategy.to)
 
           // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
           // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
