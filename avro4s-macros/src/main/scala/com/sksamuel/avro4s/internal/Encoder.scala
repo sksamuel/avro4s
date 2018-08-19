@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import java.util.UUID
 
 import org.apache.avro.LogicalTypes.Decimal
+import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 
 import scala.language.experimental.macros
@@ -126,6 +127,14 @@ object Encoder {
       val scaledValue = t.setScale(decimal.getScale, RoundingMode.HALF_UP)
       decimalConversion.toBytes(scaledValue.bigDecimal, null, decimalType)
     }
+  }
+
+  implicit def javaEnumEncoder[E <: Enum[_]]: Encoder[E] = new Encoder[E] {
+    override def encode(t: E, schema: Schema): Any = new EnumSymbol(schema, t.name)
+  }
+
+  implicit def scalaEnumEncoder[E <: Enumeration#Value]: Encoder[E] = new Encoder[E] {
+    override def encode(t: E, schema: Schema): Any = new EnumSymbol(schema, t.toString)
   }
 
   implicit def apply[T]: Encoder[T] = macro applyImpl[T]
