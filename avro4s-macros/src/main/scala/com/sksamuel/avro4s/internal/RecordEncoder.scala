@@ -5,6 +5,7 @@ import org.apache.avro.Schema
 import scala.language.experimental.macros
 import scala.language.implicitConversions
 
+// to be renamed back to [ToRecord]
 trait RecordEncoder[T] {
   def encode(t: T): InternalRecord
 }

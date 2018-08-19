@@ -7,7 +7,7 @@ import java.util.UUID
 import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{:+:, CNil, Coproduct, Generic, HList}
+import shapeless.{:+:, CNil, Coproduct, Generic, HList, Lazy}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode.UNNECESSARY
@@ -28,21 +28,21 @@ trait LowPriorityDataTypeFor {
   // Shapeless's implementation builds up the type recursively,
   // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
   // so here we define the schema for the base case of the recursion, C :+: CNil
-  implicit def coproductBaseSchema[S](implicit basefor: DataTypeFor[S]): DataTypeFor[S :+: CNil] = new DataTypeFor[S :+: CNil] {
-    override def dataType: DataType = UnionType(Seq(basefor.dataType))
+  implicit def coproductBaseSchema[S](implicit basefor: Lazy[DataTypeFor[S]]): DataTypeFor[S :+: CNil] = new DataTypeFor[S :+: CNil] {
+    override def dataType: DataType = UnionType(Seq(basefor.value.dataType))
   }
 
   // And here we continue the recursion up.
-  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: DataTypeFor[S], coproductFor: DataTypeFor[T]): DataTypeFor[S :+: T] = new DataTypeFor[S :+: T] {
+  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: Lazy[DataTypeFor[S]], coproductFor: Lazy[DataTypeFor[T]]): DataTypeFor[S :+: T] = new DataTypeFor[S :+: T] {
     // union schemas can't contain other union schemas as a direct
     // child, so whenever we create a union, we need to check if our
     // children are unions and flatten
-    override def dataType: DataType = UnionType.flatten(basefor.dataType, coproductFor.dataType)
+    override def dataType: DataType = UnionType.flatten(basefor.value.dataType, coproductFor.value.dataType)
   }
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                               coproductFor: DataTypeFor[C]): DataTypeFor[T] = new DataTypeFor[T] {
-    override def dataType: DataType = coproductFor.dataType
+                                               coproductFor: Lazy[DataTypeFor[C]]): DataTypeFor[T] = new DataTypeFor[T] {
+    override def dataType: DataType = coproductFor.value.dataType
   }
 }
 
