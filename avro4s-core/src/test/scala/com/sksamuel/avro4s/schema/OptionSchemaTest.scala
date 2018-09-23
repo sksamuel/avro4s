@@ -13,7 +13,6 @@ class OptionSchemaTest extends WordSpec with Matchers {
       val schema = SchemaEncoder[Test].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
-
     "support mixing optionals with unions, merging appropriately" in {
       val outsideOptional = SchemaEncoder[OptionalUnion].encode()
       val insideOptional = SchemaEncoder[UnionOfOptional].encode()
@@ -25,19 +24,17 @@ class OptionSchemaTest extends WordSpec with Matchers {
       insideOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "UnionOfOptional")
       bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
     }
-    "support default option values" in {
-      //val schema = SchemaFor[OptionDefaultValues]()
-      //val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optiondefaultvalues.avsc"))
-      //schema.toString(true) shouldBe expected.toString(true)
+    "move default option values to first schema as per avro spec" in {
+      val schema = SchemaEncoder[OptionWithDefault].encode()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optiondefaultvalues.json"))
+      schema.toString(true) shouldBe expected.toString(true)
     }
   }
 }
+
+case class OptionWithDefault(name: Option[String] = Some("f"))
 
 case class Union(union: Int :+: String :+: Boolean :+: CNil)
 case class OptionalUnion(union: Option[Int :+: String :+: CNil])
 case class UnionOfOptional(union: Option[Int] :+: String :+: CNil)
 case class AllOptionals(union: Option[Option[Int] :+: Option[String] :+: CNil])
-
-case class OptionDefaultValues(name: String = "sammy",
-                               description: Option[String] = None,
-                               currency: Option[String] = Some("$"))

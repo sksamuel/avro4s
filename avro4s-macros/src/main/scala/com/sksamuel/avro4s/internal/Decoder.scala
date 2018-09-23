@@ -8,7 +8,7 @@ import org.apache.avro.{Conversions, LogicalTypes}
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 
-trait Decoder[T] {
+trait Decoder[T] extends Serializable {
   def decode(t: Any): T
 }
 

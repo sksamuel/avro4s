@@ -37,6 +37,22 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
     nulls.headOption.toSeq ++ withoutNull
   }
 
+  def moveDefaultToHead(schema: Schema, default: Any): Schema = {
+    require(schema.getType == Schema.Type.UNION)
+    val defaultType = default match {
+      case _: String => Schema.Type.STRING
+      case _: Long => Schema.Type.LONG
+      case _: Int => Schema.Type.INT
+      case _: Boolean => Schema.Type.BOOLEAN
+      case _: Float => Schema.Type.FLOAT
+      case _: Double => Schema.Type.DOUBLE
+    }
+    val (first, rest) = schema.getTypes.asScala.partition(_.getType == defaultType)
+    val result = Schema.createUnion((first.headOption.toSeq ++ rest).asJava)
+    schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
+    result
+  }
+
   def createSchema(dataType: DataType): Schema = {
     dataType match {
 
@@ -63,8 +79,8 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
         val aliases = extractor.aliases
         val props = extractor.props
 
-        val builder = props.foldLeft(SchemaBuilder.record(simpleName).namespace(namespace).aliases(aliases: _*).doc(doc)) { case (builder, (key, value)) =>
-          builder.prop(key, value)
+        val builder = props.foldLeft(SchemaBuilder.record(simpleName).namespace(namespace).aliases(aliases: _*).doc(doc)) { case (b, (key, value)) =>
+          b.prop(key, value)
         }
 
         fields.foldLeft(builder.fields()) { (builder, field) =>
@@ -83,13 +99,18 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
             SchemaBuilder.fixed(name).doc(doc).namespace(namespace).size(size)
           }
 
+          // for a union the type that has a default must be first
+          val schemaWithOrderedUnion = if (schema.getType == Schema.Type.UNION && field.default != null) {
+            moveDefaultToHead(schema, resolveDefault(field.default, field.dataType))
+          } else schema
+
           // the field can override the namespace if the Namespace annotation is present on the field
           // we may have annotated our field with @AvroNamespace so this namespace should be applied
           // to any schemas we have generated for this field
-          val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schema, _)).getOrElse(schema)
+          val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schemaWithOrderedUnion, _)).getOrElse(schemaWithOrderedUnion)
 
           val b = builder.name(name).doc(doc).aliases(aliases: _*)
-          val c = props.foldLeft(b) { case (builder, (key, value)) => builder.prop(key, value) }
+          val c = props.foldLeft(b) { case (bb, (key, value)) => bb.prop(key, value) }
           val d = c.`type`(schemaWithResolvedNamespace)
 
           if (field.default == null)
@@ -161,7 +182,9 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
     }
   }
 
-  private def overrideNamespace(schema: Schema, namespace: String): Schema =
+  private def overrideNamespace(schema: Schema, namespace: String): Schema
+
+  =
     schema.getType match {
       case Schema.Type.RECORD =>
         val fields = schema.getFields.asScala.map(field =>
@@ -176,13 +199,20 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
     }
 
   // returns a default value that is compatible with the datatype
-  // for example, we might define a UUID field with a default of UUID.randomUUID(), but
-  // avro is not going to understand what to do with this type
+  // for example, we might define a case class with a UUID field with a default value
+  // of UUID.randomUUID(), but in avro UUIDs are logical types. Therefore the default
+  // values must be converted into a base type avro understands.
+  // another example would be `name: Option[String] = Some("abc")`, we can't use
+  // the Some as the default, the inner value needs to be extracted
   def resolveDefault(default: Any, dataType: DataType): Any = {
     require(default != null)
     println(s"Resolving default = $default for $dataType")
     dataType match {
       case UUIDType => default.toString
+      case NullableType(elementType) => default match {
+        case Some(value) => resolveDefault(value, elementType)
+        case None => null
+      }
       case _ => default
     }
   }

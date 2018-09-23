@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "OptionWithDefault",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "name",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "f"
+    }
+  ]
+}

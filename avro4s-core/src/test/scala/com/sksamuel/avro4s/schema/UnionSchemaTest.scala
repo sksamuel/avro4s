@@ -25,9 +25,7 @@ class UnionSchemaTest extends WordSpec with Matchers {
     "support coproducts of coproducts" in {
       val single = SchemaEncoder[Union].encode()
       val unionOfUnions = SchemaEncoder[UnionOfUnions].encode()
-
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/union.avsc"))
-
       single.toString(true) shouldBe expected.toString(true)
       unionOfUnions.toString(true) shouldBe expected.toString(true).replace("Union", "UnionOfUnions")
     }

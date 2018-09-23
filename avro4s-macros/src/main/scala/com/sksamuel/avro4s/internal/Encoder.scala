@@ -15,7 +15,7 @@ import scala.math.BigDecimal.RoundingMode
   * For example, a value of String and a schema of type Schema.Type.FIXED would return a
   * value of Array[Byte].
   */
-trait Encoder[T] {
+trait Encoder[T] extends Serializable {
   def encode(t: T, schema: Schema): Any
 }
 
@@ -60,6 +60,7 @@ object Encoder {
   implicit def listEncoder[T](implicit encoder: Encoder[T]): Encoder[List[T]] = new Encoder[List[T]] {
 
     import scala.collection.JavaConverters._
+
     override def encode(ts: List[T], schema: Schema): Any = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
@@ -79,6 +80,7 @@ object Encoder {
   implicit def VectorEncoder[T](implicit encoder: Encoder[T]): Encoder[Vector[T]] = new Encoder[Vector[T]] {
 
     import scala.collection.JavaConverters._
+
     override def encode(ts: Vector[T], schema: Schema): Any = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
@@ -88,6 +90,7 @@ object Encoder {
   implicit def SeqEncoder[T](implicit encoder: Encoder[T]): Encoder[Seq[T]] = new Encoder[Seq[T]] {
 
     import scala.collection.JavaConverters._
+
     override def encode(ts: Seq[T], schema: Schema): Any = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
@@ -97,6 +100,7 @@ object Encoder {
   implicit def ArrayEncoder[T](implicit encoder: Encoder[T]): Encoder[Array[T]] = new Encoder[Array[T]] {
 
     import scala.collection.JavaConverters._
+
     override def encode(ts: Array[T], schema: Schema): Any = ts.headOption match {
       case Some(b: Byte) => ByteBuffer.wrap(ts.asInstanceOf[Array[Byte]])
       case _ => ts.map(encoder.encode(_, schema.getElementType)).toList.asJava
