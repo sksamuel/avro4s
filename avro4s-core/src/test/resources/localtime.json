@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "LocalTimeTest",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "time",
+      "type": {
+        "type": "int",
+        "logicalType": "time-millis"
+      }
+    }
+  ]
+}

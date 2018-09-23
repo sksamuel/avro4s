@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.internal
 
 import java.sql.Timestamp
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
 import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
@@ -226,7 +226,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     override def dataType: DataType = ArrayType(elementType.dataType)
   }
 
-  implicit def Tuple2ToSchema[A, B](implicit a: DataTypeFor[A], b: DataTypeFor[B]) = new DataTypeFor[(A, B)] {
+  implicit def Tuple2ToSchema[A, B](implicit a: DataTypeFor[A], b: DataTypeFor[B]): DataTypeFor[(A, B)] = new DataTypeFor[(A, B)] {
     override def dataType: DataType = StructType(
       "scala.Tuple2",
       "Tuple2",
@@ -243,7 +243,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
   implicit def Tuple3ToSchema[A, B, C](implicit
                                        a: DataTypeFor[A],
                                        b: DataTypeFor[B],
-                                       c: DataTypeFor[C]) = new DataTypeFor[(A, B, C)] {
+                                       c: DataTypeFor[C]): DataTypeFor[(A, B, C)] = new DataTypeFor[(A, B, C)] {
     override def dataType: DataType = StructType(
       "scala.Tuple3",
       "Tuple3",
@@ -268,12 +268,20 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     override def dataType: DataType = TimestampType
   }
 
+  implicit object LocalTimeFor extends DataTypeFor[LocalTime] {
+    override def dataType: DataType = LocalTimeType
+  }
+
   implicit object LocalDateFor extends DataTypeFor[LocalDate] {
     override def dataType: DataType = LocalDateType
   }
 
   implicit object LocalDateTimeFor extends DataTypeFor[LocalDateTime] {
     override def dataType: DataType = LocalDateTimeType
+  }
+
+  implicit object InstantFor extends DataTypeFor[Instant] {
+    override def dataType: DataType = TimestampType
   }
 
   implicit def javaEnumFor[E <: Enum[_]](implicit tag: ClassTag[E]): DataTypeFor[E] = new DataTypeFor[E] {

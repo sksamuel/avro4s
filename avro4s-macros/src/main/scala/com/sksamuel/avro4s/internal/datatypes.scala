@@ -1,6 +1,12 @@
 package com.sksamuel.avro4s.internal
 
-case class Anno(name: String, args: Seq[Any])
+/**
+  * Representations a Scala or Java annotation on a class or field.
+  *
+  * @param className the classname of the annotation type, eg com.sksamuel.avro4s.AvroProp
+  * @param args      the arguments to the annotation instance
+  */
+case class Anno(className: String, args: Seq[Any])
 
 sealed trait DataType
 
@@ -34,6 +40,9 @@ case class EnumType(className: String,
                     symbols: Seq[String],
                     annotations: Seq[Anno]) extends DataType
 
+/**
+  * Represents a type that can be one of several different underlying types.
+  */
 case class UnionType(types: Seq[DataType]) extends DataType
 
 object UnionType {

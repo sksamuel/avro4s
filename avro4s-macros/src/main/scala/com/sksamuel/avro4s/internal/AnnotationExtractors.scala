@@ -4,8 +4,10 @@ import com.sksamuel.avro4s.{AvroAlias, AvroDoc, AvroFixed, AvroName, AvroNamespa
 
 class AnnotationExtractors(annos: Seq[Anno]) {
 
-  private def findFirst(clazz: Class[_]): Option[String] = annos.find(_.name == clazz.getName).map(_.args.head.toString)
-  private def findAll(clazz: Class[_]): Seq[String] = annos.filter(_.name == clazz.getName).map(_.args.head.toString)
+  // returns the value of the first arg from the first annotation that matches the given class
+  private def findFirst(clazz: Class[_]): Option[String] = annos.find(_.className == clazz.getName).map(_.args.head.toString)
+
+  private def findAll(clazz: Class[_]): Seq[String] = annos.filter(_.className == clazz.getName).map(_.args.head.toString)
 
   def namespace: Option[String] = findFirst(classOf[AvroNamespace])
   def doc: Option[String] = findFirst(classOf[AvroDoc])
@@ -15,7 +17,7 @@ class AnnotationExtractors(annos: Seq[Anno]) {
 
   def name: Option[String] = findFirst(classOf[AvroName])
 
-  def props: Map[String, String] = annos.filter(_.name == classOf[AvroProp].getName).map { anno =>
+  def props: Map[String, String] = annos.filter(_.className == classOf[AvroProp].getName).map { anno =>
     anno.args.head.toString -> anno.args(1).toString
   }.toMap
 }

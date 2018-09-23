@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "InstantTest",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "instant",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

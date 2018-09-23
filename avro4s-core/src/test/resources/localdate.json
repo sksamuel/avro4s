@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "LocalDateTest",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "date",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      }
+    }
+  ]
+}

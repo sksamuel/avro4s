@@ -1,19 +1,31 @@
 package com.sksamuel.avro4s.schema
 
-import java.time.LocalDate
+import java.time.{Instant, LocalDate, LocalTime}
 
-import com.sksamuel.avro4s.SchemaFor
-import org.scalatest.{Matchers, WordSpec}
+import com.sksamuel.avro4s.internal.SchemaEncoder
+import org.scalatest.{FunSuite, Matchers}
 
-class DateSchemaTest extends WordSpec with Matchers {
+class DateSchemaTest extends FunSuite with Matchers {
 
-  "SchemaEncoder" should {
-    "support LocalDate as logical type date" in {
-      case class LocalDateTest(localDate: LocalDate)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/localdate.avsc"))
-      val schema = SchemaFor[LocalDateTest]()
-      schema.toString(true) shouldBe expected.toString(true)
-    }
+  test("generate date logical type for LocalDate") {
+    case class LocalDateTest(date: LocalDate)
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/localdate.json"))
+    val schema = SchemaEncoder[LocalDateTest].encode()
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("generate time logical type for LocalTime") {
+    case class LocalTimeTest(time: LocalTime)
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/localtime.json"))
+    val schema = SchemaEncoder[LocalTimeTest].encode()
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("generate timestamp-millis logical type for Instant") {
+    case class InstantTest(instant: Instant)
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/timestamp_millis.json"))
+    val schema = SchemaEncoder[InstantTest].encode()
+    schema.toString(true) shouldBe expected.toString(true)
   }
 }
 
