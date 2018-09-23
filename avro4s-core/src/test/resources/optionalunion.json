@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "OptionalUnion",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "union",
+      "type": [
+        "null",
+        "int",
+        "string"
+      ]
+    }
+  ]
+}

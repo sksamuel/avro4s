@@ -5,6 +5,8 @@ import java.io.Serializable
 import com.sksamuel.avro4s.{DefaultNamingStrategy, NamingStrategy}
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 
+import scala.util.{Failure, Success, Try}
+
 trait SchemaEncoder[A] extends Serializable {
   def encode(namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema
 }
@@ -18,6 +20,22 @@ object SchemaEncoder {
 class SchemaConverter(namingStrategy: NamingStrategy) {
 
   import scala.collection.JavaConverters._
+
+  // union schemas can't contain other union schemas as a direct
+  // child, so whenever we create a union, we need to check if our
+  // children are unions
+  // if they are, we just merge them into the union we're creating
+  def extractUnionSchemas(schema: Schema): Seq[Schema] = Try(schema.getTypes /* throws an error if we're not a union */) match {
+    case Success(subschemas) => subschemas.asScala
+    case Failure(_) => Seq(schema)
+  }
+
+  // for a union the type that has a default must be first,
+  // if there is no default, then null is usually first
+  def moveNullToHead(schemas: Seq[Schema]) = {
+    val (nulls, withoutNull) = schemas.partition(_.getType == Schema.Type.NULL)
+    nulls.headOption.toSeq ++ withoutNull
+  }
 
   def createSchema(dataType: DataType): Schema = {
     dataType match {
@@ -72,7 +90,7 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
 
           val b = builder.name(name).doc(doc).aliases(aliases: _*)
           val c = props.foldLeft(b) { case (builder, (key, value)) => builder.prop(key, value) }
-          val d = b.`type`(schemaWithResolvedNamespace)
+          val d = c.`type`(schemaWithResolvedNamespace)
 
           if (field.default == null)
             d.noDefault()
@@ -87,7 +105,9 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
         schema
 
       case NullableType(elementType) =>
-        SchemaBuilder.nullable.`type`(createSchema(elementType))
+        val flattened = extractUnionSchemas(createSchema(elementType))
+        val schemas = Schema.create(Schema.Type.NULL) +: flattened
+        Schema.createUnion(moveNullToHead(schemas).asJava)
 
       case UUIDType =>
         val schema = Schema.create(Schema.Type.STRING)
@@ -134,7 +154,10 @@ class SchemaConverter(namingStrategy: NamingStrategy) {
 
       case ArrayType(elementType) => SchemaBuilder.array().items(createSchema(elementType))
       case MapType(_, valueType) => Schema.createMap(createSchema(valueType))
-      case UnionType(types) => Schema.createUnion(types.map(createSchema): _*)
+
+      case UnionType(types) =>
+        val schemas = types.map(createSchema).flatMap(extractUnionSchemas)
+        Schema.createUnion(moveNullToHead(schemas).asJava)
     }
   }
 

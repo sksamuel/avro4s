@@ -37,5 +37,5 @@ case object SnakeCase extends NamingStrategy {
 }
 
 case object LispCase extends NamingStrategy {
-  override def to(name: String): String = ???
+  override def to(name: String): String = toDelimited('-', name)
 }

@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.SchemaFor
 import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 import shapeless.{:+:, CNil}
@@ -24,8 +23,8 @@ class UnionSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support coproducts of coproducts" in {
-      val single = SchemaFor[Union]()
-      val unionOfUnions = SchemaFor[UnionOfUnions]()
+      val single = SchemaEncoder[Union].encode()
+      val unionOfUnions = SchemaEncoder[UnionOfUnions].encode()
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/union.avsc"))
 

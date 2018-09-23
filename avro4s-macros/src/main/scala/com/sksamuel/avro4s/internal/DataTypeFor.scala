@@ -4,18 +4,23 @@ import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
-import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList}
 
 import scala.language.experimental.macros
-import scala.math.BigDecimal.RoundingMode.UNNECESSARY
+import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe._
 
+/**
+  * A [[DataTypeFor]] generates a [[DataType]] for a Scala or Java type.
+  *
+  * For example, a codec for a [[java.lang.String]] would return an
+  * instance of [[StringType]].
+  */
 trait DataTypeFor[T] {
   def dataType: DataType
 }
@@ -44,6 +49,12 @@ trait LowPriorityDataTypeFor {
                                                coproductFor: DataTypeFor[C]): DataTypeFor[T] = new DataTypeFor[T] {
     override def dataType: DataType = coproductFor.dataType
   }
+}
+
+case class ScalePrecisionRoundingMode(scale: Int, precision: Int, roundingMode: RoundingMode)
+
+object ScalePrecisionRoundingMode {
+  implicit val default = ScalePrecisionRoundingMode(2, 8, UNNECESSARY)
 }
 
 object DataTypeFor extends LowPriorityDataTypeFor {
@@ -174,9 +185,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     override def dataType: DataType = BinaryType
   }
 
-  lazy val defaultScaleAndPrecisionAndRoundingMode = ScaleAndPrecisionAndRoundingMode(2, 8, UNNECESSARY)
-
-  implicit def BigDecimalFor(implicit sp: ScaleAndPrecisionAndRoundingMode = defaultScaleAndPrecisionAndRoundingMode): DataTypeFor[BigDecimal] = new DataTypeFor[BigDecimal] {
+  implicit def bigDecimalFor(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): DataTypeFor[BigDecimal] = new DataTypeFor[BigDecimal] {
     override def dataType: DataType = DecimalType(sp.precision, sp.scale)
   }
 

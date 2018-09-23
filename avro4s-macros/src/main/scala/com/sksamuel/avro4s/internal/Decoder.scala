@@ -3,8 +3,6 @@ package com.sksamuel.avro4s.internal
 import java.nio.ByteBuffer
 import java.util.UUID
 
-import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
-import com.sksamuel.avro4s.ToSchema.defaultScaleAndPrecisionAndRoundingMode
 import org.apache.avro.{Conversions, LogicalTypes}
 
 import scala.language.experimental.macros
@@ -126,7 +124,7 @@ object Decoder {
     }
   }
 
-  implicit def bigDecimalDecoder(implicit sp: ScaleAndPrecisionAndRoundingMode = defaultScaleAndPrecisionAndRoundingMode): Decoder[BigDecimal] = {
+  implicit def bigDecimalDecoder(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): Decoder[BigDecimal] = {
     new Decoder[BigDecimal] {
       override def decode(value: Any): BigDecimal = {
         val decimalConversion = new Conversions.DecimalConversion

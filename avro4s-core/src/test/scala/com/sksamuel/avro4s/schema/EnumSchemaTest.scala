@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.SchemaFor
 import com.sksamuel.avro4s.internal.SchemaEncoder
 import org.scalatest.{Matchers, WordSpec}
 
@@ -24,7 +23,7 @@ class EnumSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support option of scala enum values" in {
-      val schema = SchemaFor[ScalaOptionEnums]()
+      val schema = SchemaEncoder[ScalaOptionEnums].encode()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optionscalaenum.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
