@@ -16,10 +16,17 @@ import scala.math.BigDecimal.RoundingMode
   * value of Array[Byte].
   */
 trait Encoder[T] extends Serializable {
-  def encode(t: T, schema: Schema): Any
+  def encode(t: T, schema: Schema): AnyRef
 }
 
 object Encoder {
+
+  implicit def eitherEncoder[T, U](implicit leftEncoder: Encoder[T], rightEncoder: Encoder[U]): Encoder[Either[T, U]] = new Encoder[Either[T, U]] {
+    override def encode(t: Either[T, U], schema: Schema): AnyRef = t match {
+      case Left(left) => leftEncoder.encode(left, schema)
+      case Right(right) => rightEncoder.encode(right, schema)
+    }
+  }
 
   implicit object StringEncoder extends Encoder[String] {
     override def encode(t: String, schema: Schema): String = t
@@ -57,11 +64,21 @@ object Encoder {
     override def encode(t: UUID, schema: Schema): String = t.toString
   }
 
+  implicit def mapEncoder[V](implicit encoder: Encoder[V]): Encoder[Map[String, V]] = new Encoder[Map[String, V]] {
+
+    import scala.collection.JavaConverters._
+
+    override def encode(map: Map[String, V], schema: Schema): java.util.Map[String, AnyRef] = {
+      require(schema != null)
+      map.mapValues(encoder.encode(_, schema)).asJava
+    }
+  }
+
   implicit def listEncoder[T](implicit encoder: Encoder[T]): Encoder[List[T]] = new Encoder[List[T]] {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: List[T], schema: Schema): Any = {
+    override def encode(ts: List[T], schema: Schema): AnyRef = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
@@ -71,7 +88,7 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: Set[T], schema: Schema): Any = {
+    override def encode(ts: Set[T], schema: Schema): AnyRef = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).toList.asJava
     }
@@ -81,7 +98,7 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: Vector[T], schema: Schema): Any = {
+    override def encode(ts: Vector[T], schema: Schema): AnyRef = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
@@ -91,7 +108,7 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: Seq[T], schema: Schema): Any = {
+    override def encode(ts: Seq[T], schema: Schema): AnyRef = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
@@ -101,8 +118,8 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: Array[T], schema: Schema): Any = ts.headOption match {
-      case Some(b: Byte) => ByteBuffer.wrap(ts.asInstanceOf[Array[Byte]])
+    override def encode(ts: Array[T], schema: Schema): AnyRef = ts.headOption match {
+      case Some(_: Byte) => ByteBuffer.wrap(ts.asInstanceOf[Array[Byte]])
       case _ => ts.map(encoder.encode(_, schema.getElementType)).toList.asJava
     }
   }
@@ -111,7 +128,7 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(t: Option[T], schema: Schema): Any = {
+    override def encode(t: Option[T], schema: Schema): AnyRef = {
       // must have a union schema, so we can find the non null part of it
       val nonNullSchema = schema.getTypes.asScala.find(_.getType != Schema.Type.NULL).get
       t.map(encoder.encode(_, nonNullSchema)).orNull
@@ -134,11 +151,11 @@ object Encoder {
   }
 
   implicit def javaEnumEncoder[E <: Enum[_]]: Encoder[E] = new Encoder[E] {
-    override def encode(t: E, schema: Schema): Any = new EnumSymbol(schema, t.name)
+    override def encode(t: E, schema: Schema): EnumSymbol = new EnumSymbol(schema, t.name)
   }
 
   implicit def scalaEnumEncoder[E <: Enumeration#Value]: Encoder[E] = new Encoder[E] {
-    override def encode(t: E, schema: Schema): Any = new EnumSymbol(schema, t.toString)
+    override def encode(t: E, schema: Schema): EnumSymbol = new EnumSymbol(schema, t.toString)
   }
 
   implicit def apply[T]: Encoder[T] = macro applyImpl[T]
@@ -187,8 +204,8 @@ object Encoder {
     c.Expr[Encoder[T]](
       q"""
           new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
-            override def encode(t: $tpe, schema: org.apache.avro.Schema): Any = {
-              val values = _root_.scala.collection.mutable.ListBuffer.empty[Any]
+            override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
+              val values = _root_.scala.collection.mutable.ListBuffer.empty[AnyRef]
               ..$fields
               new _root_.com.sksamuel.avro4s.internal.InternalRecord(schema, values.toVector)
             }
@@ -197,7 +214,7 @@ object Encoder {
     )
   }
 
-  def doField[T](t: T, field: Schema.Field)(implicit encoder: Encoder[T]): Any = {
+  def doField[T](t: T, field: Schema.Field)(implicit encoder: Encoder[T]): AnyRef = {
     encoder.encode(t, field.schema())
   }
 }

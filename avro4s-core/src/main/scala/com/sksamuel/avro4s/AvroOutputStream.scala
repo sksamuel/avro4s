@@ -1,5 +1,11 @@
 package com.sksamuel.avro4s
 
+import java.io.{File, OutputStream}
+import java.nio.file.{Files, Path}
+
+import com.sksamuel.avro4s.internal.Encoder
+import org.apache.avro.Schema
+
 //import java.io.{File, OutputStream}
 //import java.nio.file.{Files, Path}
 //
@@ -8,6 +14,18 @@ package com.sksamuel.avro4s
 //import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 //import org.apache.avro.io.EncoderFactory
 
+/**
+  * An [[AvroOutputStream]] will write instances of T to an underlying
+  * representation.
+  *
+  * There are three implementations of this stream
+  *  - a Data stream,
+  *  - a BB stream
+  *  - a Json stream
+  *
+  * See the methods on the companion object to create instances of each
+  * of these types of stream.
+  */
 trait AvroOutputStream[T] {
   def close(): Unit
   def close(closeUnderlying: Boolean): Unit
@@ -15,6 +33,13 @@ trait AvroOutputStream[T] {
   def fSync(): Unit
   def write(t: T): Unit
   def write(ts: Seq[T]): Unit = ts.foreach(write)
+}
+
+object AvroOutputStream {
+  // convenience api for cases where the user wants to use the default codec.
+  def data[T: Encoder](file: File, schema: Schema): AvroDataOutputStream[T] = data(file.toPath, schema)
+  def data[T: Encoder](path: Path, schema: Schema): AvroDataOutputStream[T] = data(Files.newOutputStream(path), schema)
+  def data[T: Encoder](os: OutputStream, schema: Schema): AvroDataOutputStream[T] = AvroDataOutputStream(os, schema)
 }
 
 //// avro output stream that does not write the schema, only use when you want the smallest messages possible
@@ -37,43 +62,7 @@ trait AvroOutputStream[T] {
 //  override def fSync(): Unit = ()
 //}
 //
-//// avro output stream that includes the schema for the messages. This is usually what you want.
-//case class AvroDataOutputStream[T](os: OutputStream, codec: CodecFactory = CodecFactory.nullCodec())(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
-//  extends AvroOutputStream[T] {
-//
-//  val schema = schemaFor()
-//  val (writer, writeFn) = schema.getType match {
-//    case Schema.Type.DOUBLE | Schema.Type.LONG | Schema.Type.BOOLEAN | Schema.Type.STRING | Schema.Type.INT | Schema.Type.FLOAT =>
-//      val datumWriter = new GenericDatumWriter[T](schema)
-//      val dataFileWriter = new DataFileWriter[T](datumWriter)
-//      dataFileWriter.setCodec(codec)
-//      dataFileWriter.create(schema, os)
-//      (dataFileWriter, (t: T) => dataFileWriter.append(t))
-//    case _ =>
-//      val datumWriter = new GenericDatumWriter[GenericRecord](schema)
-//      val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
-//      dataFileWriter.setCodec(codec)
-//      dataFileWriter.create(schema, os)
-//      (dataFileWriter, (t: T) => {
-//        val record = toRecord.apply(t)
-//        dataFileWriter.append(record)
-//      })
-//  }
-//
-//  override def close(): Unit = close(true)
-//  override def close(closeUnderlying: Boolean): Unit = {
-//    flush()
-//    writer.close()
-//    if (closeUnderlying)
-//      os.close()
-//  }
-//
-//  override def write(t: T): Unit = {
-//    writeFn(t)
-//  }
-//  override def flush(): Unit = writer.flush()
-//  override def fSync(): Unit = writer.fSync()
-//}
+
 //
 //// avro output stream that writes json instead of a packed format
 //case class AvroJsonOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
@@ -105,10 +94,7 @@ trait AvroOutputStream[T] {
 //  def data[T: SchemaFor : ToRecord](path: Path, codec: CodecFactory): AvroDataOutputStream[T] = data(Files.newOutputStream(path), codec)
 //  def data[T: SchemaFor : ToRecord](os: OutputStream, codec: CodecFactory): AvroDataOutputStream[T] = AvroDataOutputStream(os, codec)
 //
-//  // convenience api for cases where the the user want to use the default null codec.
-//  def data[T: SchemaFor : ToRecord](file: File): AvroDataOutputStream[T] = data(file.toPath)
-//  def data[T: SchemaFor : ToRecord](path: Path): AvroDataOutputStream[T] = data(Files.newOutputStream(path))
-//  def data[T: SchemaFor : ToRecord](os: OutputStream): AvroDataOutputStream[T] = AvroDataOutputStream(os)
+
 //
 //  def binary[T: SchemaFor : ToRecord](file: File): AvroBinaryOutputStream[T] = binary(file.toPath)
 //  def binary[T: SchemaFor : ToRecord](path: Path): AvroBinaryOutputStream[T] = binary(Files.newOutputStream(path))

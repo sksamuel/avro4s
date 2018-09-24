@@ -15,7 +15,7 @@ class OptionEncoderTest extends WordSpec with Matchers {
     "support boolean options" in {
       case class Test(b: Option[Boolean])
       val schema = AvroSchema[Test]
-      Encoder[Test].encode(Test(Option(true)), schema) shouldBe InternalRecord(schema, Vector(true))
+      Encoder[Test].encode(Test(Option(true)), schema) shouldBe InternalRecord(schema, Vector(java.lang.Boolean.valueOf(true)))
       Encoder[Test].encode(Test(None), schema) shouldBe InternalRecord(schema, Vector(null))
     }
   }

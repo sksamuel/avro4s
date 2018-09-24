@@ -18,7 +18,7 @@ class ArrayEncoderTest extends WordSpec with Matchers {
       case class Record(str: String, double: Double)
       val schema = AvroSchema[Test]
       val rschema = AvroSchema[Record]
-      Encoder[Test].encode(Test(Vector(Record("abc", 12.34))), schema) shouldBe InternalRecord(schema, Vector(Vector(InternalRecord(rschema, Vector("abc", 12.34))).asJava))
+      Encoder[Test].encode(Test(Vector(Record("abc", 12.34))), schema) shouldBe InternalRecord(schema, Vector(Vector(InternalRecord(rschema, Vector("abc", java.lang.Double.valueOf(12.34)))).asJava))
     }
     "generate array for a scala.collection.immutable.Seq of primitives" in {
       case class Test(seq: Seq[String])
