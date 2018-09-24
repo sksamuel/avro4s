@@ -245,6 +245,7 @@ object SchemaFor extends LowPrioritySchemaFor {
     println(s"Resolving default = $default")
     default match {
       case null => null
+      case Some(value) => resolveDefault(value)
       case other => other.toString
     }
     //    dataType match {
@@ -322,7 +323,8 @@ object SchemaFor extends LowPrioritySchemaFor {
   }
 
   implicit object UUIDSchemaFor extends SchemaFor[UUID] {
-    override val schema: Schema = SchemaBuilder.builder().bytesType()
+    override val schema: Schema = SchemaBuilder.builder().stringType()
+    LogicalTypes.uuid().addToSchema(schema)
   }
 
   implicit object ByteArraySchemaFor extends SchemaFor[Array[Byte]] {
@@ -334,7 +336,8 @@ object SchemaFor extends LowPrioritySchemaFor {
   }
 
   implicit def bigDecimalFor(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): SchemaFor[BigDecimal] = new SchemaFor[BigDecimal] {
-    override def schema: Schema = SchemaBuilder.builder().stringType()
+    override val schema = Schema.create(Schema.Type.BYTES)
+    LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(schema)
   }
 
   implicit def EitherFor[A, B](implicit leftFor: SchemaFor[A], rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] = {
@@ -397,7 +400,7 @@ object SchemaFor extends LowPrioritySchemaFor {
                                        b: SchemaFor[B],
                                        c: SchemaFor[C]): SchemaFor[(A, B, C)] = new SchemaFor[(A, B, C)] {
     override val schema: Schema =
-      SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
+      SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
         .fields()
         .name("_1").`type`(a.schema).noDefault()
         .name("_2").`type`(b.schema).noDefault()
