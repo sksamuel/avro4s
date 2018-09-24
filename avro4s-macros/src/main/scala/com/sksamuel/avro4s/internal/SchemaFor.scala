@@ -4,7 +4,7 @@ import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
-import com.sksamuel.avro4s.DefaultNamingStrategy
+import com.sksamuel.avro4s.{DefaultNamingStrategy, NamingStrategy}
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
@@ -148,7 +148,8 @@ object SchemaFor extends LowPrioritySchemaFor {
     * Users can add their own mappings for types by implementing [[SchemaFor]] returning
     * the appropriate Avro schema.
     */
-  def schemaField[B](name: String, packageName: String, annos: Seq[Anno], default: Any)(implicit schemaFor: SchemaFor[B]): Schema.Field = {
+  def schemaField[B](name: String, packageName: String, annos: Seq[Anno], default: Any)
+                    (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
     //  println(s"default for $name = $default")
 
     val extractor = new AnnotationExtractors(annos)
@@ -158,7 +159,7 @@ object SchemaFor extends LowPrioritySchemaFor {
     val props = extractor.props
 
     // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
-    val resolvedName = extractor.name.fold(DefaultNamingStrategy.to(name))(DefaultNamingStrategy.to)
+    val resolvedName = extractor.name.fold(namingStrategy.to(name))(namingStrategy.to)
 
     // the default may be a scala type that avro doesn't understand, so we must turn it into a boring java type
     val resolvedDefault = resolveDefault(default)
