@@ -8,12 +8,12 @@ import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.EncoderFactory
 
 /**
-  * An [[AvroOutputStream2]] that does not write the [[org.apache.avro.Schema]]. Use this when
+  * An [[AvroOutputStream]] that does not write the [[org.apache.avro.Schema]]. Use this when
   * you want the smallest messages possible at the cost of not having the schema available
   * in the messages for downstream clients.
   */
-case class AvroBinaryOutputStream2[T](os: OutputStream, schema: Schema, encoder: Encoder[T])
-  extends AvroOutputStream2[T] {
+case class AvroBinaryOutputStream[T](os: OutputStream, schema: Schema, encoder: Encoder[T])
+  extends AvroOutputStream[T] {
 
   private val dataWriter = new GenericDatumWriter[GenericRecord](schema)
   private val binaryEncoder = EncoderFactory.get().binaryEncoder(os, null)
@@ -30,4 +30,5 @@ case class AvroBinaryOutputStream2[T](os: OutputStream, schema: Schema, encoder:
 
   override def flush(): Unit = binaryEncoder.flush()
   override def fSync(): Unit = ()
+  override def close(closeUnderlying: Boolean): Unit = ???
 }

@@ -1,10 +1,8 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.AvroSchema
-import com.sksamuel.avro4s.internal.{Encoder, InternalRecord, SchemaEncoder}
-import org.scalatest.{Matchers, WordSpec}
 import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
+import org.scalatest.{Matchers, WordSpec}
 
 class OptionEncoderTest extends WordSpec with Matchers {
 

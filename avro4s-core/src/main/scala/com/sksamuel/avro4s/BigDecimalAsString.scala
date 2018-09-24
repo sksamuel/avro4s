@@ -1,15 +1,16 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.internal.{DataType, DataTypeFor, FixedType, StringType}
+import com.sksamuel.avro4s.internal.SchemaFor
+import org.apache.avro.{Schema, SchemaBuilder}
 
 object BigDecimalAsString {
-  implicit object BigDecimalAsStringCodec extends DataTypeFor[BigDecimal] {
-    override def dataType: DataType = StringType
+  implicit object BigDecimalAsStringCodec extends SchemaFor[BigDecimal] {
+    override def schema: Schema = SchemaBuilder.builder().stringType()
   }
 }
 
 object BigDecimalAsFixed {
-  implicit object BigDecimalAsFixedCodec extends DataTypeFor[BigDecimal] {
-    override def dataType: DataType = FixedType("myfixedtype", 12)
+  implicit object BigDecimalAsFixedCodec extends SchemaFor[BigDecimal] {
+    override def schema: Schema = Schema.createFixed("myname", null, "namespace", 55)
   }
 }

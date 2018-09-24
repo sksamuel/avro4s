@@ -85,30 +85,6 @@ case object UUIDType extends LogicalDataType {
   override def toSchema(namingStrategy: NamingStrategy): Schema = schema
 }
 
-case object LocalDateType extends LogicalDataType {
-  private val schema = Schema.create(Schema.Type.INT)
-  LogicalTypes.date().addToSchema(schema)
-  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
-}
-
-case object LocalDateTimeType extends LogicalDataType {
-  private val schema = Schema.create(Schema.Type.LONG)
-  LogicalTypes.timestampMillis().addToSchema(schema)
-  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
-}
-
-case object LocalTimeType extends LogicalDataType {
-  private val schema = Schema.create(Schema.Type.INT)
-  LogicalTypes.timeMillis().addToSchema(schema)
-  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
-}
-
-case object TimestampType extends LogicalDataType {
-  private val schema = Schema.create(Schema.Type.LONG)
-  LogicalTypes.timestampMillis().addToSchema(schema)
-  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
-}
-
 case class NullableType(elementType: DataType) extends DataType with DataTypeSupport {
 
   import scala.collection.JavaConverters._

@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.AvroSchema
-import com.sksamuel.avro4s.internal.{AvroSchema, DataType, DataTypeFor, Encoder, FixedType, ImmutableRecord}
+import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, ImmutableRecord, SchemaFor}
+import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
@@ -16,8 +16,8 @@ class BasicEncoderTest extends WordSpec with Matchers {
     }
     "encode strings as Array[Byte] when schema is fixed" in {
       case class Foo(s: String)
-      implicit object StringFixedDataTypeFor extends DataTypeFor[String] {
-        override def dataType: DataType = FixedType("mytype", 50)
+      implicit object StringFixedSchemaFor extends SchemaFor[String] {
+        override def schema: Schema = Schema.createFixed("string", null, null, 123)
       }
       val schema = AvroSchema[Foo]
       val record = Encoder[Foo].encode(Foo("hello"), schema).asInstanceOf[GenericRecord]
@@ -46,7 +46,7 @@ class BasicEncoderTest extends WordSpec with Matchers {
     "encode ints" in {
       case class Foo(i: Int)
       val schema = AvroSchema[Foo]
-      Encoder[Foo].encode(Foo(123), schema) shouldBe InternalRecord(schema, Vector(java.lang.Integer.valueOf(123)))
+      Encoder[Foo].encode(Foo(123), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(123)))
     }
   }
 }
