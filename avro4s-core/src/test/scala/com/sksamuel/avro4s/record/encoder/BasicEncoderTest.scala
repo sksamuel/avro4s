@@ -1,15 +1,26 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.internal.{Encoder, ImmutableRecord, AvroSchema}
+import com.sksamuel.avro4s.internal.{AvroSchema, DataType, DataTypeFor, Encoder, FixedType, ImmutableRecord}
+import org.apache.avro.generic.GenericRecord
+import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
 
 class BasicEncoderTest extends WordSpec with Matchers {
 
   "Encoder" should {
-    "encode strings" in {
+    "encode strings as UTF8" in {
       case class Foo(s: String)
       val schema = AvroSchema[Foo]
-      Encoder[Foo].encode(Foo("hello"), schema) shouldBe ImmutableRecord(schema, Vector("hello"))
+      Encoder[Foo].encode(Foo("hello"), schema) shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
+    }
+    "encode strings as Array[Byte] when schema is fixed" in {
+      case class Foo(s: String)
+      implicit object StringFixedDataTypeFor extends DataTypeFor[String] {
+        override def dataType: DataType = FixedType("mytype", 50)
+      }
+      val schema = AvroSchema[Foo]
+      val record = Encoder[Foo].encode(Foo("hello"), schema).asInstanceOf[GenericRecord]
+      record.get("s").asInstanceOf[Array[Byte]].toList shouldBe Seq(104, 101, 108, 108, 111)
     }
     "encode longs" in {
       case class Foo(l: Long)

@@ -5,15 +5,19 @@ import java.util.UUID
 
 import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericData.EnumSymbol
+import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode
 
 /**
-  * Given an instance of T, and a schema, returns an Avro compatible value for the schema.
-  * For example, a value of String and a schema of type Schema.Type.FIXED would return a
-  * value of Array[Byte].
+  * An [[Encoder]] returns an Avro compatible value for a given
+  * type T and a [[Schema]].
+  *
+  * For example, a value of String, and a schema of type [[Schema.Type.STRING]]
+  * would return an instance of [[Utf8]], whereas the same string and a
+  * schema of type [[Schema.Type.FIXED]] would return an Array[Byte].
   */
 trait Encoder[T] extends Serializable {
   def encode(t: T, schema: Schema): AnyRef
@@ -29,7 +33,12 @@ object Encoder {
   }
 
   implicit object StringEncoder extends Encoder[String] {
-    override def encode(t: String, schema: Schema): String = t
+    override def encode(t: String, schema: Schema): AnyRef = {
+      if (schema.getType == Schema.Type.FIXED)
+        t.getBytes
+      else
+        new Utf8(t)
+    }
   }
 
   implicit object BooleanEncoder extends Encoder[Boolean] {
