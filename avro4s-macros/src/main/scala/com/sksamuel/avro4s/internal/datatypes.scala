@@ -3,6 +3,8 @@ package com.sksamuel.avro4s.internal
 import com.sksamuel.avro4s.NamingStrategy
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 
+import scala.util.{Failure, Success, Try}
+
 /**
   * Represents a Scala or Java annotation on a class or field.
   *
@@ -21,14 +23,16 @@ sealed trait DataType {
 
 trait DataTypeSupport {
 
+  import scala.collection.JavaConverters._
+
   /**
     * Avro union schemas can't contain other union schemas as a direct
     * child. So whenever we create a union schema, we ned to check if
     * our children are unions, and if they are, merge into the parent union.
     */
-  def flatten(dataTypes: Seq[DataType]): Seq[DataType] = dataTypes.flatMap {
-    case UnionType(tps) => tps
-    case other => Seq(other)
+  def extractUnionSchemas(schema: Schema): Seq[Schema] = Try(schema.getTypes /* throws an error if we're not a union */) match {
+    case Success(subschemas) => subschemas.asScala.flatMap(extractUnionSchemas)
+    case Failure(_) => Seq(schema)
   }
 
   // for a union the type that has a default must be first,
@@ -110,8 +114,8 @@ case class NullableType(elementType: DataType) extends DataType with DataTypeSup
   import scala.collection.JavaConverters._
 
   override def toSchema(namingStrategy: NamingStrategy): Schema = {
-    val flattened = flatten(Seq(elementType)).map(_.toSchema(namingStrategy))
-    val schemas = Schema.create(Schema.Type.NULL) +: flattened
+    val schema = elementType.toSchema(namingStrategy)
+    val schemas = Schema.create(Schema.Type.NULL) +: extractUnionSchemas(schema)
     Schema.createUnion(moveNullToHead(schemas).asJava)
   }
 }
@@ -143,7 +147,7 @@ case class UnionType(types: Seq[DataType]) extends DataType with DataTypeSupport
   import scala.collection.JavaConverters._
 
   override def toSchema(namingStrategy: NamingStrategy): Schema = {
-    val schemas = flatten(types).map(_.toSchema(namingStrategy))
+    val schemas = types.map(_.toSchema(namingStrategy)).flatMap(extractUnionSchemas)
     Schema.createUnion(moveNullToHead(schemas).asJava)
   }
 }
