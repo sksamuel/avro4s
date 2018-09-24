@@ -1,15 +1,15 @@
 {
   "type": "record",
-  "name": "BigDecimalAsStringTest",
+  "name": "BigDecimalAsFixedTest",
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "decimal",
       "type": {
         "type": "fixed",
-        "name": "myfixedtype",
+        "name": "bigdecimal",
         "namespace": "",
-        "size": 12
+        "size": 55
       }
     }
   ]

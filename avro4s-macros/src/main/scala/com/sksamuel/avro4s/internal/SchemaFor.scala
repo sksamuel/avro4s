@@ -245,11 +245,13 @@ object SchemaFor extends LowPrioritySchemaFor {
     println(s"Resolving default = $default")
     default match {
       case null => null
+      case UUIDType => default.toString
+      case bd: BigDecimal => java.lang.Double.valueOf(bd.underlying.doubleValue)
       case Some(value) => resolveDefault(value)
       case other => other.toString
     }
     //    dataType match {
-    //      case UUIDType => default.toString
+    //
     //      case StringType => default.toString
     //      case BooleanType => default
     //      case LongType => default

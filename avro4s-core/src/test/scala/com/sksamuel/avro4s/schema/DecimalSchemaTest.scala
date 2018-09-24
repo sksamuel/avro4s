@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.internal.{AvroSchema, SchemaFor}
+import org.apache.avro.Schema
 import org.scalatest.{Matchers, WordSpec}
 
 case class BigDecimalSeqOption(biggies: Seq[Option[BigDecimal]])
@@ -38,13 +39,18 @@ class DecimalSchemaTest extends WordSpec with Matchers {
       schema shouldBe expected
     }
     "allow big decimals to be encoded as strings when custom typeclasses are provided" in {
+      import com.sksamuel.avro4s.BigDecimalAsString._
       case class BigDecimalAsStringTest(decimal: BigDecimal)
-
       val schema = AvroSchema[BigDecimalAsStringTest]
       val expected = new org.apache.avro.Schema.Parser().parse(this.getClass.getResourceAsStream("/bigdecimal_as_string.json"))
       schema shouldBe expected
     }
     "allow big decimals to be encoded as FIXED when custom typeclasses are provided" in {
+
+      implicit object BigDecimalAsFixedSchemaFor extends SchemaFor[BigDecimal] {
+        override def schema: Schema = Schema.createFixed("bigdecimal", null, null, 55)
+      }
+
       case class BigDecimalAsFixedTest(decimal: BigDecimal)
       val schema = AvroSchema[BigDecimalAsFixedTest]
       val expected = new org.apache.avro.Schema.Parser().parse(this.getClass.getResourceAsStream("/bigdecimal_as_fixed.json"))
