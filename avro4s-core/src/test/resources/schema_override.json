@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "OverrideTest",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "s",
+      "type": "bytes"
+    },
+    {
+      "name": "i",
+      "type": "int"
+    }
+  ]
+}
