@@ -1,10 +1,16 @@
 package com.sksamuel.avro4s.internal
 
 import org.apache.avro.Schema
-import org.apache.avro.generic.{GenericRecord, IndexedRecord}
+import org.apache.avro.generic.GenericRecord
 import org.apache.avro.specific.SpecificRecord
 
-case class ImmutableRecord(schema: Schema, values: Vector[AnyRef]) extends GenericRecord with SpecificRecord with IndexedRecord {
+/**
+  * An implementation of [[org.apache.avro.generic.GenericContainer]] that is both a
+  * [[GenericRecord]] and a [[SpecificRecord]].
+  */
+trait Record extends GenericRecord with SpecificRecord
+
+case class ImmutableRecord(schema: Schema, values: Vector[AnyRef]) extends Record {
 
   import scala.collection.JavaConverters._
 
