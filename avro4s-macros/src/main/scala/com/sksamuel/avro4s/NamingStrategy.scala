@@ -24,10 +24,6 @@ sealed trait NamingStrategy {
   }
 }
 
-object NamingStrategy {
-  val default = DefaultNamingStrategy
-}
-
 case object DefaultNamingStrategy extends NamingStrategy {
   override def to(name: String): String = name
 }
@@ -38,4 +34,8 @@ case object PascalCase extends NamingStrategy {
 
 case object SnakeCase extends NamingStrategy {
   override def to(name: String): String = toDelimited('_', name)
+}
+
+case object LispCase extends NamingStrategy {
+  override def to(name: String): String = toDelimited('-', name)
 }

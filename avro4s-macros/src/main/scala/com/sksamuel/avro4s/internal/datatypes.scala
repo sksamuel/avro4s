@@ -1,5 +1,10 @@
 package com.sksamuel.avro4s.internal
 
+import com.sksamuel.avro4s.NamingStrategy
+import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
+
+import scala.util.{Failure, Success, Try}
+
 /**
   * Represents a Scala or Java annotation on a class or field.
   *
@@ -8,47 +13,143 @@ package com.sksamuel.avro4s.internal
   */
 case class Anno(className: String, args: Seq[Any])
 
-sealed trait DataType
+sealed trait DataType {
+
+  /**
+    * Returns the Avro [[Schema]] representation of this [[DataType]].
+    */
+  def toSchema(namingStrategy: NamingStrategy): Schema
+}
+
+/**
+  * Implementations of this [[DataType]] always return the same
+  * constant schema.
+  */
+abstract class ConstDataType(schema: Schema) extends DataType {
+  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
+}
+
 sealed trait LogicalDataType extends DataType
 
-case object BinaryType extends DataType
-case object BooleanType extends DataType
-case object ByteType extends DataType
-case class DecimalType(precision: Int, scale: Int) extends LogicalDataType
-case object DoubleType extends DataType
+trait UnionizedDataType extends DataType {
 
-case class FixedType(name: String, namespace: Option[String], size: Int) extends DataType
+  import scala.collection.JavaConverters._
+
+  // union schemas can't contain other union schemas as a direct
+  // child, so whenever we create a union, we need to check if our
+  // children are unions
+  // if they are, we just merge them into the union we're creating
+  def extractUnionSchemas(schema: Schema): Seq[Schema] = Try(schema.getTypes /* throws an error if we're not a union */) match {
+    case Success(subschemas) => subschemas.asScala
+    case Failure(_) => Seq(schema)
+  }
+
+  // for a union the type that has a default must be first,
+  // if there is no default, then null is first by convention
+  def moveNullToHead(schemas: Seq[Schema]) = {
+    val (nulls, withoutNull) = schemas.partition(_.getType == Schema.Type.NULL)
+    nulls.headOption.toSeq ++ withoutNull
+  }
+}
+
+case object BinaryType extends ConstDataType(Schema.create(Schema.Type.BYTES))
+case object BooleanType extends ConstDataType(Schema.create(Schema.Type.BOOLEAN))
+case object ByteType extends ConstDataType(Schema.create(Schema.Type.INT))
+case object DoubleType extends ConstDataType(Schema.create(Schema.Type.DOUBLE))
+case object FloatType extends ConstDataType(Schema.create(Schema.Type.FLOAT))
+case object IntType extends ConstDataType(Schema.create(Schema.Type.INT))
+case object LongType extends ConstDataType(Schema.create(Schema.Type.LONG))
+case object ShortType extends ConstDataType(Schema.create(Schema.Type.INT))
+case object StringType extends ConstDataType(Schema.create(Schema.Type.STRING))
+
+case class DecimalType(precision: Int, scale: Int) extends LogicalDataType {
+  override def toSchema(namingStrategy: NamingStrategy): Schema = {
+    val schema = Schema.create(Schema.Type.BYTES)
+    LogicalTypes.decimal(precision, scale).addToSchema(schema)
+    schema
+  }
+}
+
+case class FixedType(name: String, namespace: Option[String], size: Int) extends DataType {
+  override def toSchema(namingStrategy: NamingStrategy): Schema = Schema.createFixed(name, null, namespace.orNull, size)
+}
 
 object FixedType {
   def apply(name: String, size: Int): FixedType = FixedType(name, None, size)
 }
 
-case object FloatType extends DataType
-case object IntType extends DataType
-case object LongType extends DataType
-case object ShortType extends DataType
-case object StringType extends DataType
-case object UUIDType extends LogicalDataType
-case object LocalDateType extends LogicalDataType
-case object LocalDateTimeType extends LogicalDataType
-case object LocalTimeType extends LogicalDataType
-case object TimestampType extends LogicalDataType
+case object UUIDType extends LogicalDataType {
+  private val schema = Schema.create(Schema.Type.STRING)
+  LogicalTypes.uuid().addToSchema(schema)
+  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
+}
 
-case class NullableType(elementType: DataType) extends DataType
+case object LocalDateType extends LogicalDataType {
+  private val schema = Schema.create(Schema.Type.INT)
+  LogicalTypes.date().addToSchema(schema)
+  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
+}
 
-case class MapType(keyType: DataType, valueType: DataType) extends DataType
-case class ArrayType(valueType: DataType) extends DataType
+case object LocalDateTimeType extends LogicalDataType {
+  private val schema = Schema.create(Schema.Type.LONG)
+  LogicalTypes.timestampMillis().addToSchema(schema)
+  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
+}
+
+case object LocalTimeType extends LogicalDataType {
+  private val schema = Schema.create(Schema.Type.INT)
+  LogicalTypes.timeMillis().addToSchema(schema)
+  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
+}
+
+case object TimestampType extends LogicalDataType {
+  private val schema = Schema.create(Schema.Type.LONG)
+  LogicalTypes.timestampMillis().addToSchema(schema)
+  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
+}
+
+case class NullableType(elementType: DataType) extends UnionizedDataType {
+
+  import scala.collection.JavaConverters._
+
+  override def toSchema(namingStrategy: NamingStrategy): Schema = {
+    val flattened = extractUnionSchemas(elementType.toSchema(namingStrategy))
+    val schemas = Schema.create(Schema.Type.NULL) +: flattened
+    Schema.createUnion(moveNullToHead(schemas).asJava)
+  }
+}
+
+case class MapType(keyType: DataType, valueType: DataType) extends DataType {
+  override def toSchema(namingStrategy: NamingStrategy): Schema = Schema.createMap(valueType.toSchema(namingStrategy))
+}
+
+case class ArrayType(valueType: DataType) extends DataType {
+  override def toSchema(namingStrategy: NamingStrategy): Schema = SchemaBuilder.array().items(valueType.toSchema(namingStrategy))
+}
 
 case class EnumType(className: String,
                     simpleName: String,
                     packageName: String,
                     symbols: Seq[String],
-                    annotations: Seq[Anno]) extends DataType
+                    annotations: Seq[Anno]) extends DataType {
+  private val extractor = new AnnotationExtractors(annotations)
+  private val namespace = extractor.namespace.getOrElse(packageName)
+  private val schema = SchemaBuilder.enumeration(simpleName).namespace(namespace).symbols(symbols: _*)
+  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
+}
 
 /**
   * Represents a type that can be one of several different underlying types.
   */
-case class UnionType(types: Seq[DataType]) extends DataType
+case class UnionType(types: Seq[DataType]) extends UnionizedDataType {
+
+  import scala.collection.JavaConverters._
+
+  override def toSchema(namingStrategy: NamingStrategy): Schema = {
+    val schemas = types.map(_.toSchema(namingStrategy)).flatMap(extractUnionSchemas)
+    Schema.createUnion(moveNullToHead(schemas).asJava)
+  }
+}
 
 object UnionType {
 
@@ -69,7 +170,9 @@ case class StructType(qualifiedName: String,
                       packageName: String,
                       annotations: Seq[Anno],
                       fields: Seq[StructField],
-                      valueType: Boolean) extends DataType
+                      valueType: Boolean) extends DataType {
+  override def toSchema(namingStrategy: NamingStrategy): Schema = StructSchemaEncoder.encode(this, namingStrategy)
+}
 
 case class StructField(name: String,
                        dataType: DataType,

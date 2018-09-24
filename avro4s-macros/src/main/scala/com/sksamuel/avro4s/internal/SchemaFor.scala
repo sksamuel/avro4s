@@ -1,7 +1,5 @@
 package com.sksamuel.avro4s.internal
 
-import java.io.Serializable
-
 import com.sksamuel.avro4s.{DefaultNamingStrategy, NamingStrategy}
 import org.apache.avro.Schema
 
@@ -20,40 +18,7 @@ object SchemaFor {
     * An implicit [[NamingStrategy]] can be provided to override
     * how the field names are generated.
     */
-  def apply[T](implicit dataTypeFor: DataTypeFor[T], namingStrategy: NamingStrategy = DefaultNamingStrategy) =
-    SchemaEncoder.create(dataTypeFor.dataType, namingStrategy)
-}
-
-/**
-  * Encodes a [[DataType]] into an Avro Schema.
-  */
-trait SchemaEncoder[T <: DataType] extends Serializable {
-  def encode(dataType: T, namingStrategy: NamingStrategy): Schema
-}
-
-object SchemaEncoder extends ValueTypeSchemaEncoders {
-  def create[T <: DataType](dataType: T, namingStrategy: NamingStrategy): Schema = dataType match {
-    case array: ArrayType => ArrayTypeSchemaEncoder.encode(array, namingStrategy)
-    case BinaryType => BinaryTypeSchemaEncoder.encode(BinaryType, namingStrategy)
-    case BooleanType => BooleanSchemaEncoder.encode(BooleanType, namingStrategy)
-    case ByteType => ByteTypeSchemaEncoder.encode(ByteType, namingStrategy)
-    case dec: DecimalType => DecimalTypeSchemaEncoder.encode(dec, namingStrategy)
-    case DoubleType => DoubleTypeSchemaEncoder.encode(DoubleType, namingStrategy)
-    case enum: EnumType => EnumTypeSchemaEncoder.encode(enum, namingStrategy)
-    case FloatType => FloatTypeSchemaEncoder.encode(FloatType, namingStrategy)
-    case fixed: FixedType => FixedTypeSchemaEncoder.encode(fixed, namingStrategy)
-    case IntType => IntTypeSchemaEncoder.encode(IntType, namingStrategy)
-    case LongType => LongTypeSchemaEncoder.encode(LongType, namingStrategy)
-    case map: MapType => MapTypeSchemaEncoder.encode(map, namingStrategy)
-    case nullable: NullableType => NullableSchemaEncoder.encode(nullable, namingStrategy)
-    case ShortType => ShortTypeSchemaEncoder.encode(ShortType, namingStrategy)
-    case StringType => StringSchemaEncoder.encode(StringType, namingStrategy)
-    case struct: StructType => StructSchemaEncoder.encode(struct, namingStrategy)
-    case LocalDateType => LocalDateTypeSchemaEncoder.encode(LocalDateType, namingStrategy)
-    case LocalTimeType => LocalTimeTypeSchemaEncoder.encode(LocalTimeType, namingStrategy)
-    case LocalDateTimeType => LocalDateTimeTypeSchemaEncoder.encode(LocalDateTimeType, namingStrategy)
-    case TimestampType => TimestampTypeSchemaEncoder.encode(TimestampType, namingStrategy)
-    case union: UnionType => UnionTypeSchemaEncoder.encode(union, namingStrategy)
-    case UUIDType => UUIDTypeSchemaEncoder.encode(UUIDType, namingStrategy)
-  }
+  def apply[T](implicit dataTypeFor: DataTypeFor[T],
+               namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema =
+    dataTypeFor.dataType.toSchema(namingStrategy)
 }

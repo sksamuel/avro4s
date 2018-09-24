@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.internal
 import com.sksamuel.avro4s.NamingStrategy
 import org.apache.avro.{Schema, SchemaBuilder}
 
-object StructSchemaEncoder extends SchemaEncoder[StructType] {
+object StructSchemaEncoder {
 
   import scala.collection.JavaConverters._
 
@@ -72,8 +72,7 @@ object StructSchemaEncoder extends SchemaEncoder[StructType] {
     result
   }
 
-
-  override def encode(structType: StructType, namingStrategy: NamingStrategy): Schema = structType match {
+  def encode(structType: StructType, namingStrategy: NamingStrategy): Schema = structType match {
     // if we have a value type then we have only a single field, and we ignore the outer struct type
     case StructType(_, simpleName, packageName, annotations, fields, true) =>
 
@@ -85,7 +84,7 @@ object StructSchemaEncoder extends SchemaEncoder[StructType] {
       val doc = extractor.doc.orNull
       val namespace = extractor.namespace.getOrElse(packageName)
 
-      extractor.fixed.fold(SchemaEncoder.create(field.dataType, namingStrategy)) { size =>
+      extractor.fixed.fold(field.dataType.toSchema(namingStrategy)) { size =>
         SchemaBuilder.fixed(simpleName).doc(doc).namespace(namespace).size(size)
       }
 
@@ -113,7 +112,7 @@ object StructSchemaEncoder extends SchemaEncoder[StructType] {
 
         // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
         // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
-        val schema = extractor.fixed.fold(SchemaEncoder.create(field.dataType, namingStrategy)) { size =>
+        val schema = extractor.fixed.fold(field.dataType.toSchema(namingStrategy)) { size =>
           SchemaBuilder.fixed(name).doc(doc).namespace(namespace).size(size)
         }
 
