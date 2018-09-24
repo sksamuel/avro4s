@@ -2,8 +2,10 @@ package com.sksamuel.avro4s.internal
 
 import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
-import java.util.UUID
+import java.util
+import java.util.{Collections, UUID}
 
+import org.apache.avro.{Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList}
@@ -23,6 +25,7 @@ import scala.reflect.runtime.universe._
   */
 trait DataTypeFor[T] {
   def dataType: DataType
+  def schema: Schema
 }
 
 trait LowPriorityDataTypeFor {
@@ -35,6 +38,7 @@ trait LowPriorityDataTypeFor {
   // so here we define the schema for the base case of the recursion, C :+: CNil
   implicit def coproductBaseSchema[S](implicit basefor: DataTypeFor[S]): DataTypeFor[S :+: CNil] = new DataTypeFor[S :+: CNil] {
     override def dataType: DataType = UnionType(Seq(basefor.dataType))
+    override def schema: Schema = Schema.createUnion(Collections.singletonList(basefor.schema))
   }
 
   // And here we continue the recursion up.
@@ -43,11 +47,13 @@ trait LowPriorityDataTypeFor {
     // child, so whenever we create a union, we need to check if our
     // children are unions and flatten
     override def dataType: DataType = UnionType(Seq(basefor.dataType, coproductFor.dataType))
+    override def schema: Schema = Schema.createUnion(util.Arrays.asList(basefor.schema, coproductFor.schema))
   }
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
                                                coproductFor: DataTypeFor[C]): DataTypeFor[T] = new DataTypeFor[T] {
     override def dataType: DataType = coproductFor.dataType
+    override def schema: Schema = coproductFor.schema
   }
 }
 
@@ -102,6 +108,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
         // the default method is defined on the companion object
         val moduleSym = tpe.typeSymbol.companion
         q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+        q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.schemaField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
         // q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
       } else {
         q"""{ _root_.com.sksamuel.avro4s.internal.DataTypeFor.structField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
@@ -141,98 +148,129 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     StructField(name, dataTypeFor.dataType, annos, default)
   }
 
+  def schemaField[B](name: String, annos: Seq[Anno], default: Any)(implicit dataTypeFor: DataTypeFor[B]): Schema.Field = {
+    //  println(s"default for $name = $default")
+    new Schema.Field(name, dataTypeFor.schema, null, null: AnyRef)
+  }
+
+  def structSchema[T](name: String, namespace: String, fields: Seq[Schema.Field]): DataTypeFor[T] = {
+    import scala.collection.JavaConverters._
+    val schema = Schema.createRecord(name, null, namespace, false, fields.asJava)
+    schema
+  }
+
   implicit object ByteFor extends DataTypeFor[Byte] {
     override def dataType: DataType = ByteType
+    override val schema: Schema = SchemaBuilder.builder().intType()
   }
 
   implicit object StringFor extends DataTypeFor[String] {
     override def dataType: DataType = StringType
+    override val schema: Schema = SchemaBuilder.builder().stringType()
   }
 
   implicit object LongFor extends DataTypeFor[Long] {
     override def dataType: DataType = LongType
+    override val schema: Schema = SchemaBuilder.builder().longType()
   }
 
   implicit object IntFor extends DataTypeFor[Int] {
     override def dataType: DataType = IntType
+    override val schema: Schema = SchemaBuilder.builder().intType()
   }
 
   implicit object DoubleFor extends DataTypeFor[Double] {
     override def dataType: DataType = DoubleType
+    override val schema: Schema = SchemaBuilder.builder().doubleType()
   }
 
   implicit object FloatFor extends DataTypeFor[Float] {
     override def dataType: DataType = FloatType
+    override val schema: Schema = SchemaBuilder.builder().floatType()
   }
 
   implicit object BooleanFor extends DataTypeFor[Boolean] {
     override def dataType: DataType = BooleanType
+    override val schema: Schema = SchemaBuilder.builder().booleanType()
   }
 
   implicit object ShortFor extends DataTypeFor[Short] {
     override def dataType: DataType = ShortType
+    override val schema: Schema = SchemaBuilder.builder().intType()
   }
 
   implicit object UUIDFor extends DataTypeFor[UUID] {
     override def dataType: DataType = UUIDType
+    override val schema: Schema = SchemaBuilder.builder().bytesType()
   }
 
   implicit object ByteArrayFor extends DataTypeFor[Array[Byte]] {
     override def dataType: DataType = BinaryType
+    override val schema: Schema = SchemaBuilder.builder().bytesType()
   }
 
   implicit object ByteSeqFor extends DataTypeFor[Seq[Byte]] {
     override def dataType: DataType = BinaryType
+    override val schema: Schema = SchemaBuilder.builder().bytesType()
   }
 
   implicit def bigDecimalFor(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): DataTypeFor[BigDecimal] = new DataTypeFor[BigDecimal] {
     override def dataType: DataType = DecimalType(sp.precision, sp.scale)
+    override def schema: Schema = SchemaBuilder.builder().stringType()
   }
 
   implicit def EitherFor[A, B](implicit leftFor: DataTypeFor[A], rightFor: DataTypeFor[B]): DataTypeFor[Either[A, B]] = {
     new DataTypeFor[Either[A, B]] {
       override def dataType: DataType = UnionType(Seq(leftFor.dataType, rightFor.dataType))
+      override val schema: Schema = Schema.createUnion(leftFor.schema, rightFor.schema)
     }
   }
 
   implicit def OptionFor[T](implicit elementType: DataTypeFor[T]): DataTypeFor[Option[T]] = {
     new DataTypeFor[Option[T]] {
       override def dataType: DataType = NullableType(elementType.dataType)
+      override val schema: Schema = Schema.createUnion(SchemaBuilder.builder().nullType(), elementType.schema)
     }
   }
 
   implicit def ArrayFor[S](implicit elementType: DataTypeFor[S]): DataTypeFor[Array[S]] = {
     new DataTypeFor[Array[S]] {
       override def dataType: DataType = ArrayType(elementType.dataType)
+      override val schema: Schema = Schema.createArray(elementType.schema)
     }
   }
 
   implicit def IterableFor[S](implicit elementType: DataTypeFor[S]): DataTypeFor[Iterable[S]] = {
     new DataTypeFor[Iterable[S]] {
       override def dataType: DataType = ArrayType(elementType.dataType)
+      override val schema: Schema = Schema.createArray(elementType.schema)
     }
   }
 
   implicit def ListFor[S](implicit elementType: DataTypeFor[S]): DataTypeFor[List[S]] = {
     new DataTypeFor[List[S]] {
       override def dataType: DataType = ArrayType(elementType.dataType)
+      override val schema: Schema = Schema.createArray(elementType.schema)
     }
   }
 
   implicit def SetFor[S](implicit elementType: DataTypeFor[S]): DataTypeFor[Set[S]] = {
     new DataTypeFor[Set[S]] {
       override def dataType: DataType = ArrayType(elementType.dataType)
+      override val schema: Schema = Schema.createArray(elementType.schema)
     }
   }
 
   implicit def VectorFor[S](implicit elementType: DataTypeFor[S]): DataTypeFor[Vector[S]] = {
     new DataTypeFor[Vector[S]] {
       override def dataType: DataType = ArrayType(elementType.dataType)
+      override val schema: Schema = Schema.createArray(elementType.schema)
     }
   }
 
   implicit def SeqFor[S](implicit elementType: DataTypeFor[S]): DataTypeFor[Seq[S]] = new DataTypeFor[Seq[S]] {
     override def dataType: DataType = ArrayType(elementType.dataType)
+    override val schema: Schema = Schema.createArray(elementType.schema)
   }
 
   implicit def Tuple2ToSchema[A, B](implicit a: DataTypeFor[A], b: DataTypeFor[B]): DataTypeFor[(A, B)] = new DataTypeFor[(A, B)] {
@@ -247,6 +285,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
       ),
       false
     )
+    override val schema: Schema = null
   }
 
   implicit def Tuple3ToSchema[A, B, C](implicit
@@ -265,32 +304,39 @@ object DataTypeFor extends LowPriorityDataTypeFor {
       ),
       false
     )
+    override def schema: Schema = null
   }
 
   implicit def MapFor[V](implicit valueType: DataTypeFor[V]): DataTypeFor[Map[String, V]] = {
     new DataTypeFor[Map[String, V]] {
       override def dataType: DataType = MapType(StringType, valueType.dataType)
+      override def schema: Schema = SchemaBuilder.map().values(valueType.schema)
     }
   }
 
   implicit object TimestampFor extends DataTypeFor[Timestamp] {
     override def dataType: DataType = TimestampType
+    override val schema: Schema = SchemaBuilder.builder().stringType()
   }
 
   implicit object LocalTimeFor extends DataTypeFor[LocalTime] {
     override def dataType: DataType = LocalTimeType
+    override val schema: Schema = SchemaBuilder.builder().stringType()
   }
 
   implicit object LocalDateFor extends DataTypeFor[LocalDate] {
     override def dataType: DataType = LocalDateType
+    override val schema: Schema = SchemaBuilder.builder().stringType()
   }
 
   implicit object LocalDateTimeFor extends DataTypeFor[LocalDateTime] {
     override def dataType: DataType = LocalDateTimeType
+    override val schema: Schema = SchemaBuilder.builder().stringType()
   }
 
   implicit object InstantFor extends DataTypeFor[Instant] {
     override def dataType: DataType = TimestampType
+    override val schema: Schema = SchemaBuilder.builder().stringType()
   }
 
   implicit def javaEnumFor[E <: Enum[_]](implicit tag: ClassTag[E]): DataTypeFor[E] = new DataTypeFor[E] {
@@ -301,6 +347,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
       }
       EnumType(tag.runtimeClass.getName, tag.runtimeClass.getSimpleName, tag.runtimeClass.getPackage.getName, values, annos)
     }
+    override val schema: Schema = SchemaBuilder.builder().stringType()
   }
 
   implicit def scalaEnumToSchema[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): DataTypeFor[E] = new DataTypeFor[E] {
@@ -322,6 +369,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     val symbols = enumClass.getMethod("values").invoke(null).asInstanceOf[scala.Enumeration#ValueSet].iterator.toList.map(_.toString)
 
     override def dataType: DataType = EnumType(clazz.getName, clazz.getSimpleName, clazz.getPackage.getName, symbols, annos)
+    override val schema: Schema = SchemaBuilder.builder().stringType()
   }
 
   // This DataTypeFor is used for sealed traits of objects
@@ -330,19 +378,21 @@ object DataTypeFor extends LowPriorityDataTypeFor {
                                                                  gen: Generic.Aux[T, C],
                                                                  objs: Reify.Aux[C, L],
                                                                  toList: ToList[L, T]): DataTypeFor[T] = new DataTypeFor[T] {
-    override val dataType: DataType = {
-      val tpe = weakTypeTag[T]
-      val annos = tpe.tpe.typeSymbol.annotations.map { a =>
-        val name = a.tree.tpe.typeSymbol.fullName
-        val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-        Anno(name, args)
-      }
-      val className = ct.runtimeClass.getCanonicalName
-      val packageName = ct.runtimeClass.getPackage.getName
-      val simpleName = ct.runtimeClass.getSimpleName
-      val symbols = toList(objs()).map(_.toString)
-      EnumType(className, simpleName, packageName, symbols, annos)
+
+    val tpe = weakTypeTag[T]
+    val annos = tpe.tpe.typeSymbol.annotations.map { a =>
+      val name = a.tree.tpe.typeSymbol.fullName
+      val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+      Anno(name, args)
     }
+    val className = ct.runtimeClass.getCanonicalName
+    val packageName = ct.runtimeClass.getPackage.getName
+    val simpleName = ct.runtimeClass.getSimpleName
+    val symbols = toList(objs()).map(_.toString)
+
+    override val dataType: DataType = EnumType(className, simpleName, packageName, symbols, annos)
+
+    override def schema: Schema = SchemaBuilder.enumeration(simpleName).namespace(packageName).symbols(symbols: _*)
   }
 
 }
