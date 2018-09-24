@@ -42,7 +42,7 @@ trait LowPriorityDataTypeFor {
     // union schemas can't contain other union schemas as a direct
     // child, so whenever we create a union, we need to check if our
     // children are unions and flatten
-    override def dataType: DataType = UnionType.flatten(basefor.dataType, coproductFor.dataType)
+    override def dataType: DataType = UnionType(Seq(basefor.dataType, coproductFor.dataType))
   }
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],

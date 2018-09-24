@@ -3,8 +3,6 @@ package com.sksamuel.avro4s.internal
 import com.sksamuel.avro4s.NamingStrategy
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 
-import scala.util.{Failure, Success, Try}
-
 /**
   * Represents a Scala or Java annotation on a class or field.
   *
@@ -23,15 +21,14 @@ sealed trait DataType {
 
 trait DataTypeSupport {
 
-  import scala.collection.JavaConverters._
-
-  // union schemas can't contain other union schemas as a direct
-  // child, so whenever we create a union, we need to check if our
-  // children are unions
-  // if they are, we just merge them into the union we're creating
-  def extractUnionSchemas(schema: Schema): Seq[Schema] = Try(schema.getTypes /* throws an error if we're not a union */) match {
-    case Success(subschemas) => subschemas.asScala
-    case Failure(_) => Seq(schema)
+  /**
+    * Avro union schemas can't contain other union schemas as a direct
+    * child. So whenever we create a union schema, we ned to check if
+    * our children are unions, and if they are, merge into the parent union.
+    */
+  def flatten(dataTypes: Seq[DataType]): Seq[DataType] = dataTypes.flatMap {
+    case UnionType(tps) => tps
+    case other => Seq(other)
   }
 
   // for a union the type that has a default must be first,
@@ -113,7 +110,7 @@ case class NullableType(elementType: DataType) extends DataType with DataTypeSup
   import scala.collection.JavaConverters._
 
   override def toSchema(namingStrategy: NamingStrategy): Schema = {
-    val flattened = extractUnionSchemas(elementType.toSchema(namingStrategy))
+    val flattened = flatten(Seq(elementType)).map(_.toSchema(namingStrategy))
     val schemas = Schema.create(Schema.Type.NULL) +: flattened
     Schema.createUnion(moveNullToHead(schemas).asJava)
   }
@@ -146,22 +143,8 @@ case class UnionType(types: Seq[DataType]) extends DataType with DataTypeSupport
   import scala.collection.JavaConverters._
 
   override def toSchema(namingStrategy: NamingStrategy): Schema = {
-    val schemas = types.map(_.toSchema(namingStrategy)).flatMap(extractUnionSchemas)
+    val schemas = flatten(types).map(_.toSchema(namingStrategy))
     Schema.createUnion(moveNullToHead(schemas).asJava)
-  }
-}
-
-object UnionType {
-
-  /**
-    * Takes a list of data types and creates a union from them, flattening any nested union types
-    */
-  def flatten(dataTypes: DataType*): UnionType = {
-    val types = dataTypes.flatMap {
-      case UnionType(tps) => tps
-      case other => Seq(other)
-    }
-    UnionType(types)
   }
 }
 
