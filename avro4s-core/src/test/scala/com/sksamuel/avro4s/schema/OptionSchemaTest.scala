@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.internal.SchemaEncoder
+import com.sksamuel.avro4s.internal.SchemaFor
 import org.scalatest.{Matchers, WordSpec}
 import shapeless.{:+:, CNil}
 
@@ -10,13 +10,13 @@ class OptionSchemaTest extends WordSpec with Matchers {
     "generate option as Union[T, Null]" in {
       case class Test(option: Option[String])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option.json"))
-      val schema = SchemaEncoder[Test].encode()
+      val schema = SchemaFor[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support mixing optionals with unions, merging appropriately" in {
-      val outsideOptional = SchemaEncoder[OptionalUnion].encode()
-      val insideOptional = SchemaEncoder[UnionOfOptional].encode()
-      val bothOptional = SchemaEncoder[AllOptionals].encode()
+      val outsideOptional = SchemaFor[OptionalUnion]
+      val insideOptional = SchemaFor[UnionOfOptional]
+      val bothOptional = SchemaFor[AllOptionals]
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optionalunion.json"))
 
@@ -25,7 +25,7 @@ class OptionSchemaTest extends WordSpec with Matchers {
       bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
     }
     "move default option values to first schema as per avro spec" in {
-      val schema = SchemaEncoder[OptionWithDefault].encode()
+      val schema = SchemaFor[OptionWithDefault]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optiondefaultvalues.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }

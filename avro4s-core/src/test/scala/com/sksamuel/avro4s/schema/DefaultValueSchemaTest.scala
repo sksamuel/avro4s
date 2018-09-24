@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.internal.SchemaEncoder
+import com.sksamuel.avro4s.internal.SchemaFor
 import org.scalatest.{Matchers, WordSpec}
 
 case class Foo(gg: String = "wibble")
@@ -9,32 +9,32 @@ class DefaultValueSchemaTest extends WordSpec with Matchers {
 
   "SchemaEncoder" should {
     "support default values for strings in top level classes" in {
-      val schema = SchemaEncoder[ClassWithDefaultString].encode()
+      val schema = SchemaFor[ClassWithDefaultString]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_string.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for ints in top level classes" in {
-      val schema = SchemaEncoder[ClassWithDefaultInt].encode()
+      val schema = SchemaFor[ClassWithDefaultInt]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_int.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for booleans in top level classes" in {
-      val schema = SchemaEncoder[ClassWithDefaultBoolean].encode()
+      val schema = SchemaFor[ClassWithDefaultBoolean]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_boolean.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for doubles in top level classes" in {
-      val schema = SchemaEncoder[ClassWithDefaultDouble].encode()
+      val schema = SchemaFor[ClassWithDefaultDouble]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_double.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for longs in top level classes" in {
-      val schema = SchemaEncoder[ClassWithDefaultLong].encode()
+      val schema = SchemaFor[ClassWithDefaultLong]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_long.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for floats in top level classes" in {
-      val schema = SchemaEncoder[ClassWithDefaultFloat].encode()
+      val schema = SchemaFor[ClassWithDefaultFloat]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_float.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }

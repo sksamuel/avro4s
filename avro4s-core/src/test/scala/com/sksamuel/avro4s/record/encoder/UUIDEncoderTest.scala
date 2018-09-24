@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record.encoder
 
 import java.util.UUID
 
-import com.sksamuel.avro4s.internal.{Encoder, InternalRecord, SchemaEncoder}
+import com.sksamuel.avro4s.internal.{Encoder, InternalRecord, SchemaFor}
 import org.scalatest.{Matchers, WordSpec}
 
 class UUIDEncoderTest extends WordSpec with Matchers {
@@ -12,23 +12,23 @@ class UUIDEncoderTest extends WordSpec with Matchers {
   "Encoder" should {
     "encode uuids" in {
       val uuid = UUID.randomUUID()
-      val schema = SchemaEncoder[UUIDTest].encode()
+      val schema = SchemaFor[UUIDTest]
       Encoder[UUIDTest].encode(UUIDTest(uuid), schema) shouldBe InternalRecord(schema, Vector(uuid.toString))
     }
     "encode seq of uuids" in {
       val uuid1 = UUID.randomUUID()
       val uuid2 = UUID.randomUUID()
-      val schema = SchemaEncoder[UUIDSeq].encode()
+      val schema = SchemaFor[UUIDSeq]
       Encoder[UUIDSeq].encode(UUIDSeq(Seq(uuid1, uuid2)), schema) shouldBe InternalRecord(schema, Vector(List(uuid1.toString, uuid2.toString).asJava))
     }
     "encode UUIDs with defaults" in {
       val uuid = UUID.randomUUID()
-      val schema = SchemaEncoder[UUIDDefault].encode()
+      val schema = SchemaFor[UUIDDefault]
       Encoder[UUIDDefault].encode(UUIDDefault(uuid), schema) shouldBe InternalRecord(schema, Vector(uuid.toString))
     }
     "encode Option[UUID]" in {
       val uuid = UUID.randomUUID()
-      val schema = SchemaEncoder[UUIDOption].encode()
+      val schema = SchemaFor[UUIDOption]
       Encoder[UUIDOption].encode(UUIDOption(Some(uuid)), schema) shouldBe InternalRecord(schema, Vector(uuid.toString))
       Encoder[UUIDOption].encode(UUIDOption(None), schema) shouldBe InternalRecord(schema, Vector(null))
     }

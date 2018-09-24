@@ -24,6 +24,10 @@ sealed trait NamingStrategy {
   }
 }
 
+object NamingStrategy {
+  val default = DefaultNamingStrategy
+}
+
 case object DefaultNamingStrategy extends NamingStrategy {
   override def to(name: String): String = name
 }

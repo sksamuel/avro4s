@@ -18,7 +18,7 @@ import scala.reflect.runtime.universe._
 /**
   * A [[DataTypeFor]] generates a [[DataType]] for a Scala or Java type.
   *
-  * For example, a codec for a [[java.lang.String]] would return an
+  * For example, for a [[java.lang.String]] would return an
   * instance of [[StringType]].
   */
 trait DataTypeFor[T] {
@@ -69,7 +69,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     val reflect = ReflectHelper(c)
     val tpe = weakTypeOf[T]
 
-    // we can only encode concrete classes as the top level
+    // we can only encode concrete classes at the top level
     require(tpe.typeSymbol.isClass, tpe + " is not a class but is " + tpe.typeSymbol.fullName)
 
     val valueType = reflect.isValueClass(tpe)
@@ -137,7 +137,7 @@ object DataTypeFor extends LowPriorityDataTypeFor {
     * There must be a provider in scope for any type we want to support in avro4s.
     */
   def structField[B](name: String, annos: Seq[Anno], default: Any)(implicit dataTypeFor: DataTypeFor[B]): StructField = {
-    println(s"default for $name = $default")
+    //  println(s"default for $name = $default")
     StructField(name, dataTypeFor.dataType, annos, default)
   }
 

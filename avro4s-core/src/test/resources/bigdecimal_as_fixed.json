@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "BigDecimalAsStringTest",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "decimal",
+      "type": {
+        "type": "fixed",
+        "name": "myfixedtype",
+        "namespace": "",
+        "size": 12
+      }
+    }
+  ]
+}

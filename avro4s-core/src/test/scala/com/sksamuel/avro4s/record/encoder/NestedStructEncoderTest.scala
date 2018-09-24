@@ -6,7 +6,7 @@ class NestedStructEncoderTest extends WordSpec with Matchers {
 
   "RecordEncoder" should {
     "encode nested structs" in {
-      //   val schema = SchemaEncoder[Outer].encode()
+      //   val schema = SchemaEncoder[Outer]
       //    Encoder[Outer](schema).encode(Outer("a", Inner(1.2, true))) shouldBe InternalRecord(schema, Vector("a", Inner(1.2, true)))
     }
   }

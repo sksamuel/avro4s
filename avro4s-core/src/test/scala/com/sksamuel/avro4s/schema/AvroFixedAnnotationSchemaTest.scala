@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroFixed
-import com.sksamuel.avro4s.internal.SchemaEncoder
+import com.sksamuel.avro4s.internal.SchemaFor
 import org.apache.avro.Schema.Type
 import org.scalatest.{Matchers, WordSpec}
 
@@ -9,12 +9,12 @@ class AvroFixedSchemaTest extends WordSpec with Matchers {
 
   "@AvroFixed" should {
     "generate fixed schema when used on top level class" in {
-      val schema = SchemaEncoder[FixedValueClass].encode()
+      val schema = SchemaFor[FixedValueClass]
       schema.getType shouldBe Type.FIXED
       schema.getFixedSize shouldBe 8
     }
     "generated fixed field schema when used on a field" in {
-      val schema = SchemaEncoder[FixedString].encode()
+      val schema = SchemaFor[FixedString]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/fixed_string.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }

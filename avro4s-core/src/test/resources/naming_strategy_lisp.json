@@ -16,7 +16,7 @@
       "type": "string"
     },
     {
-      "name": "StartsWithUpper",
+      "name": "starts-with-upper",
       "type": "string"
     }
   ]

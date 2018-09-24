@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.internal.{Decoder, SchemaEncoder}
+import com.sksamuel.avro4s.internal.{Decoder, SchemaFor}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{Matchers, WordSpec}
 
@@ -11,7 +11,7 @@ class OptionDecoderTest extends WordSpec with Matchers {
 
   "Decoder" should {
     "support String options" in {
-      val schema = SchemaEncoder[OptionString].encode()
+      val schema = SchemaFor[OptionString]
 
       val record1 = new GenericData.Record(schema)
       record1.put("s", "hello")
@@ -22,7 +22,7 @@ class OptionDecoderTest extends WordSpec with Matchers {
       Decoder[OptionString].decode(record2) shouldBe OptionString(None)
     }
     "support boolean options" in {
-      val schema = SchemaEncoder[OptionBoolean].encode()
+      val schema = SchemaFor[OptionBoolean]
 
       val record1 = new GenericData.Record(schema)
       record1.put("b", true)
