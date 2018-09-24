@@ -4,6 +4,8 @@ import com.sksamuel.avro4s.internal.{AvroSchema, DataTypeFor, Encoder, Record}
 import org.apache.avro.Schema
 import org.apache.avro.generic.IndexedRecord
 
+import scala.language.implicitConversions
+
 trait RecordFormat[T] extends Serializable {
   def to(t: T): Record
   def from(record: IndexedRecord): T

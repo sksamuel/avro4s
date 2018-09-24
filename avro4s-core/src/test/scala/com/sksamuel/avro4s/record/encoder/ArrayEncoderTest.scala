@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.internal.{Encoder, ImmutableRecord, AvroSchema}
+import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, ImmutableRecord}
+import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
 
 class ArrayEncoderTest extends WordSpec with Matchers {
@@ -18,12 +19,12 @@ class ArrayEncoderTest extends WordSpec with Matchers {
       case class Record(str: String, double: Double)
       val schema = AvroSchema[Test]
       val rschema = AvroSchema[Record]
-      Encoder[Test].encode(Test(Vector(Record("abc", 12.34))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(rschema, Vector("abc", java.lang.Double.valueOf(12.34)))).asJava))
+      Encoder[Test].encode(Test(Vector(Record("abc", 12.34))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(rschema, Vector(new Utf8("abc"), java.lang.Double.valueOf(12.34)))).asJava))
     }
     "generate array for a scala.collection.immutable.Seq of primitives" in {
       case class Test(seq: Seq[String])
       val schema = AvroSchema[Test]
-      Encoder[Test].encode(Test(Vector("a", "34", "fgD")), schema) shouldBe ImmutableRecord(schema, Vector(Vector("a", "34", "fgD").asJava))
+      Encoder[Test].encode(Test(Vector("a", "fgD")), schema) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("a"), new Utf8("fgD")).asJava))
     }
     "generate array for an Array of primitives" in {
       case class Test(array: Array[Boolean])
@@ -33,28 +34,28 @@ class ArrayEncoderTest extends WordSpec with Matchers {
     "generate array for a List of primitives" in {
       case class Test(list: List[String])
       val schema = AvroSchema[Test]
-      Encoder[Test].encode(Test(List("qwe", "we23", "54")), schema) shouldBe ImmutableRecord(schema, Vector(Vector("qwe", "we23", "54").asJava))
+      Encoder[Test].encode(Test(List("we23", "54")), schema) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("we23"), new Utf8("54")).asJava))
     }
     "generate array for a scala.collection.immutable.Seq of records" in {
       case class Nested(goo: String)
       case class Test(seq: Seq[Nested])
       val schema = AvroSchema[Test]
       val nschema = AvroSchema[Nested]
-      Encoder[Test].encode(Test(Seq(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector("qwe")), ImmutableRecord(nschema, Vector("dfsg"))).asJava))
+      Encoder[Test].encode(Test(Seq(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector(new Utf8("qwe"))), ImmutableRecord(nschema, Vector(new Utf8("dfsg")))).asJava))
     }
     "generate array for an Array of records" in {
       case class Nested(goo: String)
       case class Test(array: Array[Nested])
       val schema = AvroSchema[Test]
       val nschema = AvroSchema[Nested]
-      Encoder[Test].encode(Test(Array(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector("qwe")), ImmutableRecord(nschema, Vector("dfsg"))).asJava))
+      Encoder[Test].encode(Test(Array(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector(new Utf8("qwe"))), ImmutableRecord(nschema, Vector(new Utf8("dfsg")))).asJava))
     }
     "generate array for a List of records" in {
       case class Nested(goo: String)
       case class Test(list: List[Nested])
       val schema = AvroSchema[Test]
       val nschema = AvroSchema[Nested]
-      Encoder[Test].encode(Test(List(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector("qwe")), ImmutableRecord(nschema, Vector("dfsg"))).asJava))
+      Encoder[Test].encode(Test(List(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector(new Utf8("qwe"))), ImmutableRecord(nschema, Vector(new Utf8("dfsg")))).asJava))
 
     }
     "generate array for a Set of records" in {
@@ -62,12 +63,12 @@ class ArrayEncoderTest extends WordSpec with Matchers {
       case class Test(set: Set[Nested])
       val schema = AvroSchema[Test]
       val nschema = AvroSchema[Nested]
-      Encoder[Test].encode(Test(Set(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector("qwe")), ImmutableRecord(nschema, Vector("dfsg"))).asJava))
+      Encoder[Test].encode(Test(Set(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector(new Utf8("qwe"))), ImmutableRecord(nschema, Vector(new Utf8("dfsg")))).asJava))
     }
     "generate array for a Set of strings" in {
       case class Test(set: Set[String])
       val schema = AvroSchema[Test]
-      Encoder[Test].encode(Test(Set("qwe", "we23", "54")), schema) shouldBe ImmutableRecord(schema, Vector(Vector("qwe", "we23", "54").asJava))
+      Encoder[Test].encode(Test(Set("we23", "54")), schema) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("we23"), new Utf8("54")).asJava))
     }
     "generate array for a Set of doubles" in {
       case class Test(set: Set[Double])
