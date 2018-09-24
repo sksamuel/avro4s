@@ -2,8 +2,7 @@ package com.sksamuel.avro4s.internal
 
 import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
-import java.util
-import java.util.{Collections, UUID}
+import java.util.UUID
 
 import com.sksamuel.avro4s.DefaultNamingStrategy
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
@@ -37,15 +36,19 @@ trait LowPrioritySchemaFor {
   // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
   // so here we define the schema for the base case of the recursion, C :+: CNil
   implicit def coproductBaseSchema[S](implicit basefor: SchemaFor[S]): SchemaFor[S :+: CNil] = new SchemaFor[S :+: CNil] {
-    override def schema: Schema = Schema.createUnion(Collections.singletonList(basefor.schema))
+
+    import scala.collection.JavaConverters._
+
+    val base = basefor.schema
+    val schemas = scala.util.Try(base.getTypes.asScala).getOrElse(Seq(base))
+    override val schema = Schema.createUnion(schemas: _*)
   }
 
   // And here we continue the recursion up.
   implicit def coproductSchema[S, T <: Coproduct](implicit basefor: SchemaFor[S], coproductFor: SchemaFor[T]): SchemaFor[S :+: T] = new SchemaFor[S :+: T] {
-    // union schemas can't contain other union schemas as a direct
-    // child, so whenever we create a union, we need to check if our
-    // children are unions and flatten
-    override def schema: Schema = Schema.createUnion(util.Arrays.asList(basefor.schema, coproductFor.schema))
+    val base = basefor.schema
+    val coproduct = coproductFor.schema
+    override val schema: Schema = SchemaFor.createSafeUnion(base, coproduct)
   }
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
@@ -217,12 +220,15 @@ object SchemaFor extends LowPrioritySchemaFor {
   // accepts a built avro schema, and overrides the namespace with the given namespace
   // this method just just makes a copy of the existing schema, setting the new namespace
   private def overrideNamespace(schema: Schema, namespace: String): Schema = {
-    val copy = schema.getType match {
+    schema.getType match {
       case Schema.Type.RECORD =>
         val fields = schema.getFields.asScala.map { field =>
           new Schema.Field(field.name(), overrideNamespace(field.schema(), namespace), field.doc, field.defaultVal, field.order)
         }
-        Schema.createRecord(schema.getName, schema.getDoc, namespace, schema.isError, fields.asJava)
+        val copy = Schema.createRecord(schema.getName, schema.getDoc, namespace, schema.isError, fields.asJava)
+        schema.getAliases.asScala.foreach(copy.addAlias)
+        schema.getObjectProps.asScala.foreach { case (k, v) => copy.addProp(k, v) }
+        copy
       case Schema.Type.UNION => Schema.createUnion(schema.getTypes.asScala.map(overrideNamespace(_, namespace)).asJava)
       case Schema.Type.ENUM => Schema.createEnum(schema.getName, schema.getDoc, namespace, schema.getEnumSymbols)
       case Schema.Type.FIXED => Schema.createFixed(schema.getName, schema.getDoc, namespace, schema.getFixedSize)
@@ -230,9 +236,6 @@ object SchemaFor extends LowPrioritySchemaFor {
       case Schema.Type.ARRAY => Schema.createArray(overrideNamespace(schema.getElementType, namespace))
       case _ => schema
     }
-    schema.getAliases.asScala.foreach(copy.addAlias)
-    schema.getObjectProps.asScala.foreach { case (k, v) => copy.addProp(k, v) }
-    copy
   }
 
   // returns a default value that is compatible with the datatype
@@ -287,9 +290,27 @@ object SchemaFor extends LowPrioritySchemaFor {
       case other => other
     }
     val (first, rest) = schema.getTypes.asScala.partition(_.getType == defaultType)
-    val result = Schema.createUnion((first.headOption.toSeq ++ rest).asJava)
+    val result = Schema.createUnion(first.headOption.toSeq ++ rest: _*)
     schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
     result
+  }
+
+  def moveNullToHead(schema: Schema): Schema = {
+    val (nulls, rest) = schema.getTypes.asScala.partition(_.getType == Schema.Type.NULL)
+    val result = Schema.createUnion(nulls.headOption.toSeq ++ rest: _*)
+    schema.getAliases.asScala.foreach(result.addAlias)
+    schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
+    result
+  }
+
+  // creates a union schema type, with nested unions extracted, and duplicate nulls stripped
+  // union schemas can't contain other union schemas as a direct
+  // child, so whenever we create a union, we need to check if our
+  // children are unions and flatten
+  def createSafeUnion(schemas: Schema*): Schema = {
+    val flattened = schemas.flatMap(schema => scala.util.Try(schema.getTypes.asScala).getOrElse(Seq(schema)))
+    val (nulls, rest) = flattened.partition(_.getType == Schema.Type.NULL)
+    Schema.createUnion(nulls.headOption.toSeq ++ rest: _*)
   }
 
   implicit object ByteSchemaFor extends SchemaFor[Byte] {
@@ -342,15 +363,19 @@ object SchemaFor extends LowPrioritySchemaFor {
     LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(schema)
   }
 
-  implicit def EitherFor[A, B](implicit leftFor: SchemaFor[A], rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] = {
+  implicit def eitherSchemaFor[A, B](implicit leftFor: SchemaFor[A], rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] = {
     new SchemaFor[Either[A, B]] {
       override val schema: Schema = Schema.createUnion(leftFor.schema, rightFor.schema)
     }
   }
 
-  implicit def OptionSchemaFor[T](implicit elementType: SchemaFor[T]): SchemaFor[Option[T]] = {
+  implicit def optionSchemaFor[T](implicit elementType: SchemaFor[T]): SchemaFor[Option[T]] = {
     new SchemaFor[Option[T]] {
-      override val schema: Schema = Schema.createUnion(SchemaBuilder.builder().nullType(), elementType.schema)
+      override val schema: Schema = {
+        val elementSchema = elementType.schema
+        val nullSchema = SchemaBuilder.builder().nullType()
+        SchemaFor.createSafeUnion(elementSchema, nullSchema)
+      }
     }
   }
 
