@@ -18,11 +18,11 @@ import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 
-trait ToValue[A] {
+trait ToValue[A] extends Serializable {
   def apply(value: A): Any = value
 }
 
-trait LowPriorityToValue {
+trait LowPriorityToValue extends Serializable{
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
                                                coproductToValue: ToValue[C]): ToValue[T] = new ToValue[T] {
