@@ -87,7 +87,7 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: List[T], schema: Schema): AnyRef = {
+    override def encode(ts: List[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
@@ -97,7 +97,7 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: Set[T], schema: Schema): AnyRef = {
+    override def encode(ts: Set[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).toList.asJava
     }
@@ -106,18 +106,15 @@ object Encoder {
   implicit def VectorEncoder[T](implicit encoder: Encoder[T]): Encoder[Vector[T]] = new Encoder[Vector[T]] {
 
     import scala.collection.JavaConverters._
-
-    override def encode(ts: Vector[T], schema: Schema): AnyRef = {
+    override def encode(ts: Vector[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
   }
 
   implicit def SeqEncoder[T](implicit encoder: Encoder[T]): Encoder[Seq[T]] = new Encoder[Seq[T]] {
-
     import scala.collection.JavaConverters._
-
-    override def encode(ts: Seq[T], schema: Schema): AnyRef = {
+    override def encode(ts: Seq[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
     }

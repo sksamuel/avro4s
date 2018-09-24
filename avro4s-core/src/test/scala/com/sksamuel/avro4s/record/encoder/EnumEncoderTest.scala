@@ -5,7 +5,7 @@ import com.sksamuel.avro4s.schema.{Colours, Wine}
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.scalatest.{Matchers, WordSpec}
 
-class JavaEnumEncoderTest extends WordSpec with Matchers {
+class EnumEncoderTest extends WordSpec with Matchers {
 
   "Encoder" should {
     "encode java enums" in {

@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
+import com.sksamuel.avro4s.AvroSchema
 import com.sksamuel.avro4s.internal.{AvroSchema, DataType, DataTypeFor, Encoder, FixedType, ImmutableRecord}
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
@@ -41,6 +42,11 @@ class BasicEncoderTest extends WordSpec with Matchers {
       case class Foo(d: Float)
       val schema = AvroSchema[Foo]
       Encoder[Foo].encode(Foo(123.435F), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Float.valueOf(123.435F)))
+    }
+    "encode ints" in {
+      case class Foo(i: Int)
+      val schema = AvroSchema[Foo]
+      Encoder[Foo].encode(Foo(123), schema) shouldBe InternalRecord(schema, Vector(java.lang.Integer.valueOf(123)))
     }
   }
 }

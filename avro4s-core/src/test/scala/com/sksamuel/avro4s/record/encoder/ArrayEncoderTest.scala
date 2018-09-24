@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, ImmutableRecord}
+import com.sksamuel.avro4s.AvroSchema
 import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
 

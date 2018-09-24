@@ -7,6 +7,7 @@ import org.apache.avro.{Conversions, LogicalTypes}
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
+import scala.reflect.runtime.universe._
 
 trait Decoder[T] extends Serializable {
   def decode(t: Any): T
@@ -133,6 +134,26 @@ object Decoder {
         decimalConversion.fromBytes(bytes, null, decimalType)
       }
     }
+  }
+
+  implicit def javaEnumDecoder[E <: Enum[E]](implicit tag: ClassTag[E]) = new Decoder[E] {
+    override def decode(t: Any): E = {
+      Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], t.toString)
+    }
+  }
+
+  implicit def scalaEnumDecoder[E <: Enumeration#Value](implicit tag: TypeTag[E]) = new Decoder[E] {
+
+    import scala.reflect.NameTransformer._
+
+    val typeRef = tag.tpe match {
+      case t@TypeRef(_, _, _) => t
+    }
+
+    val klass = Class.forName(typeRef.pre.typeSymbol.asClass.fullName + "$")
+    val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
+
+    override def decode(t: Any): E = enum.withName(t.toString).asInstanceOf[E]
   }
 
   implicit def apply[T]: Decoder[T] = macro applyImpl[T]
