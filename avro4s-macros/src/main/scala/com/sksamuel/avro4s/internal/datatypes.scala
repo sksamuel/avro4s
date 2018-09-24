@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.internal
 
 import com.sksamuel.avro4s.NamingStrategy
-import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
+import org.apache.avro.{LogicalTypes, Schema}
 
 import scala.util.{Failure, Success, Try}
 
@@ -53,16 +53,6 @@ abstract class ConstDataType(schema: Schema) extends DataType {
 
 sealed trait LogicalDataType extends DataType
 
-case object BinaryType extends ConstDataType(Schema.create(Schema.Type.BYTES))
-case object BooleanType extends ConstDataType(Schema.create(Schema.Type.BOOLEAN))
-case object ByteType extends ConstDataType(Schema.create(Schema.Type.INT))
-case object DoubleType extends ConstDataType(Schema.create(Schema.Type.DOUBLE))
-case object FloatType extends ConstDataType(Schema.create(Schema.Type.FLOAT))
-case object IntType extends ConstDataType(Schema.create(Schema.Type.INT))
-case object LongType extends ConstDataType(Schema.create(Schema.Type.LONG))
-case object ShortType extends ConstDataType(Schema.create(Schema.Type.INT))
-case object StringType extends ConstDataType(Schema.create(Schema.Type.STRING))
-
 case class DecimalType(precision: Int, scale: Int) extends LogicalDataType {
   override def toSchema(namingStrategy: NamingStrategy): Schema = {
     val schema = Schema.create(Schema.Type.BYTES)
@@ -95,49 +85,3 @@ case class NullableType(elementType: DataType) extends DataType with DataTypeSup
     Schema.createUnion(moveNullToHead(schemas).asJava)
   }
 }
-
-case class MapType(keyType: DataType, valueType: DataType) extends DataType {
-  override def toSchema(namingStrategy: NamingStrategy): Schema = Schema.createMap(valueType.toSchema(namingStrategy))
-}
-
-case class ArrayType(valueType: DataType) extends DataType {
-  override def toSchema(namingStrategy: NamingStrategy): Schema = SchemaBuilder.array().items(valueType.toSchema(namingStrategy))
-}
-
-case class EnumType(className: String,
-                    simpleName: String,
-                    packageName: String,
-                    symbols: Seq[String],
-                    annotations: Seq[Anno]) extends DataType {
-  private val extractor = new AnnotationExtractors(annotations)
-  private val namespace = extractor.namespace.getOrElse(packageName)
-  private val schema = SchemaBuilder.enumeration(simpleName).namespace(namespace).symbols(symbols: _*)
-  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
-}
-
-/**
-  * Represents a type that can be one of several different underlying types.
-  */
-case class UnionType(types: Seq[DataType]) extends DataType with DataTypeSupport {
-
-  import scala.collection.JavaConverters._
-
-  override def toSchema(namingStrategy: NamingStrategy): Schema = {
-    val schemas = types.map(_.toSchema(namingStrategy)).flatMap(extractUnionSchemas)
-    Schema.createUnion(moveNullToHead(schemas).asJava)
-  }
-}
-
-case class StructType(qualifiedName: String,
-                      simpleName: String,
-                      packageName: String,
-                      annotations: Seq[Anno],
-                      fields: Seq[StructField],
-                      valueType: Boolean) extends DataType {
-  override def toSchema(namingStrategy: NamingStrategy): Schema = StructSchemaEncoder.encode(this, namingStrategy)
-}
-
-case class StructField(name: String,
-                       dataType: DataType,
-                       annotations: Seq[Anno] = Nil,
-                       default: Any = null)

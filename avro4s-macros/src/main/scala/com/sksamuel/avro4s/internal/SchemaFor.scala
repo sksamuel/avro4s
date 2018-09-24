@@ -5,6 +5,7 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util
 import java.util.{Collections, UUID}
 
+import com.sksamuel.avro4s.DefaultNamingStrategy
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
@@ -61,6 +62,8 @@ object ScalePrecisionRoundingMode {
 
 object SchemaFor extends LowPrioritySchemaFor {
 
+  import scala.collection.JavaConverters._
+
   implicit def apply[T]: SchemaFor[T] = macro applyImpl[T]
 
   def applyImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
@@ -75,6 +78,15 @@ object SchemaFor extends LowPrioritySchemaFor {
     require(tpe.typeSymbol.isClass, tpe + " is not a class but is " + tpe.typeSymbol.fullName)
 
     val valueType = reflect.isValueClass(tpe)
+
+    // eg, "Foo" for x.y.Foo
+    val simpleName = tpe.typeSymbol.name.decodedName.toString
+
+    // we iterate up the owner tree until we find an Object or Package
+    val packageName = Stream.iterate(tpe.typeSymbol.owner)(_.owner)
+      .dropWhile(x => !x.isPackage && !x.isModuleClass)
+      .head
+      .fullName
 
     val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
 
@@ -103,24 +115,15 @@ object SchemaFor extends LowPrioritySchemaFor {
         //val method = reflect.defaultGetter(tType, index + 1)
         // the default method is defined on the companion object
         val moduleSym = tpe.typeSymbol.companion
-        q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+        q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
       } else {
-        q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, Seq(..$annos), null) }"""
+        q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), null) }"""
       }
     }
 
     // qualified name of the class we are building
     // todo encode generics:: + genericNameSuffix(underlyingType)
     //val className = tpe.typeSymbol.fullName.toString
-
-    // eg, "Foo" for x.y.Foo
-    val simpleName = tpe.typeSymbol.name.decodedName.toString
-
-    // we iterate up the owner tree until we find an Object or Package
-    val packageName = Stream.iterate(tpe.typeSymbol.owner)(_.owner)
-      .dropWhile(x => !x.isPackage && !x.isModuleClass)
-      .head
-      .fullName
 
     // these are annotations on the class itself
     val annos = reflect.annotationsqq(tpe.typeSymbol)
@@ -135,12 +138,48 @@ object SchemaFor extends LowPrioritySchemaFor {
   }
 
   /**
-    * Builds a [[StructField]] with the data type provided by an implicit instance of [[SchemaFor]].
-    * There must be a provider in scope for any type we want to support in avro4s.
+    * Builds an Avro [[Schema.Field]] with the field's [[Schema]] provided by an
+    * implicit instance of [[SchemaFor]]. There must be a instance of this typeclass
+    * in scope for any type we want to support in avro4s.
+    *
+    * Users can add their own mappings for types by implementing [[SchemaFor]] returning
+    * the appropriate Avro schema.
     */
-  def schemaField[B](name: String, annos: Seq[Anno], default: Any)(implicit schemaFor: SchemaFor[B]): Schema.Field = {
+  def schemaField[B](name: String, packageName: String, annos: Seq[Anno], default: Any)(implicit schemaFor: SchemaFor[B]): Schema.Field = {
     //  println(s"default for $name = $default")
-    new Schema.Field(name, schemaFor.schema, null, null: AnyRef)
+
+    val extractor = new AnnotationExtractors(annos)
+    val namespace = extractor.namespace.getOrElse(packageName)
+    val doc = extractor.doc.orNull
+    val aliases = extractor.aliases
+    val props = extractor.props
+
+    // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
+    val resolvedName = extractor.name.fold(DefaultNamingStrategy.to(name))(DefaultNamingStrategy.to)
+
+    // the default may be a scala type that avro doesn't understand, so we must turn it into a boring java type
+    val resolvedDefault = resolveDefault(default)
+
+    // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
+    // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
+    val schema = extractor.fixed.fold(schemaFor.schema) { size =>
+      SchemaBuilder.fixed(name).doc(doc).namespace(namespace).size(size)
+    }
+
+    // for a union the type that has a default must be first
+    val schemaWithOrderedUnion = if (schema.getType == Schema.Type.UNION && resolvedDefault != null) {
+      moveDefaultToHead(schema, resolvedDefault)
+    } else schema
+
+    // the field can override the namespace if the Namespace annotation is present on the field
+    // we may have annotated our field with @AvroNamespace so this namespace should be applied
+    // to any schemas we have generated for this field
+    val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schemaWithOrderedUnion, _)).getOrElse(schemaWithOrderedUnion)
+
+    val field = new Schema.Field(resolvedName, schemaWithResolvedNamespace, doc, resolvedDefault: AnyRef)
+    props.foreach { case (k, v) => field.addProp(k, v: AnyRef) }
+    aliases.foreach(field.addAlias)
+    field
   }
 
   def buildSchema(name: String,
@@ -175,11 +214,86 @@ object SchemaFor extends LowPrioritySchemaFor {
     }
   }
 
-  implicit object ByteFor extends SchemaFor[Byte] {
+  // accepts a built avro schema, and overrides the namespace with the given namespace
+  // this method just just makes a copy of the existing schema, setting the new namespace
+  private def overrideNamespace(schema: Schema, namespace: String): Schema = {
+    val copy = schema.getType match {
+      case Schema.Type.RECORD =>
+        val fields = schema.getFields.asScala.map { field =>
+          new Schema.Field(field.name(), overrideNamespace(field.schema(), namespace), field.doc, field.defaultVal, field.order)
+        }
+        Schema.createRecord(schema.getName, schema.getDoc, namespace, schema.isError, fields.asJava)
+      case Schema.Type.UNION => Schema.createUnion(schema.getTypes.asScala.map(overrideNamespace(_, namespace)).asJava)
+      case Schema.Type.ENUM => Schema.createEnum(schema.getName, schema.getDoc, namespace, schema.getEnumSymbols)
+      case Schema.Type.FIXED => Schema.createFixed(schema.getName, schema.getDoc, namespace, schema.getFixedSize)
+      case Schema.Type.MAP => Schema.createMap(overrideNamespace(schema.getValueType, namespace))
+      case Schema.Type.ARRAY => Schema.createArray(overrideNamespace(schema.getElementType, namespace))
+      case _ => schema
+    }
+    schema.getAliases.asScala.foreach(copy.addAlias)
+    schema.getObjectProps.asScala.foreach { case (k, v) => copy.addProp(k, v) }
+    copy
+  }
+
+  // returns a default value that is compatible with the datatype
+  // for example, we might define a case class with a UUID field with a default value
+  // of UUID.randomUUID(), but in avro UUIDs are logical types. Therefore the default
+  // values must be converted into a base type avro understands.
+  // another example would be `name: Option[String] = Some("abc")`, we can't use
+  // the Some as the default, the inner value needs to be extracted
+  private def resolveDefault(default: Any): AnyRef = {
+    println(s"Resolving default = $default")
+    default match {
+      case null => null
+      case other => other.toString
+    }
+    //    dataType match {
+    //      case UUIDType => default.toString
+    //      case StringType => default.toString
+    //      case BooleanType => default
+    //      case LongType => default
+    //      case IntType => default
+    //      case FloatType => default
+    //      case DoubleType => default
+    //      case ShortType => default
+    //      case ByteType => default
+    //      case _: DecimalType => default match {
+    //        case bd: BigDecimal => bd.underlying()
+    //        case bd: java.math.BigDecimal => bd
+    //        case d: Double => d
+    //        case f: Float => f
+    //        case other => other.toString
+    //      }
+    //      case NullableType(elementType) => default match {
+    //        case Some(value) => resolveDefault(value, elementType)
+    //        case None => null
+    //      }
+    //      case _ => default.toString
+    //    }
+  }
+
+  def moveDefaultToHead(schema: Schema, default: Any): Schema = {
+    require(schema.getType == Schema.Type.UNION)
+    val defaultType = default match {
+      case _: String => Schema.Type.STRING
+      case _: Long => Schema.Type.LONG
+      case _: Int => Schema.Type.INT
+      case _: Boolean => Schema.Type.BOOLEAN
+      case _: Float => Schema.Type.FLOAT
+      case _: Double => Schema.Type.DOUBLE
+      case other => other
+    }
+    val (first, rest) = schema.getTypes.asScala.partition(_.getType == defaultType)
+    val result = Schema.createUnion((first.headOption.toSeq ++ rest).asJava)
+    schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
+    result
+  }
+
+  implicit object ByteSchemaFor extends SchemaFor[Byte] {
     override val schema: Schema = SchemaBuilder.builder().intType()
   }
 
-  implicit object StringFor extends SchemaFor[String] {
+  implicit object StringSchemaFor extends SchemaFor[String] {
     override val schema: Schema = SchemaBuilder.builder().stringType()
   }
 
@@ -203,19 +317,19 @@ object SchemaFor extends LowPrioritySchemaFor {
     override val schema: Schema = SchemaBuilder.builder().booleanType()
   }
 
-  implicit object ShortFor extends SchemaFor[Short] {
+  implicit object ShortSchemaFor extends SchemaFor[Short] {
     override val schema: Schema = SchemaBuilder.builder().intType()
   }
 
-  implicit object UUIDFor extends SchemaFor[UUID] {
+  implicit object UUIDSchemaFor extends SchemaFor[UUID] {
     override val schema: Schema = SchemaBuilder.builder().bytesType()
   }
 
-  implicit object ByteArrayFor extends SchemaFor[Array[Byte]] {
+  implicit object ByteArraySchemaFor extends SchemaFor[Array[Byte]] {
     override val schema: Schema = SchemaBuilder.builder().bytesType()
   }
 
-  implicit object ByteSeqFor extends SchemaFor[Seq[Byte]] {
+  implicit object ByteSeqSchemaFor extends SchemaFor[Seq[Byte]] {
     override val schema: Schema = SchemaBuilder.builder().bytesType()
   }
 
@@ -229,13 +343,13 @@ object SchemaFor extends LowPrioritySchemaFor {
     }
   }
 
-  implicit def OptionFor[T](implicit elementType: SchemaFor[T]): SchemaFor[Option[T]] = {
+  implicit def OptionSchemaFor[T](implicit elementType: SchemaFor[T]): SchemaFor[Option[T]] = {
     new SchemaFor[Option[T]] {
       override val schema: Schema = Schema.createUnion(SchemaBuilder.builder().nullType(), elementType.schema)
     }
   }
 
-  implicit def ArrayFor[S](implicit elementType: SchemaFor[S]): SchemaFor[Array[S]] = {
+  implicit def ArraySchemaFor[S](implicit elementType: SchemaFor[S]): SchemaFor[Array[S]] = {
     new SchemaFor[Array[S]] {
       override val schema: Schema = Schema.createArray(elementType.schema)
     }
