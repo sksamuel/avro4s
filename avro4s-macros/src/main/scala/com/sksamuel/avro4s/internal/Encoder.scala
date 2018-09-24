@@ -23,8 +23,8 @@ object Encoder {
 
   implicit def eitherEncoder[T, U](implicit leftEncoder: Encoder[T], rightEncoder: Encoder[U]): Encoder[Either[T, U]] = new Encoder[Either[T, U]] {
     override def encode(t: Either[T, U], schema: Schema): AnyRef = t match {
-      case Left(left) => leftEncoder.encode(left, schema)
-      case Right(right) => rightEncoder.encode(right, schema)
+      case Left(left) => leftEncoder.encode(left, schema.getTypes.get(0))
+      case Right(right) => rightEncoder.encode(right, schema.getTypes.get(1))
     }
   }
 
@@ -70,7 +70,7 @@ object Encoder {
 
     override def encode(map: Map[String, V], schema: Schema): java.util.Map[String, AnyRef] = {
       require(schema != null)
-      map.mapValues(encoder.encode(_, schema)).asJava
+      map.mapValues(encoder.encode(_, schema.getValueType)).asJava
     }
   }
 
