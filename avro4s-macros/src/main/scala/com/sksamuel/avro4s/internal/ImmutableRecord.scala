@@ -4,7 +4,7 @@ import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericRecord, IndexedRecord}
 import org.apache.avro.specific.SpecificRecord
 
-case class InternalRecord(schema: Schema, values: Vector[AnyRef]) extends GenericRecord with SpecificRecord with IndexedRecord {
+case class ImmutableRecord(schema: Schema, values: Vector[AnyRef]) extends GenericRecord with SpecificRecord with IndexedRecord {
 
   import scala.collection.JavaConverters._
 

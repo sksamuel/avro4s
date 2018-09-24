@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import java.io.OutputStream
 
-import com.sksamuel.avro4s.internal.{Encoder, InternalRecord}
+import com.sksamuel.avro4s.internal.{Encoder, ImmutableRecord}
 import org.apache.avro.Schema
 import org.apache.avro.file.{CodecFactory, DataFileWriter}
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
@@ -33,7 +33,7 @@ case class AvroDataOutputStream[T](os: OutputStream,
       dataFileWriter.setCodec(codec)
       dataFileWriter.create(schema, os)
       (dataFileWriter, (t: T) => {
-        val record = encoder.encode(t, schema).asInstanceOf[InternalRecord]
+        val record = encoder.encode(t, schema).asInstanceOf[ImmutableRecord]
         dataFileWriter.append(record)
       })
   }

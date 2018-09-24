@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.internal.{Encoder, InternalRecord, AvroSchema}
+import com.sksamuel.avro4s.internal.{Encoder, ImmutableRecord, AvroSchema}
 import org.apache.avro.{Conversions, Schema}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -17,7 +17,7 @@ class DecimalEncoderTest extends FlatSpec with Matchers {
     val s = schema.getField("decimal").schema()
     val bytes = new Conversions.DecimalConversion().toBytes(BigDecimal(12.34).bigDecimal, s, s.getLogicalType)
 
-    Encoder[WithBigDecimal].encode(obj, schema) shouldBe InternalRecord(schema, Vector(bytes))
+    Encoder[WithBigDecimal].encode(obj, schema) shouldBe ImmutableRecord(schema, Vector(bytes))
   }
 
   it should "support optional big decimals" in {
@@ -28,7 +28,7 @@ class DecimalEncoderTest extends FlatSpec with Matchers {
     val s = schema.getField("big").schema().getTypes.asScala.find(_.getType != Schema.Type.NULL).get
     val bytes = new Conversions.DecimalConversion().toBytes(BigDecimal(123.4).bigDecimal.setScale(2), s, s.getLogicalType)
 
-    Encoder[Test].encode(Test(Some(123.4)), schema) shouldBe InternalRecord(schema, Vector(bytes))
-    Encoder[Test].encode(Test(None), schema) shouldBe InternalRecord(schema, Vector(null))
+    Encoder[Test].encode(Test(Some(123.4)), schema) shouldBe ImmutableRecord(schema, Vector(bytes))
+    Encoder[Test].encode(Test(None), schema) shouldBe ImmutableRecord(schema, Vector(null))
   }
 }

@@ -207,7 +207,7 @@ object Encoder {
             override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
               val values = _root_.scala.collection.mutable.ListBuffer.empty[AnyRef]
               ..$fields
-              new _root_.com.sksamuel.avro4s.internal.InternalRecord(schema, values.toVector)
+              new _root_.com.sksamuel.avro4s.internal.ImmutableRecord(schema, values.toVector)
             }
           }
        """

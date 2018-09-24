@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.internal.{Decoder, Encoder, InternalRecord, AvroSchema}
+import com.sksamuel.avro4s.internal.{Decoder, Encoder, ImmutableRecord, AvroSchema}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{Matchers, WordSpec}
 
@@ -54,7 +54,7 @@ class ArrayDecoderTest extends WordSpec with Matchers {
     "support array for a scala.collection.immutable.Seq of primitives" in {
       case class Test(seq: Seq[String])
       val schema = AvroSchema[Test]
-      Encoder[Test].encode(Test(Vector("a", "34", "fgD")), schema) shouldBe InternalRecord(schema, Vector(Vector("a", "34", "fgD").asJava))
+      Encoder[Test].encode(Test(Vector("a", "34", "fgD")), schema) shouldBe ImmutableRecord(schema, Vector(Vector("a", "34", "fgD").asJava))
     }
 
     "support array for an Array of primitives" in {
