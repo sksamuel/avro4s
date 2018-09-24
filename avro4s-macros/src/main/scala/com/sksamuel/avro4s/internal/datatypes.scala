@@ -21,17 +21,7 @@ sealed trait DataType {
   def toSchema(namingStrategy: NamingStrategy): Schema
 }
 
-/**
-  * Implementations of this [[DataType]] always return the same
-  * constant schema.
-  */
-abstract class ConstDataType(schema: Schema) extends DataType {
-  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
-}
-
-sealed trait LogicalDataType extends DataType
-
-trait UnionizedDataType extends DataType {
+trait DataTypeSupport {
 
   import scala.collection.JavaConverters._
 
@@ -51,6 +41,16 @@ trait UnionizedDataType extends DataType {
     nulls.headOption.toSeq ++ withoutNull
   }
 }
+
+/**
+  * Implementations of this [[DataType]] always return the same
+  * constant schema.
+  */
+abstract class ConstDataType(schema: Schema) extends DataType {
+  override def toSchema(namingStrategy: NamingStrategy): Schema = schema
+}
+
+sealed trait LogicalDataType extends DataType
 
 case object BinaryType extends ConstDataType(Schema.create(Schema.Type.BYTES))
 case object BooleanType extends ConstDataType(Schema.create(Schema.Type.BOOLEAN))
@@ -108,7 +108,7 @@ case object TimestampType extends LogicalDataType {
   override def toSchema(namingStrategy: NamingStrategy): Schema = schema
 }
 
-case class NullableType(elementType: DataType) extends UnionizedDataType {
+case class NullableType(elementType: DataType) extends DataType with DataTypeSupport {
 
   import scala.collection.JavaConverters._
 
@@ -141,7 +141,7 @@ case class EnumType(className: String,
 /**
   * Represents a type that can be one of several different underlying types.
   */
-case class UnionType(types: Seq[DataType]) extends UnionizedDataType {
+case class UnionType(types: Seq[DataType]) extends DataType with DataTypeSupport {
 
   import scala.collection.JavaConverters._
 
