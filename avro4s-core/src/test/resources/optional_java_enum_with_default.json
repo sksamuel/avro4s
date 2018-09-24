@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "JavaEnumOptional",
+  "name": "JavaEnumOptionalWithDefault",
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
@@ -17,7 +17,8 @@
             "Merlot"
           ]
         }
-      ]
+      ],
+      "default": "CabSav"
     }
   ]
 }

@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "Test",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "map",
+      "type": {
+        "type": "map",
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "record",
+            "name": "Nested",
+            "fields": [
+              {
+                "name": "goo",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

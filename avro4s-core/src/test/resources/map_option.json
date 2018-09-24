@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "Test",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "map",
+      "type": {
+        "type": "map",
+        "values": [
+          "null",
+          "boolean"
+        ]
+      }
+    }
+  ]
+}

@@ -6,11 +6,11 @@
     {
       "name": "uuid",
       "type": [
+        "null",
         {
           "type": "string",
           "logicalType": "uuid"
-        },
-        "null"
+        }
       ]
     }
   ]

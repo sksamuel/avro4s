@@ -12,9 +12,14 @@ class EnumSchemaTest extends WordSpec with Matchers {
       val schema = SchemaEncoder[Test].encode()
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support default options of enum values" in {
+    "support options of java enum values" in {
       val schema = SchemaEncoder[JavaEnumOptional].encode()
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_java_enum.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support default values in options of java enum values" in {
+      val schema = SchemaEncoder[JavaEnumOptionalWithDefault].encode()
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_java_enum_with_default.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support scala enums" in {
@@ -24,13 +29,14 @@ class EnumSchemaTest extends WordSpec with Matchers {
     }
     "support option of scala enum values" in {
       val schema = SchemaEncoder[ScalaOptionEnums].encode()
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optionscalaenum.json"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_scala_enum.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
   }
 }
 
 case class JavaEnumOptional(maybewine: Option[Wine])
+case class JavaEnumOptionalWithDefault(maybewine: Option[Wine] = Some(Wine.CabSav))
 
 object Colours extends Enumeration {
   val Red, Amber, Green = Value

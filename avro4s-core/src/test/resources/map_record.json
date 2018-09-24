@@ -7,10 +7,16 @@
       "name": "map",
       "type": {
         "type": "map",
-        "values": [
-            "boolean",
-            "null"
+        "values": {
+          "type": "record",
+          "name": "Nested",
+          "fields": [
+            {
+              "name": "goo",
+              "type": "string"
+            }
           ]
+        }
       }
     }
   ]

@@ -1,20 +1,19 @@
 {
   "type": "record",
-  "name": "JavaEnumOptional",
+  "name": "ScalaOptionEnums",
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
-      "name": "maybewine",
+      "name": "value",
       "type": [
         "null",
         {
           "type": "enum",
-          "name": "Wine",
+          "name": "Colours",
           "symbols": [
-            "Malbec",
-            "Shiraz",
-            "CabSav",
-            "Merlot"
+            "Red",
+            "Amber",
+            "Green"
           ]
         }
       ]
