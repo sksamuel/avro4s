@@ -251,25 +251,18 @@ object SchemaFor extends LowPrioritySchemaFor {
       case UUIDType => default.toString
       case bd: BigDecimal => java.lang.Double.valueOf(bd.underlying.doubleValue)
       case Some(value) => resolveDefault(value)
+      case b: Boolean => java.lang.Boolean.valueOf(b)
+      case i: Int => java.lang.Integer.valueOf(i)
+      case d: Double => java.lang.Double.valueOf(d)
+      case s: Short => java.lang.Short.valueOf(s)
+      case l: Long => java.lang.Long.valueOf(l)
+      case f: Float => java.lang.Float.valueOf(f)
       case other => other.toString
     }
     //    dataType match {
     //
     //      case StringType => default.toString
-    //      case BooleanType => default
-    //      case LongType => default
-    //      case IntType => default
-    //      case FloatType => default
-    //      case DoubleType => default
-    //      case ShortType => default
-    //      case ByteType => default
-    //      case _: DecimalType => default match {
-    //        case bd: BigDecimal => bd.underlying()
-    //        case bd: java.math.BigDecimal => bd
-    //        case d: Double => d
-    //        case f: Float => f
-    //        case other => other.toString
-    //      }
+
     //      case NullableType(elementType) => default match {
     //        case Some(value) => resolveDefault(value, elementType)
     //        case None => null

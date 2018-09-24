@@ -17,7 +17,7 @@ class BasicEncoderTest extends WordSpec with Matchers {
     "encode strings as Array[Byte] when schema is fixed" in {
       case class Foo(s: String)
       implicit object StringFixedSchemaFor extends SchemaFor[String] {
-        override def schema: Schema = Schema.createFixed("string", null, null, 123)
+        override def schema: Schema = Schema.createFixed("FixedString", null, null, 123)
       }
       val schema = AvroSchema[Foo]
       val record = Encoder[Foo].encode(Foo("hello"), schema).asInstanceOf[GenericRecord]

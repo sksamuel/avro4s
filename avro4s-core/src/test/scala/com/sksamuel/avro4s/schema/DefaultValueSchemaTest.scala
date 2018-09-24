@@ -45,7 +45,7 @@ case class ClassWithDefaultString(s: String = "foo")
 case class ClassWithDefaultInt(i: Int = 123)
 case class ClassWithDefaultBoolean(b: Boolean = true)
 case class ClassWithDefaultLong(l: Long = 1468920998000l)
-case class ClassWithDefaultFloat(f: Float = 123.456F)
+case class ClassWithDefaultFloat(f: Float = 123.458F)
 case class ClassWithDefaultDouble(d: Double = 123.456)
 
 case class DefaultValues(name: String = "sammy",
