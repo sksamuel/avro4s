@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record.decoder
 
 import java.util.UUID
 
-import com.sksamuel.avro4s.internal.{Decoder, SchemaFor}
+import com.sksamuel.avro4s.internal.{Decoder, AvroSchema}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{Matchers, WordSpec}
 
@@ -13,13 +13,13 @@ class UUIDEncoderTest extends WordSpec with Matchers {
   "Decoder" should {
     "decode uuids" in {
       val uuid = UUID.randomUUID()
-      val schema = SchemaFor[UUIDTest]
+      val schema = AvroSchema[UUIDTest]
       val record = new GenericData.Record(schema)
       record.put("uuid", uuid.toString)
       Decoder[UUIDTest].decode(record) shouldBe UUIDTest(uuid)
     }
     "decode seq of uuids" in {
-      val schema = SchemaFor[UUIDSeq]
+      val schema = AvroSchema[UUIDSeq]
 
       val uuid1 = UUID.randomUUID()
       val uuid2 = UUID.randomUUID()
@@ -30,7 +30,7 @@ class UUIDEncoderTest extends WordSpec with Matchers {
       Decoder[UUIDSeq].decode(record) shouldBe UUIDSeq(List(uuid1, uuid2))
     }
     "decode Option[UUID]" in {
-      val schema = SchemaFor[UUIDOption]
+      val schema = AvroSchema[UUIDOption]
 
       val uuid = UUID.randomUUID()
       val record1 = new GenericData.Record(schema)

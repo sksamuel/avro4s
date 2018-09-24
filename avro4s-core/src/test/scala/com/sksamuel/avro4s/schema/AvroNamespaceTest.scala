@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroNamespace
-import com.sksamuel.avro4s.internal.SchemaFor
+import com.sksamuel.avro4s.internal.AvroSchema
 import org.scalatest.{Matchers, WordSpec}
 
 class AvroNamespaceTest extends WordSpec with Matchers {
@@ -11,7 +11,7 @@ class AvroNamespaceTest extends WordSpec with Matchers {
 
       @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String)
 
-      val schema = SchemaFor[AnnotatedNamespace]
+      val schema = AvroSchema[AnnotatedNamespace]
       schema.getNamespace shouldBe "com.yuval"
     }
 
@@ -21,7 +21,7 @@ class AvroNamespaceTest extends WordSpec with Matchers {
       @AvroNamespace("com.yuval.internal") case class InternalAnnotated(i: Int)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
-      val schema = SchemaFor[AnnotatedNamespace]
+      val schema = AvroSchema[AnnotatedNamespace]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
@@ -31,7 +31,7 @@ class AvroNamespaceTest extends WordSpec with Matchers {
       @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String, @AvroNamespace("com.yuval.internal") internal: InternalAnnotated)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
-      val schema = SchemaFor[AnnotatedNamespace]
+      val schema = AvroSchema[AnnotatedNamespace]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
@@ -43,19 +43,19 @@ class AvroNamespaceTest extends WordSpec with Matchers {
       @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String, @AvroNamespace("com.yuval.internal") internal: InternalAnnotated)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
-      val schema = SchemaFor[AnnotatedNamespace]
+      val schema = AvroSchema[AnnotatedNamespace]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support namespace annotations on ADTs at field level" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum.json"))
-      val schema = SchemaFor[Teapot]
+      val schema = AvroSchema[Teapot]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support namespace annotations on ADTs at type level" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum2.json"))
-      val schema = SchemaFor[Location]
+      val schema = AvroSchema[Location]
       schema.toString(true) shouldBe expected.toString(true)
     }
   }

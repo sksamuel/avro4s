@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.schema
 
 import java.util.UUID
 
-import com.sksamuel.avro4s.internal.SchemaFor
+import com.sksamuel.avro4s.internal.AvroSchema
 import org.scalatest.{Matchers, WordSpec}
 
 class UUIDSchemaTest extends WordSpec with Matchers {
@@ -14,22 +14,22 @@ class UUIDSchemaTest extends WordSpec with Matchers {
 
   "SchemaEncoder" should {
     "support UUID logical types" in {
-      val schema = SchemaFor[UUIDTest]
+      val schema = AvroSchema[UUIDTest]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid.json"))
       schema shouldBe expected
     }
     "support Option[UUID] as a union" in {
-      val schema = SchemaFor[UUIDOption]
+      val schema = AvroSchema[UUIDOption]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid_option.json"))
       schema shouldBe expected
     }
     "support UUID with default value" in {
-      val schema = SchemaFor[UUIDDefault]
+      val schema = AvroSchema[UUIDDefault]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid_default.json"))
       schema shouldBe expected
     }
     "support Seq[UUID] as an array of logical types" in {
-      val schema = SchemaFor[UUIDSeq]
+      val schema = AvroSchema[UUIDSeq]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/uuid_seq.json"))
       schema shouldBe expected
     }

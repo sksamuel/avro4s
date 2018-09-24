@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroAlias
-import com.sksamuel.avro4s.internal.SchemaFor
+import com.sksamuel.avro4s.internal.AvroSchema
 import org.scalatest.{Matchers, WordSpec}
 
 class AvroAliasAnnotationSchemaTest extends WordSpec with Matchers {
@@ -13,7 +13,7 @@ class AvroAliasAnnotationSchemaTest extends WordSpec with Matchers {
       case class Annotated(str: String)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_types.avsc"))
-      val schema = SchemaFor[Annotated]
+      val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support multiple alias annotations on types" in {
@@ -23,7 +23,7 @@ class AvroAliasAnnotationSchemaTest extends WordSpec with Matchers {
       case class Annotated(str: String)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_types_multiple.avsc"))
-      val schema = SchemaFor[Annotated]
+      val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support alias annotations on field" in {
@@ -31,7 +31,7 @@ class AvroAliasAnnotationSchemaTest extends WordSpec with Matchers {
       case class Annotated(@AvroAlias("cold") str: String, @AvroAlias("kate") @AvroAlias("bush") long: Long, int: Int)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_fields.avsc"))
-      val schema = SchemaFor[Annotated]
+      val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
   }

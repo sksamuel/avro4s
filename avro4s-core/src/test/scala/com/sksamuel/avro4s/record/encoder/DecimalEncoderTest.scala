@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.internal.{Encoder, InternalRecord, SchemaFor}
+import com.sksamuel.avro4s.internal.{Encoder, InternalRecord, AvroSchema}
 import org.apache.avro.{Conversions, Schema}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -11,7 +11,7 @@ class DecimalEncoderTest extends FlatSpec with Matchers {
   import scala.collection.JavaConverters._
 
   "Encoder" should "use byte array for decimal" in {
-    val schema = SchemaFor[WithBigDecimal]
+    val schema = AvroSchema[WithBigDecimal]
 
     val obj = WithBigDecimal(12.34)
     val s = schema.getField("decimal").schema()
@@ -23,7 +23,7 @@ class DecimalEncoderTest extends FlatSpec with Matchers {
   it should "support optional big decimals" in {
 
     case class Test(big: Option[BigDecimal])
-    val schema = SchemaFor[Test]
+    val schema = AvroSchema[Test]
 
     val s = schema.getField("big").schema().getTypes.asScala.find(_.getType != Schema.Type.NULL).get
     val bytes = new Conversions.DecimalConversion().toBytes(BigDecimal(123.4).bigDecimal.setScale(2), s, s.getLogicalType)

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.internal.SchemaFor
+import com.sksamuel.avro4s.internal.AvroSchema
 import org.scalatest.{Matchers, WordSpec}
 import shapeless.{:+:, CNil}
 
@@ -9,22 +9,22 @@ class UnionSchemaTest extends WordSpec with Matchers {
   "SchemaEncoder" should {
     "support sealed traits of case classes" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.json"))
-      val schema = SchemaFor[Wrapper]
+      val schema = AvroSchema[Wrapper]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support trait subtypes fields with same name" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.json"))
-      val schema = SchemaFor[Trapper]
+      val schema = AvroSchema[Trapper]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support trait subtypes fields with same name and same type" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.json"))
-      val schema = SchemaFor[Napper]
+      val schema = AvroSchema[Napper]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support coproducts of coproducts" in {
-      val single = SchemaFor[Union]
-      val unionOfUnions = SchemaFor[UnionOfUnions]
+      val single = AvroSchema[Union]
+      val unionOfUnions = AvroSchema[UnionOfUnions]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/union.avsc"))
       single.toString(true) shouldBe expected.toString(true)
       unionOfUnions.toString(true) shouldBe expected.toString(true).replace("Union", "UnionOfUnions")
