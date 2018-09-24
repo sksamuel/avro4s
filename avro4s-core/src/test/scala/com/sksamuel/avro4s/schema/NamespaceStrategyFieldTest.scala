@@ -22,4 +22,5 @@ class NamespaceStrategyFieldTest extends WordSpec with Matchers {
   }
 }
 
-case class NamingStrategyTest(camelCase: String, lower: String, multipleWordsInThis: String, StartsWithUpper: String)
+case class NamingStrategyTest(camelCase: String, lower: String, multipleWordsInThis: String, StartsWithUpper: String, nested: NamingStrategy2)
+case class NamingStrategy2(camelCase: String)

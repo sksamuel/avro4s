@@ -39,7 +39,3 @@ case object PascalCase extends NamingStrategy {
 case object SnakeCase extends NamingStrategy {
   override def to(name: String): String = toDelimited('_', name)
 }
-
-case object LispCase extends NamingStrategy {
-  override def to(name: String): String = toDelimited('-', name)
-}

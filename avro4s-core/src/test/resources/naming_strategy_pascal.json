@@ -18,6 +18,19 @@
     {
       "name": "StartsWithUpper",
       "type": "string"
+    },
+    {
+      "name": "Nested",
+      "type": {
+        "type": "record",
+        "name": "NamingStrategy2",
+        "fields": [
+          {
+            "name": "CamelCase",
+            "type": "string"
+          }
+        ]
+      }
     }
   ]
 }

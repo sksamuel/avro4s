@@ -16,40 +16,44 @@ object SchemaFor {
     * Usage:
     *
     * val schema = SchemaFor[MyType]
+    *
+    * An implicit [[NamingStrategy]] can be provided to override
+    * how the field names are generated.
     */
-  def apply[T](implicit dataTypeFor: DataTypeFor[T]) = SchemaEncoder.create(dataTypeFor.dataType)
+  def apply[T](implicit dataTypeFor: DataTypeFor[T], namingStrategy: NamingStrategy = DefaultNamingStrategy) =
+    SchemaEncoder.create(dataTypeFor.dataType, namingStrategy)
 }
 
 /**
   * Encodes a [[DataType]] into an Avro Schema.
   */
 trait SchemaEncoder[T <: DataType] extends Serializable {
-  def encode(dataType: T): Schema
+  def encode(dataType: T, namingStrategy: NamingStrategy): Schema
 }
 
 object SchemaEncoder extends ValueTypeSchemaEncoders {
-  def create[T <: DataType](dataType: T)(implicit namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema = dataType match {
-    case array: ArrayType => ArrayTypeSchemaEncoder.encode(array)
-    case BinaryType => BinaryTypeSchemaEncoder.encode(BinaryType)
-    case BooleanType => BooleanSchemaEncoder.encode(BooleanType)
-    case ByteType => ByteTypeSchemaEncoder.encode(ByteType)
-    case dec: DecimalType => DecimalTypeSchemaEncoder.encode(dec)
-    case DoubleType => DoubleTypeSchemaEncoder.encode(DoubleType)
-    case enum: EnumType => EnumTypeSchemaEncoder.encode(enum)
-    case FloatType => FloatTypeSchemaEncoder.encode(FloatType)
-    case fixed: FixedType => FixedTypeSchemaEncoder.encode(fixed)
-    case IntType => IntTypeSchemaEncoder.encode(IntType)
-    case LongType => LongTypeSchemaEncoder.encode(LongType)
-    case map: MapType => MapTypeSchemaEncoder.encode(map)
-    case nullable: NullableType => NullableSchemaEncoder.encode(nullable)
-    case ShortType => ShortTypeSchemaEncoder.encode(ShortType)
-    case StringType => StringSchemaEncoder.encode(StringType)
-    case struct: StructType => new StructSchemaEncoder(namingStrategy).encode(struct)
-    case LocalDateType => LocalDateTypeSchemaEncoder.encode(LocalDateType)
-    case LocalTimeType => LocalTimeTypeSchemaEncoder.encode(LocalTimeType)
-    case LocalDateTimeType => LocalDateTimeTypeSchemaEncoder.encode(LocalDateTimeType)
-    case TimestampType => TimestampTypeSchemaEncoder.encode(TimestampType)
-    case union: UnionType => UnionTypeSchemaEncoder.encode(union)
-    case UUIDType => UUIDTypeSchemaEncoder.encode(UUIDType)
+  def create[T <: DataType](dataType: T, namingStrategy: NamingStrategy): Schema = dataType match {
+    case array: ArrayType => ArrayTypeSchemaEncoder.encode(array, namingStrategy)
+    case BinaryType => BinaryTypeSchemaEncoder.encode(BinaryType, namingStrategy)
+    case BooleanType => BooleanSchemaEncoder.encode(BooleanType, namingStrategy)
+    case ByteType => ByteTypeSchemaEncoder.encode(ByteType, namingStrategy)
+    case dec: DecimalType => DecimalTypeSchemaEncoder.encode(dec, namingStrategy)
+    case DoubleType => DoubleTypeSchemaEncoder.encode(DoubleType, namingStrategy)
+    case enum: EnumType => EnumTypeSchemaEncoder.encode(enum, namingStrategy)
+    case FloatType => FloatTypeSchemaEncoder.encode(FloatType, namingStrategy)
+    case fixed: FixedType => FixedTypeSchemaEncoder.encode(fixed, namingStrategy)
+    case IntType => IntTypeSchemaEncoder.encode(IntType, namingStrategy)
+    case LongType => LongTypeSchemaEncoder.encode(LongType, namingStrategy)
+    case map: MapType => MapTypeSchemaEncoder.encode(map, namingStrategy)
+    case nullable: NullableType => NullableSchemaEncoder.encode(nullable, namingStrategy)
+    case ShortType => ShortTypeSchemaEncoder.encode(ShortType, namingStrategy)
+    case StringType => StringSchemaEncoder.encode(StringType, namingStrategy)
+    case struct: StructType => StructSchemaEncoder.encode(struct, namingStrategy)
+    case LocalDateType => LocalDateTypeSchemaEncoder.encode(LocalDateType, namingStrategy)
+    case LocalTimeType => LocalTimeTypeSchemaEncoder.encode(LocalTimeType, namingStrategy)
+    case LocalDateTimeType => LocalDateTimeTypeSchemaEncoder.encode(LocalDateTimeType, namingStrategy)
+    case TimestampType => TimestampTypeSchemaEncoder.encode(TimestampType, namingStrategy)
+    case union: UnionType => UnionTypeSchemaEncoder.encode(union, namingStrategy)
+    case UUIDType => UUIDTypeSchemaEncoder.encode(UUIDType, namingStrategy)
   }
 }
