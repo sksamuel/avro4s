@@ -40,34 +40,6 @@ object Encoder {
     val extractor = new AnnotationExtractors(annos)
     val valueType = reflect.isValueClass(tpe)
 
-    //    val candidates = c.enclosingImplicits
-    //
-    //    if (candidates.size > 1) {
-    //
-    //      val ourPt = candidates.head.pt
-    //
-    //      // if we have more than one candidate and the output type matches
-    //      // then abort
-    //      if ((candidates.size > 1) && {
-    //        val ourPt = candidates.head.pt
-    //        val theirPt = candidates.tail.head.pt
-    //        ourPt =:= theirPt
-    //      }) {
-    //        c.abort(c.enclosingPosition, "stepping aside: repeating itself")
-    //      } else {
-    //
-    //        Console.println("there are always possibilities")
-    //      //  Console.println("enclosingImplicits " + c.enclosingImplicits)
-    //
-    //        c.inferImplicitValue(ourPt, silent = true) match {
-    //          case success if success != EmptyTree =>
-    //            Console.println(s"no, because there's another")
-    //            c.abort(c.enclosingPosition, "stepping aside: there are other candidates")
-    //          case _ =>
-    //        }
-    //      }
-    //    }
-
     // if we have a value type then we want to return an Encoder that encodes
     // the backing field. The schema passed to this encoder will not be
     // a record schema, but a schema for the backing value and so it can be used
