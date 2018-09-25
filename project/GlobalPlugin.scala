@@ -30,8 +30,8 @@ object GlobalPlugin extends AutoPlugin {
       "-Ywarn-unused-import",
      // "-Xfatal-warnings",
       "-feature",
-      "-language:existentials",
-      "-Xlog-implicits"
+     //"-Xlog-implicits",
+      "-language:existentials"
     ),
     javacOptions := Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
