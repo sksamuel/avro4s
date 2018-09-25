@@ -5,6 +5,7 @@ import java.nio.file.{Files, Path}
 
 import com.sksamuel.avro4s.internal.Encoder
 import org.apache.avro.Schema
+import org.apache.avro.file.CodecFactory
 
 //import java.io.{File, OutputStream}
 //import java.nio.file.{Files, Path}
@@ -36,6 +37,11 @@ trait AvroOutputStream[T] {
 }
 
 object AvroOutputStream {
+
+  def data[T: Encoder](file: File, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = data(file.toPath, schema, codec)
+  def data[T: Encoder](path: Path, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = data(Files.newOutputStream(path), schema, codec)
+  def data[T: Encoder](os: OutputStream, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = AvroDataOutputStream(os, schema, codec)
+
   // convenience api for cases where the user wants to use the default codec.
   def data[T: Encoder](file: File, schema: Schema): AvroDataOutputStream[T] = data(file.toPath, schema)
   def data[T: Encoder](path: Path, schema: Schema): AvroDataOutputStream[T] = data(Files.newOutputStream(path), schema)

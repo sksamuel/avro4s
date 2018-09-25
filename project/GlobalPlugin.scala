@@ -27,7 +27,7 @@ object GlobalPlugin extends AutoPlugin {
       "-unchecked", "-deprecation",
       "-encoding",
       "utf8",
-      "-Ywarn-unused-import",
+      //"-Ywarn-unused-import",
      // "-Xfatal-warnings",
       "-feature",
      //"-Xlog-implicits",
