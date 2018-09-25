@@ -23,7 +23,155 @@ trait Encoder[T] extends Serializable {
   def encode(t: T, schema: Schema): AnyRef
 }
 
+case class Exported[A](instance: A) extends AnyVal
+
 object Encoder {
+
+  implicit def apply[T]: Encoder[T] = macro applyImpl[T]
+
+  def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Encoder[T]] = {
+
+    import c.universe._
+
+    val reflect = ReflectHelper(c)
+    val tpe = weakTypeTag[T].tpe
+
+    val annos = reflect.annotations(tpe.typeSymbol)
+    val extractor = new AnnotationExtractors(annos)
+    val valueType = reflect.isValueClass(tpe)
+
+    //    val candidates = c.enclosingImplicits
+    //
+    //    if (candidates.size > 1) {
+    //
+    //      val ourPt = candidates.head.pt
+    //
+    //      // if we have more than one candidate and the output type matches
+    //      // then abort
+    //      if ((candidates.size > 1) && {
+    //        val ourPt = candidates.head.pt
+    //        val theirPt = candidates.tail.head.pt
+    //        ourPt =:= theirPt
+    //      }) {
+    //        c.abort(c.enclosingPosition, "stepping aside: repeating itself")
+    //      } else {
+    //
+    //        Console.println("there are always possibilities")
+    //      //  Console.println("enclosingImplicits " + c.enclosingImplicits)
+    //
+    //        c.inferImplicitValue(ourPt, silent = true) match {
+    //          case success if success != EmptyTree =>
+    //            Console.println(s"no, because there's another")
+    //            c.abort(c.enclosingPosition, "stepping aside: there are other candidates")
+    //          case _ =>
+    //        }
+    //      }
+    //    }
+
+    // if we have a value type then we want to return an Encoder that encodes
+    // the backing field. The schema passed to this encoder will not be
+    // a record schema, but a schema for the backing value and so it can be used
+    // directly rather than calling .getFields like we do for a non value type
+    if (valueType) {
+
+      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+      val backingType = valueCstr.typeSignature
+      val backingField = valueCstr.name.asInstanceOf[c.TermName]
+
+      c.Expr[Encoder[T]](
+        q"""
+            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
+                _root_.com.sksamuel.avro4s.internal.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
+              }
+            }
+        """
+      )
+
+    } else {
+
+      // If not a value type we return an Encoder that will delegate to the buildRecord
+      // method, passing in the values fetched from each field in the case class,
+      // along with the schema and other metadata required
+
+      // each field will be invoked to get the raw value, before being passed to an
+      // encoder for that type to retrieve the happy happy avro value
+      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
+
+        val name = f.name.asInstanceOf[c.TermName]
+        val annos = reflect.annotations(tpe.typeSymbol)
+        val extractor = new AnnotationExtractors(annos)
+        val fieldIsValueType = reflect.isValueClass(fieldTpe)
+
+        // each field needs to be converted into an avro compatible value
+        // so scala primitives need to be converted to java boxed values
+        // annotations and logical types need to be taken into account
+
+        // if the field is annotated with @AvroFixed then we override the type to be a vector of bytes
+        extractor.fixed match {
+          case Some(_) =>
+            q"""{
+                t.$name match {
+                  case s: String => s.getBytes("UTF-8").array.toVector
+                  case a: Array[Byte] => a.toVector
+                  case v: Vector[Byte] => v
+                }
+              }
+           """
+          case None =>
+
+            // if a field is a value class we need to encode the underlying type,
+            // not the (case) class that is wrapping the field
+            if (fieldIsValueType) {
+
+              val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+              val backingType = valueCstr.typeSignatureIn(fieldTpe)
+              val backingField = valueCstr.name.asInstanceOf[c.TermName]
+
+              // we grab the value by using t.name.underlyingFieldName which gets the instance of the value type
+              // then the real types instance inside the value type
+              q"""{
+                  val field = schema.getFields.get($index)
+                  _root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$backingType](t.$name.$backingField : $backingType, field)
+                }
+              """
+
+            } else {
+
+              // we get the field from the case class instance ( t.$name ) and then pass
+              // that value, and the schema for the field (based off index) to an implicit
+              // Encoder which will return an avro compatible value
+              q"""{
+                  val field = schema.getFields.get($index)
+                  _root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name : $fieldTpe, field)
+                }
+              """
+            }
+        }
+      }
+
+      c.Expr[Encoder[T]](
+        q"""
+            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
+                _root_.com.sksamuel.avro4s.internal.Encoder.buildRecord(schema, Seq(..$fields))
+              }
+            }
+        """
+      )
+    }
+  }
+
+  // takes the values fetched from the instance T and builds a record
+  def buildRecord(schema: Schema, values: Seq[AnyRef]): AnyRef = {
+    ImmutableRecord(schema, values.toVector)
+  }
+
+  def encodeField[T](t: T, field: Schema.Field)(implicit encoder: Encoder[T]): AnyRef = {
+    encoder.encode(t, field.schema)
+  }
+
+  def encodeT[T](t: T, schema: Schema)(implicit encoder: Encoder[T]): AnyRef = encoder.encode(t, schema)
 
   implicit def eitherEncoder[T, U](implicit leftEncoder: Encoder[T], rightEncoder: Encoder[U]): Encoder[Either[T, U]] = new Encoder[Either[T, U]] {
     override def encode(t: Either[T, U], schema: Schema): AnyRef = t match {
@@ -93,7 +241,7 @@ object Encoder {
     }
   }
 
-  implicit def SetEncoder[T](implicit encoder: Encoder[T]): Encoder[Set[T]] = new Encoder[Set[T]] {
+  implicit def setEncoder[T](implicit encoder: Encoder[T]): Encoder[Set[T]] = new Encoder[Set[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -103,24 +251,27 @@ object Encoder {
     }
   }
 
-  implicit def VectorEncoder[T](implicit encoder: Encoder[T]): Encoder[Vector[T]] = new Encoder[Vector[T]] {
+  implicit def vectorEncoder[T](implicit encoder: Encoder[T]): Encoder[Vector[T]] = new Encoder[Vector[T]] {
 
     import scala.collection.JavaConverters._
+
     override def encode(ts: Vector[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
   }
 
-  implicit def SeqEncoder[T](implicit encoder: Encoder[T]): Encoder[Seq[T]] = new Encoder[Seq[T]] {
+  implicit def seqEncoder[T](implicit encoder: Encoder[T]): Encoder[Seq[T]] = new Encoder[Seq[T]] {
+
     import scala.collection.JavaConverters._
+
     override def encode(ts: Seq[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType)).asJava
     }
   }
 
-  implicit def ArrayEncoder[T](implicit encoder: Encoder[T]): Encoder[Array[T]] = new Encoder[Array[T]] {
+  implicit def arrayEncoder[T](implicit encoder: Encoder[T]): Encoder[Array[T]] = new Encoder[Array[T]] {
 
     import scala.collection.JavaConverters._
 
@@ -130,18 +281,19 @@ object Encoder {
     }
   }
 
-  implicit def OptionEncoder[T](implicit encoder: Encoder[T]) = new Encoder[Option[T]] {
+  implicit def optionEncoder[T](implicit encoder: Encoder[T]): Encoder[Option[T]] = new Encoder[Option[T]] {
 
     import scala.collection.JavaConverters._
 
     override def encode(t: Option[T], schema: Schema): AnyRef = {
-      // must have a union schema, so we can find the non null part of it
+      // if the option is none we just return null, otherwise we encode the value
+      // by finding the non null schema
       val nonNullSchema = schema.getTypes.asScala.find(_.getType != Schema.Type.NULL).get
       t.map(encoder.encode(_, nonNullSchema)).orNull
     }
   }
 
-  implicit object DecimalEncoder extends Encoder[BigDecimal] {
+  implicit object decimalEncoder extends Encoder[BigDecimal] {
 
     override def encode(t: BigDecimal, schema: Schema): ByteBuffer = {
 
@@ -162,65 +314,5 @@ object Encoder {
 
   implicit def scalaEnumEncoder[E <: Enumeration#Value]: Encoder[E] = new Encoder[E] {
     override def encode(t: E, schema: Schema): EnumSymbol = new EnumSymbol(schema, t.toString)
-  }
-
-  implicit def apply[T]: Encoder[T] = macro applyImpl[T]
-
-  def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Encoder[T]] = {
-
-    import c.universe._
-
-    val reflect = ReflectHelper(c)
-    val tpe = weakTypeTag[T].tpe
-    val annos = reflect.annotations(tpe.typeSymbol)
-    val extractor = new AnnotationExtractors(annos)
-
-    val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
-
-      val name = f.name.asInstanceOf[c.TermName]
-      val annos = reflect.annotations(tpe.typeSymbol)
-      val extractor = new AnnotationExtractors(annos)
-
-      // each field needs to be converted into an avro compatible value
-      // so scala primitives need to be converted to java boxed values
-      // annotations and logical types need to be taken into account
-
-      // if the field is annotated with @AvroFixed then we override the type to be a vector of bytes
-      extractor.fixed match {
-        case Some(fixed) =>
-          q"""{
-                val vector = t.$name match {
-                  case s: String => s.getBytes("UTF-8").array.toVector
-                  case a: Array[Byte] => a.toVector
-                  case v: Vector[Byte] => v
-                }
-                values.append(vector)
-              }
-           """
-        case None =>
-          q"""{
-                val field = schema.getFields.get($index)
-                val value = _root_.com.sksamuel.avro4s.internal.Encoder.doField[$fieldTpe](t.$name : $fieldTpe, field)
-                values.append(value)
-              }
-           """
-      }
-    }
-
-    c.Expr[Encoder[T]](
-      q"""
-          new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
-            override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-              val values = _root_.scala.collection.mutable.ListBuffer.empty[AnyRef]
-              ..$fields
-              new _root_.com.sksamuel.avro4s.internal.ImmutableRecord(schema, values.toVector)
-            }
-          }
-       """
-    )
-  }
-
-  def doField[T](t: T, field: Schema.Field)(implicit encoder: Encoder[T]): AnyRef = {
-    encoder.encode(t, field.schema())
   }
 }

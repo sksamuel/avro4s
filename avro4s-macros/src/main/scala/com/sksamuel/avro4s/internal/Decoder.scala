@@ -142,7 +142,7 @@ object Decoder {
     }
   }
 
-  implicit def scalaEnumDecoder[E <: Enumeration#Value](implicit tag: TypeTag[E]) = new Decoder[E] {
+  implicit def scalaEnumDecoder[E <: Enumeration#Value](implicit tag: WeakTypeTag[E]) = new Decoder[E] {
 
     import scala.reflect.NameTransformer._
 

@@ -19,6 +19,14 @@ class OptionEncoderTest extends WordSpec with Matchers {
       Encoder[Test].encode(Test(Option(true)), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true)))
       Encoder[Test].encode(Test(None), schema) shouldBe ImmutableRecord(schema, Vector(null))
     }
+    "support options of case classes" in {
+      case class Foo(s: String)
+      case class Test(b: Option[Foo])
+      val schema = AvroSchema[Test]
+      val fooSchema = AvroSchema[Foo]
+      Encoder[Test].encode(Test(Option(Foo("hello"))), schema) shouldBe ImmutableRecord(schema, Vector(ImmutableRecord(fooSchema, Vector(new Utf8("hello")))))
+      Encoder[Test].encode(Test(None), schema) shouldBe ImmutableRecord(schema, Vector(null))
+    }
   }
 }
 
