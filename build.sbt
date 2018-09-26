@@ -17,3 +17,8 @@ val `avro4s-json` = project.in(file("avro4s-json"))
 
 val `avro4s-cats` = project.in(file("avro4s-cats"))
   .dependsOn(`avro4s-core`)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % "1.4.0"
+    )
+  )
