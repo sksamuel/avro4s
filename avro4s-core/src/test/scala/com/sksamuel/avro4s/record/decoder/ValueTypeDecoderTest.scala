@@ -19,7 +19,7 @@ class ValueTypeDecoderTest extends WordSpec with Matchers {
 
       Decoder[Test].decode(record1) shouldBe Test(FooValueType("hello"))
     }
-    "support value types inside Options" ignore {
+    "support value types inside Options" in {
      val schema = AvroSchema[OptionTest]
 
       val record1 = new GenericData.Record(schema)

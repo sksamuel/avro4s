@@ -171,67 +171,78 @@ object Decoder {
 
     // if we have a value type then we want to return an decoder that decodes
     // the backing field and wraps it in an instance of the value type
-    // if (valueType) {
+    if (valueType) {
 
-    //   c.abort(NoPosition, "Not handling top level value types yet")
+      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+      val backingFieldTpe = valueCstr.typeSignature
 
-    // } else {
+      c.Expr[Decoder[T]](
+        q"""
+          new _root_.com.sksamuel.avro4s.internal.Decoder[$tpe] {
+            override def decode(value: Any): $tpe = {
+              val decoded = _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$backingFieldTpe](value)
+              new $tpe(decoded)
+            }
+          }
+       """
+      )
 
-    val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
+    } else {
 
-      val fieldName = fieldSym.name.asInstanceOf[c.TermName]
-      // todo handle avro name annotation
-      // val decodedName: Tree = helper.avroName(sym).getOrElse(q"${name.decodedName.toString}")
-      val decodedName = q"${fieldName.decodedName.toString}"
-      val isFieldAValueType = reflect.isValueClass(fieldTpe)
+      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
 
-      if (isFieldAValueType) {
+        val fieldName = fieldSym.name.asInstanceOf[c.TermName]
+        // todo handle avro name annotation
+        // val decodedName: Tree = helper.avroName(sym).getOrElse(q"${name.decodedName.toString}")
+        val decodedName = q"${fieldName.decodedName.toString}"
+        val isFieldAValueType = reflect.isValueClass(fieldTpe)
 
-      //  Console.out.println(s"$fieldTpe is a value type")
+        if (isFieldAValueType) {
 
-        val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-        val backingFieldTpe = valueCstr.typeSignature
+          //  Console.out.println(s"$fieldTpe is a value type")
 
-      //  Console.out.println(s"backing field type is $backingFieldTpe")
+          val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+          val backingFieldTpe = valueCstr.typeSignature
 
-        // for a value type we first decode the avro type into some scala happy type using an
-        // encoder for the backing type, and then we wrap it in an instance of the value class itself
-        q"""{
+          //  Console.out.println(s"backing field type is $backingFieldTpe")
+
+          // for a value type we first decode the avro type into some scala happy type using an
+          // encoder for the backing type, and then we wrap it in an instance of the value class itself
+          q"""{
                   val raw = record.get($index)
                   val decoded = _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$backingFieldTpe](raw) : $backingFieldTpe
                   new $fieldTpe(decoded) : $fieldTpe
             }
          """
 
-      } else {
+        } else {
 
-        q"""{
+          q"""{
                   val value = record.get($index)
                   _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$fieldTpe](value) : $fieldTpe
             }
          """
+        }
       }
-    }
 
-    // the companion object where the apply construction method is located
-    val companion = tpe.typeSymbol.companion
+      // the companion object where the apply construction method is located
+      val companion = tpe.typeSymbol.companion
 
-    if (companion == NoSymbol)
-      Console.err.println(s"Cannot find companion object for $fullName; If you have defined a local case class, move the case class to a higher enclosing scope.")
+      if (companion == NoSymbol)
+        Console.err.println(s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a higher enclosing scope.")
 
-    c.Expr[Decoder[T]](
-      q"""
+      c.Expr[Decoder[T]](
+        q"""
           new _root_.com.sksamuel.avro4s.internal.Decoder[$tpe] {
             override def decode(value: Any): $tpe = {
-              println(s"Decoding " + value)
               val record = value.asInstanceOf[_root_.org.apache.avro.generic.IndexedRecord]
               $companion.apply(..$fields)
             }
           }
        """
-    )
+      )
 
-    //}
+    }
   }
 
   def decodeT[T](value: Any)(implicit decoder: Decoder[T]): T = decoder.decode(value)
