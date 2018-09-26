@@ -1,0 +1,312 @@
+{
+  "type": "record",
+  "name": "SalesRecord",
+  "namespace": "com.sksamuel.avro4s.github",
+  "fields": [
+    {
+      "name": "saleId",
+      "type": "int"
+    },
+    {
+      "name": "sellerId",
+      "type": "int"
+    },
+    {
+      "name": "createDateStr",
+      "type": "string"
+    },
+    {
+      "name": "vin",
+      "type": "string"
+    },
+    {
+      "name": "make",
+      "type": "string"
+    },
+    {
+      "name": "model",
+      "type": "string"
+    },
+    {
+      "name": "year",
+      "type": "double"
+    },
+    {
+      "name": "tL",
+      "type": "string"
+    },
+    {
+      "name": "clr",
+      "type": "string"
+    },
+    {
+      "name": "tr",
+      "type": "string"
+    },
+    {
+      "name": "eg",
+      "type": "string"
+    },
+    {
+      "name": "iT",
+      "type": "string"
+    },
+    {
+      "name": "tML",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "dO",
+      "type": "double"
+    },
+    {
+      "name": "sP",
+      "type": "double"
+    },
+    {
+      "name": "tG",
+      "type": "double"
+    },
+    {
+      "name": "fEG",
+      "type": "double"
+    },
+    {
+      "name": "bEG",
+      "type": "double"
+    },
+    {
+      "name": "cT",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sT",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "cDStr",
+      "type": "string"
+    },
+    {
+      "name": "dDStr",
+      "type": "string"
+    },
+    {
+      "name": "rDStr",
+      "type": "string"
+    },
+    {
+      "name": "pBID",
+      "type": "string"
+    },
+    {
+      "name": "fN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "mN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "lN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "fuN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "ad",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "ct",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "st",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "pCStr",
+      "type": "string"
+    },
+    {
+      "name": "hPN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "bPN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "cPN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "eA",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "eT",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "cN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sBID",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sFN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sMN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sLN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sFuMN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sAd",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sC",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sS",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sPC",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sHPN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sBPN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sCPN",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sEA",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sET",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "sCN",
+      "type": [
+        "null",
+        "string"
+      ]
+    }
+  ]
+}
