@@ -12,11 +12,17 @@ import org.apache.avro.io.EncoderFactory
   * you want the smallest messages possible at the cost of not having the schema available
   * in the messages for downstream clients.
   */
-case class AvroBinaryOutputStream[T](os: OutputStream, schema: Schema, encoder: Encoder[T])
-  extends AvroOutputStream[T] {
+case class AvroBinaryOutputStream[T](os: OutputStream, schema: Schema)
+                                    (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
 
   private val dataWriter = new GenericDatumWriter[GenericRecord](schema)
   private val binaryEncoder = EncoderFactory.get().binaryEncoder(os, null)
+
+  override def close(closeUnderlying: Boolean): Unit = {
+    flush()
+    if (closeUnderlying)
+      os.close()
+  }
 
   override def close(): Unit = {
     flush()
@@ -30,5 +36,4 @@ case class AvroBinaryOutputStream[T](os: OutputStream, schema: Schema, encoder: 
 
   override def flush(): Unit = binaryEncoder.flush()
   override def fSync(): Unit = ()
-  override def close(closeUnderlying: Boolean): Unit = ???
 }

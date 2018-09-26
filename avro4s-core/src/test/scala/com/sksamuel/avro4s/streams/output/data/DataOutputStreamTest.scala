@@ -1,9 +1,9 @@
-package com.sksamuel.avro4s.streams.output
+package com.sksamuel.avro4s.streams.output.data
 
 import java.io.ByteArrayOutputStream
 
 import com.sksamuel.avro4s.AvroOutputStream
-import com.sksamuel.avro4s.internal.{AvroSchema, SchemaFor, Encoder}
+import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, SchemaFor}
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.scalatest.{FunSuite, Matchers}

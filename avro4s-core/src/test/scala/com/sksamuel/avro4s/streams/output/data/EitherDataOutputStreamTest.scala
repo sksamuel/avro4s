@@ -1,4 +1,4 @@
-package com.sksamuel.avro4s.streams.output
+package com.sksamuel.avro4s.streams.output.data
 
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8

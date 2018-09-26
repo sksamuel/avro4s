@@ -38,6 +38,10 @@ trait AvroOutputStream[T] {
 
 object AvroOutputStream {
 
+  def binary[T: Encoder](file: File, schema: Schema): AvroBinaryOutputStream[T] = binary(file.toPath, schema)
+  def binary[T: Encoder](path: Path, schema: Schema): AvroBinaryOutputStream[T] = binary(Files.newOutputStream(path), schema)
+  def binary[T: Encoder](os: OutputStream, schema: Schema): AvroBinaryOutputStream[T] = AvroBinaryOutputStream(os, schema)
+
   def data[T: Encoder](file: File, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = data(file.toPath, schema, codec)
   def data[T: Encoder](path: Path, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = data(Files.newOutputStream(path), schema, codec)
   def data[T: Encoder](os: OutputStream, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = AvroDataOutputStream(os, schema, codec)
@@ -102,7 +106,5 @@ object AvroOutputStream {
 //
 
 //
-//  def binary[T: SchemaFor : ToRecord](file: File): AvroBinaryOutputStream[T] = binary(file.toPath)
-//  def binary[T: SchemaFor : ToRecord](path: Path): AvroBinaryOutputStream[T] = binary(Files.newOutputStream(path))
-//  def binary[T: SchemaFor : ToRecord](os: OutputStream): AvroBinaryOutputStream[T] = AvroBinaryOutputStream(os)
+
 //}

@@ -14,3 +14,6 @@ val `avro4s-core` = project.in(file("avro4s-core"))
 val `avro4s-json` = project.in(file("avro4s-json"))
   .dependsOn(`avro4s-core`)
   .settings(libraryDependencies += "org.json4s" %% "json4s-native" % "3.5.3")
+
+val `avro4s-cats` = project.in(file("avro4s-cats"))
+  .dependsOn(`avro4s-core`)

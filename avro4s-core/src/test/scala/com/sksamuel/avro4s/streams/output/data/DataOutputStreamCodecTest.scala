@@ -1,4 +1,4 @@
-package com.sksamuel.avro4s.streams.output
+package com.sksamuel.avro4s.streams.output.data
 
 import java.io.ByteArrayOutputStream
 

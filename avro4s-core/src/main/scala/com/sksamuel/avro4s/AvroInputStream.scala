@@ -1,5 +1,12 @@
 package com.sksamuel.avro4s
 
+import java.io.{File, InputStream}
+import java.nio.file.{Path, Paths}
+
+import com.sksamuel.avro4s.internal.Decoder
+import org.apache.avro.Schema
+import org.apache.avro.file.{SeekableByteArrayInput, SeekableFileInput}
+
 import scala.util.Try
 
 //
@@ -28,6 +35,19 @@ trait AvroInputStream[T] {
     * decoding issues are wrapped.
     */
   def tryIterator: Iterator[Try[T]]
+}
+
+object AvroInputStream {
+
+  def binary[T: Decoder](path: String, schema: Schema): AvroBinaryInputStream[T] = binary(Paths.get(path), schema)
+  def binary[T: Decoder](file: File, writerSchema: Schema): AvroBinaryInputStream[T] = binary(new SeekableFileInput(file), writerSchema)
+  def binary[T: Decoder](path: Path, writerSchema: Schema): AvroBinaryInputStream[T] = binary(path.toFile, writerSchema)
+  def binary[T: Decoder](bytes: Array[Byte], schema: Schema): AvroBinaryInputStream[T] = binary(new SeekableByteArrayInput(bytes), schema)
+  def binary[T: Decoder](in: InputStream, schema: Schema): AvroBinaryInputStream[T] =
+    new AvroBinaryInputStream[T](in, schema, schema)
+
+  //  def binary[T: SchemaEncoder : Decoder](bytes: Array[Byte]): AvroBinaryInputStream[T] = binary[T](new SeekableByteArrayInput(bytes))
+  //
 }
 
 //

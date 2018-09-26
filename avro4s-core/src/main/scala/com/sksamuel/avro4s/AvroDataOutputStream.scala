@@ -11,7 +11,7 @@ import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
   * An [[AvroOutputStream]] that writes the schema along with the messages.
   * This is usually the format required when writing multiple messages to a single file.
   * Some frameworks, such as a Kafka, store the Schema separately to messages, in which
-  * case the [[AvroBinaryInputStream2]] is what you would need.
+  * case the [[AvroBinaryInputStream]] is what you would need.
   *
   * @param os the underlying stream that data will be written to.
   */
