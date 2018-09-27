@@ -1,15 +1,3 @@
-//package com.sksamuel.avro4s
-//
-//import java.io.ByteArrayOutputStream
-//import java.time.LocalDate
-//
-//import com.sksamuel.avro4s.schema.{Level1, Level2, Level3, Level4}
-//import org.scalatest.concurrent.TimeLimits
-//import org.scalatest.{Matchers, WordSpec}
-//import shapeless.{:+:, CNil, Coproduct}
-//
-//class AvroInputStreamTest extends WordSpec with Matchers with TimeLimits {
-//
 //  case class Booleans(bool: Boolean)
 //  case class BigDecimalTest(decimal: BigDecimal)
 //  case class ByteArrayTest(bytes: Array[Byte])
@@ -58,31 +46,8 @@
 //  case class CoArrays(cp: Seq[String] :+: Int :+: CNil)
 //  case class CoMaps(cp: Map[String, Int] :+: Int :+: CNil)
 //
-//  def write[T](ts: Seq[T])(implicit schema: SchemaFor[T], ser: ToRecord[T]): Array[Byte] = {
-//    val output = new ByteArrayOutputStream
-//    val avro = AvroOutputStream.data[T](output)
-//    avro.write(ts)
-//    avro.close()
-//    output.toByteArray
-//  }
-//
+
 //  "AvroInputStream" should {
-//    "read big decimals" in {
-//      val data = Seq(BigDecimalTest(1235.52), BigDecimalTest(1234.68))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[BigDecimalTest](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read complex type" in {
-//      val data = Seq(ComplexType(Seq(ComplexElement(Ints(2), Doubles(0.12345), Booleans(true)), ComplexElement(Ints(5), Doubles(0.98568), Booleans(false)))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ComplexType](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
 //    "read byte arrays" in {
 //      val data = Seq(ByteArrayTest(Array[Byte](1, 2, 3)), ByteArrayTest(Array[Byte](125, 126, 127)))
 //      val bytes = write(data)
@@ -109,22 +74,6 @@
 //      in.iterator.toList shouldBe data.toList
 //      in.close()
 //    }
-//    "read eithers of arrays" in {
-//      val data = Seq(EitherArray(Left(Seq(1,2))), EitherArray(Right("lammy")))
-//
-//      val bytes = write(data)
-//      val in = AvroInputStream.data[EitherArray](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read eithers of maps" in {
-//      val data = Seq(EitherMap(Left(Map("val" -> 4))), EitherMap(Right(true)))
-//
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[EitherMap](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
 //    }
 //    "read coproducts of primitives" in {
 //      type SB = String :+: Boolean :+: CNil
@@ -176,226 +125,6 @@
 //      in.iterator.toList shouldBe data.toList
 //      in.close()
 //    }
-//    "read maps of booleans" in {
-//      val data = Seq(MapBoolean(Map("sammy" -> true, "hammy" -> false)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[MapBoolean](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read maps of seqs of strings" in {
-//      val data = Seq(MapSeq(Map("sammy" -> Seq("foo", "moo"), "hammy" -> Seq("boo", "goo"))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[MapSeq](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read maps of options" in {
-//      val data = Seq(MapOptions(Map("sammy" -> None, "hammy" -> Some("foo"))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[MapOptions](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read maps of case classes" in {
-//      val data = Seq(MapCaseClasses(Map("sammy" -> Foo("sam", true), "hammy" -> Foo("ham", false))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[MapCaseClasses](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read deep nested maps" in {
-//      val data = Level1(Level2(Level3(Level4(Map("a" -> "b")))))
-//      val bytes = write(Seq(data))
-//      val in = AvroInputStream.data[Level1](bytes)
-//      in.iterator.toList shouldBe List(data)
-//      in.close()
-//    }
-//    "read maps of strings" in {
-//      val data = Seq(MapStrings(Map("sammy" -> "foo", "hammy" -> "boo")))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[MapStrings](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read maps of ints" in {
-//
-//      val data = Seq(MapInts(Map("sammy" -> 1, "hammy" -> 2)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[MapInts](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read set of strings" in {
-//      val data = Seq(SetStrings(Set("sammy", "hammy")))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[SetStrings](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read set of case classes" in {
-//      val data = Seq(SetCaseClasses(Set(Foo("sammy", true), Foo("hammy", false))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[SetCaseClasses](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read list of ints" in {
-//
-//      val data = Seq(ListInts(List(1, 2, 3, 4)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ListInts](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read list of doubles" in {
-//
-//      val data = Seq(ListDoubles(List(0.1, 0.2, 0.3)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ListDoubles](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read list of strings" in {
-//
-//
-//      val data = Seq(ListStrings(List("sammy", "hammy")))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ListStrings](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read list of case classes" in {
-//
-//      val data = Seq(ListCaseClasses(List(Foo("sammy", true), Foo("hammy", false))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ListCaseClasses](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read array of ints" in {
-//
-//      val data = Seq(ArrayInts(Array(1, 2, 3, 4)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ArrayInts](bytes)
-//      in.iterator.toList.head.array.toList shouldBe data.toList.head.array.toList
-//      in.close()
-//    }
-//    "read array of doubles" in {
-//
-//      val data = Seq(ArrayDoubls(Array(0.1, 0.2, 0.3)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ArrayDoubls](bytes)
-//      in.iterator.toList.head.array.toList shouldBe data.toList.head.array.toList
-//      in.close()
-//    }
-//    "read array of strings" in {
-//      val data = Seq(ArrayStrings(Array("sammy", "hammy")))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ArrayStrings](bytes)
-//      in.iterator.toList.head.array.toList shouldBe data.toList.head.array.toList
-//      in.close()
-//    }
-//    "read array of case classes" in {
-//
-//      val data = Seq(ArrayCaseClasses(Array(Foo("sammy", true), Foo("hammy", false))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ArrayCaseClasses](bytes)
-//      in.iterator.toList.head.array.toList shouldBe data.toList.head.array.toList
-//      in.close()
-//    }
-//    "read seq of ints" in {
-//
-//      val data = Seq(SeqInts(Seq(1, 2, 3, 4)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[SeqInts](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read seq of doubles" in {
-//      val data = Seq(SeqDoubles(Seq(0.1, 0.2, 0.3)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[SeqDoubles](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read seq of strings" in {
-//      val data = Seq(SeqStrings(Seq("sammy", "hammy")))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[SeqStrings](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read seq of case classes" in {
-//      val data = Seq(SeqCaseClasses(Seq(Foo("sammy", false), Foo("hammy", true))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[SeqCaseClasses](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read options of case classes" in {
-//
-//      val data = Seq(OptionNestedStrings(Option(Strings("sammy"))), OptionNestedStrings(None))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[OptionNestedStrings](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read options of strings" in {
-//      val data = Seq(StringOptions(Option("sammy")), StringOptions(None))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[StringOptions](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read options of booleans" in {
-//      val data = Seq(BooleanOptions(Option(true)), BooleanOptions(None))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[BooleanOptions](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read options of longs" in {
-//      val data = Seq(LongOptions(Option(4)), LongOptions(None))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[LongOptions](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-
-//    "read scala enums" in {
-//
-//      val data = Seq(ScalaEnums(Colours.Red), ScalaEnums(Colours.Green))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ScalaEnums](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
 //    "read LocalDates" in {
 //
 //      val data = Seq(LocalDateTest(LocalDate.now()), LocalDateTest(LocalDate.now()))
@@ -403,30 +132,6 @@
 //
 //      val in = AvroInputStream.data[LocalDateTest](bytes)
 //      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "support value classes" in {
-//      val data = Seq(ValueWrapper(ValueClass("bob")), ValueWrapper(ValueClass("ann")))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ValueWrapper](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read vectors of ints" in {
-//      val data = Seq(VectorInts(Vector(3, 2, 1)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[VectorInts](bytes)
-//      in.iterator.toList shouldBe Seq(VectorInts(Vector(3, 2, 1)))
-//      in.close()
-//    }
-//    "read vectors of records" in {
-//      val data = Seq(VectorRecords(Vector(Foo("sammy", true), Foo("hammy", false))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[VectorRecords](bytes)
-//      in.iterator.toList shouldBe Seq(VectorRecords(Vector(Foo("sammy", true), Foo("hammy", false))))
 //      in.close()
 //    }
 //  }
