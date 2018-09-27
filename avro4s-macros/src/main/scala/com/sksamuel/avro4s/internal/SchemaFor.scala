@@ -76,62 +76,68 @@ object SchemaFor extends LowPrioritySchemaFor {
 
     val reflect = ReflectHelper(c)
     val tpe = weakTypeOf[T]
+    val fullName = tpe.typeSymbol.fullName
     val packageName = reflect.packageName(tpe)
     val isValueClass = reflect.isValueClass(tpe)
-
-    // we can only encode concrete classes at the top level
-    require(tpe.typeSymbol.isClass, tpe + " is not a class but is " + tpe.typeSymbol.fullName)
+    val isSealed = reflect.isSealed(tpe)
 
     // eg, "Foo" for x.y.Foo
     val simpleName = tpe.typeSymbol.name.decodedName.toString
 
-    val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
+    // we can only encode classes in this macro
+    if (!tpe.typeSymbol.isClass) {
+      c.abort(c.prefix.tree.pos, s"$fullName is not a class")
+    } else if (isSealed) {
+      c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
+    } else {
+      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
 
-      // the simple name of the field like "x"
-      val fieldName = f.name.decodedName.toString.trim
+        // the simple name of the field like "x"
+        val fieldName = f.name.decodedName.toString.trim
 
-      // if the field is a value type, we should include annotations defined on the value type as well
-      val annos = if (reflect.isValueClass(fieldTpe)) {
-        reflect.annotationsqq(f) ++ reflect.annotationsqq(fieldTpe.typeSymbol)
-      } else {
-        reflect.annotationsqq(f)
+        // if the field is a value type, we should include annotations defined on the value type as well
+        val annos = if (reflect.isValueClass(fieldTpe)) {
+          reflect.annotationsqq(f) ++ reflect.annotationsqq(fieldTpe.typeSymbol)
+        } else {
+          reflect.annotationsqq(f)
+        }
+
+        val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+
+        // this gets the method that generates the default value for this field
+        // (if the field has a default value otherwise its a nosymbol)
+        val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+
+        // this is a method symbol for the default getter if it exists
+        val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
+
+        // if the field is a param with a default value, then we know the getter method will be defined
+        // and so we can use it to generate the default value
+        if (f.isTerm && f.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
+          //val method = reflect.defaultGetter(tType, index + 1)
+          // the default method is defined on the companion object
+          val moduleSym = tpe.typeSymbol.companion
+          q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+        } else {
+          q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), null) }"""
+        }
       }
 
-      val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+      // qualified name of the class we are building
+      // todo encode generics:: + genericNameSuffix(underlyingType)
+      //val className = tpe.typeSymbol.fullName.toString
 
-      // this gets the method that generates the default value for this field
-      // (if the field has a default value otherwise its a nosymbol)
-      val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+      // these are annotations on the class itself
+      val annos = reflect.annotationsqq(tpe.typeSymbol)
 
-      // this is a method symbol for the default getter if it exists
-      val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
-
-      // if the field is a param with a default value, then we know the getter method will be defined
-      // and so we can use it to generate the default value
-      if (f.isTerm && f.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
-        //val method = reflect.defaultGetter(tType, index + 1)
-        // the default method is defined on the companion object
-        val moduleSym = tpe.typeSymbol.companion
-        q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
-      } else {
-        q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), null) }"""
-      }
-    }
-
-    // qualified name of the class we are building
-    // todo encode generics:: + genericNameSuffix(underlyingType)
-    //val className = tpe.typeSymbol.fullName.toString
-
-    // these are annotations on the class itself
-    val annos = reflect.annotationsqq(tpe.typeSymbol)
-
-    c.Expr[SchemaFor[T]](
-      q"""
+      c.Expr[SchemaFor[T]](
+        q"""
         new _root_.com.sksamuel.avro4s.internal.SchemaFor[$tpe] {
           private val _schema = _root_.com.sksamuel.avro4s.internal.SchemaFor.buildSchema($simpleName, $packageName, Seq(..$fields), Seq(..$annos), $isValueClass)
           override def schema: _root_.org.apache.avro.Schema = _schema
         }
       """)
+    }
   }
 
   /**
