@@ -10,34 +10,6 @@
 //  val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pineapple", 5.2, 0.2)), false, vegan = false, 91)
 //
 //  "AvroData" should {
-//    "be able to read its own output" in {
-//      val file: File = new File("pizzas.avro")
-//      val os = AvroOutputStream.data[Pizza](file)
-//      os.write(pepperoni)
-//      os.write(hawaiian)
-//      os.close()
-//
-//      val is = AvroInputStream.data[Pizza](file)
-//      val pizzas = is.iterator.toList
-//      pizzas shouldBe List(pepperoni, hawaiian)
-//      is.close()
-//      file.delete()
-//    }
-//
-//    "be able to read its own output with codec" in {
-//      val file: File = new File("pizzas.avro")
-//      val os = AvroOutputStream.data[Pizza](file, CodecFactory.snappyCodec())
-//      os.write(pepperoni)
-//      os.write(hawaiian)
-//      os.close()
-//
-//      val is = AvroInputStream.data[Pizza](file)
-//      val pizzas = is.iterator.toList
-//      pizzas shouldBe List(pepperoni, hawaiian)
-//      is.close()
-//      file.delete()
-//    }
-//
 //    "be able to serialize/deserialize recursive data" in {
 //      val data = Recursive(4, Some(Recursive(2, Some(Recursive(9, None)))))
 //
