@@ -1,4 +1,4 @@
-package com.sksamuel.avro4s.streams.output.data
+package com.sksamuel.avro4s.streams.output
 
 import java.io.ByteArrayOutputStream
 
@@ -7,7 +7,7 @@ import com.sksamuel.avro4s.internal.AvroSchema
 import org.apache.avro.file.CodecFactory
 import org.scalatest.{Matchers, WordSpec}
 
-class DataOutputStreamCodecTest extends WordSpec with Matchers {
+class AvroDataOutputStreamCodecTest extends WordSpec with Matchers {
 
   case class Composer(name: String, birthplace: String, compositions: Seq[String])
   val schema = AvroSchema[Composer]

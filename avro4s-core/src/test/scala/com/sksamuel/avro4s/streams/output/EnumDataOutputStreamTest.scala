@@ -1,4 +1,4 @@
-package com.sksamuel.avro4s.streams.output.data
+package com.sksamuel.avro4s.streams.output
 
 import org.scalatest.{FunSuite, Matchers}
 
