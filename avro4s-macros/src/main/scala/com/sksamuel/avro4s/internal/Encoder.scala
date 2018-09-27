@@ -24,7 +24,13 @@ import scala.reflect.ClassTag
   * schema of type [[Schema.Type.FIXED]] would return an Array[Byte].
   */
 trait Encoder[T] extends Serializable {
+  self =>
+
   def encode(t: T, schema: Schema): AnyRef
+
+  def comap[S](fn: S => T): Encoder[S] = new Encoder[S] {
+    override def encode(value: S, schema: Schema): AnyRef = self.encode(fn(value), schema)
+  }
 }
 
 case class Exported[A](instance: A) extends AnyVal
