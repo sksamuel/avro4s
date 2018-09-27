@@ -10,7 +10,13 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 
 trait Decoder[T] extends Serializable {
+  self =>
+
   def decode(value: Any): T
+
+  def map[U](fn: T => U): Decoder[U] = new Decoder[U] {
+    override def decode(value: Any): U = fn(self.decode(value))
+  }
 }
 
 object Decoder {

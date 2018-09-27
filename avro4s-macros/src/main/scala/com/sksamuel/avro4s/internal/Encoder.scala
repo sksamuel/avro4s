@@ -232,51 +232,51 @@ object Encoder {
 
     val annos = reflect.annotations(tpe.typeSymbol)
     val extractor = new AnnotationExtractors(annos)
-    val valueType = reflect.isValueClass(tpe)
+    val isValueClass = reflect.isValueClass(tpe)
 
     // if we have a value type then we want to return an Encoder that encodes
     // the backing field. The schema passed to this encoder will not be
     // a record schema, but a schema for the backing value and so it can be used
     // directly rather than calling .getFields like we do for a non value type
-    if (valueType) {
+    //  if (valueType) {
 
-      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-      val backingType = valueCstr.typeSignature
-      val backingField = valueCstr.name.asInstanceOf[c.TermName]
+    //      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+    //      val backingType = valueCstr.typeSignature
+    //      val backingField = valueCstr.name.asInstanceOf[c.TermName]
+    //
+    //      c.Expr[Encoder[T]](
+    //        q"""
+    //            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+    //              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
+    //                _root_.com.sksamuel.avro4s.internal.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
+    //              }
+    //            }
+    //        """
+    //      )
 
-      c.Expr[Encoder[T]](
-        q"""
-            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
-              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-                _root_.com.sksamuel.avro4s.internal.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
-              }
-            }
-        """
-      )
+    //} else {
 
-    } else {
+    // If not a value type we return an Encoder that will delegate to the buildRecord
+    // method, passing in the values fetched from each field in the case class,
+    // along with the schema and other metadata required
 
-      // If not a value type we return an Encoder that will delegate to the buildRecord
-      // method, passing in the values fetched from each field in the case class,
-      // along with the schema and other metadata required
+    // each field will be invoked to get the raw value, before being passed to an
+    // encoder for that type to retrieve the happy happy avro value
+    val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
 
-      // each field will be invoked to get the raw value, before being passed to an
-      // encoder for that type to retrieve the happy happy avro value
-      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
+      val name = f.name.asInstanceOf[c.TermName]
+      val annos = reflect.annotations(tpe.typeSymbol)
+      val extractor = new AnnotationExtractors(annos)
+      //val fieldIsValueType = reflect.isValueClass(fieldTpe)
 
-        val name = f.name.asInstanceOf[c.TermName]
-        val annos = reflect.annotations(tpe.typeSymbol)
-        val extractor = new AnnotationExtractors(annos)
-        val fieldIsValueType = reflect.isValueClass(fieldTpe)
+      // each field needs to be converted into an avro compatible value
+      // so scala primitives need to be converted to java boxed values
+      // annotations and logical types need to be taken into account
 
-        // each field needs to be converted into an avro compatible value
-        // so scala primitives need to be converted to java boxed values
-        // annotations and logical types need to be taken into account
-
-        // if the field is annotated with @AvroFixed then we override the type to be a vector of bytes
-        extractor.fixed match {
-          case Some(_) =>
-            q"""{
+      // if the field is annotated with @AvroFixed then we override the type to be a vector of bytes
+      extractor.fixed match {
+        case Some(_) =>
+          q"""{
                 t.$name match {
                   case s: String => s.getBytes("UTF-8").array.toVector
                   case a: Array[Byte] => a.toVector
@@ -284,31 +284,42 @@ object Encoder {
                 }
               }
            """
-          case None =>
+        case None =>
 
-            // if a field is a value class we need to encode the underlying type,
-            // not the (case) class that is wrapping the field
-            if (fieldIsValueType) {
+          //          // if a field is a value class we need to encode the underlying type,
+          //          // not the (case) class that is wrapping the field
+          //          if (fieldIsValueType) {
+          //
+          //            val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+          //            val backingType = valueCstr.typeSignatureIn(fieldTpe)
+          //            val backingField = valueCstr.name.asInstanceOf[c.TermName]
+          //
+          //            // we grab the value by using t.name.backingField which gets
+          //            // the instance of the value type, and then the backing value
+          //            // itself from the value type
+          //            q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$backingType](t.$name.$backingField, $index, schema, $tpeName)"""
 
-              val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-              val backingType = valueCstr.typeSignatureIn(fieldTpe)
-              val backingField = valueCstr.name.asInstanceOf[c.TermName]
+          //   } else {
 
-              // we grab the value by using t.name.backingField which gets
-              // the instance of the value type, and then the backing value
-              // itself from the value type
-              q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$backingType](t.$name.$backingField, $index, schema, $tpeName)"""
-
-            } else {
-
-              // we get the field from the case class instance ( t.$name ) and then pass
-              // that value, and the schema for the record to an implicit
-              // Encoder which will return an avro compatible value
-              q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $tpeName)"""
-            }
-        }
+          // we get the field from the case class instance ( t.$name ) and then pass
+          // that value, and the schema for the record to an implicit
+          // Encoder which will return an avro compatible value
+          q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $tpeName)"""
+        //  }
       }
+    }
 
+    // if we are encoding a value type, then we don't want to group the encoded field values
+    // into a Record, but instead we just want to return whatever the value type's single field was
+    if (isValueClass) {
+      c.Expr[Encoder[T]](
+        q"""
+            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = Seq(..$fields).head
+            }
+        """
+      )
+    } else {
       c.Expr[Encoder[T]](
         q"""
             new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
@@ -319,19 +330,13 @@ object Encoder {
         """
       )
     }
-  }
 
-  def extractTraitSubschema(implClassName: String, schema: Schema): Schema = {
-    import scala.collection.JavaConverters._
-    require(schema.getType == Schema.Type.UNION, "Can only extract subschema from a UNION")
-    schema.getTypes.asScala
-      .find(_.getFullName == implClassName)
-      .getOrElse(sys.error(s"Cannot find subschema for class $implClassName"))
+    //  }
   }
 
   /**
-    * Takes the encoded values from the field of a case class and builds
-    * a [[ImmutableRecord]] from them and the given schema.
+    * Takes the encoded values from the fields of a type T and builds
+    * an [[ImmutableRecord]] from them, using the given schema.
     *
     * The schema for a record must be of Type [[Schema.Type.RECORD]] but
     * the case class may have been a subclass of a trait. In this case
@@ -346,9 +351,8 @@ object Encoder {
       case Schema.Type.RECORD =>
         ImmutableRecord(schema, values.toVector)
       case _ =>
-        sys.error("Trying to encode a field from a schema which is neither a record nor a union")
+        sys.error(s"Trying to encode a field from schema $schema which is neither a RECORD nor a UNION")
     }
-
   }
 
   /**
@@ -358,8 +362,8 @@ object Encoder {
     *
     * Note: The field may be a member of a subclass of a trait, in which case
     * the schema passed in will be a union. Therefore we must extract the correct
-    * subschema from the union. We can do this by using the name of the fields
-    * containing class, and comparing to the names of the subschemas
+    * subschema from the union. We can do this by using the name of the
+    * containing class, and comparing to the record full names in the subschemas.
     *
     */
   def encodeField[T](t: T, index: Int, schema: Schema, containingClassFQN: String)(implicit encoder: Encoder[T]): AnyRef = {
@@ -371,10 +375,17 @@ object Encoder {
       case Schema.Type.RECORD =>
         val field = schema.getFields.get(index)
         encoder.encode(t, field.schema)
+      // otherwise we are encoding a simple field
       case _ =>
-        sys.error("Trying to encode a field from a schema which is neither a record nor a union")
+        encoder.encode(t, schema)
     }
   }
 
-  def encodeT[T](t: T, schema: Schema)(implicit encoder: Encoder[T]): AnyRef = encoder.encode(t, schema)
+  def extractTraitSubschema(implClassName: String, schema: Schema): Schema = {
+    import scala.collection.JavaConverters._
+    require(schema.getType == Schema.Type.UNION, "Can only extract subschemas from a UNION")
+    schema.getTypes.asScala
+      .find(_.getFullName == implClassName)
+      .getOrElse(sys.error(s"Cannot find subschema for class $implClassName"))
+  }
 }
