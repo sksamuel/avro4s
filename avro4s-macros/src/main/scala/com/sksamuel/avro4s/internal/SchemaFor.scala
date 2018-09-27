@@ -199,10 +199,10 @@ object SchemaFor extends LowPrioritySchemaFor {
     val aliases = extractor.aliases
     val props = extractor.props
 
+    // if the class is a value type, then we need to use the schema for the single field of the type
+    // if we have a value type AND @AvroFixed is present, then we return a schema of type fixed
     if (valueType) {
-      // we can only have a single field in a value type
       val field = fields.head
-      // if we have a value type AND fixed is non empty, then we return a schema of type fixed
       extractor.fixed.fold(field.schema) { size =>
         val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
         props.foreach { case (k, v) => builder.prop(k, v) }
