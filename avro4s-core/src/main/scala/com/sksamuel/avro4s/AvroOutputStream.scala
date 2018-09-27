@@ -3,17 +3,11 @@ package com.sksamuel.avro4s
 import java.io.{File, OutputStream}
 import java.nio.file.{Files, Path}
 
-import com.sksamuel.avro4s.internal.Encoder
+import com.sksamuel.avro4s.internal.{Decoder, Encoder}
 import org.apache.avro.Schema
 import org.apache.avro.file.CodecFactory
-
-//import java.io.{File, OutputStream}
-//import java.nio.file.{Files, Path}
-//
-//import org.apache.avro.Schema
-//import org.apache.avro.file.{CodecFactory, DataFileWriter}
-//import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
-//import org.apache.avro.io.EncoderFactory
+import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
+import org.apache.avro.io.EncoderFactory
 
 /**
   * An [[AvroOutputStream]] will write instances of T to an underlying
@@ -36,75 +30,49 @@ trait AvroOutputStream[T] {
   def write(ts: Seq[T]): Unit = ts.foreach(write)
 }
 
+
+class DefaultAvroOutputStream[T](os: OutputStream, schema: Schema, serializer: org.apache.avro.io.Encoder)
+                                (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
+
+  private val datumWriter = new GenericDatumWriter[GenericRecord](schema)
+
+  override def close(): Unit = close(true)
+  override def close(closeUnderlying: Boolean): Unit = {
+    flush()
+    if (closeUnderlying)
+      os.close()
+  }
+
+  override def write(t: T): Unit = {
+    val record = encoder.encode(t, schema).asInstanceOf[GenericRecord]
+    datumWriter.write(record, serializer)
+  }
+
+  override def flush(): Unit = serializer.flush()
+  override def fSync(): Unit = ()
+}
+
 object AvroOutputStream {
 
-  def binary[T: Encoder](file: File, schema: Schema): AvroBinaryOutputStream[T] = binary(file.toPath, schema)
-  def binary[T: Encoder](path: Path, schema: Schema): AvroBinaryOutputStream[T] = binary(Files.newOutputStream(path), schema)
-  def binary[T: Encoder](os: OutputStream, schema: Schema): AvroBinaryOutputStream[T] = AvroBinaryOutputStream(os, schema)
+  /**
+    * An [[AvroOutputStream]] that does not write the [[org.apache.avro.Schema]]. Use this when
+    * you want the smallest messages possible at the cost of not having the schema available
+    * in the messages for downstream clients.
+    */
+  def binary[T: Encoder](file: File, schema: Schema): AvroOutputStream[T] = binary(file.toPath, schema)
+  def binary[T: Encoder](path: Path, schema: Schema): AvroOutputStream[T] = binary(Files.newOutputStream(path), schema)
+  def binary[T: Encoder](os: OutputStream, schema: Schema): AvroOutputStream[T] = new DefaultAvroOutputStream(os, schema, EncoderFactory.get.binaryEncoder(os, null))
+
+  // avro output stream that writes json instead of a packed format
+  def json[T: Encoder](file: File, schema: Schema): AvroOutputStream[T] = json(file.toPath, schema)
+  def json[T: Encoder](path: Path, schema: Schema): AvroOutputStream[T] = json(Files.newOutputStream(path), schema)
+  def json[T: Encoder](os: OutputStream, schema: Schema): AvroOutputStream[T] = new DefaultAvroOutputStream(os, schema, EncoderFactory.get.jsonEncoder(schema, os, true))
 
   def data[T: Encoder](file: File, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = data(file.toPath, schema, codec)
   def data[T: Encoder](path: Path, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = data(Files.newOutputStream(path), schema, codec)
   def data[T: Encoder](os: OutputStream, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = AvroDataOutputStream(os, schema, codec)
 
-  // convenience api for cases where the user wants to use the default codec.
   def data[T: Encoder](file: File, schema: Schema): AvroDataOutputStream[T] = data(file.toPath, schema)
   def data[T: Encoder](path: Path, schema: Schema): AvroDataOutputStream[T] = data(Files.newOutputStream(path), schema)
   def data[T: Encoder](os: OutputStream, schema: Schema): AvroDataOutputStream[T] = AvroDataOutputStream(os, schema)
 }
-
-//// avro output stream that does not write the schema, only use when you want the smallest messages possible
-//// at the cost of not having the schema available in the messages for downstream clients
-//case class AvroBinaryOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
-//  extends AvroOutputStream[T] {
-//
-//  val dataWriter = new GenericDatumWriter[GenericRecord](schemaFor())
-//  val encoder = EncoderFactory.get().binaryEncoder(os, null)
-//
-//  override def close(): Unit = close(true)
-//  override def close(closeUnderlying: Boolean): Unit = {
-//    flush()
-//    if (closeUnderlying)
-//      os.close()
-//  }
-//
-//  override def write(t: T): Unit = dataWriter.write(toRecord(t), encoder)
-//  override def flush(): Unit = encoder.flush()
-//  override def fSync(): Unit = ()
-//}
-//
-
-//
-//// avro output stream that writes json instead of a packed format
-//case class AvroJsonOutputStream[T](os: OutputStream)(implicit schemaFor: SchemaFor[T], toRecord: ToRecord[T])
-//  extends AvroOutputStream[T] {
-//
-//  private val schema = schemaFor()
-//  protected val datumWriter = new GenericDatumWriter[GenericRecord](schema)
-//  private val encoder = EncoderFactory.get.jsonEncoder(schema, os)
-//
-//  override def close(): Unit = close(true)
-//  override def close(closeUnderlying: Boolean): Unit = {
-//    flush()
-//    if (closeUnderlying)
-//      os.close()
-//  }
-//
-//  override def write(t: T): Unit = datumWriter.write(toRecord(t), encoder)
-//  override def fSync(): Unit = {}
-//  override def flush(): Unit = encoder.flush()
-//}
-//
-//object AvroOutputStream {
-//
-//  def json[T: SchemaFor : ToRecord](file: File): AvroJsonOutputStream[T] = json(file.toPath)
-//  def json[T: SchemaFor : ToRecord](path: Path): AvroJsonOutputStream[T] = json(Files.newOutputStream(path))
-//  def json[T: SchemaFor : ToRecord](os: OutputStream): AvroJsonOutputStream[T] = AvroJsonOutputStream(os)
-//
-//  def data[T: SchemaFor : ToRecord](file: File, codec: CodecFactory): AvroDataOutputStream[T] = data(file.toPath, codec)
-//  def data[T: SchemaFor : ToRecord](path: Path, codec: CodecFactory): AvroDataOutputStream[T] = data(Files.newOutputStream(path), codec)
-//  def data[T: SchemaFor : ToRecord](os: OutputStream, codec: CodecFactory): AvroDataOutputStream[T] = AvroDataOutputStream(os, codec)
-//
-
-//
-
-//}
