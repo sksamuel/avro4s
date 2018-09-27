@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, ImmutableRecord}
+import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
 
@@ -81,6 +82,22 @@ class ArrayEncoderTest extends WordSpec with Matchers {
     //    "support Seq[Tuple3]" in {
     //      val schema = SchemaEncoder[TupleTest3]
     //    }
+    "support top level Seq[Double]" in {
+      val schema = AvroSchema[Array[Double]]
+      Encoder[Array[Double]].encode(Array(1.2, 34.5, 54.3), schema) shouldBe new GenericData.Array[Double](schema, List(1.2, 34.5, 54.3).asJava)
+    }
+    "support top level List[Int]" in {
+      val schema = AvroSchema[List[Int]]
+      Encoder[List[Int]].encode(List(1, 4, 9), schema) shouldBe new GenericData.Array[Int](schema, List(1, 4, 9).asJava)
+    }
+    "support top level Vector[String]" in {
+      val schema = AvroSchema[Vector[String]]
+      Encoder[Vector[String]].encode(Vector("a", "z"), schema) shouldBe new GenericData.Array[Utf8](schema, List(new Utf8("a"), new Utf8("z")).asJava)
+    }
+    "support top level Set[Boolean]" in {
+      val schema = AvroSchema[Set[Boolean]]
+      Encoder[Set[Boolean]].encode(Set(true, false, true), schema) shouldBe new GenericData.Array[Boolean](schema, List(true, false).asJava)
+    }
   }
 }
 

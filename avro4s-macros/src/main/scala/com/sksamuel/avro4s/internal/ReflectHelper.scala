@@ -39,6 +39,8 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     }
   }
 
+  def isCaseClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isCaseClass
+
   /**
     * Returns true if the given type is a value class.
     */

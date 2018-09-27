@@ -6,7 +6,6 @@ import java.util.UUID
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes}
 
-import scala.annotation.switch
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
@@ -22,6 +21,8 @@ trait Decoder[T] extends Serializable {
 }
 
 object Decoder {
+
+  def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
   implicit object BooleanDecoder extends Decoder[Boolean] {
     override def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
@@ -67,7 +68,7 @@ object Decoder {
 
   implicit object StringDecoder extends Decoder[String] {
     override def decode(value: Any): String =
-      (value: @switch) match {
+      value match {
         case u: Utf8 => u.toString
         case s: String => s
         case other => other.toString
@@ -101,7 +102,7 @@ object Decoder {
     override def decode(value: Any): Array[T] = value match {
       case array: Array[_] => array.map(decoder.decode)
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toArray
-      case other => sys.error("Unsupported array " + other)
+      case other => sys.error(s"Unsupported array type ${other.getClass} " + other)
     }
   }
 
@@ -179,9 +180,10 @@ object Decoder {
     override def decode(t: Any): E = enum.withName(t.toString).asInstanceOf[E]
   }
 
-  implicit def apply[T]: Decoder[T] = macro applyImpl[T]
 
-  def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Decoder[T]] = {
+  implicit def applyMacro[T]: Decoder[T] = macro applyMacroImpl[T]
+
+  def applyMacroImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Decoder[T]] = {
 
     import c.universe._
 
@@ -191,16 +193,21 @@ object Decoder {
     //Console.out.println(s"Require a case clsas but $tpe is not")
 
     val valueType = reflect.isValueClass(tpe)
+    val caseClass = reflect.isCaseClass(tpe)
 
-    // if we have a value type then we want to return an decoder that decodes
-    // the backing field and wraps it in an instance of the value type
-    if (valueType) {
+    if (!caseClass) {
+      c.abort(c.enclosingPosition.pos, s"This macro can only encode case classes, not instance of $tpe")
+    } else {
 
-      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-      val backingFieldTpe = valueCstr.typeSignature
+      // if we have a value type then we want to return an decoder that decodes
+      // the backing field and wraps it in an instance of the value type
+      if (valueType) {
 
-      c.Expr[Decoder[T]](
-        q"""
+        val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+        val backingFieldTpe = valueCstr.typeSignature
+
+        c.Expr[Decoder[T]](
+          q"""
           new _root_.com.sksamuel.avro4s.internal.Decoder[$tpe] {
             override def decode(value: Any): $tpe = {
               val decoded = _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$backingFieldTpe](value)
@@ -208,57 +215,57 @@ object Decoder {
             }
           }
        """
-      )
+        )
 
-    } else {
+      } else {
 
-      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
+        val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
 
-        val fieldName = fieldSym.name.asInstanceOf[c.TermName]
-        // todo handle avro name annotation
-        // val decodedName: Tree = helper.avroName(sym).getOrElse(q"${name.decodedName.toString}")
-        val decodedName = q"${fieldName.decodedName.toString}"
-        val isFieldAValueType = reflect.isValueClass(fieldTpe)
+          val fieldName = fieldSym.name.asInstanceOf[c.TermName]
+          // todo handle avro name annotation
+          // val decodedName: Tree = helper.avroName(sym).getOrElse(q"${name.decodedName.toString}")
+          val decodedName = q"${fieldName.decodedName.toString}"
+          val isFieldAValueType = reflect.isValueClass(fieldTpe)
 
-        if (isFieldAValueType) {
+          if (isFieldAValueType) {
 
-          //  Console.out.println(s"$fieldTpe is a value type")
+            //  Console.out.println(s"$fieldTpe is a value type")
 
-          val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-          val backingFieldTpe = valueCstr.typeSignature
+            val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+            val backingFieldTpe = valueCstr.typeSignature
 
-          //  Console.out.println(s"backing field type is $backingFieldTpe")
+            //  Console.out.println(s"backing field type is $backingFieldTpe")
 
-          // for a value type we first decode the avro type into some scala happy type using an
-          // encoder for the backing type, and then we wrap it in an instance of the value class itself
-          q"""{
+            // for a value type we first decode the avro type into some scala happy type using an
+            // encoder for the backing type, and then we wrap it in an instance of the value class itself
+            q"""{
                   val raw = record.get($index)
                   val decoded = _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$backingFieldTpe](raw) : $backingFieldTpe
                   new $fieldTpe(decoded) : $fieldTpe
             }
          """
 
-        } else {
+          } else {
 
-          q"""{
+            q"""{
                   val value = record.get($index)
                   _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$fieldTpe](value) : $fieldTpe
             }
          """
+          }
         }
-      }
 
-      // the companion object where the apply construction method is located
-      val companion = tpe.typeSymbol.companion
+        // the companion object where the apply construction method is located
+        val companion = tpe.typeSymbol.companion
 
-      if (companion == NoSymbol) {
-        val error = s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a higher enclosing scope."
-        Console.err.println(error)
-        c.abort(c.enclosingPosition.pos, error)
-      }
+        if (companion == NoSymbol) {
+          val error = s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a higher enclosing scope."
+          Console.err.println(error)
+          c.abort(c.enclosingPosition.pos, error)
+        }
 
-      c.Expr[Decoder[T]](
-        q"""
+        c.Expr[Decoder[T]](
+          q"""
           new _root_.com.sksamuel.avro4s.internal.Decoder[$tpe] {
             override def decode(value: Any): $tpe = {
               val record = value.asInstanceOf[_root_.org.apache.avro.generic.IndexedRecord]
@@ -266,8 +273,8 @@ object Decoder {
             }
           }
        """
-      )
-
+        )
+      }
     }
   }
 

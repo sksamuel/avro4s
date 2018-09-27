@@ -37,6 +37,8 @@ case class Exported[A](instance: A) extends AnyVal
 
 object Encoder {
 
+  def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
+
   implicit def genTraitOfObjectsEncoder[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
                                                                        objs: Reify.Aux[C, L], toList: ToList[L, T]): Encoder[T] = new Encoder[T] {
 
@@ -226,9 +228,9 @@ object Encoder {
     }
   }
 
-  implicit def apply[T]: Encoder[T] = macro applyImpl[T]
+  implicit def applyMacro[T]: Encoder[T] = macro applyMacroImpl[T]
 
-  def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Encoder[T]] = {
+  def applyMacroImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Encoder[T]] = {
 
     import c.universe._
 
@@ -239,49 +241,55 @@ object Encoder {
     val annos = reflect.annotations(tpe.typeSymbol)
     val extractor = new AnnotationExtractors(annos)
     val isValueClass = reflect.isValueClass(tpe)
+    val isCaseClass = reflect.isCaseClass(tpe)
 
-    // if we have a value type then we want to return an Encoder that encodes
-    // the backing field. The schema passed to this encoder will not be
-    // a record schema, but a schema for the backing value and so it can be used
-    // directly rather than calling .getFields like we do for a non value type
-    //  if (valueType) {
+    // we only encode case classes here
+    if (!isCaseClass) {
+      c.abort(c.enclosingPosition.pos, "This macro only encodes case classes")
+    } else {
 
-    //      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-    //      val backingType = valueCstr.typeSignature
-    //      val backingField = valueCstr.name.asInstanceOf[c.TermName]
-    //
-    //      c.Expr[Encoder[T]](
-    //        q"""
-    //            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
-    //              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-    //                _root_.com.sksamuel.avro4s.internal.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
-    //              }
-    //            }
-    //        """
-    //      )
+      // if we have a value type then we want to return an Encoder that encodes
+      // the backing field. The schema passed to this encoder will not be
+      // a record schema, but a schema for the backing value and so it can be used
+      // directly rather than calling .getFields like we do for a non value type
+      //  if (valueType) {
 
-    //} else {
+      //      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+      //      val backingType = valueCstr.typeSignature
+      //      val backingField = valueCstr.name.asInstanceOf[c.TermName]
+      //
+      //      c.Expr[Encoder[T]](
+      //        q"""
+      //            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+      //              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
+      //                _root_.com.sksamuel.avro4s.internal.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
+      //              }
+      //            }
+      //        """
+      //      )
 
-    // If not a value type we return an Encoder that will delegate to the buildRecord
-    // method, passing in the values fetched from each field in the case class,
-    // along with the schema and other metadata required
+      //} else {
 
-    // each field will be invoked to get the raw value, before being passed to an
-    // encoder for that type to retrieve the happy happy avro value
-    val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
+      // If not a value type we return an Encoder that will delegate to the buildRecord
+      // method, passing in the values fetched from each field in the case class,
+      // along with the schema and other metadata required
 
-      val name = f.name.asInstanceOf[c.TermName]
-      val annos = reflect.annotations(tpe.typeSymbol)
-      val extractor = new AnnotationExtractors(annos)
+      // each field will be invoked to get the raw value, before being passed to an
+      // encoder for that type to retrieve the happy happy avro value
+      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
 
-      // each field needs to be converted into an avro compatible value
-      // so scala primitives need to be converted to java boxed values
-      // annotations and logical types need to be taken into account
+        val name = f.name.asInstanceOf[c.TermName]
+        val annos = reflect.annotations(tpe.typeSymbol)
+        val extractor = new AnnotationExtractors(annos)
 
-      // if the field is annotated with @AvroFixed then we override the type to be a vector of bytes
-      extractor.fixed match {
-        case Some(_) =>
-          q"""{
+        // each field needs to be converted into an avro compatible value
+        // so scala primitives need to be converted to java boxed values
+        // annotations and logical types need to be taken into account
+
+        // if the field is annotated with @AvroFixed then we override the type to be a vector of bytes
+        extractor.fixed match {
+          case Some(_) =>
+            q"""{
                 t.$name match {
                   case s: String => s.getBytes("UTF-8").array.toVector
                   case a: Array[Byte] => a.toVector
@@ -289,42 +297,41 @@ object Encoder {
                 }
               }
            """
-        case None =>
+          case None =>
 
-          // We get the instance for the field from the class by invoking the
-          // getter ( t.$name ) and then pass that value, and the schema for
-          // the record to an Encoder[<Type For Field>]
+            // We get the instance for the field from the class by invoking the
+            // getter ( t.$name ) and then pass that value, and the schema for
+            // the record to an Encoder[<Type For Field>]
 
-          // Note: If the field is a value class, then this macro will be summoned again
-          // and the value type will be the type argument to the macro.
-          q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $tpeName)"""
+            // Note: If the field is a value class, then this macro will be summoned again
+            // and the value type will be the type argument to the macro.
+            q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $tpeName)"""
+        }
       }
-    }
 
-    // An encoder for a value type just needs to pass through the given value into an encoder
-    // for the backing type. At runtime, the value type class won't exist, and the input
-    // will be an instance of whatever the backing field of the value class was defined to be.
-    if (isValueClass) {
-      c.Expr[Encoder[T]](
-        q"""
+      // An encoder for a value type just needs to pass through the given value into an encoder
+      // for the backing type. At runtime, the value type class won't exist, and the input
+      // will be an instance of whatever the backing field of the value class was defined to be.
+      if (isValueClass) {
+        c.Expr[Encoder[T]](
+          q"""
             new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
               override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = Seq(..$fields).head
             }
         """
-      )
-    } else {
-      c.Expr[Encoder[T]](
-        q"""
+        )
+      } else {
+        c.Expr[Encoder[T]](
+          q"""
             new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
               override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
                 _root_.com.sksamuel.avro4s.internal.Encoder.buildRecord(schema, Seq(..$fields), $tpeName)
               }
             }
         """
-      )
+        )
+      }
     }
-
-    //  }
   }
 
   /**
