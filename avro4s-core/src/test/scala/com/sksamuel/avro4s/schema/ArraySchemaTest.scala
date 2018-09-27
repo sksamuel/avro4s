@@ -61,19 +61,19 @@ class ArraySchemaTest extends WordSpec with Matchers {
     "generate array type for a Set of records" in {
       case class Nested(goo: String)
       case class NestedSet(set: Set[Nested])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setrecords.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setrecords.json"))
       val schema = AvroSchema[NestedSet]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a Set of strings" in {
       case class Test(set: Set[String])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setstrings.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setstrings.json"))
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate array type for a Set of doubles" in {
       case class NestedSetDouble(set: Set[Double])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setdoubles.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/setdoubles.json"))
       val schema = AvroSchema[NestedSetDouble]
       schema.toString(true) shouldBe expected.toString(true)
     }
@@ -85,6 +85,26 @@ class ArraySchemaTest extends WordSpec with Matchers {
     "support Seq[Tuple3]" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple3.json"))
       val schema = AvroSchema[TupleTest3]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support top level Seq[Double]" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_seq_double.json"))
+      val schema = AvroSchema[Array[Double]]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support top level List[Int]" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_list_int.json"))
+      val schema = AvroSchema[List[Int]]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support top level Vector[String]" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_vector_string.json"))
+      val schema = AvroSchema[Vector[String]]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support top level Set[Boolean]" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_set_boolean.json"))
+      val schema = AvroSchema[Set[Boolean]]
       schema.toString(true) shouldBe expected.toString(true)
     }
   }
