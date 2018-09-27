@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "CPWithOption",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "u",
+      "type": [
+        "null",
+        "int",
+        "string",
+        "boolean",
+        {
+          "type": "record",
+          "name": "Gimble",
+          "fields": [
+            {
+              "name": "x",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

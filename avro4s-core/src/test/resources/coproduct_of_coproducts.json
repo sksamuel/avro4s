@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "CoproductOfCoproducts",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "cp",
+      "type": [
+        "int",
+        "string",
+        "boolean"
+      ]
+    }
+  ]
+}

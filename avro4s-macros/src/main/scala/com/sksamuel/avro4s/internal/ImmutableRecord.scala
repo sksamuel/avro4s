@@ -11,6 +11,7 @@ import org.apache.avro.specific.SpecificRecord
 trait Record extends GenericRecord with SpecificRecord
 
 case class ImmutableRecord(schema: Schema, values: Vector[AnyRef]) extends Record {
+  require(schema.getType == Schema.Type.RECORD, "Cannot create an ImmutableRecord with a schema that is not a RECORD")
 
   import scala.collection.JavaConverters._
 

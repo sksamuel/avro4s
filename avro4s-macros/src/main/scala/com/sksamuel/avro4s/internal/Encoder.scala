@@ -7,9 +7,13 @@ import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
+import shapeless.ops.coproduct.Reify
+import shapeless.ops.hlist.ToList
+import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inl, Inr}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode
+import scala.reflect.ClassTag
 
 /**
   * An [[Encoder]] returns an Avro compatible value for a given
@@ -27,129 +31,24 @@ case class Exported[A](instance: A) extends AnyVal
 
 object Encoder {
 
-  implicit def apply[T]: Encoder[T] = macro applyImpl[T]
+  implicit def genTraitOfObjectsEncoder[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
+                                                                       objs: Reify.Aux[C, L], toList: ToList[L, T]): Encoder[T] = new Encoder[T] {
 
-  def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Encoder[T]] = {
+    import scala.reflect.runtime.universe._
+    import scala.collection.JavaConverters._
 
-    import c.universe._
-
-    val reflect = ReflectHelper(c)
-    val tpe = weakTypeTag[T].tpe
-
-    val annos = reflect.annotations(tpe.typeSymbol)
-    val extractor = new AnnotationExtractors(annos)
-    val valueType = reflect.isValueClass(tpe)
-
-    // if we have a value type then we want to return an Encoder that encodes
-    // the backing field. The schema passed to this encoder will not be
-    // a record schema, but a schema for the backing value and so it can be used
-    // directly rather than calling .getFields like we do for a non value type
-    if (valueType) {
-
-      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-      val backingType = valueCstr.typeSignature
-      val backingField = valueCstr.name.asInstanceOf[c.TermName]
-
-      c.Expr[Encoder[T]](
-        q"""
-            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
-              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-                _root_.com.sksamuel.avro4s.internal.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
-              }
-            }
-        """
-      )
-
-    } else {
-
-      // If not a value type we return an Encoder that will delegate to the buildRecord
-      // method, passing in the values fetched from each field in the case class,
-      // along with the schema and other metadata required
-
-      // each field will be invoked to get the raw value, before being passed to an
-      // encoder for that type to retrieve the happy happy avro value
-      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
-
-        val name = f.name.asInstanceOf[c.TermName]
-        val annos = reflect.annotations(tpe.typeSymbol)
-        val extractor = new AnnotationExtractors(annos)
-        val fieldIsValueType = reflect.isValueClass(fieldTpe)
-
-        // each field needs to be converted into an avro compatible value
-        // so scala primitives need to be converted to java boxed values
-        // annotations and logical types need to be taken into account
-
-        // if the field is annotated with @AvroFixed then we override the type to be a vector of bytes
-        extractor.fixed match {
-          case Some(_) =>
-            q"""{
-                t.$name match {
-                  case s: String => s.getBytes("UTF-8").array.toVector
-                  case a: Array[Byte] => a.toVector
-                  case v: Vector[Byte] => v
-                }
-              }
-           """
-          case None =>
-
-            // if a field is a value class we need to encode the underlying type,
-            // not the (case) class that is wrapping the field
-            if (fieldIsValueType) {
-
-              val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-              val backingType = valueCstr.typeSignatureIn(fieldTpe)
-              val backingField = valueCstr.name.asInstanceOf[c.TermName]
-
-              // we grab the value by using t.name.underlyingFieldName which gets the instance of the value type
-              // then the real types instance inside the value type
-              q"""{
-                  val field = schema.getFields.get($index)
-                  _root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$backingType](t.$name.$backingField : $backingType, field)
-                }
-              """
-
-            } else {
-
-              // we get the field from the case class instance ( t.$name ) and then pass
-              // that value, and the schema for the field (based off index) to an implicit
-              // Encoder which will return an avro compatible value
-              q"""{
-                  val field = schema.getFields.get($index)
-                  _root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name : $fieldTpe, field)
-                }
-              """
-            }
-        }
-      }
-
-      c.Expr[Encoder[T]](
-        q"""
-            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
-              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-                _root_.com.sksamuel.avro4s.internal.Encoder.buildRecord(schema, Seq(..$fields))
-              }
-            }
-        """
-      )
+    protected val schema: Schema = {
+      val tpe = weakTypeTag[T]
+      val namespace = tpe.tpe.typeSymbol.annotations.map(_.toString)
+        .find(_.startsWith("com.sksamuel.avro4s.AvroNamespace"))
+        .map(_.stripPrefix("com.sksamuel.avro4s.AvroNamespace(\"").stripSuffix("\")"))
+        .getOrElse(ct.runtimeClass.getPackage.getName)
+      val name = ct.runtimeClass.getSimpleName
+      val symbols = toList(objs()).map(_.toString).asJava
+      Schema.createEnum(name, null, namespace, symbols)
     }
-  }
 
-  // takes the values fetched from the instance T and builds a record
-  def buildRecord(schema: Schema, values: Seq[AnyRef]): AnyRef = {
-    ImmutableRecord(schema, values.toVector)
-  }
-
-  def encodeField[T](t: T, field: Schema.Field)(implicit encoder: Encoder[T]): AnyRef = {
-    encoder.encode(t, field.schema)
-  }
-
-  def encodeT[T](t: T, schema: Schema)(implicit encoder: Encoder[T]): AnyRef = encoder.encode(t, schema)
-
-  implicit def eitherEncoder[T, U](implicit leftEncoder: Encoder[T], rightEncoder: Encoder[U]): Encoder[Either[T, U]] = new Encoder[Either[T, U]] {
-    override def encode(t: Either[T, U], schema: Schema): AnyRef = t match {
-      case Left(left) => leftEncoder.encode(left, schema.getTypes.get(0))
-      case Right(right) => rightEncoder.encode(right, schema.getTypes.get(1))
-    }
+    override def encode(value: T, schema: Schema): EnumSymbol = new EnumSymbol(schema, value.toString)
   }
 
   implicit object StringEncoder extends Encoder[String] {
@@ -265,7 +164,14 @@ object Encoder {
     }
   }
 
-  implicit object decimalEncoder extends Encoder[BigDecimal] {
+  implicit def eitherEncoder[T, U](implicit leftEncoder: Encoder[T], rightEncoder: Encoder[U]): Encoder[Either[T, U]] = new Encoder[Either[T, U]] {
+    override def encode(t: Either[T, U], schema: Schema): AnyRef = t match {
+      case Left(left) => leftEncoder.encode(left, schema.getTypes.get(0))
+      case Right(right) => rightEncoder.encode(right, schema.getTypes.get(1))
+    }
+  }
+
+  implicit object BigDecimalEncoder extends Encoder[BigDecimal] {
 
     override def encode(t: BigDecimal, schema: Schema): ByteBuffer = {
 
@@ -287,4 +193,188 @@ object Encoder {
   implicit def scalaEnumEncoder[E <: Enumeration#Value]: Encoder[E] = new Encoder[E] {
     override def encode(t: E, schema: Schema): EnumSymbol = new EnumSymbol(schema, t.toString)
   }
+
+  implicit def genCoproductEncoder[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                                      coproductEncoder: Encoder[C]): Encoder[T] = new Encoder[T] {
+    override def encode(value: T, schema: Schema): AnyRef = coproductEncoder.encode(gen.to(value), schema)
+  }
+
+  // A coproduct is a union, or a generalised either.
+  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
+
+  // Shapeless's implementation builds up the type recursively,
+  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
+
+  // `encode` here should never actually be invoked, because you can't
+  // actually construct a value of type a: CNil, but the Encoder[CNil]
+  // needs to exist to supply a base case for the recursion.
+  implicit def cnilEncoder: Encoder[CNil] = new Encoder[CNil] {
+    override def encode(t: CNil, schema: Schema): AnyRef = sys.error("This should never happen: CNil has no inhabitants")
+  }
+
+  // A :+: B is either Inl(value: A) or Inr(value: B), continuing the recursion
+  implicit def coproductEncoder[S, T <: Coproduct](implicit encoderS: Encoder[S], encoderT: Encoder[T]): Encoder[S :+: T] = new Encoder[S :+: T] {
+    override def encode(value: S :+: T, schema: Schema): AnyRef = value match {
+      case Inl(s) => encoderS.encode(s, schema)
+      case Inr(t) => encoderT.encode(t, schema)
+    }
+  }
+
+  implicit def apply[T]: Encoder[T] = macro applyImpl[T]
+
+  def applyImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Encoder[T]] = {
+
+    import c.universe._
+
+    val reflect = ReflectHelper(c)
+    val tpe = weakTypeTag[T].tpe
+    val tpeName = tpe.typeSymbol.fullName
+
+    val annos = reflect.annotations(tpe.typeSymbol)
+    val extractor = new AnnotationExtractors(annos)
+    val valueType = reflect.isValueClass(tpe)
+
+    // if we have a value type then we want to return an Encoder that encodes
+    // the backing field. The schema passed to this encoder will not be
+    // a record schema, but a schema for the backing value and so it can be used
+    // directly rather than calling .getFields like we do for a non value type
+    if (valueType) {
+
+      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+      val backingType = valueCstr.typeSignature
+      val backingField = valueCstr.name.asInstanceOf[c.TermName]
+
+      c.Expr[Encoder[T]](
+        q"""
+            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
+                _root_.com.sksamuel.avro4s.internal.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
+              }
+            }
+        """
+      )
+
+    } else {
+
+      // If not a value type we return an Encoder that will delegate to the buildRecord
+      // method, passing in the values fetched from each field in the case class,
+      // along with the schema and other metadata required
+
+      // each field will be invoked to get the raw value, before being passed to an
+      // encoder for that type to retrieve the happy happy avro value
+      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
+
+        val name = f.name.asInstanceOf[c.TermName]
+        val annos = reflect.annotations(tpe.typeSymbol)
+        val extractor = new AnnotationExtractors(annos)
+        val fieldIsValueType = reflect.isValueClass(fieldTpe)
+
+        // each field needs to be converted into an avro compatible value
+        // so scala primitives need to be converted to java boxed values
+        // annotations and logical types need to be taken into account
+
+        // if the field is annotated with @AvroFixed then we override the type to be a vector of bytes
+        extractor.fixed match {
+          case Some(_) =>
+            q"""{
+                t.$name match {
+                  case s: String => s.getBytes("UTF-8").array.toVector
+                  case a: Array[Byte] => a.toVector
+                  case v: Vector[Byte] => v
+                }
+              }
+           """
+          case None =>
+
+            // if a field is a value class we need to encode the underlying type,
+            // not the (case) class that is wrapping the field
+            if (fieldIsValueType) {
+
+              val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+              val backingType = valueCstr.typeSignatureIn(fieldTpe)
+              val backingField = valueCstr.name.asInstanceOf[c.TermName]
+
+              // we grab the value by using t.name.backingField which gets
+              // the instance of the value type, and then the backing value
+              // itself from the value type
+              q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$backingType](t.$name.$backingField, $index, schema, $tpeName)"""
+
+            } else {
+
+              // we get the field from the case class instance ( t.$name ) and then pass
+              // that value, and the schema for the record to an implicit
+              // Encoder which will return an avro compatible value
+              q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $tpeName)"""
+            }
+        }
+      }
+
+      c.Expr[Encoder[T]](
+        q"""
+            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
+                _root_.com.sksamuel.avro4s.internal.Encoder.buildRecord(schema, Seq(..$fields), $tpeName)
+              }
+            }
+        """
+      )
+    }
+  }
+
+  def extractTraitSubschema(implClassName: String, schema: Schema): Schema = {
+    import scala.collection.JavaConverters._
+    require(schema.getType == Schema.Type.UNION, "Can only extract subschema from a UNION")
+    schema.getTypes.asScala
+      .find(_.getFullName == implClassName)
+      .getOrElse(sys.error(s"Cannot find subschema for class $implClassName"))
+  }
+
+  /**
+    * Takes the encoded values from the field of a case class and builds
+    * a [[ImmutableRecord]] from them and the given schema.
+    *
+    * The schema for a record must be of Type [[Schema.Type.RECORD]] but
+    * the case class may have been a subclass of a trait. In this case
+    * the schema will be a union and so we must extract the correct
+    * subschema from the union.
+    */
+  def buildRecord(schema: Schema, values: Seq[AnyRef], containingClassFQN: String): AnyRef = {
+    schema.getType match {
+      case Schema.Type.UNION =>
+        val subschema = extractTraitSubschema(containingClassFQN, schema)
+        ImmutableRecord(subschema, values.toVector)
+      case Schema.Type.RECORD =>
+        ImmutableRecord(schema, values.toVector)
+      case _ =>
+        sys.error("Trying to encode a field from a schema which is neither a record nor a union")
+    }
+
+  }
+
+  /**
+    * Encodes a field in a case class by bringing in an implicit encoder for the fields type.
+    * The schema passed in here is the schema for the containing type,
+    * and the index is the position of the field in the list of fields of the case class.
+    *
+    * Note: The field may be a member of a subclass of a trait, in which case
+    * the schema passed in will be a union. Therefore we must extract the correct
+    * subschema from the union. We can do this by using the name of the fields
+    * containing class, and comparing to the names of the subschemas
+    *
+    */
+  def encodeField[T](t: T, index: Int, schema: Schema, containingClassFQN: String)(implicit encoder: Encoder[T]): AnyRef = {
+    schema.getType match {
+      case Schema.Type.UNION =>
+        val subschema = extractTraitSubschema(containingClassFQN, schema)
+        val field = subschema.getFields.get(index)
+        encoder.encode(t, field.schema)
+      case Schema.Type.RECORD =>
+        val field = schema.getFields.get(index)
+        encoder.encode(t, field.schema)
+      case _ =>
+        sys.error("Trying to encode a field from a schema which is neither a record nor a union")
+    }
+  }
+
+  def encodeT[T](t: T, schema: Schema)(implicit encoder: Encoder[T]): AnyRef = encoder.encode(t, schema)
 }

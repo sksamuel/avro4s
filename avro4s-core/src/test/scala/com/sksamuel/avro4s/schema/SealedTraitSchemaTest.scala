@@ -1,0 +1,40 @@
+package com.sksamuel.avro4s.schema
+
+import com.sksamuel.avro4s.internal.AvroSchema
+import org.scalatest.{FunSuite, Matchers}
+
+class SealedTraitSchemaTest extends FunSuite with Matchers {
+
+  test("support sealed traits of case classes") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.json"))
+    val schema = AvroSchema[Wrapper]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("support trait subtypes fields with same name") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.json"))
+    val schema = AvroSchema[Trapper]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("support trait subtypes fields with same name and same type") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields_same_type.json"))
+    val schema = AvroSchema[Napper]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+}
+
+sealed trait Wibble
+case class Wobble(str: String) extends Wibble
+case class Wabble(dbl: Double) extends Wibble
+case class Wrapper(wibble: Wibble)
+
+sealed trait Tibble
+case class Tobble(str: String, place: String) extends Tibble
+case class Tabble(str: Double, age: Int) extends Tibble
+case class Trapper(tibble: Tibble)
+
+sealed trait Nibble
+case class Nobble(str: String, place: String) extends Nibble
+case class Nabble(str: String, age: Int) extends Nibble
+case class Napper(nibble: Nibble)

@@ -34,7 +34,6 @@ class OptionSchemaTest extends WordSpec with Matchers {
 
 case class OptionWithDefault(name: Option[String] = Some("f"))
 
-case class Union(union: Int :+: String :+: Boolean :+: CNil)
 case class OptionalUnion(union: Option[Int :+: String :+: CNil])
 case class UnionOfOptional(union: Option[Int] :+: String :+: CNil)
 case class AllOptionals(union: Option[Option[Int] :+: Option[String] :+: CNil])

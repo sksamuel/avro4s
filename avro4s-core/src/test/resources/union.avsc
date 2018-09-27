@@ -1,9 +1,0 @@
-{
-  "type":"record",
-  "name":"Union",
-  "namespace":"com.sksamuel.avro4s.schema",
-  "fields":[ {
-    "name":"union",
-    "type": [ "int", "string", "boolean" ]
-   } ]
-}
