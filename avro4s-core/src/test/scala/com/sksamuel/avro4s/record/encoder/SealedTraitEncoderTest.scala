@@ -33,6 +33,14 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     nobble.get("age") shouldBe 44
     nobble.getSchema shouldBe AvroSchema[Nabble]
   }
+
+  test("support top level ADTs") {
+    val schema = AvroSchema[Nibble]
+    val record = Encoder[Nibble].encode(Nabble("foo", 44), schema).asInstanceOf[GenericRecord]
+    record.get("str") shouldBe new Utf8("foo")
+    record.get("age") shouldBe 44
+    record.getSchema shouldBe AvroSchema[Nabble]
+  }
 }
 
 sealed trait Wibble

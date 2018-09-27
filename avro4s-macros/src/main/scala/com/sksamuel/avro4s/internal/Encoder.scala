@@ -236,16 +236,19 @@ object Encoder {
 
     val reflect = ReflectHelper(c)
     val tpe = weakTypeTag[T].tpe
-    val tpeName = tpe.typeSymbol.fullName
+    val fullName = tpe.typeSymbol.fullName
 
     val annos = reflect.annotations(tpe.typeSymbol)
     val extractor = new AnnotationExtractors(annos)
     val isValueClass = reflect.isValueClass(tpe)
     val isCaseClass = reflect.isCaseClass(tpe)
+    val isSealed = reflect.isSealed(tpe)
 
     // we only encode case classes here
     if (!isCaseClass) {
       c.abort(c.enclosingPosition.pos, "This macro only encodes case classes")
+    } else if (isSealed) {
+      c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
     } else {
 
       // if we have a value type then we want to return an Encoder that encodes
@@ -305,7 +308,7 @@ object Encoder {
 
             // Note: If the field is a value class, then this macro will be summoned again
             // and the value type will be the type argument to the macro.
-            q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $tpeName)"""
+            q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $fullName)"""
         }
       }
 
@@ -325,7 +328,7 @@ object Encoder {
           q"""
             new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
               override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-                _root_.com.sksamuel.avro4s.internal.Encoder.buildRecord(schema, Seq(..$fields), $tpeName)
+                _root_.com.sksamuel.avro4s.internal.Encoder.buildRecord(schema, Seq(..$fields), $fullName)
               }
             }
         """
