@@ -77,7 +77,7 @@ object SchemaFor extends LowPrioritySchemaFor {
     val reflect = ReflectHelper(c)
     val tpe = weakTypeOf[T]
     val packageName = reflect.packageName(tpe)
-    val valueType = reflect.isValueClass(tpe)
+    val isValueClass = reflect.isValueClass(tpe)
 
     // we can only encode concrete classes at the top level
     require(tpe.typeSymbol.isClass, tpe + " is not a class but is " + tpe.typeSymbol.fullName)
@@ -128,7 +128,7 @@ object SchemaFor extends LowPrioritySchemaFor {
     c.Expr[SchemaFor[T]](
       q"""
         new _root_.com.sksamuel.avro4s.internal.SchemaFor[$tpe] {
-          private val _schema = _root_.com.sksamuel.avro4s.internal.SchemaFor.buildSchema($simpleName, $packageName, Seq(..$fields), Seq(..$annos), $valueType)
+          private val _schema = _root_.com.sksamuel.avro4s.internal.SchemaFor.buildSchema($simpleName, $packageName, Seq(..$fields), Seq(..$annos), $isValueClass)
           override def schema: _root_.org.apache.avro.Schema = _schema
         }
       """)
