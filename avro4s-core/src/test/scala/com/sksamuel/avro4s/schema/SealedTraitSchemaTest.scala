@@ -22,6 +22,12 @@ class SealedTraitSchemaTest extends FunSuite with Matchers {
     val schema = AvroSchema[Napper]
     schema.toString(true) shouldBe expected.toString(true)
   }
+
+  test("support top level ADTs") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_sealed_trait.json"))
+    val schema = AvroSchema[Nibble]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
 }
 
 sealed trait Wibble

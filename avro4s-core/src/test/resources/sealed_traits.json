@@ -1,23 +1,32 @@
 {
-  "type" : "record",
-  "name" : "Wrapper",
-  "namespace" : "com.sksamuel.avro4s.schema",
-  "fields" : [ {
-    "name" : "wibble",
-    "type" : [ {
-      "type" : "record",
-      "name" : "Wabble",
-      "fields" : [ {
-        "name" : "dbl",
-        "type" : "double"
-      } ]
-    }, {
-      "type" : "record",
-      "name" : "Wobble",
-      "fields" : [ {
-        "name" : "str",
-        "type" : "string"
-      } ]
-    } ]
-  } ]
+  "type": "record",
+  "name": "Wrapper",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "wibble",
+      "type": [
+        {
+          "type": "record",
+          "name": "Wabble",
+          "fields": [
+            {
+              "name": "dbl",
+              "type": "double"
+            }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "Wobble",
+          "fields": [
+            {
+              "name": "str",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

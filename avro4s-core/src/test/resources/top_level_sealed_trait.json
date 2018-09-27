@@ -1,0 +1,32 @@
+[
+  {
+    "type": "record",
+    "name": "Nabble",
+    "namespace": "com.sksamuel.avro4s.schema",
+    "fields": [
+      {
+        "name": "str",
+        "type": "string"
+      },
+      {
+        "name": "age",
+        "type": "int"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "Nobble",
+    "namespace": "com.sksamuel.avro4s.schema",
+    "fields": [
+      {
+        "name": "str",
+        "type": "string"
+      },
+      {
+        "name": "place",
+        "type": "string"
+      }
+    ]
+  }
+]

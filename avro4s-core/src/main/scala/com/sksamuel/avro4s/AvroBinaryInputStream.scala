@@ -4,7 +4,7 @@ import java.io.{EOFException, InputStream}
 
 import com.sksamuel.avro4s.internal.Decoder
 import org.apache.avro.Schema
-import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.generic.{GenericData, GenericDatumReader, GenericRecord}
 import org.apache.avro.io.DecoderFactory
 
 import scala.util.Try
@@ -22,12 +22,12 @@ class AvroBinaryInputStream[T](in: InputStream,
                                readerSchema: Schema)
                               (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
-  private val datumReader = new GenericDatumReader[GenericRecord](writerSchema, readerSchema)
-  private val avroBinaryDecoder = DecoderFactory.get().binaryDecoder(in, null)
+  private val datumReader = new GenericDatumReader[GenericRecord](writerSchema, readerSchema, new GenericData)
+  private val avroDecoder = DecoderFactory.get().binaryDecoder(in, null)
 
   private val _iter = Iterator.continually {
     try {
-      datumReader.read(null, avroBinaryDecoder)
+      datumReader.read(null, avroDecoder)
     } catch {
       case _: EOFException => null
     }

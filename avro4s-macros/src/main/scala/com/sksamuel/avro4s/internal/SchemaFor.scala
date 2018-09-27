@@ -67,9 +67,11 @@ object SchemaFor extends LowPrioritySchemaFor {
 
   import scala.collection.JavaConverters._
 
-  implicit def apply[T]: SchemaFor[T] = macro applyImpl[T]
+  def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
 
-  def applyImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
+  implicit def applyMacro[T]: SchemaFor[T] = macro applyMacroImpl[T]
+
+  def applyMacroImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
 
     import c.universe
     import c.universe._

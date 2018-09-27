@@ -5,7 +5,6 @@ import java.nio.file.{Files, Path, Paths}
 
 import com.sksamuel.avro4s.internal.Decoder
 import org.apache.avro.Schema
-import org.apache.avro.file.{SeekableByteArrayInput, SeekableFileInput}
 
 import scala.util.Try
 
@@ -31,9 +30,9 @@ trait AvroInputStream[T] {
 object AvroInputStream {
 
   def binary[T: Decoder](path: String, schema: Schema): AvroBinaryInputStream[T] = binary(Paths.get(path), schema)
-  def binary[T: Decoder](file: File, writerSchema: Schema): AvroBinaryInputStream[T] = binary(new SeekableFileInput(file), writerSchema)
-  def binary[T: Decoder](path: Path, writerSchema: Schema): AvroBinaryInputStream[T] = binary(path.toFile, writerSchema)
-  def binary[T: Decoder](bytes: Array[Byte], schema: Schema): AvroBinaryInputStream[T] = binary(new SeekableByteArrayInput(bytes), schema)
+  def binary[T: Decoder](file: File, writerSchema: Schema): AvroBinaryInputStream[T] = binary(file.toPath, writerSchema)
+  def binary[T: Decoder](path: Path, writerSchema: Schema): AvroBinaryInputStream[T] = binary(Files.newInputStream(path), writerSchema)
+  def binary[T: Decoder](bytes: Array[Byte], schema: Schema): AvroBinaryInputStream[T] = binary(new ByteArrayInputStream(bytes), schema)
   def binary[T: Decoder](in: InputStream, schema: Schema): AvroBinaryInputStream[T] =
     new AvroBinaryInputStream[T](in, schema, schema)
 
