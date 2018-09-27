@@ -3,8 +3,10 @@ package com.sksamuel.avro4s.internal
 import java.nio.ByteBuffer
 import java.util.UUID
 
+import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes}
 
+import scala.annotation.switch
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
@@ -64,7 +66,12 @@ object Decoder {
   }
 
   implicit object StringDecoder extends Decoder[String] {
-    override def decode(value: Any): String = value.toString
+    override def decode(value: Any): String =
+      (value: @switch) match {
+        case u: Utf8 => u.toString
+        case s: String => s
+        case other => other.toString
+      }
   }
 
   implicit object UUIDDecoder extends Decoder[UUID] {
@@ -128,6 +135,16 @@ object Decoder {
       case array: Array[_] => array.map(decoder.decode)
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toSeq
       case other => sys.error("Unsupported array " + other)
+    }
+  }
+
+  implicit def mapDecoder[T](implicit valueDecoder: Decoder[T]): Decoder[Map[String, T]] = new Decoder[Map[String, T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def decode(value: Any): Map[String, T] = value match {
+      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> valueDecoder.decode(v) }
+      case other => sys.error("Unsupported map " + other)
     }
   }
 
@@ -234,8 +251,11 @@ object Decoder {
       // the companion object where the apply construction method is located
       val companion = tpe.typeSymbol.companion
 
-      if (companion == NoSymbol)
-        Console.err.println(s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a higher enclosing scope.")
+      if (companion == NoSymbol) {
+        val error = s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a higher enclosing scope."
+        Console.err.println(error)
+        c.abort(c.enclosingPosition.pos, error)
+      }
 
       c.Expr[Decoder[T]](
         q"""

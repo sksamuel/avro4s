@@ -273,7 +273,6 @@ object Encoder {
       val name = f.name.asInstanceOf[c.TermName]
       val annos = reflect.annotations(tpe.typeSymbol)
       val extractor = new AnnotationExtractors(annos)
-      //val fieldIsValueType = reflect.isValueClass(fieldTpe)
 
       // each field needs to be converted into an avro compatible value
       // so scala primitives need to be converted to java boxed values
@@ -292,31 +291,19 @@ object Encoder {
            """
         case None =>
 
-          //          // if a field is a value class we need to encode the underlying type,
-          //          // not the (case) class that is wrapping the field
-          //          if (fieldIsValueType) {
-          //
-          //            val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-          //            val backingType = valueCstr.typeSignatureIn(fieldTpe)
-          //            val backingField = valueCstr.name.asInstanceOf[c.TermName]
-          //
-          //            // we grab the value by using t.name.backingField which gets
-          //            // the instance of the value type, and then the backing value
-          //            // itself from the value type
-          //            q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$backingType](t.$name.$backingField, $index, schema, $tpeName)"""
+          // We get the instance for the field from the class by invoking the
+          // getter ( t.$name ) and then pass that value, and the schema for
+          // the record to an Encoder[<Type For Field>]
 
-          //   } else {
-
-          // we get the field from the case class instance ( t.$name ) and then pass
-          // that value, and the schema for the record to an implicit
-          // Encoder which will return an avro compatible value
+          // Note: If the field is a value class, then this macro will be summoned again
+          // and the value type will be the type argument to the macro.
           q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $tpeName)"""
-        //  }
       }
     }
 
-    // if we are encoding a value type, then we don't want to group the encoded field values
-    // into a Record, but instead we just want to return whatever the value type's single field was
+    // An encoder for a value type just needs to pass through the given value into an encoder
+    // for the backing type. At runtime, the value type class won't exist, and the input
+    // will be an instance of whatever the backing field of the value class was defined to be.
     if (isValueClass) {
       c.Expr[Encoder[T]](
         q"""

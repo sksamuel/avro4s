@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
-import java.io.{File, InputStream}
-import java.nio.file.{Path, Paths}
+import java.io.{ByteArrayInputStream, File, InputStream}
+import java.nio.file.{Files, Path, Paths}
 
 import com.sksamuel.avro4s.internal.Decoder
 import org.apache.avro.Schema
@@ -37,8 +37,12 @@ object AvroInputStream {
   def binary[T: Decoder](in: InputStream, schema: Schema): AvroBinaryInputStream[T] =
     new AvroBinaryInputStream[T](in, schema, schema)
 
-  //  def binary[T: SchemaEncoder : Decoder](bytes: Array[Byte]): AvroBinaryInputStream[T] = binary[T](new SeekableByteArrayInput(bytes))
-  //
+  def data[T: Decoder](path: String, schema: Schema): AvroDataInputStream[T] = data(Paths.get(path), schema)
+  def data[T: Decoder](file: File, writerSchema: Schema): AvroDataInputStream[T] = data(file.toPath, writerSchema)
+  def data[T: Decoder](path: Path, writerSchema: Schema): AvroDataInputStream[T] = data(Files.newInputStream(path), writerSchema)
+  def data[T: Decoder](bytes: Array[Byte], schema: Schema): AvroDataInputStream[T] = data(new ByteArrayInputStream(bytes), schema)
+  def data[T: Decoder](in: InputStream, schema: Schema): AvroDataInputStream[T] =
+    new AvroDataInputStream[T](in, Some(schema), Some(schema))
 }
 
 //object AvroInputStream {
@@ -62,10 +66,6 @@ object AvroInputStream {
 //  def binary[T: SchemaFor : FromRecord](path: String): AvroBinaryInputStream[T] = binary(Paths.get(path))
 //  def binary[T: SchemaFor : FromRecord](path: Path): AvroBinaryInputStream[T] = binary(path.toFile)
 //
-//  def data[T: FromRecord](bytes: Array[Byte]): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableByteArrayInput(bytes))
-//  def data[T: FromRecord](file: File): AvroDataInputStream[T] = new AvroDataInputStream[T](new SeekableFileInput(file))
-//  def data[T: FromRecord](path: String): AvroDataInputStream[T] = data(Paths.get(path))
-//  def data[T: FromRecord](path: Path): AvroDataInputStream[T] = data(path.toFile)
 //
 //  sealed trait AvroFormat {
 //    def newBuilder[T: SchemaFor : FromRecord](): AvroInputStreamBuilder[T]

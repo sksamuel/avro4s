@@ -386,56 +386,7 @@
 //      in.iterator.toList shouldBe data.toList
 //      in.close()
 //    }
-//    "read strings" in {
-//
-//      val data = Seq(Strings("sammy"), Strings("hammy"))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[Strings](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read booleans" in {
-//      val data = Seq(Booleans(true), Booleans(false))
-//      val bytes = write(data)
-//      val in = AvroInputStream.data[Booleans](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read doubles" in {
-//
-//      val data = Seq(Doubles(1.2d), Doubles(2.3d))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[Doubles](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read floats" in {
-//      val data = Seq(Floats(1.2f), Floats(3.4f))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[Floats](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read ints" in {
-//      val data = Seq(Ints(1), Ints(2))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[Ints](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read longs" in {
-//
-//      val data = Seq(Longs(1l), Longs(2l))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[Longs](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
+
 //    "read scala enums" in {
 //
 //      val data = Seq(ScalaEnums(Colours.Red), ScalaEnums(Colours.Green))
