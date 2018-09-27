@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
+import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
 import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, ImmutableRecord, SchemaFor}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
@@ -47,6 +48,13 @@ class BasicEncoderTest extends WordSpec with Matchers {
       case class Foo(i: Int)
       val schema = AvroSchema[Foo]
       Encoder[Foo].encode(Foo(123), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(123)))
+    }
+    "support uppercase packages" in {
+      val schema = AvroSchema[ClassInUppercasePackage]
+      val encoder = Encoder[ClassInUppercasePackage]
+      val t = com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage("hello")
+      schema.getFullName shouldBe "com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage"
+      encoder.encode(t, schema) shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
     }
   }
 }

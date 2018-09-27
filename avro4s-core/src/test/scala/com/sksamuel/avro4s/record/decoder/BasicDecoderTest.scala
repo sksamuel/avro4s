@@ -1,7 +1,9 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.internal.{Decoder, AvroSchema}
+import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
+import com.sksamuel.avro4s.internal.{AvroSchema, Decoder}
 import org.apache.avro.generic.GenericData
+import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
 
 case class FooString(str: String)
@@ -49,6 +51,16 @@ class BasicDecoderTest extends WordSpec with Matchers {
       val record = new GenericData.Record(schema)
       record.put("i", 123)
       Decoder[FooInt].decode(record) shouldBe FooInt(123)
+    }
+    "support uppercase packages" in {
+
+      val schema = AvroSchema[ClassInUppercasePackage]
+      val decoder = Decoder[ClassInUppercasePackage]
+
+      val record = new GenericData.Record(schema)
+      record.put("s", new Utf8("hello"))
+
+      decoder.decode(record) shouldBe com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage("hello")
     }
   }
 }

@@ -27,9 +27,7 @@
 //  "RecordFormat" should {
 //
 //    "convert to/from record for type contained in uppercase package" in {
-//      val data = examples.UppercasePkg.Data(Inr(Inl(5)))
-//      val fmt = RecordFormat[examples.UppercasePkg.Data]
-//      fmt.from(fmt.to(data)) shouldBe data
+//
 //    }
 //
 //    "convert to/from records of generic classes" in {
