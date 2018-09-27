@@ -23,7 +23,7 @@ import scala.reflect.runtime.universe._
   * For example, a String SchemaFor could return an instance of Schema.Type.STRING
   * or Schema.Type.FIXED depending on the type required for Strings.
   */
-trait SchemaFor[T] {
+trait SchemaFor[T] extends Serializable {
   def schema: Schema
 }
 
