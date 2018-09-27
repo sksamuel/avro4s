@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "Product1",
+  "namespace": "com.sksamuel.avro4s.github.GithubIssue187And152",
+  "fields": [
+    {
+      "name": "i",
+      "type": "int"
+    },
+    {
+      "name": "j",
+      "type": "j"
+    }
+  ]
+}

@@ -76,20 +76,14 @@ object SchemaFor extends LowPrioritySchemaFor {
 
     val reflect = ReflectHelper(c)
     val tpe = weakTypeOf[T]
+    val packageName = reflect.packageName(tpe)
+    val valueType = reflect.isValueClass(tpe)
 
     // we can only encode concrete classes at the top level
     require(tpe.typeSymbol.isClass, tpe + " is not a class but is " + tpe.typeSymbol.fullName)
 
-    val valueType = reflect.isValueClass(tpe)
-
     // eg, "Foo" for x.y.Foo
     val simpleName = tpe.typeSymbol.name.decodedName.toString
-
-    // we iterate up the owner tree until we find an Object or Package
-    val packageName = Stream.iterate(tpe.typeSymbol.owner)(_.owner)
-      .dropWhile(x => !x.isPackage && !x.isModuleClass)
-      .head
-      .fullName
 
     val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
 
@@ -150,7 +144,6 @@ object SchemaFor extends LowPrioritySchemaFor {
     */
   def schemaField[B](name: String, packageName: String, annos: Seq[Anno], default: Any)
                     (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
-    //  println(s"default for $name = $default")
 
     val extractor = new AnnotationExtractors(annos)
     val namespace = extractor.namespace.getOrElse(packageName)
@@ -161,7 +154,7 @@ object SchemaFor extends LowPrioritySchemaFor {
     // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
     val resolvedName = extractor.name.fold(namingStrategy.to(name))(namingStrategy.to)
 
-    // the default may be a scala type that avro doesn't understand, so we must turn it into a boring java type
+    // the default may be a scala type that avro doesn't understand, so we must turn it into a java type
     val resolvedDefault = resolveDefault(default)
 
     // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema

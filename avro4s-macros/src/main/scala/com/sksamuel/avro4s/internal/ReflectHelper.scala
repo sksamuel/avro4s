@@ -59,6 +59,14 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     tpe
   }
 
+  // we iterate up the owner tree until we find an Object or Package
+  def packageName(tpe: Type): String = {
+    Stream.iterate(tpe.typeSymbol.owner)(_.owner)
+      .dropWhile(x => !x.isPackage && !x.isModuleClass)
+      .head
+      .fullName
+  }
+
   /**
     * Returns the method that generates the default value for the field identified by the offset.
     * Note: the index offset should be + 1 since 0 is reserved for something which I forget.
