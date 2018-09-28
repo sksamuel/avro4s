@@ -42,6 +42,6 @@ object Colours extends Enumeration {
   val Red, Amber, Green = Value
 }
 
-case class ScalaEnums(value: Colours.Value)
+case class ScalaEnums(colours: Colours.Value)
 
-case class ScalaOptionEnums(value: Option[Colours.Value])
+case class ScalaOptionEnums(coloursopt: Option[Colours.Value])

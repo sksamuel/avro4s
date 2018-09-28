@@ -4,11 +4,15 @@
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
-      "name": "value",
+      "name": "colours",
       "type": {
-        "type" : "enum",
-        "name" : "com.sksamuel.avro4s.schema.Colours",
-        "symbols" : [ "Red", "Amber", "Green" ]
+        "type": "enum",
+        "name": "Colours",
+        "symbols": [
+          "Amber",
+          "Green",
+          "Red"
+        ]
       }
     }
   ]

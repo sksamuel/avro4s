@@ -484,23 +484,29 @@ object SchemaFor extends LowPrioritySchemaFor {
       case t@TypeRef(_, _, _) => t
     }
 
+    val valueType = typeOf[E]
+
+    val pre = typeRef.pre.typeSymbol.typeSignature.members
+    val syms = pre.filter { sym =>
+      !sym.isMethod &&
+        !sym.isType &&
+        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
+    }.map { sym =>
+      sym.name.decodedName.toString.trim
+    }.toList.sorted
+
     val annos = typeRef.pre.typeSymbol.annotations.map { a =>
       val name = a.tree.tpe.typeSymbol.fullName
       val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
       com.sksamuel.avro4s.internal.Anno(name, args)
     }
+
     val extractor = new AnnotationExtractors(annos)
 
-    val classname = typeRef.pre.typeSymbol.asClass.fullName.stripSuffix(".Value")
-    val clazz = Class.forName(classname)
+    val namespace = extractor.namespace.getOrElse(typeRef.pre.typeSymbol.owner.fullName)
+    val name = extractor.name.getOrElse(typeRef.pre.typeSymbol.name.decodedName.toString)
 
-    val namespace = extractor.namespace.getOrElse(clazz.getPackage.getName)
-    val name = extractor.name.getOrElse(clazz.getSimpleName)
-
-    val enumClass = Class.forName(classname)
-    val symbols = enumClass.getMethod("values").invoke(null).asInstanceOf[scala.Enumeration#ValueSet].iterator.toList.map(_.toString)
-
-    override val schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
+    override val schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
   }
 
   // This SchemaFor is used for sealed traits of objects
