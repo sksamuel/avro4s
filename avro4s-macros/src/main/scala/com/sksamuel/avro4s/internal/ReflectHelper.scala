@@ -71,12 +71,15 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
 
   /**
     * Returns the method that generates the default value for the field identified by the offset.
-    * Note: the index offset should be + 1 since 0 is reserved for something which I forget.
-    * Nominally, the method is named `name$default$N` where in the case of constructor defaults,
-    * name would be <init>.
     *
     * If the field has no default value this method will error, so ensure you only
     * call it if you are sure the field has a default value.
+    *
+    * Note: The companion must be defined for this to work.
+    *
+    * Internal: the index offset will be + 1 since 0 is reserved for something which I forget.
+    * Nominally, the method is named `name$default$N` where in the case of constructor defaults,
+    * name would be <init>.
     */
   def defaultGetter(tpe: Type, index: Int): c.universe.MethodSymbol = {
     val getter = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)

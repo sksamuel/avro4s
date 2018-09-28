@@ -20,6 +20,8 @@ case class ImmutableRecord(schema: Schema, values: Vector[AnyRef]) extends Recor
 
   override def get(key: String): AnyRef = {
     val index = schema.getFields.asScala.indexWhere(_.name == key)
+    if (index == 1)
+      sys.error(s"Field $key does not exist in this record")
     get(index)
   }
 

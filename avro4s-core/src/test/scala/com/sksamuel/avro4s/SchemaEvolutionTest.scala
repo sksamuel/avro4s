@@ -10,6 +10,9 @@ class SchemaEvolutionTest extends FunSuite with Matchers {
   case class Version1(original: String)
   case class Version2(@AvroAlias("original") renamed: String)
 
+  case class P1(name: String, age: Int = 18)
+  case class P2(name: String)
+
   ignore("@AvroAlias should be used when a reader schema has a field missing from the write schema") {
 
     println(AvroSchema[Version1].toString(true))
@@ -28,5 +31,13 @@ class SchemaEvolutionTest extends FunSuite with Matchers {
     val v2 = is.iterator.toList.head
 
     v2.renamed shouldBe v1.original
+  }
+
+  test("when decoding, if the record/schema is missing a field and the target has a scala default, use that") {
+
+    val f1 = RecordFormat[P1]
+    val f2 = RecordFormat[P2]
+
+    f1.from(f2.to(P2("foo"))) shouldBe P1("foo")
   }
 }

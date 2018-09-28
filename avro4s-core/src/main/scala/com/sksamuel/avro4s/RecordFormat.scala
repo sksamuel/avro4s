@@ -1,8 +1,8 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.internal.{AvroSchema, SchemaFor, Decoder, Encoder, Record}
+import com.sksamuel.avro4s.internal.{AvroSchema, Decoder, Encoder, Record, SchemaFor}
 import org.apache.avro.Schema
-import org.apache.avro.generic.IndexedRecord
+import org.apache.avro.generic.GenericRecord
 
 trait RecordFormat[T] extends ToRecord[T] with FromRecord[T] with Serializable
 
@@ -17,7 +17,7 @@ object RecordFormat {
   def apply[T: Encoder : Decoder](schema: Schema): RecordFormat[T] = new RecordFormat[T] {
     private val fromRecord = FromRecord[T](schema)
     private val toRecord = ToRecord[T](schema)
-    override def from(record: IndexedRecord): T = fromRecord.from(record)
+    override def from(record: GenericRecord): T = fromRecord.from(record)
     override def to(t: T): Record = toRecord.to(t)
   }
 }

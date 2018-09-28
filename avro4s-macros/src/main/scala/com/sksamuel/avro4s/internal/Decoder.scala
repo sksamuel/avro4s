@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.internal
 import java.nio.ByteBuffer
 import java.util.UUID
 
-import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes}
 import shapeless.ops.coproduct.Reify
@@ -12,6 +12,7 @@ import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inr}
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
+import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.runtime.universe._
 
 trait Decoder[T] extends Serializable {
@@ -269,6 +270,7 @@ object Decoder {
 
   def applyMacroImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Decoder[T]] = {
 
+    import c.universe
     import c.universe._
 
     val reflect = ReflectHelper(c)
@@ -303,43 +305,9 @@ object Decoder {
 
       } else {
 
-        val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
-
-          val fieldName = fieldSym.name.asInstanceOf[c.TermName]
-          // todo handle avro name annotation
-          // val decodedName: Tree = helper.avroName(sym).getOrElse(q"${name.decodedName.toString}")
-          val decodedName = q"${fieldName.decodedName.toString}"
-          val isFieldAValueType = reflect.isValueClass(fieldTpe)
-
-          if (isFieldAValueType) {
-
-            //  Console.out.println(s"$fieldTpe is a value type")
-
-            val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-            val backingFieldTpe = valueCstr.typeSignature
-
-            //  Console.out.println(s"backing field type is $backingFieldTpe")
-
-            // for a value type we first decode the avro type into some scala happy type using an
-            // encoder for the backing type, and then we wrap it in an instance of the value class itself
-            q"""{
-                  val raw = record.get($index)
-                  val decoded = _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$backingFieldTpe](raw) : $backingFieldTpe
-                  new $fieldTpe(decoded) : $fieldTpe
-            }
-         """
-
-          } else {
-
-            q"""{
-                  val value = record.get($index)
-                  _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$fieldTpe](value) : $fieldTpe
-            }
-         """
-          }
-        }
-
         // the companion object where the apply construction method is located
+        // without this we cannot instantiate the case class
+        // we also need this to extract default values
         val companion = tpe.typeSymbol.companion
 
         if (companion == NoSymbol) {
@@ -348,17 +316,82 @@ object Decoder {
           c.abort(c.enclosingPosition.pos, error)
         }
 
+        val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
+
+          val fieldName = fieldSym.name.asInstanceOf[c.TermName]
+
+          // todo handle avro name annotation
+          // val decodedName: Tree = helper.avroName(sym).getOrElse(q"${name.decodedName.toString}")
+          // val decodedName = q"${fieldName.decodedName.toString}"
+
+          // this is the simple name of the field
+          val name = fieldSym.name.decodedName.toString
+
+          val isFieldAValueType = reflect.isValueClass(fieldTpe)
+
+          if (isFieldAValueType) {
+
+            val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
+            val backingFieldTpe = valueCstr.typeSignature
+
+            // for a value type we first decode the avro type into some scala happy type using an
+            // encoder for the backing type, and then we wrap it in an instance of the value class itself
+            q"""{
+                  val raw = record.get($name)
+                  val decoded = _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$backingFieldTpe](raw) : $backingFieldTpe
+                  new $fieldTpe(decoded) : $fieldTpe
+                }
+             """
+
+          } else {
+
+
+            // if the field is a param with a default value, then we know the getter method will be defined
+            // and so we can use it to generate the default value. otherwise, we invoke decode without a default
+            if (fieldSym.isTerm && fieldSym.asTerm.isParamWithDefault) {
+
+              val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+              val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+              val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
+
+              q"""_root_.com.sksamuel.avro4s.internal.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($name, record, $companion.$defaultGetterMethod)"""
+
+            } else {
+              q"""_root_.com.sksamuel.avro4s.internal.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($name, record, null)"""
+            }
+          }
+        }
+
         c.Expr[Decoder[T]](
           q"""
           new _root_.com.sksamuel.avro4s.internal.Decoder[$tpe] {
             override def decode(value: Any): $tpe = {
-              val record = value.asInstanceOf[_root_.org.apache.avro.generic.IndexedRecord]
+              val record = value.asInstanceOf[_root_.org.apache.avro.generic.GenericRecord]
               $companion.apply(..$fields)
             }
           }
        """
         )
       }
+    }
+  }
+
+  /**
+    * For each field in the target type, we must try to pull a value for that field out
+    * of the input [[GenericRecord]]. After we retrieve the avro value from the record
+    * we must apply the decoder to turn it into a scala compatible value.
+    *
+    * If the record does not have an entry for a field, and a scala default value is
+    * available, then we'll use that instead.
+    */
+  def decodeFieldOrApplyDefault[T](fieldName: String, record: GenericRecord, default: Any)(implicit decoder: Decoder[T]): T = {
+    if (record.getSchema.getField(fieldName) != null) {
+      val value = record.get(fieldName)
+      decoder.decode(value)
+    } else if (default != null) {
+      default.asInstanceOf[T]
+    } else {
+      sys.error(s"Record $record does not have a value for $fieldName and no default was defined")
     }
   }
 
