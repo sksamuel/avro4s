@@ -43,8 +43,25 @@ object Decoder {
     override def decode(value: Any): Short = value.asInstanceOf[Int].toShort
   }
 
+  // specialized support for arrays of bytes which are likely to have been serialized as a byte buffer
+  // but could also by an array of bytes
+  implicit object ByteArrayDecoder extends Decoder[Array[Byte]] {
+    override def decode(value: Any): Array[Byte] = value match {
+      case buffer: ByteBuffer => buffer.array
+      case array: Array[Byte] => array
+    }
+  }
+
+  implicit object ByteBufferDecoder extends Decoder[ByteBuffer] {
+    override def decode(value: Any): ByteBuffer = ByteArrayDecoder.map(ByteBuffer.wrap).decode(value)
+  }
+
+  implicit object ByteListDecoder extends Decoder[Seq[Byte]] {
+    override def decode(value: Any): Seq[Byte] = ByteArrayDecoder.decode(value).toList
+  }
+
   implicit object ByteSeqDecoder extends Decoder[Seq[Byte]] {
-    override def decode(value: Any): Seq[Byte] = value.asInstanceOf[ByteBuffer].array().toSeq
+    override def decode(value: Any): Seq[Byte] = ByteArrayDecoder.decode(value).toSeq
   }
 
   implicit object DoubleDecoder extends Decoder[Double] {
@@ -135,14 +152,6 @@ object Decoder {
       case array: Array[_] => array.map(decoder.decode).toVector
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toVector
       case other => sys.error("Unsupported vector " + other)
-    }
-  }
-
-  // specialized support for arrays of bytes which are likely to have been serialized as Schema.Type.BYTES
-  implicit object ByteArrayDecoder extends Decoder[Array[Byte]] {
-    override def decode(value: Any): Array[Byte] = value match {
-      case buffer: ByteBuffer => buffer.array
-      case array: Array[Byte] => array
     }
   }
 

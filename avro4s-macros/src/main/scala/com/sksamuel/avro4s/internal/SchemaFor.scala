@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.internal
 
+import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
@@ -350,7 +351,11 @@ object SchemaFor extends LowPrioritySchemaFor {
   }
 
   implicit object ByteSeqSchemaFor extends SchemaFor[Seq[Byte]] {
-    override val schema: Schema = SchemaBuilder.builder().bytesType()
+    override val schema: Schema = ByteArraySchemaFor.schema
+  }
+
+  implicit object ByteBufferSchemaFor extends SchemaFor[ByteBuffer] {
+    override val schema: Schema = ByteArraySchemaFor.schema
   }
 
   implicit def bigDecimalFor(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): SchemaFor[BigDecimal] = new SchemaFor[BigDecimal] {

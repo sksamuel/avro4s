@@ -180,6 +180,14 @@ object Encoder {
     }
   }
 
+  implicit object ByteArrayEncoder extends Encoder[Array[Byte]] {
+    override def encode(t: Array[Byte], schema: Schema): ByteBuffer = ByteBuffer.wrap(t)
+  }
+
+  implicit object ByteBufferEncoder extends Encoder[ByteBuffer] {
+    override def encode(t: ByteBuffer, schema: Schema): ByteBuffer = t
+  }
+
   implicit def arrayEncoder[T](implicit encoder: Encoder[T]): Encoder[Array[T]] = new Encoder[Array[T]] {
 
     import scala.collection.JavaConverters._
@@ -212,16 +220,26 @@ object Encoder {
 
   implicit object BigDecimalEncoder extends Encoder[BigDecimal] {
 
-    override def encode(t: BigDecimal, schema: Schema): ByteBuffer = {
+    override def encode(t: BigDecimal, schema: Schema): AnyRef = {
 
-      val decimal = schema.getLogicalType.asInstanceOf[Decimal]
-      require(decimal != null)
+      // we support encoding big decimals in three ways - fixed, bytes or as a String
+      schema.getType match {
+        case Schema.Type.STRING => StringEncoder.encode(t.toString, schema)
+        case Schema.Type.BYTES => ByteBufferEncoder.comap[BigDecimal] { bd =>
 
-      val decimalConversion = new Conversions.DecimalConversion
-      val decimalType = LogicalTypes.decimal(decimal.getPrecision, decimal.getScale)
+          val decimal = schema.getLogicalType.asInstanceOf[Decimal]
+          require(decimal != null)
 
-      val scaledValue = t.setScale(decimal.getScale, RoundingMode.HALF_UP)
-      decimalConversion.toBytes(scaledValue.bigDecimal, null, decimalType)
+          val decimalConversion = new Conversions.DecimalConversion
+          val decimalType = LogicalTypes.decimal(decimal.getPrecision, decimal.getScale)
+
+          val scaledValue = t.setScale(decimal.getScale, RoundingMode.HALF_UP)
+          decimalConversion.toBytes(scaledValue.bigDecimal, null, decimalType)
+
+        }.encode(t, schema)
+        case Schema.Type.FIXED => sys.error("Unsupported. PR Please!")
+        case _ => sys.error(s"Cannot serialize BigDecimal as ${schema.getType}")
+      }
     }
   }
 

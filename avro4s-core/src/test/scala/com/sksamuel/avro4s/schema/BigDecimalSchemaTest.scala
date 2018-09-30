@@ -8,7 +8,7 @@ case class BigDecimalSeqOption(biggies: Seq[Option[BigDecimal]])
 case class BigDecimalSeq(biggies: Seq[BigDecimal])
 case class BigDecimalDefault(decimal: BigDecimal = 964.55)
 
-class DecimalSchemaTest extends WordSpec with Matchers {
+class BigDecimalSchemaTest extends WordSpec with Matchers {
 
   "SchemaEncoder" should {
     "accept big decimal as logical type on bytes" in {
@@ -56,5 +56,28 @@ class DecimalSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(this.getClass.getResourceAsStream("/bigdecimal_as_fixed.json"))
       schema shouldBe expected
     }
+    //    "convert a BigDecimal into ByteBuffer without specifying the scale and precision and rounding mode and rounding is not required" in {
+    //      val n = BigDecimal(7.8)
+    //      BigDecimalFromValue.apply(BigDecimalToValue.apply(n)) shouldBe BigDecimal(7.80)
+    //    }
+    //
+    //    "fail when trying to convert a BigDecimal into ByteBuffer without specifying the scale and precision and rounding mode and rounding is required" in {
+    //      val n = BigDecimal(7.851)
+    //      the[java.lang.ArithmeticException] thrownBy {
+    //        BigDecimalFromValue.apply(BigDecimalToValue.apply(n))
+    //      } should have message "Rounding necessary"
+    //    }
+    //
+    //    "convert a BigDecimal into ByteBuffer with specifying the scale and precision and rounding mode and rounding is not required" in {
+    //      val sp = ScaleAndPrecisionAndRoundingMode(3, 8, HALF_EVEN)
+    //      val n = BigDecimal(7.85)
+    //      BigDecimalFromValue(sp)(BigDecimalToValue(sp)(n)) shouldBe BigDecimal(7.850)
+    //    }
+    //
+    //    "convert a BigDecimal into ByteBuffer with specifying the scale and precision and rounding mode and rounding is required" in {
+    //      val sp = ScaleAndPrecisionAndRoundingMode(3, 8, HALF_EVEN)
+    //      val n = BigDecimal(7.8516)
+    //      BigDecimalFromValue(sp)(BigDecimalToValue(sp)(n)) shouldBe BigDecimal(7.852)
+    //    }
   }
 }

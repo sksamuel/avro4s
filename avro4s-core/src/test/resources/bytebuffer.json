@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Test",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "z",
+      "type": "bytes"
+    }
+  ]
+}

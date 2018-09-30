@@ -1,9 +1,9 @@
 package com.sksamuel.avro4s.record.decoder
 
 import com.sksamuel.avro4s.internal.{AvroSchema, Decoder, SchemaFor}
-import org.apache.avro.{Schema, SchemaBuilder}
-import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
+import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{FunSuite, Matchers}
 
 class ValueTypeDecoderTest extends FunSuite with Matchers {
