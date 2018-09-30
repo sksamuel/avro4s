@@ -41,17 +41,14 @@ object Encoder extends CoproductEncoders {
 
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 
-  implicit def genTraitOfObjectsEncoder[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
-                                                                       objs: Reify.Aux[C, L], toList: ToList[L, T]): Encoder[T] = new Encoder[T] {
+  implicit def genTraitObjectEnumEncoder[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
+                                                                        objs: Reify.Aux[C, L], toList: ToList[L, T]): Encoder[T] = new Encoder[T] {
 
     import scala.collection.JavaConverters._
     import scala.reflect.runtime.universe._
 
-    val tpe = weakTypeTag[T]
-
-    println(s"Using genTraitOfObjectsEncoder for $tpe")
-
     protected val schema: Schema = {
+      val tpe = weakTypeTag[T]
       val namespace = tpe.tpe.typeSymbol.annotations.map(_.toString)
         .find(_.startsWith("com.sksamuel.avro4s.AvroNamespace"))
         .map(_.stripPrefix("com.sksamuel.avro4s.AvroNamespace(\"").stripSuffix("\")"))
