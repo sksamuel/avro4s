@@ -7,6 +7,11 @@ import org.scalatest.{Matchers, WordSpec}
 class NamespaceStrategyFieldTest extends WordSpec with Matchers {
 
   "NamingStrategy" should {
+    "defaultNoChange" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/naming_strategy_default.json"))
+      val schema = AvroSchema[NamingStrategyTest]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
     "support pascal case" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/naming_strategy_pascal.json"))
       implicit val pascal: NamingStrategy = PascalCase
