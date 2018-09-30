@@ -1,7 +1,5 @@
 package com.sksamuel.avro4s.streams.input
 
-import com.sksamuel.avro4s.internal.{Decoder, Encoder, SchemaFor}
-
 class CollectionsInputStreamTest extends InputStreamTest {
 
   case class FooString(a: String)

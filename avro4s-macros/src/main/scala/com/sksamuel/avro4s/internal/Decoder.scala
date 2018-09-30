@@ -1,6 +1,8 @@
 package com.sksamuel.avro4s.internal
 
 import java.nio.ByteBuffer
+import java.sql.{Date, Timestamp}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
 import org.apache.avro.generic.{GenericData, GenericRecord}
@@ -60,11 +62,50 @@ object Decoder {
   }
 
   implicit object IntDecoder extends Decoder[Int] {
-    override def decode(value: Any): Int = value.asInstanceOf[Int]
+    override def decode(value: Any): Int = value match {
+      case byte: Byte => byte.toInt
+      case short: Short => short.toInt
+      case int: Int => int
+      case other => sys.error(s"Cannot convert $other to type INT")
+    }
   }
 
   implicit object LongDecoder extends Decoder[Long] {
-    override def decode(value: Any): Long = value.asInstanceOf[Long]
+    override def decode(value: Any): Long = value match {
+      case byte: Byte => byte.toLong
+      case short: Short => short.toLong
+      case int: Int => int.toLong
+      case long: Long => long
+      case other => sys.error(s"Cannot convert $other to type LONG")
+    }
+  }
+
+  implicit object LocalTimeDecoder extends Decoder[LocalTime] {
+    // avro4s stores times as either millis since midnight or micros since midnight
+    override def decode(value: Any): LocalTime = value match {
+      case millis: Int => LocalTime.ofNanoOfDay(millis.toLong * 1000000)
+      case micros: Long => LocalTime.ofNanoOfDay(micros * 1000)
+    }
+  }
+
+  implicit object LocalDateTimeDecoder extends Decoder[LocalDateTime] {
+    override def decode(value: Any): LocalDateTime = LongDecoder.map(millis => LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.UTC)).decode(value)
+  }
+
+  implicit object LocalDateDecoder extends Decoder[LocalDate] {
+    override def decode(value: Any): LocalDate = LongDecoder.map(LocalDate.ofEpochDay).decode(value)
+  }
+
+  implicit object InstantDecoder extends Decoder[Instant] {
+    override def decode(value: Any): Instant = LongDecoder.map(Instant.ofEpochMilli).decode(value)
+  }
+
+  implicit object DateDecoder extends Decoder[Date] {
+    override def decode(value: Any): Date = LocalDateDecoder.map(Date.valueOf).decode(value)
+  }
+
+  implicit object TimestampDecoder extends Decoder[Timestamp] {
+    override def decode(value: Any): Timestamp = LongDecoder.map(new Timestamp(_)).decode(value)
   }
 
   implicit object StringDecoder extends Decoder[String] {

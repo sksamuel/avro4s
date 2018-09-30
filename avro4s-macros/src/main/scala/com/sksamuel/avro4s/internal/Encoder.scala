@@ -1,6 +1,8 @@
 package com.sksamuel.avro4s.internal
 
 import java.nio.ByteBuffer
+import java.sql.{Date, Timestamp}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
 import org.apache.avro.LogicalTypes.Decimal
@@ -42,8 +44,8 @@ object Encoder {
   implicit def genTraitOfObjectsEncoder[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
                                                                        objs: Reify.Aux[C, L], toList: ToList[L, T]): Encoder[T] = new Encoder[T] {
 
-    import scala.reflect.runtime.universe._
     import scala.collection.JavaConverters._
+    import scala.reflect.runtime.universe._
 
     protected val schema: Schema = {
       val tpe = weakTypeTag[T]
@@ -98,6 +100,30 @@ object Encoder {
 
   implicit object UUIDEncoder extends Encoder[UUID] {
     override def encode(t: UUID, schema: Schema): String = t.toString
+  }
+
+  implicit object DateEncoder extends Encoder[Date] {
+    override def encode(t: Date, schema: Schema): AnyRef = LocalDateEncoder.comap[Date](_.toLocalDate).encode(t, schema)
+  }
+
+  implicit object LocalTimeEncoder extends Encoder[LocalTime] {
+    override def encode(t: LocalTime, schema: Schema): AnyRef = IntEncoder.comap[LocalTime](lt => lt.toSecondOfDay * 1000 + lt.getNano / 1000).encode(t, schema)
+  }
+
+  implicit object LocalDateEncoder extends Encoder[LocalDate] {
+    override def encode(t: LocalDate, schema: Schema): AnyRef = IntEncoder.comap[LocalDate](_.toEpochDay.toInt).encode(t, schema)
+  }
+
+  implicit object LocalDateTimeEncoder extends Encoder[LocalDateTime] {
+    override def encode(t: LocalDateTime, schema: Schema): AnyRef = InstantEncoder.comap[LocalDateTime](_.toInstant(ZoneOffset.UTC)).encode(t, schema)
+  }
+
+  implicit object InstantEncoder extends Encoder[Instant] {
+    override def encode(t: Instant, schema: Schema): AnyRef = LongEncoder.comap[Instant](_.toEpochMilli).encode(t, schema)
+  }
+
+  implicit object TimestampEncoder extends Encoder[Timestamp] {
+    override def encode(t: Timestamp, schema: Schema): AnyRef = InstantEncoder.comap[Timestamp](_.toInstant).encode(t, schema)
   }
 
   implicit def mapEncoder[V](implicit encoder: Encoder[V]): Encoder[Map[String, V]] = new Encoder[Map[String, V]] {

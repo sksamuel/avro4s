@@ -98,14 +98,5 @@
 //      in.iterator.toList shouldBe data.toList
 //      in.close()
 //    }
-//    "read LocalDates" in {
-//
-//      val data = Seq(LocalDateTest(LocalDate.now()), LocalDateTest(LocalDate.now()))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[LocalDateTest](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
 //  }
 //}

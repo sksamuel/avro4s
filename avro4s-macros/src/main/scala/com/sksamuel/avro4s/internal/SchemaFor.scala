@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.internal
 
-import java.sql.Timestamp
+import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
@@ -454,6 +454,11 @@ object SchemaFor extends LowPrioritySchemaFor {
   implicit object LocalDateTimeFor extends SchemaFor[LocalDateTime] {
     override val schema = Schema.create(Schema.Type.LONG)
     LogicalTypes.timestampMillis().addToSchema(schema)
+  }
+
+  implicit object DateFor extends SchemaFor[java.sql.Date] {
+    override val schema = Schema.create(Schema.Type.INT)
+    LogicalTypes.date().addToSchema(schema)
   }
 
   implicit object InstantFor extends SchemaFor[Instant] {
