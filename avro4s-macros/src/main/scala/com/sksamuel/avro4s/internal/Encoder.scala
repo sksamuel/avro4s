@@ -142,7 +142,8 @@ object Encoder {
 
     override def encode(ts: List[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType)).asJava
+      val arraySchema = extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
+      ts.map(encoder.encode(_, arraySchema.getElementType)).asJava
     }
   }
 
@@ -152,7 +153,8 @@ object Encoder {
 
     override def encode(ts: Set[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType)).toList.asJava
+      val arraySchema = extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
+      ts.map(encoder.encode(_, arraySchema.getElementType)).toList.asJava
     }
   }
 
@@ -162,7 +164,8 @@ object Encoder {
 
     override def encode(ts: Vector[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType)).asJava
+      val arraySchema = extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
+      ts.map(encoder.encode(_, arraySchema.getElementType)).asJava
     }
   }
 
@@ -172,7 +175,8 @@ object Encoder {
 
     override def encode(ts: Seq[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType)).asJava
+      val arraySchema = extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
+      ts.map(encoder.encode(_, arraySchema.getElementType)).asJava
     }
   }
 
@@ -249,11 +253,14 @@ object Encoder {
 
   // A :+: B is either Inl(value: A) or Inr(value: B), continuing the recursion
   implicit def coproductEncoder[S, T <: Coproduct](implicit encoderS: Encoder[S], encoderT: Encoder[T]): Encoder[S :+: T] = new Encoder[S :+: T] {
-    override def encode(value: S :+: T, schema: Schema): AnyRef = value match {
-      case Inl(s) => encoderS.encode(s, schema)
-      case Inr(t) => encoderT.encode(t, schema)
+    override def encode(value: S :+: T, schema: Schema): AnyRef = {
+      value match {
+        case Inl(s) => encoderS.encode(s, schema)
+        case Inr(t) => encoderT.encode(t, schema)
+      }
     }
   }
+
 
   implicit def applyMacro[T]: Encoder[T] = macro applyMacroImpl[T]
 
@@ -417,5 +424,14 @@ object Encoder {
     schema.getTypes.asScala
       .find(_.getFullName == implClassName)
       .getOrElse(sys.error(s"Cannot find subschema for class $implClassName"))
+  }
+
+  def extractSchemaFromPossibleUnion(schema: Schema, `type`: Schema.Type): Schema = {
+    import scala.collection.JavaConverters._
+    schema.getType match {
+      case Schema.Type.UNION => schema.getTypes.asScala.find(_.getType == `type`).getOrElse(sys.error(s"Could not find a schema of type ${`type`} in union $schema"))
+      case Schema.Type.ARRAY => schema
+      case _ => sys.error(s"Require ARRAY schema but was $schema")
+    }
   }
 }
