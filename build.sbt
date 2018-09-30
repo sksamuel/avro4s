@@ -22,3 +22,11 @@ val `avro4s-cats` = project.in(file("avro4s-cats"))
       "org.typelevel" %% "cats-core" % "1.4.0"
     )
   )
+
+val `avro4s-kafka` = project.in(file("avro4s-kafka"))
+  .dependsOn(`avro4s-core`)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.apache.kafka" % "kafka-clients" % "2.0.0"
+    )
+  )
