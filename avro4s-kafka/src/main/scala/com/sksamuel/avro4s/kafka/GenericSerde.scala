@@ -2,12 +2,12 @@ package com.sksamuel.avro4s.kafka
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import com.sksamuel.avro4s.internal.{AvroSchema, SchemaFor}
+import com.sksamuel.avro4s.internal.{AvroSchema, Decoder, Encoder, SchemaFor}
 import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream}
 import org.apache.avro.Schema
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 
-class GenericSerde[T >: Null : SchemaFor] extends Serde[T]
+class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder] extends Serde[T]
   with Deserializer[T]
   with Serializer[T]
   with Serializable {

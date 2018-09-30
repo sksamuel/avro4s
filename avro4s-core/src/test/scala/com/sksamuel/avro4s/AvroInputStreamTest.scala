@@ -48,33 +48,6 @@
 //
 
 //  "AvroInputStream" should {
-//    "read byte arrays" in {
-//      val data = Seq(ByteArrayTest(Array[Byte](1, 2, 3)), ByteArrayTest(Array[Byte](125, 126, 127)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[ByteArrayTest](bytes)
-//      val result = in.iterator.toList
-//      result.head.bytes.toList shouldBe Array[Byte](1, 2, 3).toList
-//      result.last.bytes.toList shouldBe Array[Byte](125, 126, 127).toList
-//      in.close()
-//    }
-//    "read eithers of nested case classes" in {
-//      val data = Seq(Moo(Left(Joo(4l))), Moo(Right(Goo(12.5d))), Moo(Right(Goo(3))))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[Moo](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    "read eithers of primitives" in {
-//      val data = Seq(EitherStringBoolean(Left("sammy")), EitherStringBoolean(Right(true)), EitherStringBoolean(Right(false)))
-//      val bytes = write(data)
-//
-//      val in = AvroInputStream.data[EitherStringBoolean](bytes)
-//      in.iterator.toList shouldBe data.toList
-//      in.close()
-//    }
-//    }
 //    "read coproducts of primitives" in {
 //      type SB = String :+: Boolean :+: CNil
 //      val data = Seq(

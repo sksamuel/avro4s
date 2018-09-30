@@ -41,10 +41,6 @@ object Decoder {
     override def decode(value: Any): Short = value.asInstanceOf[Int].toShort
   }
 
-  implicit object ByteArrayDecoder extends Decoder[Array[Byte]] {
-    override def decode(value: Any): Array[Byte] = value.asInstanceOf[ByteBuffer].array
-  }
-
   implicit object ByteSeqDecoder extends Decoder[Seq[Byte]] {
     override def decode(value: Any): Seq[Byte] = value.asInstanceOf[ByteBuffer].array().toSeq
   }
@@ -97,6 +93,14 @@ object Decoder {
       case array: Array[_] => array.map(decoder.decode).toVector
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toVector
       case other => sys.error("Unsupported vector " + other)
+    }
+  }
+
+  // specialized support for arrays of bytes which are likely to have been serialized as Schema.Type.BYTES
+  implicit object ByteArrayDecoder extends Decoder[Array[Byte]] {
+    override def decode(value: Any): Array[Byte] = value match {
+      case buffer: ByteBuffer => buffer.array
+      case array: Array[Byte] => array
     }
   }
 
@@ -366,11 +370,14 @@ object Decoder {
           q"""
           new _root_.com.sksamuel.avro4s.internal.Decoder[$tpe] {
             override def decode(value: Any): $tpe = {
-              val record = value.asInstanceOf[_root_.org.apache.avro.generic.GenericRecord]
-              $companion.apply(..$fields)
+              val fullName = $fullName
+              value match {
+                case record: _root_.org.apache.avro.generic.GenericRecord => $companion.apply(..$fields)
+                case _ => sys.error("This decoder decodes GenericRecord => " + fullName + " but has been invoked with " + value)
+              }
             }
           }
-       """
+          """
         )
       }
     }

@@ -154,8 +154,9 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: Array[T], schema: Schema): AnyRef = ts.headOption match {
-      case Some(_: Byte) => ByteBuffer.wrap(ts.asInstanceOf[Array[Byte]])
+    // if our schema is BYTES then we assume the incoming array is a byte array and serialize appropriately
+    override def encode(ts: Array[T], schema: Schema): AnyRef = schema.getType match {
+      case Schema.Type.BYTES => ByteBuffer.wrap(ts.asInstanceOf[Array[Byte]])
       case _ => ts.map(encoder.encode(_, schema.getElementType)).toList.asJava
     }
   }
