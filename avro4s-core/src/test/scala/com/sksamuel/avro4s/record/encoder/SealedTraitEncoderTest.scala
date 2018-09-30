@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.internal.{AvroSchema, Encoder}
-import org.apache.avro.generic.GenericRecord
+import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
 
@@ -41,7 +41,24 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     record.get("age") shouldBe 44
     record.getSchema shouldBe AvroSchema[Nabble]
   }
+
+  test("trait of case objects should be encoded as enum") {
+    val schema = AvroSchema[DibbleWrapper]
+    Encoder[DibbleWrapper].encode(DibbleWrapper(Dobble), schema).asInstanceOf[GenericRecord].get("dibble") shouldBe new GenericData.EnumSymbol(schema, Dobble)
+    Encoder[DibbleWrapper].encode(DibbleWrapper(Dabble), schema).asInstanceOf[GenericRecord].get("dibble") shouldBe new GenericData.EnumSymbol(schema, Dabble)
+  }
+
+  test("top level traits of case objects should be encoded as enum") {
+    val schema = AvroSchema[Dibble]
+    Encoder[Dibble].encode(Dobble, schema) shouldBe new GenericData.EnumSymbol(schema, Dobble)
+    Encoder[Dibble].encode(Dabble, schema) shouldBe new GenericData.EnumSymbol(schema, Dabble)
+  }
 }
+
+sealed trait Dibble
+case object Dobble extends Dibble
+case object Dabble extends Dibble
+case class DibbleWrapper(dibble: Dibble)
 
 sealed trait Wibble
 case class Wobble(str: String) extends Wibble

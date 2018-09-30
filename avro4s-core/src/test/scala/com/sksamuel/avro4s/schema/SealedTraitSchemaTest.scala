@@ -28,7 +28,17 @@ class SealedTraitSchemaTest extends FunSuite with Matchers {
     val schema = AvroSchema[Nibble]
     schema.toString(true) shouldBe expected.toString(true)
   }
+
+  test("trait of case objects should be encoded as enum") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_trait_of_objects.json"))
+    val schema = AvroSchema[Dibble]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
 }
+
+sealed trait Dibble
+case object Dobble extends Dibble
+case object Dabble extends Dibble
 
 sealed trait Wibble
 case class Wobble(str: String) extends Wibble

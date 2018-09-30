@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Sigma",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "a",
+      "type": "string"
+    }
+  ]
+}

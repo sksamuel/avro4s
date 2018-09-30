@@ -11,7 +11,7 @@ import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inl, Inr}
+import shapeless.{Coproduct, Generic, HList}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode
@@ -37,7 +37,7 @@ trait Encoder[T] extends Serializable {
 
 case class Exported[A](instance: A) extends AnyVal
 
-object Encoder {
+object Encoder extends CoproductEncoders {
 
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 
@@ -47,8 +47,11 @@ object Encoder {
     import scala.collection.JavaConverters._
     import scala.reflect.runtime.universe._
 
+    val tpe = weakTypeTag[T]
+
+    println(s"Using genTraitOfObjectsEncoder for $tpe")
+
     protected val schema: Schema = {
-      val tpe = weakTypeTag[T]
       val namespace = tpe.tpe.typeSymbol.annotations.map(_.toString)
         .find(_.startsWith("com.sksamuel.avro4s.AvroNamespace"))
         .map(_.stripPrefix("com.sksamuel.avro4s.AvroNamespace(\"").stripSuffix("\")"))
@@ -225,7 +228,7 @@ object Encoder {
       // we support encoding big decimals in three ways - fixed, bytes or as a String
       schema.getType match {
         case Schema.Type.STRING => StringEncoder.encode(t.toString, schema)
-        case Schema.Type.BYTES => ByteBufferEncoder.comap[BigDecimal] { bd =>
+        case Schema.Type.BYTES => ByteBufferEncoder.comap[BigDecimal] { _ =>
 
           val decimal = schema.getLogicalType.asInstanceOf[Decimal]
           require(decimal != null)
@@ -251,35 +254,6 @@ object Encoder {
     override def encode(t: E, schema: Schema): EnumSymbol = new EnumSymbol(schema, t.toString)
   }
 
-  implicit def genCoproductEncoder[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                                      coproductEncoder: Encoder[C]): Encoder[T] = new Encoder[T] {
-    override def encode(value: T, schema: Schema): AnyRef = coproductEncoder.encode(gen.to(value), schema)
-  }
-
-  // A coproduct is a union, or a generalised either.
-  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
-
-  // Shapeless's implementation builds up the type recursively,
-  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
-
-  // `encode` here should never actually be invoked, because you can't
-  // actually construct a value of type a: CNil, but the Encoder[CNil]
-  // needs to exist to supply a base case for the recursion.
-  implicit def cnilEncoder: Encoder[CNil] = new Encoder[CNil] {
-    override def encode(t: CNil, schema: Schema): AnyRef = sys.error("This should never happen: CNil has no inhabitants")
-  }
-
-  // A :+: B is either Inl(value: A) or Inr(value: B), continuing the recursion
-  implicit def coproductEncoder[S, T <: Coproduct](implicit encoderS: Encoder[S], encoderT: Encoder[T]): Encoder[S :+: T] = new Encoder[S :+: T] {
-    override def encode(value: S :+: T, schema: Schema): AnyRef = {
-      value match {
-        case Inl(s) => encoderS.encode(s, schema)
-        case Inr(t) => encoderT.encode(t, schema)
-      }
-    }
-  }
-
-
   implicit def applyMacro[T]: Encoder[T] = macro applyMacroImpl[T]
 
   def applyMacroImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Encoder[T]] = {
@@ -289,17 +263,12 @@ object Encoder {
     val reflect = ReflectHelper(c)
     val tpe = weakTypeTag[T].tpe
     val fullName = tpe.typeSymbol.fullName
-
-    val annos = reflect.annotations(tpe.typeSymbol)
-    val extractor = new AnnotationExtractors(annos)
     val isValueClass = reflect.isValueClass(tpe)
-    val isCaseClass = reflect.isCaseClass(tpe)
-    val isSealed = reflect.isSealed(tpe)
 
     // we only encode case classes here
-    if (!isCaseClass) {
+    if (!reflect.isCaseClass(tpe)) {
       c.abort(c.enclosingPosition.pos, "This macro only encodes case classes")
-    } else if (isSealed) {
+    } else if (reflect.isSealed(tpe)) {
       c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
     } else {
 

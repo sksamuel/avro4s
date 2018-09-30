@@ -61,10 +61,22 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     tpe
   }
 
-  // we iterate up the owner tree until we find an Object or Package
+  /**
+    * Returns the package name for the given type, by iterating up the tree
+    * until a package or a non-package object package is found.
+    */
   def packageName(tpe: Type): String = {
+
     Stream.iterate(tpe.typeSymbol.owner)(_.owner)
+      .dropWhile(_.name.decodedName.toString == "package")
       .dropWhile(x => !x.isPackage && !x.isModuleClass)
+      .map { tpe =>
+        if (tpe.fullName.contains("github.package")) {
+          val t = tpe
+          println(tpe)
+        }
+        tpe
+      }
       .head
       .fullName
   }
