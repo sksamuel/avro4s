@@ -7,7 +7,7 @@ import java.util.UUID
 
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, LogicalTypes, Schema}
+import org.apache.avro.{Conversions, LogicalTypes}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inr}
@@ -232,10 +232,10 @@ object Decoder {
     override def decode(t: Any): E = enum.withName(t.toString).asInstanceOf[E]
   }
 
-  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                               coproductDecoder: Decoder[C]): Decoder[T] = new Decoder[T] {
+  implicit def genCoproductDecoder[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                                      decoder: Decoder[C]): Decoder[T] = new Decoder[T] {
     override def decode(value: Any): T = {
-      gen.from(coproductDecoder.decode(value))
+      gen.from(decoder.decode(value))
     }
   }
 
@@ -245,11 +245,11 @@ object Decoder {
   // Shapeless's implementation builds up the type recursively,
   // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
 
-  // `apply` here should never be invoked under normal operation; if
+  // `decode` here should never be invoked under normal operation; if
   // we're trying to read a value of type CNil it's because we've
-  // tried all the other cases and failed. But the FromValue[CNil]
+  // tried all the other cases and failed. But the Decoder[CNil]
   // needs to exist to supply a base case for the recursion.
-  implicit def CNilFromValue: Decoder[CNil] = new Decoder[CNil] {
+  implicit object CNilDecoderValue extends Decoder[CNil] {
     override def decode(value: Any): CNil = sys.error("This should never happen: CNil has no inhabitants")
   }
 
@@ -259,10 +259,12 @@ object Decoder {
   // rest of the coproduct type T.
 
   // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
-  implicit def CoproductFromValue[S: WeakTypeTag : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
+  implicit def coproductDecoder[S: WeakTypeTag : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
     override def decode(value: Any): S :+: T = {
-      safeFrom[S](value).map(Coproduct[S :+: T](_))
-        .getOrElse(Inr(decoder.decode(value)))
+      safeFrom[S](value) match {
+        case Some(s) => Coproduct[S :+: T](s)
+        case None => Inr(decoder.decode(value))
+      }
     }
   }
 
@@ -307,7 +309,9 @@ object Decoder {
         if tpe <:< typeOf[java.util.Map[_, _]] ||
           tpe <:< typeOf[Map[_, _]] =>
         Some(decoder.decode(value))
+      // we compare the name in the record to the type name we supplied, if they match then this is correct type to decode to
       case record: GenericData.Record if typeName == record.getSchema.getFullName => Some(decoder.decode(value))
+      // if nothing matched then this wasn't the type we expected
       case _ => None
     }
   }
