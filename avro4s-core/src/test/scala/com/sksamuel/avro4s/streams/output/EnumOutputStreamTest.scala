@@ -5,7 +5,7 @@ import com.sksamuel.avro4s.schema.{Colours, Wine}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{FunSuite, Matchers}
 
-class EnumDataOutputStreamTest extends FunSuite with Matchers with OutputStreamTest {
+class EnumOutputStreamTest extends FunSuite with Matchers with OutputStreamTest {
 
   test("java enum") {
     case class Test(z: Wine)
