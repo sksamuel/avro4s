@@ -1,0 +1,11 @@
+{
+  "type": "enum",
+  "name": "Wine",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "symbols": [
+    "Malbec",
+    "Shiraz",
+    "CabSav",
+    "Merlot"
+  ]
+}

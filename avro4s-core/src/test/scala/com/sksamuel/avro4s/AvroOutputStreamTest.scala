@@ -1,41 +1,5 @@
 
-//
-//case class WineCrate(wine: Wine)
-//case class Test2(dec: BigDecimal)
-//
-//case class Foo(str: String, boolean: Boolean)
-//
-//case class NestedListFoo(foos: List[Foo])
-//case class NestedListDouble(doubles: List[Double])
-//case class NestedListBools(booleans: List[Boolean])
-//
-//case class NestedSetDoubles(set: Set[Double])
-//case class NestedSetTest(set: Set[Foo])
-//
-//case class NestedSeqDoubles(sequence: Seq[Double])
-//case class NestedSeqTest(seq: Seq[Foo])
-//
-//case class NestedMapTest(map: Map[String, Foo])
-//
-//case class ValueWrapper(valueClass: ValueClass)
-//case class ValueClass(value: String) extends AnyVal
-//
-//case class EitherCaseClasses(e: Either[WineCrate, Test2])
-//
-
-//
 //class AvroOutputStreamTest extends WordSpec with Matchers with TimeLimits {
-//    "support scala enums" in {
-//      val instance = ScalaEnums(Colours.Amber)
-//
-//      val output = new ByteArrayOutputStream
-//      val avro = AvroOutputStream.data[ScalaEnums](output)
-//      avro.write(instance)
-//      avro.close()
-//
-//      val record = read[ScalaEnums](output)
-//      record.get("value").toString shouldBe "Amber"
-//    }
 //    "support LocalDates" in {
 //      val instance = LocalDateTest(LocalDate.now())
 //
@@ -93,38 +57,6 @@
 //        record.get("head").asInstanceOf[GenericRecord].get("jobTitle") shouldBe new Utf8("Foreman")
 //      }
 //    }
-//    "support Array[Byte] in Either for data stream" in {
-//      val a = EitherWithByte("z", Right("value".getBytes))
-//
-//      val baos = new ByteArrayOutputStream()
-//      val os = AvroOutputStream.data[EitherWithByte](baos)
-//      os.write(a)
-//      os.close()
-//
-//      val record = read[EitherWithByte](baos)
-//      record.get("key") shouldBe new Utf8("z")
-//      record.get("value").asInstanceOf[ByteBuffer].array().toVector shouldBe "value".getBytes.toVector
-//    }
-//    "support Array[Byte] in Either for a binary stream" in {
-//      val a = EitherWithByte("z", Right("value".getBytes))
-//
-//      val baos = new ByteArrayOutputStream()
-//      val os = AvroOutputStream.binary[EitherWithByte](baos)
-//      os.write(a)
-//      os.close()
-//
-//      val record = readB[EitherWithByte](baos)
-//      record.get("key") shouldBe new Utf8("z")
-//      record.get("value").asInstanceOf[ByteBuffer].array().toVector shouldBe "value".getBytes.toVector
-//    }
 //  }
 //}
 //
-//case class EitherWithByte(key: String, value: Either[Int, Array[Byte]])
-//
-//object Colours extends Enumeration {
-//  val Red, Amber, Green = Value
-//}
-//case class ScalaEnums(value: Colours.Value)
-//
-//case class ScalaOptionEnums(value: Option[Colours.Value])

@@ -32,6 +32,11 @@ class EnumSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_scala_enum.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support top level enum schemas" in {
+      val schema = AvroSchema[Wine]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_java_enum.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
