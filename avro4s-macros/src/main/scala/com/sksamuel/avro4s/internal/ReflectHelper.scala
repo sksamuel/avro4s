@@ -102,6 +102,28 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
     com.sksamuel.avro4s.internal.Anno(name, args)
   }
+
+  /**
+    * Returns the appropriate name for this type to be used when creating
+    * an avro record. This method takes into account any type parameters
+    * and whether the type has been annotated with [[org.apache.avro.specific.AvroGenerated]].
+    *
+    * The format for a generated name is `rawname__typea_typeb_typec`. That is
+    * a double underscore delimits the raw type from the start of the type
+    * parameters and then each type parameter is delimited by a single underscore.
+    */
+  def recordName(tpe: Type): String = {
+    val annos = annotations(tpe.typeSymbol)
+    val erasedName = tpe.erasure.typeSymbol.name.decodedName.toString
+    if (new AnnotationExtractors(annos).generic) {
+      erasedName
+    } else {
+      tpe.typeArgs match {
+        case Nil => erasedName
+        case args => erasedName + "__" + args.map(recordName).mkString("_")
+      }
+    }
+  }
 }
 
 object ReflectHelper {

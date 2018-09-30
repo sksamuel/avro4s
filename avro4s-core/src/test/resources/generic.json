@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "SameGenericWithDifferentTypeArgs",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "gi",
+      "type": {
+        "type": "record",
+        "name": "Generic__Int",
+        "fields": [
+          {
+            "name": "t",
+            "type": "int"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gs",
+      "type": {
+        "type": "record",
+        "name": "Generic__String",
+        "fields": [
+          {
+            "name": "t",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}

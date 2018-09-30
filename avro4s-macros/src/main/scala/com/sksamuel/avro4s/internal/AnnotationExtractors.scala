@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.internal
 
-import com.sksamuel.avro4s.{AvroAlias, AvroDoc, AvroFixed, AvroName, AvroNamespace, AvroProp}
+import com.sksamuel.avro4s.{AvroAlias, AvroDoc, AvroErasedName, AvroFixed, AvroName, AvroNamespace, AvroProp}
 
 class AnnotationExtractors(annos: Seq[Anno]) {
 
@@ -8,6 +8,8 @@ class AnnotationExtractors(annos: Seq[Anno]) {
   private def findFirst(clazz: Class[_]): Option[String] = annos.find(_.className == clazz.getName).map(_.args.head.toString)
 
   private def findAll(clazz: Class[_]): Seq[String] = annos.filter(_.className == clazz.getName).map(_.args.head.toString)
+
+  private def exists(clazz: Class[_]): Boolean = annos.exists(_.className == clazz.getName)
 
   def namespace: Option[String] = findFirst(classOf[AvroNamespace])
   def doc: Option[String] = findFirst(classOf[AvroDoc])
@@ -20,4 +22,6 @@ class AnnotationExtractors(annos: Seq[Anno]) {
   def props: Map[String, String] = annos.filter(_.className == classOf[AvroProp].getName).map { anno =>
     anno.args.head.toString -> anno.args(1).toString
   }.toMap
+
+  def generic: Boolean = exists(classOf[AvroErasedName])
 }

@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Generic__String",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "t",
+      "type": "string"
+    }
+  ]
+}
