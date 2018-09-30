@@ -7,7 +7,7 @@ import java.util.UUID
 
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, LogicalTypes}
+import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inr}
@@ -114,6 +114,7 @@ object Decoder {
         case null => sys.error("Cannot decode <null> into a string")
         case u: Utf8 => u.toString
         case s: String => s
+        case a: Array[Byte] => new String(a)
         case other => other.toString
       }
   }
@@ -389,7 +390,6 @@ object Decoder {
              """
 
           } else {
-
 
             // if the field is a param with a default value, then we know the getter method will be defined
             // and so we can use it to generate the default value. otherwise, we invoke decode without a default

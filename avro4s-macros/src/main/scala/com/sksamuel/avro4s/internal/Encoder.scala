@@ -313,26 +313,19 @@ object Encoder {
         val extractor = new AnnotationExtractors(annos)
 
         // each field needs to be converted into an avro compatible value
-        // so scala primitives need to be converted to java boxed values
+        // so scala primitives need to be converted to java boxed values, and
         // annotations and logical types need to be taken into account
 
-        // if the field is annotated with @AvroFixed then we override the type to be a vector of bytes
+        // We get the instance for the field from the class by invoking the
+        // getter ( t.$name ) and then pass that value, and the schema for
+        // the record to an Encoder[<Type For Field>]
+
+        // if the field is annotated with @AvroFixed then we don't pull in an encoder in the normal way
+        // but we convert to an Array[Byte] or throw if we cannot perform this conversion.
         extractor.fixed match {
           case Some(_) =>
-            q"""{
-                t.$name match {
-                  case s: String => s.getBytes("UTF-8").array.toVector
-                  case a: Array[Byte] => a.toVector
-                  case v: Vector[Byte] => v
-                }
-              }
-           """
+            q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeFixed(t.$name)"""
           case None =>
-
-            // We get the instance for the field from the class by invoking the
-            // getter ( t.$name ) and then pass that value, and the schema for
-            // the record to an Encoder[<Type For Field>]
-
             // Note: If the field is a value class, then this macro will be summoned again
             // and the value type will be the type argument to the macro.
             q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $fullName)"""
@@ -409,6 +402,13 @@ object Encoder {
       case _ =>
         encoder.encode(t, schema)
     }
+  }
+
+  def encodeFixed(t: Any): Array[Byte] = t match {
+    case s: String => s.getBytes("UTF-8").array
+    case a: Array[Byte] => a
+    case v: Vector[_] if v.head.isInstanceOf[Byte] => v.asInstanceOf[Vector[Byte]].toArray
+    case other => sys.error(s"Cannot encode $other as Array[Byte] in fixed field")
   }
 
   def extractTraitSubschema(implClassName: String, schema: Schema): Schema = {
