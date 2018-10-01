@@ -12,7 +12,7 @@ object GlobalPlugin extends AutoPlugin {
   val AvroVersion = "1.8.2"
   val Log4jVersion = "1.2.17"
   val ScalatestVersion = "3.0.5"
-  val ScalaVersion = "2.12.6"
+  val ScalaVersion = "2.12.7"
   val Slf4jVersion = "1.7.12"
 
   override def requires = ReleasePlugin
@@ -27,8 +27,8 @@ object GlobalPlugin extends AutoPlugin {
       "-unchecked", "-deprecation",
       "-encoding",
       "utf8",
-      //"-Ywarn-unused-import",
-     // "-Xfatal-warnings",
+      "-Ywarn-unused-import",
+      "-Xfatal-warnings",
       "-feature",
      //"-Xlog-implicits",
       "-language:existentials"
@@ -37,7 +37,7 @@ object GlobalPlugin extends AutoPlugin {
     libraryDependencies ++= Seq(
       "org.scala-lang"    % "scala-reflect"     % scalaVersion.value,
       "org.apache.avro"   % "avro"              % AvroVersion,
-      "org.slf4j"         % "slf4j-api"         % Slf4jVersion,
+      "org.slf4j"         % "slf4j-api"         % Slf4jVersion          % "test",
       "log4j"             % "log4j"             % Log4jVersion          % "test",
       "org.slf4j"         % "log4j-over-slf4j"  % Slf4jVersion          % "test",
       "org.scalatest"     %% "scalatest"        % ScalatestVersion      % "test"
