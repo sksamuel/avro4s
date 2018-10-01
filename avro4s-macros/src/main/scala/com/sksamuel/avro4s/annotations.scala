@@ -8,7 +8,7 @@ case class AvroDoc(doc: String) extends StaticAnnotation
 
 /**
   * [[AvroFixed]] overrides the schema type for a field or a value class
-  * so that the schema is set to [[org.apache.avro.Schema.Type.FIXED]]
+  * so that the schema is set to org.apache.avro.Schema.Type.FIXED
   * rather than whatever the default would be.
   *
   * This annotation can be used in the following ways:

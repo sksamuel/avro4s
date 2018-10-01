@@ -8,7 +8,7 @@ trait RecordFormat[T] extends ToRecord[T] with FromRecord[T] with Serializable
 
 /**
   * Returns a [[RecordFormat]] that will convert to/from
-  * instances of T and avro [[Record]]s.
+  * instances of T and avro Record's.
   */
 object RecordFormat {
 

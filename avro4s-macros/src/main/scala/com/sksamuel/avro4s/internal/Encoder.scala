@@ -19,7 +19,7 @@ import scala.reflect.ClassTag
 
 /**
   * An [[Encoder]] returns an Avro compatible value for a given
-  * type T and a [[Schema]].
+  * type T and a Schema.
   *
   * For example, a value of String, and a schema of type [[Schema.Type.STRING]]
   * would return an instance of [[Utf8]], whereas the same string and a

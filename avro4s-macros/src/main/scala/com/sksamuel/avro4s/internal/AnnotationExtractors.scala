@@ -2,6 +2,8 @@ package com.sksamuel.avro4s.internal
 
 import com.sksamuel.avro4s.{AvroAlias, AvroDoc, AvroErasedName, AvroFixed, AvroName, AvroNamespace, AvroProp}
 
+case class Anno(className: String, args: Seq[Any])
+
 class AnnotationExtractors(annos: Seq[Anno]) {
 
   // returns the value of the first arg from the first annotation that matches the given class

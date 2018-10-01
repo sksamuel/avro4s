@@ -55,7 +55,7 @@ class DefaultAvroOutputStream[T](os: OutputStream, schema: Schema, serializer: o
 object AvroOutputStream {
 
   /**
-    * An [[AvroOutputStream]] that does not write the [[org.apache.avro.Schema]]. Use this when
+    * An [[AvroOutputStream]] that does not write the schema. Use this when
     * you want the smallest messages possible at the cost of not having the schema available
     * in the messages for downstream clients.
     */

@@ -5,7 +5,7 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.avro.specific.SpecificRecord
 
 /**
-  * An implementation of [[org.apache.avro.generic.GenericContainer]] that is both a
+  * An implementation of org.apache.avro.generic.GenericContainer that is both a
   * [[GenericRecord]] and a [[SpecificRecord]].
   */
 trait Record extends GenericRecord with SpecificRecord

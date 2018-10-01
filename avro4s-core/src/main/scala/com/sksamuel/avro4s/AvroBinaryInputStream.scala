@@ -15,7 +15,7 @@ import scala.util.Try
   * See https://avro.apache.org/docs/current/spec.html#binary_encoding
   *
   * In order to convert the underlying binary data into types of T, this
-  * input stream requires an instance of [[Decoder]].
+  * input stream requires an instance of Decoder.
   */
 class AvroBinaryInputStream[T](in: InputStream,
                                writerSchema: Schema,

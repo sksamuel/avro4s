@@ -19,7 +19,7 @@ import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe._
 
 /**
-  * A [[SchemaFor]] generates an Avro [[Schema]] for a Scala or Java type.
+  * A [[SchemaFor]] generates an Avro Schema for a Scala or Java type.
   *
   * For example, a String SchemaFor could return an instance of Schema.Type.STRING
   * or Schema.Type.FIXED depending on the type required for Strings.
@@ -485,7 +485,7 @@ object SchemaFor extends LowPrioritySchemaFor {
   private def resolveDefault(default: Any): AnyRef = {
     default match {
       case null => null
-      case UUIDType => default.toString
+      case uuid: UUID => uuid.toString
       case bd: BigDecimal => java.lang.Double.valueOf(bd.underlying.doubleValue)
       case Some(value) => resolveDefault(value)
       case b: Boolean => java.lang.Boolean.valueOf(b)
@@ -496,16 +496,6 @@ object SchemaFor extends LowPrioritySchemaFor {
       case f: Float => java.lang.Float.valueOf(f)
       case other => other.toString
     }
-    //    dataType match {
-    //
-    //      case StringType => default.toString
-
-    //      case NullableType(elementType) => default match {
-    //        case Some(value) => resolveDefault(value, elementType)
-    //        case None => null
-    //      }
-    //      case _ => default.toString
-    //    }
   }
 
   def moveDefaultToHead(schema: Schema, default: Any): Schema = {
