@@ -8,9 +8,8 @@ Avro4s is a schema/class generation and serializing/deserializing library for [A
 
 The features of the library are:
 * Schema generation from classes at compile time
-* Class generation from schemas at build time(through [sbt](https://github.com/sksamuel/sbt-avro4s))
-* Boilerplate free serialization of classes to Avro
-* Boilerplate free deserialization of Avro to classes
+* Boilerplate free serialization of Scala types into Avro types
+* Boilerplate free deserialization of Avro types to Scala types
 
 ## Changelog
 
