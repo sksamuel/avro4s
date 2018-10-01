@@ -84,7 +84,7 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     * Note: The companion must be defined for this to work.
     *
     * Internal: the index offset will be + 1 since 0 is reserved for something which I forget.
-    * Nominally, the method is named `name$default$N` where in the case of constructor defaults,
+    * Nominally, the method is named name$default$N where in the case of constructor defaults,
     * name would be <init>.
     */
   def defaultGetter(tpe: Type, index: Int): c.universe.MethodSymbol = {
@@ -112,7 +112,7 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
   /**
     * Returns the appropriate name for this type to be used when creating
     * an avro record. This method takes into account any type parameters
-    * and whether the type has been annotated with [[org.apache.avro.specific.AvroGenerated]].
+    * and whether the type has been annotated with @AvroErasedName.
     *
     * The format for a generated name is `rawname__typea_typeb_typec`. That is
     * a double underscore delimits the raw type from the start of the type
@@ -121,7 +121,7 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
   def recordName(tpe: Type): String = {
     val annos = annotations(tpe.typeSymbol)
     val erasedName = tpe.typeSymbol.name.decodedName.toString
-    if (new AnnotationExtractors(annos).generic) {
+    if (new AnnotationExtractors(annos).erased) {
       erasedName
     } else {
       tpe.typeArgs match {

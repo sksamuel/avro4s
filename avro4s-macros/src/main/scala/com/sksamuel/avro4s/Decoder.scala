@@ -372,7 +372,7 @@ object Decoder extends LowPriorityDecoders {
 
   /**
     * For each field in the target type, we must try to pull a value for that field out
-    * of the input [[GenericRecord]]. After we retrieve the avro value from the record
+    * of the input GenericRecord. After we retrieve the avro value from the record
     * we must apply the decoder to turn it into a scala compatible value.
     *
     * If the record does not have an entry for a field, and a scala default value is

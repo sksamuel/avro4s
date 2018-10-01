@@ -23,5 +23,5 @@ class AnnotationExtractors(annos: Seq[Anno]) {
     anno.args.head.toString -> anno.args(1).toString
   }.toMap
 
-  def generic: Boolean = exists(classOf[AvroErasedName])
+  def erased: Boolean = exists(classOf[AvroErasedName])
 }

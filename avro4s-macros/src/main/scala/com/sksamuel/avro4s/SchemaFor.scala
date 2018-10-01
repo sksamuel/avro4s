@@ -326,7 +326,7 @@ object SchemaFor extends LowPrioritySchemaFor {
   }
 
   /**
-    * Builds an Avro [[Schema.Field]] with the field's [[Schema]] provided by an
+    * Builds an Avro Field with the field's Schema provided by an
     * implicit instance of [[SchemaFor]]. There must be a instance of this typeclass
     * in scope for any type we want to support in avro4s.
     *
