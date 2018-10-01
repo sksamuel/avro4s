@@ -44,7 +44,7 @@ trait LowPriorityDecoders {
     }
   }
 
-  private def safeFrom[T: WeakTypeTag](value: Any)(implicit decoder: Decoder[T]): Option[T] = {
+  protected def safeFrom[T: WeakTypeTag](value: Any)(implicit decoder: Decoder[T]): Option[T] = {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe

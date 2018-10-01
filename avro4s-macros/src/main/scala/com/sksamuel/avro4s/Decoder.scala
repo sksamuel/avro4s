@@ -225,6 +225,14 @@ object Decoder extends LowPriorityDecoders {
     }
   }
 
+  implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
+    override def decode(value: Any): Either[A, B] = {
+      safeFrom[A](value).map(Left[A, B])
+        .orElse(safeFrom[B](value).map(Right[A, B]))
+        .getOrElse(sys.error(s"Could not decode $value into an either"))
+    }
+  }
+
   implicit def javaEnumDecoder[E <: Enum[E]](implicit tag: ClassTag[E]) = new Decoder[E] {
     override def decode(t: Any): E = {
       Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], t.toString)
@@ -305,7 +313,7 @@ object Decoder extends LowPriorityDecoders {
           val error = s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a top level scope."
           Console.err.println(error)
           c.error(c.enclosingPosition.pos, error)
-          c.abort(c.enclosingPosition.pos, error)
+          sys.error(error)
         }
 
         val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>

@@ -9,7 +9,7 @@ import org.scalatest.{FlatSpec, Matchers}
 case class WithBigDecimal(decimal: BigDecimal)
 case class OptionalBigDecimal(big: Option[BigDecimal])
 
-class DecimalDecoderTest extends FlatSpec with Matchers {
+class BigDecimalDecoderTest extends FlatSpec with Matchers {
 
   "Decoder" should "convert byte array to decimal" in {
     val schema = AvroSchema[WithBigDecimal]
