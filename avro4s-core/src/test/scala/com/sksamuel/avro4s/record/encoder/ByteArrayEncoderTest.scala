@@ -18,6 +18,36 @@ class ByteArrayEncoderTest extends FunSuite with Matchers {
       .array().toList shouldBe List[Byte](1, 4, 9)
   }
 
+  test("encode byte vectors as BYTES type") {
+    case class Test(z: Vector[Byte])
+    val schema = AvroSchema[Test]
+    Encoder[Test].encode(Test(Vector[Byte](1, 4, 9)), schema)
+      .asInstanceOf[GenericRecord]
+      .get("z")
+      .asInstanceOf[ByteBuffer]
+      .array().toList shouldBe List[Byte](1, 4, 9)
+  }
+
+  test("encode byte seq as BYTES type") {
+    case class Test(z: Seq[Byte])
+    val schema = AvroSchema[Test]
+    Encoder[Test].encode(Test(Seq[Byte](1, 4, 9)), schema)
+      .asInstanceOf[GenericRecord]
+      .get("z")
+      .asInstanceOf[ByteBuffer]
+      .array().toList shouldBe List[Byte](1, 4, 9)
+  }
+
+  test("encode byte list as BYTES type") {
+    case class Test(z: List[Byte])
+    val schema = AvroSchema[Test]
+    Encoder[Test].encode(Test(List[Byte](1, 4, 9)), schema)
+      .asInstanceOf[GenericRecord]
+      .get("z")
+      .asInstanceOf[ByteBuffer]
+      .array().toList shouldBe List[Byte](1, 4, 9)
+  }
+
   test("encode top level byte arrays") {
     val schema = AvroSchema[Array[Byte]]
     Encoder[Array[Byte]].encode(Array[Byte](1, 4, 9), schema)

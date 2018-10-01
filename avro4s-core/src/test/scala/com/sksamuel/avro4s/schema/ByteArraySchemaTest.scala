@@ -14,6 +14,27 @@ class ByteArraySchemaTest extends FunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
+  test("encode seq arrays as BYTES type") {
+    case class Test(z: Seq[Byte])
+    val schema = AvroSchema[Test]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/byte_array.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("encode list arrays as BYTES type") {
+    case class Test(z: List[Byte])
+    val schema = AvroSchema[Test]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/byte_array.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("encode vector arrays as BYTES type") {
+    case class Test(z: Vector[Byte])
+    val schema = AvroSchema[Test]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/byte_array.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
   test("support top level byte arrays") {
     val schema = AvroSchema[Array[Byte]]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_byte_array.json"))

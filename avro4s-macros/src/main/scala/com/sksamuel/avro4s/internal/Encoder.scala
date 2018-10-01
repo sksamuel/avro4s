@@ -188,6 +188,18 @@ object Encoder extends CoproductEncoders {
     override def encode(t: Array[Byte], schema: Schema): ByteBuffer = ByteBuffer.wrap(t)
   }
 
+  implicit object ByteListEncoder extends Encoder[List[Byte]] {
+    override def encode(t: List[Byte], schema: Schema): ByteBuffer = ByteBuffer.wrap(t.toArray[Byte])
+  }
+
+  implicit object ByteSeqEncoder extends Encoder[Seq[Byte]] {
+    override def encode(t: Seq[Byte], schema: Schema): ByteBuffer = ByteBuffer.wrap(t.toArray[Byte])
+  }
+
+  implicit object ByteVectorEncoder extends Encoder[Vector[Byte]] {
+    override def encode(t: Vector[Byte], schema: Schema): ByteBuffer = ByteBuffer.wrap(t.toArray[Byte])
+  }
+
   implicit object ByteBufferEncoder extends Encoder[ByteBuffer] {
     override def encode(t: ByteBuffer, schema: Schema): ByteBuffer = t
   }

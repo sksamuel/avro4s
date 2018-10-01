@@ -133,8 +133,12 @@ object Decoder extends LowPriorityDecoders {
     override def decode(value: Any): ByteBuffer = ByteArrayDecoder.map(ByteBuffer.wrap).decode(value)
   }
 
-  implicit object ByteListDecoder extends Decoder[Seq[Byte]] {
-    override def decode(value: Any): Seq[Byte] = ByteArrayDecoder.decode(value).toList
+  implicit object ByteListDecoder extends Decoder[List[Byte]] {
+    override def decode(value: Any): List[Byte] = ByteArrayDecoder.decode(value).toList
+  }
+
+  implicit object ByteVectorDecoder extends Decoder[Vector[Byte]] {
+    override def decode(value: Any): Vector[Byte] = ByteArrayDecoder.decode(value).toVector
   }
 
   implicit object ByteSeqDecoder extends Decoder[Seq[Byte]] {
