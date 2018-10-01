@@ -10,6 +10,8 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
 
   private val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
 
+  def isScalaEnum(tpe: c.universe.Type): Boolean = tpe.<:<(typeOf[Enumeration])
+
   def primaryConstructor(tpe: c.Type): Option[MethodSymbol] = {
     val constructorSymbol = tpe.decl(termNames.CONSTRUCTOR)
     if (constructorSymbol.isMethod) Some(constructorSymbol.asMethod)
@@ -44,7 +46,7 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
   /**
     * Returns true if the given type is a value class.
     */
-  def isValueClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass // todo why was this here: && fixedAnnotation.isEmpty
+  def isValueClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass
 
   /**
     * Returns true if the given type is a class or trait and is sealed.
@@ -66,17 +68,9 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     * until a package or a non-package object package is found.
     */
   def packageName(tpe: Type): String = {
-
     Stream.iterate(tpe.typeSymbol.owner)(_.owner)
       .dropWhile(_.name.decodedName.toString == "package")
       .dropWhile(x => !x.isPackage && !x.isModuleClass)
-      .map { tpe =>
-        if (tpe.fullName.contains("github.package")) {
-          val t = tpe
-          println(tpe)
-        }
-        tpe
-      }
       .head
       .fullName
   }

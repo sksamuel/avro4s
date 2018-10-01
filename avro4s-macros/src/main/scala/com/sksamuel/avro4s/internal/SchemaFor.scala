@@ -80,9 +80,239 @@ object SchemaFor extends LowPrioritySchemaFor {
 
   def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
 
-  implicit def applyMacro[T]: SchemaFor[T] = macro applyMacroImpl[T]
+  implicit object ByteSchemaFor extends SchemaFor[Byte] {
+    override def schema: Schema = IntSchemaFor.schema
+  }
+
+  implicit object StringSchemaFor extends SchemaFor[String] {
+    override def schema: Schema = SchemaBuilder.builder().stringType()
+  }
+
+  implicit object LongSchemaFor extends SchemaFor[Long] {
+    override def schema: Schema = SchemaBuilder.builder().longType()
+  }
+
+  implicit object IntSchemaFor extends SchemaFor[Int] {
+    override def schema: Schema = SchemaBuilder.builder().intType()
+  }
+
+  implicit object DoubleSchemaFor extends SchemaFor[Double] {
+    override def schema: Schema = SchemaBuilder.builder().doubleType()
+  }
+
+  implicit object FloatSchemaFor extends SchemaFor[Float] {
+    override def schema: Schema = SchemaBuilder.builder().floatType()
+  }
+
+  implicit object BooleanSchemaFor extends SchemaFor[Boolean] {
+    override def schema: Schema = SchemaBuilder.builder().booleanType()
+  }
+
+  implicit object ShortSchemaFor extends SchemaFor[Short] {
+    override def schema: Schema = IntSchemaFor.schema
+  }
+
+  implicit object UUIDSchemaFor extends SchemaFor[UUID] {
+    override def schema: Schema = LogicalTypes.uuid().addToSchema(StringSchemaFor.schema)
+  }
+
+  implicit object ByteArraySchemaFor extends SchemaFor[Array[Byte]] {
+    override def schema: Schema = SchemaBuilder.builder().bytesType()
+  }
+
+  implicit object ByteSeqSchemaFor extends SchemaFor[Seq[Byte]] {
+    override def schema: Schema = ByteArraySchemaFor.schema
+  }
+
+  implicit object ByteListSchemaFor extends SchemaFor[List[Byte]] {
+    override def schema: Schema = ByteArraySchemaFor.schema
+  }
+
+  implicit object ByteVectorSchemaFor extends SchemaFor[Vector[Byte]] {
+    override def schema: Schema = ByteArraySchemaFor.schema
+  }
+
+  implicit object ByteBufferSchemaFor extends SchemaFor[ByteBuffer] {
+    override def schema: Schema = ByteArraySchemaFor.schema
+  }
+
+  implicit def bigDecimalFor(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): SchemaFor[BigDecimal] = new SchemaFor[BigDecimal] {
+    override def schema = LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(ByteArraySchemaFor.schema)
+  }
+
+  implicit def eitherSchemaFor[A, B](implicit leftFor: SchemaFor[A], rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] = {
+    new SchemaFor[Either[A, B]] {
+      override def schema: Schema = Schema.createUnion(leftFor.schema, rightFor.schema)
+    }
+  }
+
+  implicit def optionSchemaFor[T](implicit elementSchemaFor: SchemaFor[T]): SchemaFor[Option[T]] = new SchemaFor[Option[T]] {
+    override def schema: Schema = {
+      val elementSchema = elementSchemaFor.schema
+      val nullSchema = SchemaBuilder.builder().nullType()
+      SchemaFor.createSafeUnion(elementSchema, nullSchema)
+    }
+  }
+
+  implicit def arraySchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Array[S]] = {
+    new SchemaFor[Array[S]] {
+      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+    }
+  }
+
+//  implicit def iterableSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Iterable[S]] = {
+//    new SchemaFor[Iterable[S]] {
+//      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+//    }
+//  }
+
+  implicit def listSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[List[S]] = {
+    new SchemaFor[List[S]] {
+      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+    }
+  }
+
+  implicit def setSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Set[S]] = {
+    new SchemaFor[Set[S]] {
+      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+    }
+  }
+
+  implicit def vectorSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Vector[S]] = {
+    new SchemaFor[Vector[S]] {
+      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+    }
+  }
+
+  implicit def seqSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Seq[S]] = new SchemaFor[Seq[S]] {
+    override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+  }
+
+  implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = new SchemaFor[(A, B)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .endRecord()
+  }
+
+  implicit def tuple3SchemaFor[A, B, C](implicit
+                                        a: SchemaFor[A],
+                                        b: SchemaFor[B],
+                                        c: SchemaFor[C]): SchemaFor[(A, B, C)] = new SchemaFor[(A, B, C)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .name("_3").`type`(c.schema).noDefault()
+        .endRecord()
+  }
+
+  implicit def mapSchemaFor[V](implicit valueSchemaFor: SchemaFor[V]): SchemaFor[Map[String, V]] = {
+    new SchemaFor[Map[String, V]] {
+      override def schema: Schema = SchemaBuilder.map().values(valueSchemaFor.schema)
+    }
+  }
+
+  implicit object TimestampSchemaFor extends SchemaFor[Timestamp] {
+    override def schema = LogicalTypes.timestampMillis().addToSchema(LongSchemaFor.schema)
+  }
+
+  implicit object LocalTimeSchemaFor extends SchemaFor[LocalTime] {
+    override def schema = LogicalTypes.timeMillis().addToSchema(IntSchemaFor.schema)
+  }
+
+  implicit object LocalDateSchemaFor extends SchemaFor[LocalDate] {
+    override def schema = LogicalTypes.date().addToSchema(IntSchemaFor.schema)
+  }
+
+  implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
+    override def schema = LogicalTypes.timestampMillis().addToSchema(LongSchemaFor.schema)
+  }
+
+  implicit object DateSchemaFor extends SchemaFor[java.sql.Date] {
+    override def schema = LogicalTypes.date().addToSchema(IntSchemaFor.schema)
+  }
+
+  implicit object InstantSchemaFor extends SchemaFor[Instant] {
+    override def schema = LogicalTypes.timestampMillis().addToSchema(LongSchemaFor.schema)
+  }
+
+  implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = new SchemaFor[E] {
+    override def schema: Schema = {
+
+      val annos = tag.runtimeClass.getAnnotations.map { a =>
+        Anno(a.annotationType.getClass.getName, Nil)
+      }
+
+      val extractor = new AnnotationExtractors(annos)
+
+      val name = tag.runtimeClass.getSimpleName
+      val namespace = extractor.namespace.getOrElse(tag.runtimeClass.getPackage.getName)
+      val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
+
+      SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
+    }
+  }
+
+  implicit def scalaEnumSchemaFor[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = new SchemaFor[E] {
+
+    val typeRef = tag.tpe match {
+      case t@TypeRef(_, _, _) => t
+    }
+
+    val valueType = typeOf[E]
+    Console.err.println(s"Value type for enum $valueType")
+    val pre = typeRef.pre.typeSymbol.typeSignature.members
+    val syms = pre.filter { sym =>
+      !sym.isMethod &&
+        !sym.isType &&
+        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
+    }.map { sym =>
+      sym.name.decodedName.toString.trim
+    }.toList.sorted
+
+    val annos = typeRef.pre.typeSymbol.annotations.map { a =>
+      val name = a.tree.tpe.typeSymbol.fullName
+      val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+      com.sksamuel.avro4s.internal.Anno(name, args)
+    }
+
+    val extractor = new AnnotationExtractors(annos)
+
+    val namespace = extractor.namespace.getOrElse(typeRef.pre.typeSymbol.owner.fullName)
+    val name = extractor.name.getOrElse(typeRef.pre.typeSymbol.name.decodedName.toString)
+
+    override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
+  }
+
+  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
+                                                                     tag: TypeTag[T],
+                                                                     gen: Generic.Aux[T, C],
+                                                                     objs: Reify.Aux[C, L],
+                                                                     toList: ToList[L, T]): SchemaFor[T] = new SchemaFor[T] {
+    val tpe = weakTypeTag[T]
+    val annos = tpe.tpe.typeSymbol.annotations.map { a =>
+      val name = a.tree.tpe.typeSymbol.fullName
+      val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+      Anno(name, args)
+    }
+    val extractor = new AnnotationExtractors(annos)
+    val className = ct.runtimeClass.getCanonicalName
+    val packageName = ct.runtimeClass.getPackage.getName
+    val namespace = extractor.namespace.getOrElse(packageName)
+    val name = extractor.name.getOrElse(ct.runtimeClass.getSimpleName)
+    val symbols = toList(objs()).map(_.toString)
+
+    override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
+  }
+
+    implicit def applyMacro[T]: SchemaFor[T] = macro applyMacroImpl[T]
 
   def applyMacroImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
+
 
     import c.universe
     import c.universe._
@@ -90,15 +320,20 @@ object SchemaFor extends LowPrioritySchemaFor {
     val reflect = ReflectHelper(c)
     val tpe = weakTypeOf[T]
     val fullName = tpe.typeSymbol.fullName
+    Console.err.println("Invoking macro for $fullName")
     val packageName = reflect.packageName(tpe)
     val isValueClass = reflect.isValueClass(tpe)
     val recordName = reflect.recordName(tpe)
 
-    // we can only encode case classes in this macro
     if (!reflect.isCaseClass(tpe)) {
-      c.abort(c.prefix.tree.pos, s"$fullName is not a case class")
+      c.abort(c.prefix.tree.pos, s"$fullName is not a case class: This macro is only designed to handle case classes")
     } else if (reflect.isSealed(tpe)) {
       c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
+    } else if (packageName.startsWith("scala")) {
+      c.abort(c.prefix.tree.pos, s"$fullName is a scala type: Built in types should be handled by explicit typeclasses of SchemaFor and not this macro")
+    } else if (reflect.isScalaEnum(tpe)) {
+      Console.err.append(s"Ignoring scala enum $fullName")
+      c.abort(c.prefix.tree.pos, s"$fullName is a scala enum: Scala enum types should be handled by `scalaEnumSchemaFor`")
     } else {
       val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
 
@@ -124,8 +359,6 @@ object SchemaFor extends LowPrioritySchemaFor {
         // if the field is a param with a default value, then we know the getter method will be defined
         // and so we can use it to generate the default value
         if (f.isTerm && f.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
-          //val method = reflect.defaultGetter(tType, index + 1)
-          // the default method is defined on the companion object
           val moduleSym = tpe.typeSymbol.companion
           q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
         } else {
@@ -156,6 +389,8 @@ object SchemaFor extends LowPrioritySchemaFor {
     */
   def schemaField[B](name: String, packageName: String, annos: Seq[Anno], default: Any)
                     (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+
+    Console.err.println(s"Invoking schema field $name $packageName")
 
     val extractor = new AnnotationExtractors(annos)
     val namespace = extractor.namespace.getOrElse(packageName)
@@ -313,236 +548,4 @@ object SchemaFor extends LowPrioritySchemaFor {
     val (nulls, rest) = flattened.partition(_.getType == Schema.Type.NULL)
     Schema.createUnion(nulls.headOption.toSeq ++ rest: _*)
   }
-
-  implicit object ByteSchemaFor extends SchemaFor[Byte] {
-    override def schema: Schema = SchemaBuilder.builder().intType()
-  }
-
-  implicit object StringSchemaFor extends SchemaFor[String] {
-    override def schema: Schema = SchemaBuilder.builder().stringType()
-  }
-
-  implicit object LongSchemaFor extends SchemaFor[Long] {
-    override def schema: Schema = SchemaBuilder.builder().longType()
-  }
-
-  implicit object IntSchemaFor extends SchemaFor[Int] {
-    override def schema: Schema = SchemaBuilder.builder().intType()
-  }
-
-  implicit object DoubleSchemaFor extends SchemaFor[Double] {
-    override def schema: Schema = SchemaBuilder.builder().doubleType()
-  }
-
-  implicit object FloatSchemaFor extends SchemaFor[Float] {
-    override def schema: Schema = SchemaBuilder.builder().floatType()
-  }
-
-  implicit object BooleanSchemaFor extends SchemaFor[Boolean] {
-    override def schema: Schema = SchemaBuilder.builder().booleanType()
-  }
-
-  implicit object ShortSchemaFor extends SchemaFor[Short] {
-    override def schema: Schema = SchemaBuilder.builder().intType()
-  }
-
-  implicit object UUIDSchemaFor extends SchemaFor[UUID] {
-    override def schema: Schema = LogicalTypes.uuid().addToSchema(StringSchemaFor.schema)
-  }
-
-  implicit object ByteArraySchemaFor extends SchemaFor[Array[Byte]] {
-    override def schema: Schema = SchemaBuilder.builder().bytesType()
-  }
-
-  implicit object ByteSeqSchemaFor extends SchemaFor[Seq[Byte]] {
-    override def schema: Schema = ByteArraySchemaFor.schema
-  }
-
-  implicit object ByteListSchemaFor extends SchemaFor[List[Byte]] {
-    override def schema: Schema = ByteArraySchemaFor.schema
-  }
-
-  implicit object ByteVectorSchemaFor extends SchemaFor[Vector[Byte]] {
-    override def schema: Schema = ByteArraySchemaFor.schema
-  }
-
-  implicit object ByteBufferSchemaFor extends SchemaFor[ByteBuffer] {
-    override def schema: Schema = ByteArraySchemaFor.schema
-  }
-
-  implicit def bigDecimalFor(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): SchemaFor[BigDecimal] = new SchemaFor[BigDecimal] {
-    override def schema = LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(ByteArraySchemaFor.schema)
-  }
-
-  implicit def eitherSchemaFor[A, B](implicit leftFor: SchemaFor[A], rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] = {
-    new SchemaFor[Either[A, B]] {
-      override def schema: Schema = Schema.createUnion(leftFor.schema, rightFor.schema)
-    }
-  }
-
-  implicit def optionSchemaFor[T](implicit elementType: SchemaFor[T]): SchemaFor[Option[T]] = {
-    new SchemaFor[Option[T]] {
-      override def schema: Schema = {
-        val elementSchema = elementType.schema
-        val nullSchema = SchemaBuilder.builder().nullType()
-        SchemaFor.createSafeUnion(elementSchema, nullSchema)
-      }
-    }
-  }
-
-  implicit def ArraySchemaFor[S](implicit elementType: SchemaFor[S]): SchemaFor[Array[S]] = {
-    new SchemaFor[Array[S]] {
-      override def schema: Schema = Schema.createArray(elementType.schema)
-    }
-  }
-
-  implicit def IterableFor[S](implicit elementType: SchemaFor[S]): SchemaFor[Iterable[S]] = {
-    new SchemaFor[Iterable[S]] {
-      override def schema: Schema = Schema.createArray(elementType.schema)
-    }
-  }
-
-  implicit def ListFor[S](implicit elementType: SchemaFor[S]): SchemaFor[List[S]] = {
-    new SchemaFor[List[S]] {
-      override def schema: Schema = Schema.createArray(elementType.schema)
-    }
-  }
-
-  implicit def SetFor[S](implicit elementType: SchemaFor[S]): SchemaFor[Set[S]] = {
-    new SchemaFor[Set[S]] {
-      override def schema: Schema = Schema.createArray(elementType.schema)
-    }
-  }
-
-  implicit def VectorFor[S](implicit elementType: SchemaFor[S]): SchemaFor[Vector[S]] = {
-    new SchemaFor[Vector[S]] {
-      override def schema: Schema = Schema.createArray(elementType.schema)
-    }
-  }
-
-  implicit def SeqFor[S](implicit elementType: SchemaFor[S]): SchemaFor[Seq[S]] = new SchemaFor[Seq[S]] {
-    override def schema: Schema = Schema.createArray(elementType.schema)
-  }
-
-  implicit def Tuple2ToSchema[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = new SchemaFor[(A, B)] {
-    override def schema: Schema =
-      SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
-        .fields()
-        .name("_1").`type`(a.schema).noDefault()
-        .name("_2").`type`(b.schema).noDefault()
-        .endRecord()
-  }
-
-  implicit def Tuple3ToSchema[A, B, C](implicit
-                                       a: SchemaFor[A],
-                                       b: SchemaFor[B],
-                                       c: SchemaFor[C]): SchemaFor[(A, B, C)] = new SchemaFor[(A, B, C)] {
-    override def schema: Schema =
-      SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
-        .fields()
-        .name("_1").`type`(a.schema).noDefault()
-        .name("_2").`type`(b.schema).noDefault()
-        .name("_3").`type`(c.schema).noDefault()
-        .endRecord()
-  }
-
-  implicit def MapFor[V](implicit valueType: SchemaFor[V]): SchemaFor[Map[String, V]] = {
-    new SchemaFor[Map[String, V]] {
-      override def schema: Schema = SchemaBuilder.map().values(valueType.schema)
-    }
-  }
-
-  implicit object TimestampFor extends SchemaFor[Timestamp] {
-    override def schema = LogicalTypes.timestampMillis().addToSchema(LongSchemaFor.schema)
-  }
-
-  implicit object LocalTimeFor extends SchemaFor[LocalTime] {
-    override def schema = LogicalTypes.timeMillis().addToSchema(IntSchemaFor.schema)
-  }
-
-  implicit object LocalDateFor extends SchemaFor[LocalDate] {
-    override def schema = LogicalTypes.date().addToSchema(IntSchemaFor.schema)
-  }
-
-  implicit object LocalDateTimeFor extends SchemaFor[LocalDateTime] {
-    override def schema = LogicalTypes.timestampMillis().addToSchema(LongSchemaFor.schema)
-  }
-
-  implicit object DateFor extends SchemaFor[java.sql.Date] {
-    override def schema = LogicalTypes.date().addToSchema(IntSchemaFor.schema)
-  }
-
-  implicit object InstantFor extends SchemaFor[Instant] {
-    override def schema = LogicalTypes.timestampMillis().addToSchema(LongSchemaFor.schema)
-  }
-
-  implicit def javaEnumFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = new SchemaFor[E] {
-    override def schema: Schema = {
-
-      val annos = tag.runtimeClass.getAnnotations.map { a =>
-        Anno(a.annotationType.getClass.getName, Nil)
-      }
-
-      val extractor = new AnnotationExtractors(annos)
-
-      val name = tag.runtimeClass.getSimpleName
-      val namespace = extractor.namespace.getOrElse(tag.runtimeClass.getPackage.getName)
-      val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
-
-      SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
-    }
-  }
-
-  implicit def scalaEnumToSchema[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = new SchemaFor[E] {
-
-    val typeRef = tag.tpe match {
-      case t@TypeRef(_, _, _) => t
-    }
-
-    val valueType = typeOf[E]
-
-    val pre = typeRef.pre.typeSymbol.typeSignature.members
-    val syms = pre.filter { sym =>
-      !sym.isMethod &&
-        !sym.isType &&
-        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
-    }.map { sym =>
-      sym.name.decodedName.toString.trim
-    }.toList.sorted
-
-    val annos = typeRef.pre.typeSymbol.annotations.map { a =>
-      val name = a.tree.tpe.typeSymbol.fullName
-      val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-      com.sksamuel.avro4s.internal.Anno(name, args)
-    }
-
-    val extractor = new AnnotationExtractors(annos)
-
-    val namespace = extractor.namespace.getOrElse(typeRef.pre.typeSymbol.owner.fullName)
-    val name = extractor.name.getOrElse(typeRef.pre.typeSymbol.name.decodedName.toString)
-
-    override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
-  }
-
-  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
-                                                                     tag: TypeTag[T],
-                                                                     gen: Generic.Aux[T, C],
-                                                                     objs: Reify.Aux[C, L],
-                                                                     toList: ToList[L, T]): SchemaFor[T] = new SchemaFor[T] {
-    val tpe = weakTypeTag[T]
-    val annos = tpe.tpe.typeSymbol.annotations.map { a =>
-      val name = a.tree.tpe.typeSymbol.fullName
-      val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-      Anno(name, args)
-    }
-    val extractor = new AnnotationExtractors(annos)
-    val className = ct.runtimeClass.getCanonicalName
-    val packageName = ct.runtimeClass.getPackage.getName
-    val namespace = extractor.namespace.getOrElse(packageName)
-    val name = extractor.name.getOrElse(ct.runtimeClass.getSimpleName)
-    val symbols = toList(objs()).map(_.toString)
-
-    override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
-  }
-
 }

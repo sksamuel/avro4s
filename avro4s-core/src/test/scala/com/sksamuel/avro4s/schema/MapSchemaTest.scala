@@ -6,9 +6,15 @@ import org.scalatest.{Matchers, WordSpec}
 class MapSchemaTest extends WordSpec with Matchers {
 
   "SchemaEncoder" should {
-    "generate map type for a scala.collection.immutable.Map of primitives" in {
+    "generate map type for a scala.collection.immutable.Map of strings" in {
       case class Test(map: Map[String, String])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map.json"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map_string.json"))
+      val schema = AvroSchema[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate map type for a scala.collection.immutable.Map of ints" in {
+      case class Test(map: Map[String, Int])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map_int.json"))
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }

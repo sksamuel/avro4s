@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "VectorRecord",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "records",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Record",
+          "fields": [
+            {
+              "name": "str",
+              "type": "string"
+            },
+            {
+              "name": "double",
+              "type": "double"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -3,7 +3,7 @@ package com.sksamuel.avro4s
 import java.io.{File, OutputStream}
 import java.nio.file.{Files, Path}
 
-import com.sksamuel.avro4s.internal.{Decoder, Encoder}
+import com.sksamuel.avro4s.internal.Encoder
 import org.apache.avro.Schema
 import org.apache.avro.file.CodecFactory
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
@@ -15,7 +15,7 @@ import org.apache.avro.io.EncoderFactory
   *
   * There are three implementations of this stream
   *  - a Data stream,
-  *  - a BB stream
+  *  - a Binary stream
   *  - a Json stream
   *
   * See the methods on the companion object to create instances of each

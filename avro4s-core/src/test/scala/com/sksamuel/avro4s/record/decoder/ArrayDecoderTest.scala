@@ -168,19 +168,15 @@ class ArrayDecoderTest extends WordSpec with Matchers {
     //    }
 
     "support top level Seq[Double]" in {
-      val schema = AvroSchema[Seq[Double]]
       Decoder[Seq[Double]].decode(Array(1.2, 34.5, 54.3)) shouldBe Seq(1.2, 34.5, 54.3)
     }
     "support top level List[Int]" in {
-      val schema = AvroSchema[List[Int]]
       Decoder[List[Int]].decode(Array(1, 4, 9)) shouldBe List(1, 4, 9)
     }
     "support top level Vector[String]" in {
-      val schema = AvroSchema[Vector[String]]
       Decoder[Vector[String]].decode(Array("a", "z")) shouldBe Vector("a", "z")
     }
     "support top level Set[Boolean]" in {
-      val schema = AvroSchema[Set[Boolean]]
       Decoder[Set[Boolean]].decode(Array(true, false, true)) shouldBe Set(true, false)
     }
   }

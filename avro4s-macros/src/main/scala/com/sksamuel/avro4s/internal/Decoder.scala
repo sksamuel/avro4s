@@ -376,18 +376,13 @@ object Decoder extends LowPriorityDecoders {
         val companion = tpe.typeSymbol.companion
 
         if (companion == NoSymbol) {
-          val error = s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a higher enclosing scope."
+          val error = s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a top level scope."
           Console.err.println(error)
+          c.error(c.enclosingPosition.pos, error)
           c.abort(c.enclosingPosition.pos, error)
         }
 
         val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
-
-          val fieldName = fieldSym.name.asInstanceOf[c.TermName]
-
-          // todo handle avro name annotation
-          // val decodedName: Tree = helper.avroName(sym).getOrElse(q"${name.decodedName.toString}")
-          // val decodedName = q"${fieldName.decodedName.toString}"
 
           // this is the simple name of the field
           val name = fieldSym.name.decodedName.toString
