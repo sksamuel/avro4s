@@ -3,6 +3,9 @@ package com.sksamuel.avro4s
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 
+/**
+  * Converts from an Avro GenericRecord into instances of T.
+  */
 trait FromRecord[T] extends Serializable {
   def from(record: GenericRecord): T
 }
