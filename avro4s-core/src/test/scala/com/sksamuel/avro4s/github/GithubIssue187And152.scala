@@ -1,11 +1,8 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.internal.AvroSchema
 import org.scalatest.{FunSuite, Matchers}
 
 class GithubIssue187And152 extends FunSuite with Matchers {
-
-  import GithubIssue187And152._
 
   test("Encoding and decoding a nested ADT") {
 
