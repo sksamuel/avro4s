@@ -20,7 +20,7 @@ object GlobalPlugin extends AutoPlugin {
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.12.6"),
+    crossScalaVersions := Seq(ScalaVersion),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(
