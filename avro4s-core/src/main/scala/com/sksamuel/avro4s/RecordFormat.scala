@@ -6,7 +6,7 @@ import org.apache.avro.generic.GenericRecord
 /**
   * Brings together [[ToRecord]] and [[FromRecord]] in a single interface.
   */
-trait RecordFormat[T] extends ToRecord[T] with FromRecord[T] with Serializable
+trait RecordFormat[T <: Product] extends ToRecord[T] with FromRecord[T] with Serializable
 
 /**
   * Returns a [[RecordFormat]] that will convert to/from
