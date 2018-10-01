@@ -10,13 +10,13 @@ trait InputStreamTest extends FunSuite with Matchers {
 
   def readData[T: SchemaFor : Decoder](out: ByteArrayOutputStream): T = readData(out.toByteArray)
   def readData[T: SchemaFor : Decoder](bytes: Array[Byte]): T = {
-    AvroInputStream.data(bytes, implicitly[SchemaFor[T]].schema).iterator.next()
+    AvroInputStream.data.from(bytes).build(implicitly[SchemaFor[T]].schema).iterator.next()
   }
 
   def writeData[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
     val schema = AvroSchema[T]
     val out = new ByteArrayOutputStream
-    val avro = AvroOutputStream.data[T](out, schema)
+    val avro = AvroOutputStream.data[T].to(out).build(schema)
     avro.write(t)
     avro.close()
     out
@@ -24,13 +24,13 @@ trait InputStreamTest extends FunSuite with Matchers {
 
   def readBinary[T: SchemaFor : Decoder](out: ByteArrayOutputStream): T = readBinary(out.toByteArray)
   def readBinary[T: SchemaFor : Decoder](bytes: Array[Byte]): T = {
-    AvroInputStream.binary(bytes, implicitly[SchemaFor[T]].schema).iterator.next()
+    AvroInputStream.binary.from(bytes).build(implicitly[SchemaFor[T]].schema).iterator.next()
   }
 
   def writeBinary[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
     val schema = AvroSchema[T]
     val out = new ByteArrayOutputStream
-    val avro = AvroOutputStream.binary[T](out, schema)
+    val avro = AvroOutputStream.binary[T].to(out).build(schema)
     avro.write(t)
     avro.close()
     out

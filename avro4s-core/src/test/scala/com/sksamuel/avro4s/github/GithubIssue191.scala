@@ -17,7 +17,7 @@ class GithubIssue191 extends FunSuite with Matchers {
   test("writing out AnyVal in an option") {
     implicit val schema = AvroSchema[SimpleUser]
     val bytes = new ByteArrayOutputStream
-    val out = AvroOutputStream.data[SimpleUser](bytes, schema)
+    val out = AvroOutputStream.data[SimpleUser].to(bytes).build(schema)
     out.write(SimpleUser("Tom", Some(SN("123"))))
     out.close()
 

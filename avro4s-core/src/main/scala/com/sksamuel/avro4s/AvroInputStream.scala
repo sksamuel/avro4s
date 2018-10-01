@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.io.{ByteArrayInputStream, File, InputStream}
+import java.nio.ByteBuffer
 import java.nio.file.{Files, Path, Paths}
 
 import com.sksamuel.avro4s.internal.Decoder
@@ -29,120 +30,67 @@ trait AvroInputStream[T] {
 
 object AvroInputStream {
 
-  def binary[T: Decoder](path: String, schema: Schema): AvroBinaryInputStream[T] = binary(Paths.get(path), schema)
-  def binary[T: Decoder](file: File, writerSchema: Schema): AvroBinaryInputStream[T] = binary(file.toPath, writerSchema)
-  def binary[T: Decoder](path: Path, writerSchema: Schema): AvroBinaryInputStream[T] = binary(Files.newInputStream(path), writerSchema)
-  def binary[T: Decoder](bytes: Array[Byte], schema: Schema): AvroBinaryInputStream[T] = binary(new ByteArrayInputStream(bytes), schema)
-  def binary[T: Decoder](in: InputStream, schema: Schema): AvroBinaryInputStream[T] =
-    new AvroBinaryInputStream[T](in, schema, schema)
+  /**
+    * Creates a new [[AvroInputStreamBuilder]] that will read from binary
+    * encoded files.
+    */
+  def binary[T: Decoder]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](BinaryFormat)
 
-  def data[T: Decoder](path: String, schema: Schema): AvroDataInputStream[T] = data(Paths.get(path), schema)
-  def data[T: Decoder](file: File, writerSchema: Schema): AvroDataInputStream[T] = data(file.toPath, writerSchema)
-  def data[T: Decoder](path: Path, writerSchema: Schema): AvroDataInputStream[T] = data(Files.newInputStream(path), writerSchema)
-  def data[T: Decoder](bytes: Array[Byte], schema: Schema): AvroDataInputStream[T] = data(new ByteArrayInputStream(bytes), schema)
-  def data[T: Decoder](in: InputStream, schema: Schema): AvroDataInputStream[T] =
-    new AvroDataInputStream[T](in, Some(schema), Some(schema))
+  /**
+    * Creates a new [[AvroInputStreamBuilder]] that will read from binary
+    * encoded files with the schema present.
+    */
+  def data[T: Decoder]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](DataFormat)
+
+    /**
+    * Creates a new [[AvroInputStreamBuilder]] that will read from json
+    * encoded files.
+    */
+  def json[T: Decoder]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](JsonFormat)
 }
 
-//object AvroInputStream {
-//
-//  def json[T: SchemaFor : FromRecord](in: InputStream): AvroJsonInputStream[T] = new AvroJsonInputStream[T](in)
-//  def json[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroJsonInputStream[T] = json(new SeekableByteArrayInput(bytes))
-//  def json[T: SchemaFor : FromRecord](file: File): AvroJsonInputStream[T] = json(new SeekableFileInput(file))
-//  def json[T: SchemaFor : FromRecord](path: String): AvroJsonInputStream[T] = json(Paths.get(path))
-//  def json[T: SchemaFor : FromRecord](path: Path): AvroJsonInputStream[T] = json(path.toFile)
-//
-//  def binary[T: SchemaFor : FromRecord](in: InputStream, writerSchema: Schema): AvroBinaryInputStream[T] = new AvroBinaryInputStream[T](in, Option(writerSchema))
-//  def binary[T: SchemaFor : FromRecord](bytes: Array[Byte], writerSchema: Schema): AvroBinaryInputStream[T] = binary(new SeekableByteArrayInput(bytes), writerSchema)
-//  def binary[T: SchemaFor : FromRecord](file: File, writerSchema: Schema): AvroBinaryInputStream[T] = binary(new SeekableFileInput(file), writerSchema)
-//  def binary[T: SchemaFor : FromRecord](path: String, writerSchema: Schema): AvroBinaryInputStream[T] = binary(Paths.get(path), writerSchema)
-//  def binary[T: SchemaFor : FromRecord](path: Path, writerSchema: Schema): AvroBinaryInputStream[T] = binary(path.toFile, writerSchema)
-//
-//  // convenience api for cases where the writer schema should be the same as the reader.
-//  def binary[T: SchemaFor : FromRecord](in: InputStream): AvroBinaryInputStream[T] = new AvroBinaryInputStream[T](in)
-//  def binary[T: SchemaFor : FromRecord](bytes: Array[Byte]): AvroBinaryInputStream[T] = binary(new SeekableByteArrayInput(bytes))
-//  def binary[T: SchemaFor : FromRecord](file: File): AvroBinaryInputStream[T] = binary(new SeekableFileInput(file))
-//  def binary[T: SchemaFor : FromRecord](path: String): AvroBinaryInputStream[T] = binary(Paths.get(path))
-//  def binary[T: SchemaFor : FromRecord](path: Path): AvroBinaryInputStream[T] = binary(path.toFile)
-//
-//
-//  sealed trait AvroFormat {
-//    def newBuilder[T: SchemaFor : FromRecord](): AvroInputStreamBuilder[T]
-//  }
-//  object JsonFormat extends AvroFormat {
-//    override def newBuilder[T: SchemaFor : FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderJson[T]()
-//  }
-//  object BinaryFormat extends AvroFormat {
-//    override def newBuilder[T: SchemaFor : FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderBinary[T]()
-//  }
-//  object DataFormat extends AvroFormat {
-//    override def newBuilder[T: SchemaFor : FromRecord](): AvroInputStreamBuilder[T] = new AvroInputStreamBuilderData[T]()
-//  }
-//
-//  def builder[T: SchemaFor : FromRecord](format: AvroFormat): AvroInputStreamBuilder[T] = format.newBuilder[T]()
-//
-//  abstract class AvroInputStreamBuilder[T: SchemaFor : FromRecord] {
-//    protected var writerSchema: Option[Schema] = None
-//    protected var readerSchema: Option[Schema] = None
-//    protected var inputStream: InputStream = _
-//    protected var seekableInput: SeekableInput = _
-//
-//    def from(path: Path): this.type =
-//      from(path.toFile)
-//
-//    def from(path: String): this.type =
-//      from(Paths.get(path))
-//
-//    def from(file: File): this.type = {
-//      val in = new SeekableFileInput(file)
-//      this.inputStream = in
-//      this.seekableInput = in
-//      this
-//    }
-//
-//    def from(bytes: Array[Byte]): this.type = {
-//      val in = new SeekableByteArrayInput(bytes)
-//      this.inputStream = in
-//      this.seekableInput = in
-//      this
-//    }
-//
-//    def schema(writerSchema: Schema, readerSchema: Schema): this.type = {
-//      this.writerSchema = Some(writerSchema)
-//      this.readerSchema = Some(readerSchema)
-//      this
-//    }
-//
-//    def schema(schema: Schema): this.type =
-//      this.schema(schema, schema)
-//
-//    def schemaWriterReader[Writer, Reader]()(implicit writerSchema: SchemaFor[Writer], readerSchema: SchemaFor[Reader]): this.type =
-//      this.schema(writerSchema(), readerSchema())
-//
-//    def schema()(implicit schema: SchemaFor[T]): this.type =
-//      this.schema(schema(), schema())
-//
-//    def build(): AvroInputStream[T]
-//  }
-//
-//  trait FromInputStream {
-//    this: AvroInputStreamBuilder[_] =>
-//    def from(in: InputStream): this.type = {
-//      this.inputStream = in
-//      this
-//    }
-//  }
-//
-//  class AvroInputStreamBuilderJson[T: SchemaFor : FromRecord] extends AvroInputStreamBuilder[T] with FromInputStream {
-//    override def build(): AvroInputStream[T] =
-//      new AvroJsonInputStream[T](inputStream, writerSchema, readerSchema)
-//  }
-//  class AvroInputStreamBuilderBinary[T: SchemaFor : FromRecord] extends AvroInputStreamBuilder[T] with FromInputStream {
-//    override def build(): AvroInputStream[T] =
-//      new AvroBinaryInputStream[T](inputStream, writerSchema, readerSchema)
-//  }
-//  class AvroInputStreamBuilderData[T: SchemaFor : FromRecord] extends AvroInputStreamBuilder[T] {
-//    override def build(): AvroInputStream[T] =
-//      new AvroDataInputStream[T](seekableInput, writerSchema, readerSchema)
-//  }
-//}
+sealed trait AvroFormat
+object BinaryFormat extends AvroFormat
+object JsonFormat extends AvroFormat
+object DataFormat extends AvroFormat
+
+class AvroInputStreamBuilder[T: Decoder](format: AvroFormat) {
+  def from(path: Path): AvroInputStreamBuilderWithSource[T] = from(Files.newInputStream(path))
+  def from(path: String): AvroInputStreamBuilderWithSource[T] = from(Paths.get(path))
+  def from(file: File): AvroInputStreamBuilderWithSource[T] = from(file.toPath)
+  def from(in: InputStream): AvroInputStreamBuilderWithSource[T] = new AvroInputStreamBuilderWithSource(format, in)
+  def from(bytes: Array[Byte]): AvroInputStreamBuilderWithSource[T] = from(new ByteArrayInputStream(bytes))
+  def from(buffer: ByteBuffer): AvroInputStreamBuilderWithSource[T] = from(new ByteArrayInputStream(buffer.array))
+}
+
+class AvroInputStreamBuilderWithSource[T: Decoder](format: AvroFormat, in: InputStream) {
+
+  /**
+    * Builds an [[AvroInputStream]] with the specified writer schema.
+    */
+  def build(writerSchema: Schema) = format match {
+    case DataFormat => new AvroDataInputStream[T](in, Some(writerSchema), None)
+    case BinaryFormat => new AvroBinaryInputStream[T](in, writerSchema, writerSchema)
+    case JsonFormat => new AvroJsonInputStream[T](in, writerSchema, writerSchema)
+  }
+
+  /**
+    * Builds an [[AvroInputStream]] with the specified reader and
+    * write schemas.
+    */
+  def build(writerSchema: Schema, readerSchema: Schema) = format match {
+    case DataFormat => new AvroDataInputStream[T](in, Some(writerSchema), Some(readerSchema))
+    case BinaryFormat => new AvroBinaryInputStream[T](in, writerSchema, readerSchema)
+    case JsonFormat => new AvroJsonInputStream[T](in, writerSchema, readerSchema)
+  }
+
+  /**
+    * Builds an [[AvroInputStream]] that uses the schema present in the file.
+    * This method does not work for binary or json formats because those
+    * formats do not store the schema.
+    */
+  def build = format match {
+    case DataFormat => new AvroDataInputStream[T](in, None, None)
+    case _ => sys.error("Must specify a schema for binary or json formats")
+  }
+}

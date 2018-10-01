@@ -21,7 +21,7 @@ class BinaryStreamsTest extends WordSpec with Matchers {
       implicit val encoder = Encoder[Composer]
 
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[Composer](baos, schema)
+      val output = AvroOutputStream.binary[Composer].to(baos).build(schema)
       output.write(ennio)
       output.write(hans)
       output.close()
@@ -38,12 +38,12 @@ class BinaryStreamsTest extends WordSpec with Matchers {
       implicit val encoder = Encoder[Composer]
 
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[Composer](baos, schema)
+      val output = AvroOutputStream.binary[Composer].to(baos).build(schema)
       output.write(ennio)
       output.write(hans)
       output.close()
 
-      val in = AvroInputStream.binary[Composer](baos.toByteArray, schema)
+      val in = AvroInputStream.binary[Composer].from(baos.toByteArray).build(schema)
       in.iterator.toList shouldBe List(ennio, hans)
       in.close()
     }

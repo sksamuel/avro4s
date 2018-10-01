@@ -21,7 +21,7 @@ trait OutputStreamTest extends FunSuite with Matchers {
   def writeData[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
     val schema = AvroSchema[T]
     val out = new ByteArrayOutputStream
-    val avro = AvroOutputStream.data[T](out, schema)
+    val avro = AvroOutputStream.data[T].to(out).build(schema)
     avro.write(t)
     avro.close()
     out
@@ -37,7 +37,7 @@ trait OutputStreamTest extends FunSuite with Matchers {
   def writeBinary[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
     val schema = AvroSchema[T]
     val out = new ByteArrayOutputStream
-    val avro = AvroOutputStream.binary[T](out, schema)
+    val avro = AvroOutputStream.binary[T].to(out).build(schema)
     avro.write(t)
     avro.close()
     out
@@ -54,7 +54,7 @@ trait OutputStreamTest extends FunSuite with Matchers {
   def writeJson[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
     val schema = AvroSchema[T]
     val out = new ByteArrayOutputStream
-    val avro = AvroOutputStream.json[T](out, schema)
+    val avro = AvroOutputStream.json[T].to(out).build(schema)
     avro.write(t)
     avro.close()
     out
@@ -77,11 +77,4 @@ trait OutputStreamTest extends FunSuite with Matchers {
       fn(record)
     }
   }
-
-  //  def readB[T](out: ByteArrayOutputStream, schema: Schema): GenericRecord = readB(out.toByteArray)
-  //  def readB[T](bytes: Array[Byte], schema: Schema): GenericRecord = {
-  //    val datumReader = new GenericDatumReader[GenericRecord](schema())
-  //    val decoder = DecoderFactory.get().binaryDecoder(bytes, null)
-  //    datumReader.read(null, decoder)
-  //  }
 }

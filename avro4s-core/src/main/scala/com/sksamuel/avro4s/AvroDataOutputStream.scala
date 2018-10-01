@@ -17,7 +17,7 @@ import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
   */
 case class AvroDataOutputStream[T](os: OutputStream,
                                    schema: Schema,
-                                   codec: CodecFactory = CodecFactory.nullCodec)
+                                   codec: CodecFactory)
                                   (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
 
   val (writer, writeFn) = schema.getType match {

@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.io.{File, OutputStream}
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 
 import com.sksamuel.avro4s.internal.Encoder
 import org.apache.avro.Schema
@@ -59,20 +59,30 @@ object AvroOutputStream {
     * you want the smallest messages possible at the cost of not having the schema available
     * in the messages for downstream clients.
     */
-  def binary[T: Encoder](file: File, schema: Schema): AvroOutputStream[T] = binary(file.toPath, schema)
-  def binary[T: Encoder](path: Path, schema: Schema): AvroOutputStream[T] = binary(Files.newOutputStream(path), schema)
-  def binary[T: Encoder](os: OutputStream, schema: Schema): AvroOutputStream[T] = new DefaultAvroOutputStream(os, schema, EncoderFactory.get.binaryEncoder(os, null))
+  def binary[T: Encoder] = new AvroOutputStreamBuilder[T](BinaryFormat)
 
-  // avro output stream that writes json instead of a packed format
-  def json[T: Encoder](file: File, schema: Schema): AvroOutputStream[T] = json(file.toPath, schema)
-  def json[T: Encoder](path: Path, schema: Schema): AvroOutputStream[T] = json(Files.newOutputStream(path), schema)
-  def json[T: Encoder](os: OutputStream, schema: Schema): AvroOutputStream[T] = new DefaultAvroOutputStream(os, schema, EncoderFactory.get.jsonEncoder(schema, os, true))
+  def json[T: Encoder] = new AvroOutputStreamBuilder[T](JsonFormat)
 
-  def data[T: Encoder](file: File, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = data(file.toPath, schema, codec)
-  def data[T: Encoder](path: Path, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = data(Files.newOutputStream(path), schema, codec)
-  def data[T: Encoder](os: OutputStream, schema: Schema, codec: CodecFactory): AvroDataOutputStream[T] = AvroDataOutputStream(os, schema, codec)
+  def data[T: Encoder] = new AvroOutputStreamBuilder[T](DataFormat)
+}
 
-  def data[T: Encoder](file: File, schema: Schema): AvroDataOutputStream[T] = data(file.toPath, schema)
-  def data[T: Encoder](path: Path, schema: Schema): AvroDataOutputStream[T] = data(Files.newOutputStream(path), schema)
-  def data[T: Encoder](os: OutputStream, schema: Schema): AvroDataOutputStream[T] = AvroDataOutputStream(os, schema)
+class AvroOutputStreamBuilder[T: Encoder](format: AvroFormat) {
+  def to(path: Path): AvroOutputStreamBuilderWithSource[T] = to(Files.newOutputStream(path))
+  def to(path: String): AvroOutputStreamBuilderWithSource[T] = to(Paths.get(path))
+  def to(file: File): AvroOutputStreamBuilderWithSource[T] = to(file.toPath)
+  def to(out: OutputStream): AvroOutputStreamBuilderWithSource[T] = new AvroOutputStreamBuilderWithSource(format, out)
+}
+
+class AvroOutputStreamBuilderWithSource[T: Encoder](format: AvroFormat, out: OutputStream, codec: CodecFactory = CodecFactory.nullCodec) {
+
+  def withCodec(codec: CodecFactory) = new AvroOutputStreamBuilderWithSource[T](format, out, codec)
+
+  /**
+    * Builds an [[AvroInputStream]] with the specified writer schema.
+    */
+  def build(schema: Schema) = format match {
+    case DataFormat => new AvroDataOutputStream[T](out, schema, codec)
+    case BinaryFormat => new DefaultAvroOutputStream[T](out, schema, EncoderFactory.get().binaryEncoder(out, null))
+    case JsonFormat => new DefaultAvroOutputStream[T](out, schema, EncoderFactory.get().jsonEncoder(schema, out))
+  }
 }

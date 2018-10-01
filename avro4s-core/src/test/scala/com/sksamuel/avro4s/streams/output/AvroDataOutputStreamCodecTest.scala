@@ -16,7 +16,7 @@ class AvroDataOutputStreamCodecTest extends WordSpec with Matchers {
   "AvroDataOutputStream" should {
     "include schema" in {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.data[Composer](baos, schema)
+      val output = AvroOutputStream.data[Composer].to(baos).build(schema)
       output.write(ennio)
       output.close()
       new String(baos.toByteArray) should include("birthplace")
@@ -25,7 +25,7 @@ class AvroDataOutputStreamCodecTest extends WordSpec with Matchers {
 
     "include snappy coded in metadata when serialized with snappy" in {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.data[Composer](baos, schema, CodecFactory.snappyCodec)
+      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.snappyCodec).build(schema)
       output.write(ennio)
       output.close()
       new String(baos.toByteArray) should include("snappy")
@@ -33,7 +33,7 @@ class AvroDataOutputStreamCodecTest extends WordSpec with Matchers {
 
     "include deflate coded in metadata when serialized with deflate" in {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.data[Composer](baos, schema, CodecFactory.deflateCodec(CodecFactory.DEFAULT_DEFLATE_LEVEL))
+      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.deflateCodec(CodecFactory.DEFAULT_DEFLATE_LEVEL)).build(schema)
       output.write(ennio)
       output.close()
       new String(baos.toByteArray) should include("deflate")
@@ -41,7 +41,7 @@ class AvroDataOutputStreamCodecTest extends WordSpec with Matchers {
 
     "include bzip2 coded in metadata when serialized with bzip2" in {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.data[Composer](baos, schema, CodecFactory.bzip2Codec)
+      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.bzip2Codec).build(schema)
       output.write(ennio)
       output.close()
       new String(baos.toByteArray) should include("bzip2")

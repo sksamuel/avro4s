@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.kafka
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.io.ByteArrayOutputStream
 
 import com.sksamuel.avro4s.internal.{AvroSchema, Decoder, Encoder, SchemaFor}
 import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream}
@@ -20,8 +20,7 @@ class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder] extends Serde[T]
 
   override def deserialize(topic: String, data: Array[Byte]): T = {
     if (data == null) null else {
-      val in = new ByteArrayInputStream(data)
-      val input = AvroInputStream.binary[T](in, schema)
+      val input = AvroInputStream.binary[T].from(data).build(schema)
       input.iterator.next()
     }
   }
@@ -32,7 +31,7 @@ class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder] extends Serde[T]
 
   override def serialize(topic: String, data: T): Array[Byte] = {
     val baos = new ByteArrayOutputStream()
-    val output = AvroOutputStream.binary[T](baos, schema)
+    val output = AvroOutputStream.binary[T].to(baos).build(schema)
     output.write(data)
     output.close()
     baos.toByteArray

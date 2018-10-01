@@ -11,7 +11,8 @@ import scala.util.Try
 
 class AvroDataInputStream[T](in: InputStream,
                              writerSchema: Option[Schema],
-                             readerSchema: Option[Schema])(implicit decoder: Decoder[T]) extends AvroInputStream[T] {
+                             readerSchema: Option[Schema])
+                            (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
   // if no reader or writer schema is specified, then we create a reader that uses what's present in the files
   private val datumReader =

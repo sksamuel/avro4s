@@ -21,7 +21,7 @@ class SchemaEvolutionTest extends FunSuite with Matchers {
     val v1schema = AvroSchema[Version1]
     val v1 = Version1("hello")
     val baos = new ByteArrayOutputStream()
-    val output = AvroOutputStream.data[Version1](baos, v1schema)
+    val output = AvroOutputStream.data[Version1].to(baos).build(v1schema)
     output.write(v1)
     output.close()
 
