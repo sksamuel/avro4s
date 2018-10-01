@@ -313,6 +313,11 @@ object Decoder extends LowPriorityDecoders {
           // this is the simple name of the field
           val name = fieldSym.name.decodedName.toString
 
+          // the name we use to pull the value out of the record should take into
+          // account any @AvroName annotations. If @AvroName is not defined then we
+          // use the name of the field in the case class
+          val resolvedFieldName = new AnnotationExtractors(reflect.annotations(fieldSym)).name.getOrElse(name)
+
           val isFieldAValueType = reflect.isValueClass(fieldTpe)
 
           if (isFieldAValueType) {
@@ -320,8 +325,9 @@ object Decoder extends LowPriorityDecoders {
             val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
             val backingFieldTpe = valueCstr.typeSignature
 
-            // for a value type we first decode the avro type into some scala happy type using an
-            // encoder for the backing type, and then we wrap it in an instance of the value class itself
+            // when we have a value type, the value type itself will never have existed in the data, so the
+            // value in the generic record needs to be decoded by a decoder for the underlying type.
+            // once we have that, we can just wrap it in the value type
             q"""{
                   val raw = record.get($name)
                   val decoded = _root_.com.sksamuel.avro4s.Decoder.decodeT[$backingFieldTpe](raw) : $backingFieldTpe
@@ -339,10 +345,10 @@ object Decoder extends LowPriorityDecoders {
               val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
               val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
 
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($name, record, $companion.$defaultGetterMethod)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, $companion.$defaultGetterMethod)"""
 
             } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($name, record, null)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, null)"""
             }
           }
         }
