@@ -208,6 +208,9 @@ object SchemaFor extends LowPrioritySchemaFor {
     // if the class is a value type, then we need to use the schema for the single field of the type
     // if we have a value type AND @AvroFixed is present, then we return a schema of type fixed
     if (valueType) {
+
+      println(s"Building value type schema $name $packageName $fields")
+
       val field = fields.head
       extractor.fixed.fold(field.schema) { size =>
         val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
@@ -352,6 +355,14 @@ object SchemaFor extends LowPrioritySchemaFor {
   }
 
   implicit object ByteSeqSchemaFor extends SchemaFor[Seq[Byte]] {
+    override def schema: Schema = ByteArraySchemaFor.schema
+  }
+
+  implicit object ByteListSchemaFor extends SchemaFor[List[Byte]] {
+    override def schema: Schema = ByteArraySchemaFor.schema
+  }
+
+  implicit object ByteVectorSchemaFor extends SchemaFor[Vector[Byte]] {
     override def schema: Schema = ByteArraySchemaFor.schema
   }
 
@@ -513,13 +524,11 @@ object SchemaFor extends LowPrioritySchemaFor {
     override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
   }
 
-  // This SchemaFor is used for sealed traits of objects
-  implicit def genTraitObjectEnum[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
-                                                                 tag: TypeTag[T],
-                                                                 gen: Generic.Aux[T, C],
-                                                                 objs: Reify.Aux[C, L],
-                                                                 toList: ToList[L, T]): SchemaFor[T] = new SchemaFor[T] {
-
+  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
+                                                                     tag: TypeTag[T],
+                                                                     gen: Generic.Aux[T, C],
+                                                                     objs: Reify.Aux[C, L],
+                                                                     toList: ToList[L, T]): SchemaFor[T] = new SchemaFor[T] {
     val tpe = weakTypeTag[T]
     val annos = tpe.tpe.typeSymbol.annotations.map { a =>
       val name = a.tree.tpe.typeSymbol.fullName

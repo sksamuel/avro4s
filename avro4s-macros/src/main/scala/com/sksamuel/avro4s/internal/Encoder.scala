@@ -41,8 +41,8 @@ object Encoder extends CoproductEncoders {
 
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 
-  implicit def genTraitObjectEnumEncoder[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
-                                                                        objs: Reify.Aux[C, L], toList: ToList[L, T]): Encoder[T] = new Encoder[T] {
+  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
+                                                                     objs: Reify.Aux[C, L], toList: ToList[L, T]): Encoder[T] = new Encoder[T] {
 
     import scala.collection.JavaConverters._
     import scala.reflect.runtime.universe._
@@ -96,6 +96,10 @@ object Encoder extends CoproductEncoders {
 
   implicit object ByteEncoder extends Encoder[Byte] {
     override def encode(t: Byte, schema: Schema): java.lang.Byte = java.lang.Byte.valueOf(t)
+  }
+
+  implicit object NoneEncoder extends Encoder[None.type] {
+    override def encode(t: None.type, schema: Schema) = null
   }
 
   implicit object UUIDEncoder extends Encoder[UUID] {

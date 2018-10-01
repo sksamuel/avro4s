@@ -5,7 +5,7 @@ import com.sksamuel.avro4s.internal.AvroSchema
 import org.apache.avro.SchemaParseException
 import org.scalatest.{FunSuite, Matchers}
 
-class GenericTest extends FunSuite with Matchers {
+class GenericSchemaTest extends FunSuite with Matchers {
 
   case class Generic[T](t: T)
   case class SameGenericWithDifferentTypeArgs(gi: Generic[Int], gs: Generic[String])

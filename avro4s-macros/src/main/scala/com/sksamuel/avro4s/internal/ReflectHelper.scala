@@ -126,7 +126,7 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     */
   def recordName(tpe: Type): String = {
     val annos = annotations(tpe.typeSymbol)
-    val erasedName = tpe.erasure.typeSymbol.name.decodedName.toString
+    val erasedName = tpe.typeSymbol.name.decodedName.toString
     if (new AnnotationExtractors(annos).generic) {
       erasedName
     } else {

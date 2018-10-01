@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "FixedString",
+  "name": "FixedStringField",
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {

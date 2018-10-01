@@ -1,0 +1,6 @@
+{
+  "type": "fixed",
+  "name": "FixedValueClass",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "size": 8
+}

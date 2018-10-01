@@ -9,7 +9,6 @@ trait CoproductEncoders {
                                                       coproductEncoder: Encoder[C]): Encoder[T] = new Encoder[T] {
     import scala.reflect.runtime.universe._
     val tpe = weakTypeTag[T]
-    println(s"Using genCoproductEncoder for $tpe")
     override def encode(value: T, schema: Schema): AnyRef = coproductEncoder.encode(gen.to(value), schema)
   }
 
