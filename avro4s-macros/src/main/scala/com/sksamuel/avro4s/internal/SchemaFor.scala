@@ -40,6 +40,28 @@ trait SchemaFor[T] extends Serializable {
 
 trait LowPrioritySchemaFor {
 
+  implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = new SchemaFor[(A, B)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .endRecord()
+  }
+
+  implicit def tuple3SchemaFor[A, B, C](implicit
+                                        a: SchemaFor[A],
+                                        b: SchemaFor[B],
+                                        c: SchemaFor[C]): SchemaFor[(A, B, C)] = new SchemaFor[(A, B, C)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .name("_3").`type`(c.schema).noDefault()
+        .endRecord()
+  }
+
   // A coproduct is a union, or a generalised either.
   // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
 
@@ -136,6 +158,12 @@ object SchemaFor extends LowPrioritySchemaFor {
     override def schema: Schema = ByteArraySchemaFor.schema
   }
 
+  implicit def mapSchemaFor[V](implicit schemaFor: SchemaFor[V]): SchemaFor[Map[String, V]] = {
+    new SchemaFor[Map[String, V]] {
+      override def schema: Schema = SchemaBuilder.map().values(schemaFor.schema)
+    }
+  }
+
   implicit def bigDecimalFor(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): SchemaFor[BigDecimal] = new SchemaFor[BigDecimal] {
     override def schema = LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(ByteArraySchemaFor.schema)
   }
@@ -146,73 +174,47 @@ object SchemaFor extends LowPrioritySchemaFor {
     }
   }
 
-  implicit def optionSchemaFor[T](implicit elementSchemaFor: SchemaFor[T]): SchemaFor[Option[T]] = new SchemaFor[Option[T]] {
+  implicit def optionSchemaFor[T](implicit schemaFor: SchemaFor[T]): SchemaFor[Option[T]] = new SchemaFor[Option[T]] {
     override def schema: Schema = {
-      val elementSchema = elementSchemaFor.schema
+      val elementSchema = schemaFor.schema
       val nullSchema = SchemaBuilder.builder().nullType()
       SchemaFor.createSafeUnion(elementSchema, nullSchema)
     }
   }
 
-  implicit def arraySchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Array[S]] = {
+  implicit def arraySchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Array[S]] = {
     new SchemaFor[Array[S]] {
-      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+      override def schema: Schema = Schema.createArray(schemaFor.schema)
     }
   }
 
-//  implicit def iterableSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Iterable[S]] = {
-//    new SchemaFor[Iterable[S]] {
-//      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
-//    }
-//  }
-
-  implicit def listSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[List[S]] = {
+  implicit def listSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[List[S]] = {
     new SchemaFor[List[S]] {
-      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+      override def schema: Schema = Schema.createArray(schemaFor.schema)
     }
   }
 
-  implicit def setSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Set[S]] = {
+  implicit def setSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Set[S]] = {
     new SchemaFor[Set[S]] {
-      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+      override def schema: Schema = Schema.createArray(schemaFor.schema)
     }
   }
 
-  implicit def vectorSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Vector[S]] = {
+  implicit def vectorSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Vector[S]] = {
     new SchemaFor[Vector[S]] {
-      override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+      override def schema: Schema = Schema.createArray(schemaFor.schema)
     }
   }
 
-  implicit def seqSchemaFor[S](implicit elementSchemaFor: SchemaFor[S]): SchemaFor[Seq[S]] = new SchemaFor[Seq[S]] {
-    override def schema: Schema = Schema.createArray(elementSchemaFor.schema)
+  implicit def seqSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Seq[S]] = {
+    new SchemaFor[Seq[S]] {
+      override def schema: Schema = Schema.createArray(schemaFor.schema)
+    }
   }
 
-  implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = new SchemaFor[(A, B)] {
-    override def schema: Schema =
-      SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
-        .fields()
-        .name("_1").`type`(a.schema).noDefault()
-        .name("_2").`type`(b.schema).noDefault()
-        .endRecord()
-  }
-
-  implicit def tuple3SchemaFor[A, B, C](implicit
-                                        a: SchemaFor[A],
-                                        b: SchemaFor[B],
-                                        c: SchemaFor[C]): SchemaFor[(A, B, C)] = new SchemaFor[(A, B, C)] {
-    override def schema: Schema =
-      SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
-        .fields()
-        .name("_1").`type`(a.schema).noDefault()
-        .name("_2").`type`(b.schema).noDefault()
-        .name("_3").`type`(c.schema).noDefault()
-        .endRecord()
-  }
-
-  implicit def mapSchemaFor[V](implicit valueSchemaFor: SchemaFor[V]): SchemaFor[Map[String, V]] = {
-    new SchemaFor[Map[String, V]] {
-      override def schema: Schema = SchemaBuilder.map().values(valueSchemaFor.schema)
+  implicit def iterableSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Iterable[S]] = {
+    new SchemaFor[Iterable[S]] {
+      override def schema: Schema = Schema.createArray(schemaFor.schema)
     }
   }
 
@@ -264,7 +266,6 @@ object SchemaFor extends LowPrioritySchemaFor {
     }
 
     val valueType = typeOf[E]
-    Console.err.println(s"Value type for enum $valueType")
     val pre = typeRef.pre.typeSymbol.typeSignature.members
     val syms = pre.filter { sym =>
       !sym.isMethod &&
@@ -309,21 +310,16 @@ object SchemaFor extends LowPrioritySchemaFor {
     override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
   }
 
-    implicit def applyMacro[T]: SchemaFor[T] = macro applyMacroImpl[T]
+  implicit def applyMacro[T]: SchemaFor[T] = macro applyMacroImpl[T]
 
   def applyMacroImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
-
-
     import c.universe
     import c.universe._
 
     val reflect = ReflectHelper(c)
     val tpe = weakTypeOf[T]
     val fullName = tpe.typeSymbol.fullName
-    Console.err.println("Invoking macro for $fullName")
     val packageName = reflect.packageName(tpe)
-    val isValueClass = reflect.isValueClass(tpe)
-    val recordName = reflect.recordName(tpe)
 
     if (!reflect.isCaseClass(tpe)) {
       c.abort(c.prefix.tree.pos, s"$fullName is not a case class: This macro is only designed to handle case classes")
@@ -332,9 +328,12 @@ object SchemaFor extends LowPrioritySchemaFor {
     } else if (packageName.startsWith("scala")) {
       c.abort(c.prefix.tree.pos, s"$fullName is a scala type: Built in types should be handled by explicit typeclasses of SchemaFor and not this macro")
     } else if (reflect.isScalaEnum(tpe)) {
-      Console.err.append(s"Ignoring scala enum $fullName")
       c.abort(c.prefix.tree.pos, s"$fullName is a scala enum: Scala enum types should be handled by `scalaEnumSchemaFor`")
     } else {
+
+      val isValueClass = reflect.isValueClass(tpe)
+      val recordName = reflect.recordName(tpe)
+
       val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
 
         // the simple name of the field like "x"
@@ -390,8 +389,6 @@ object SchemaFor extends LowPrioritySchemaFor {
   def schemaField[B](name: String, packageName: String, annos: Seq[Anno], default: Any)
                     (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
 
-    Console.err.println(s"Invoking schema field $name $packageName")
-
     val extractor = new AnnotationExtractors(annos)
     val namespace = extractor.namespace.getOrElse(packageName)
     val doc = extractor.doc.orNull
@@ -443,9 +440,6 @@ object SchemaFor extends LowPrioritySchemaFor {
     // if the class is a value type, then we need to use the schema for the single field of the type
     // if we have a value type AND @AvroFixed is present, then we return a schema of type fixed
     if (valueType) {
-
-      println(s"Building value type schema $name $packageName $fields")
-
       val field = fields.head
       extractor.fixed.fold(field.schema) { size =>
         val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)

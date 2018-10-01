@@ -341,14 +341,17 @@ object Decoder extends LowPriorityDecoders {
     val reflect = ReflectHelper(c)
     val tpe = weakTypeTag[T].tpe
     val fullName = tpe.typeSymbol.fullName
-    //Console.out.println(s"Require a case clsas but $tpe is not")
+    val packageName = reflect.packageName(tpe)
 
-    val valueType = reflect.isValueClass(tpe)
-    val caseClass = reflect.isCaseClass(tpe)
-
-    if (!caseClass) {
+    if (!reflect.isCaseClass(tpe)) {
       c.abort(c.enclosingPosition.pos, s"This macro can only encode case classes, not instance of $tpe")
+    } else if (reflect.isSealed(tpe)) {
+      c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
+    } else if (packageName.startsWith("scala")) {
+      c.abort(c.prefix.tree.pos, s"$fullName is a scala type: Built in types should be handled by explicit typeclasses of SchemaFor and not this macro")
     } else {
+
+      val valueType = reflect.isValueClass(tpe)
 
       // if we have a value type then we want to return an decoder that decodes
       // the backing field and wraps it in an instance of the value type
