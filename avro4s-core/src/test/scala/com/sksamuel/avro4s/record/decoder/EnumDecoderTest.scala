@@ -52,4 +52,3 @@ class EnumDecoderTest extends WordSpec with Matchers {
     }
   }
 }
-

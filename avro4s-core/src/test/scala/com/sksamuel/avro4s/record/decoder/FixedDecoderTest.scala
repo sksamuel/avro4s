@@ -1,18 +1,26 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroFixed, AvroSchema}
-import com.sksamuel.avro4s.Decoder
+import com.sksamuel.avro4s.record.encoder.FixedValueType
+import com.sksamuel.avro4s.{AvroFixed, AvroSchema, Decoder}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{FunSuite, Matchers}
 
 class FixedDecoderTest extends FunSuite with Matchers {
 
-  case class WithFixedString(@AvroFixed(10) z: String)
+  case class FixedString(@AvroFixed(10) z: String)
+  case class OptionalFixedValueType(z: Option[FixedValueType])
 
   test("decode bytes to String") {
-    val schema = AvroSchema[WithFixedString]
+    val schema = AvroSchema[FixedString]
     val record = new GenericData.Record(schema)
     record.put("z", Array[Byte](115, 97, 109))
-    Decoder[WithFixedString].decode(record) shouldBe WithFixedString("sam")
+    Decoder[FixedString].decode(record) shouldBe FixedString("sam")
+  }
+
+  test("support options of fixed") {
+    val schema = AvroSchema[OptionalFixedValueType]
+    val record = new GenericData.Record(schema)
+    record.put("z", Array[Byte](115, 97, 109))
+    Decoder[OptionalFixedValueType].decode(record) shouldBe OptionalFixedValueType(Some(FixedValueType("sam")))
   }
 }
