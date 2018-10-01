@@ -2,8 +2,7 @@ package com.sksamuel.avro4s.github
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.AvroOutputStream
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema}
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.util.Utf8

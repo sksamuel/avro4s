@@ -1,6 +1,5 @@
-package com.sksamuel.avro4s.internal
+package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.{DefaultNamingStrategy, NamingStrategy}
 import org.apache.avro.Schema
 
 object AvroSchema {

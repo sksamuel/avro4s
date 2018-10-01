@@ -1,4 +1,4 @@
-package com.sksamuel.avro4s.internal
+package com.sksamuel.avro4s
 
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
@@ -100,13 +100,13 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
   def annotationsqq(sym: Symbol): List[c.universe.Tree] = sym.annotations.map { a =>
     val name = a.tree.tpe.typeSymbol.fullName
     val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-    q"_root_.com.sksamuel.avro4s.internal.Anno($name, $args)"
+    q"_root_.com.sksamuel.avro4s.Anno($name, $args)"
   }
 
   def annotations(sym: Symbol): List[Anno] = sym.annotations.map { a =>
     val name = a.tree.tpe.typeSymbol.fullName
     val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-    com.sksamuel.avro4s.internal.Anno(name, args)
+    Anno(name, args)
   }
 
   /**

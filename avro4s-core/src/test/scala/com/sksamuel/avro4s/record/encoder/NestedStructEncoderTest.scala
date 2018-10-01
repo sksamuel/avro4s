@@ -1,16 +1,29 @@
 package com.sksamuel.avro4s.record.encoder
 
-import org.scalatest.{Matchers, WordSpec}
+import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord}
+import org.apache.avro.util.Utf8
+import org.scalatest.{FunSuite, Matchers}
 
-class NestedStructEncoderTest extends WordSpec with Matchers {
+class NestedStructEncoderTest extends FunSuite with Matchers {
 
-  "RecordEncoder" should {
-    "encode nested structs" in {
-      //   val schema = SchemaEncoder[Outer]
-      //    Encoder[Outer](schema).encode(Outer("a", Inner(1.2, true))) shouldBe InternalRecord(schema, Vector("a", Inner(1.2, true)))
-    }
+  test("encode nested structs") {
+
+    case class Foo(s: String)
+    case class Fooo(foo: Foo)
+    case class Foooo(fooo: Fooo)
+
+    Encoder[Foooo].encode(Foooo(Fooo(Foo("a"))), AvroSchema[Foooo]) shouldBe
+      ImmutableRecord(
+        AvroSchema[Foooo],
+        Vector(
+          ImmutableRecord(
+            AvroSchema[Fooo],
+            Vector(
+              ImmutableRecord(
+                AvroSchema[Foo],
+                Vector(new Utf8("a"))))
+          )
+        )
+      )
   }
 }
-
-case class Outer(a: String, inner: Inner)
-case class Inner(d: Double, b: Boolean)

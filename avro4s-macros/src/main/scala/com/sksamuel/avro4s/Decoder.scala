@@ -1,16 +1,16 @@
-package com.sksamuel.avro4s.internal
+package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
-import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{:+:, CNil, Coproduct, Generic, HList, Inr}
+import shapeless.{Coproduct, Generic, HList}
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -24,83 +24,6 @@ trait Decoder[T] extends Serializable {
 
   def map[U](fn: T => U): Decoder[U] = new Decoder[U] {
     override def decode(value: Any): U = fn(self.decode(value))
-  }
-}
-
-trait LowPriorityDecoders {
-   implicit def genCoproductDecoder[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                                      decoder: Decoder[C]): Decoder[T] = new Decoder[T] {
-    override def decode(value: Any): T = {
-      gen.from(decoder.decode(value))
-    }
-  }
-
-  // A coproduct is a union, or a generalised either.
-  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
-
-  // Shapeless's implementation builds up the type recursively,
-  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
-
-  // `decode` here should never be invoked under normal operation; if
-  // we're trying to read a value of type CNil it's because we've
-  // tried all the other cases and failed. But the Decoder[CNil]
-  // needs to exist to supply a base case for the recursion.
-  implicit object CNilDecoderValue extends Decoder[CNil] {
-    override def decode(value: Any): CNil = sys.error("This should never happen: CNil has no inhabitants")
-  }
-
-  // We're expecting to read a value of type S :+: T from avro.  Avro
-  // unions are untyped, so we have to attempt to read a value of type
-  // S (the concrete type), and if that fails, attempt to read the
-  // rest of the coproduct type T.
-
-  // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
-  implicit def coproductDecoder[S: WeakTypeTag : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
-    override def decode(value: Any): S :+: T = {
-      safeFrom[S](value) match {
-        case Some(s) => Coproduct[S :+: T](s)
-        case None => Inr(decoder.decode(value))
-      }
-    }
-  }
-
-  private def safeFrom[T: WeakTypeTag](value: Any)(implicit decoder: Decoder[T]): Option[T] = {
-    import scala.reflect.runtime.universe.typeOf
-
-    val tpe = implicitly[WeakTypeTag[T]].tpe
-
-    def typeName: String = {
-      val nearestPackage = Stream.iterate(tpe.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head
-      s"${nearestPackage.fullName}.${tpe.typeSymbol.name.decodedName}"
-    }
-
-    value match {
-      case _: Utf8 if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value))
-      case _: String if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value))
-      case true | false if tpe <:< typeOf[Boolean] => Some(decoder.decode(value))
-      case _: Int if tpe <:< typeOf[Int] => Some(decoder.decode(value))
-      case _: Long if tpe <:< typeOf[Long] => Some(decoder.decode(value))
-      case _: Double if tpe <:< typeOf[Double] => Some(decoder.decode(value))
-      case _: Float if tpe <:< typeOf[Float] => Some(decoder.decode(value))
-      // we don't need to worry about the inner type of the array,
-      // as avro schemas will not legally allow multiple arrays in a union
-      // tpe is the type we're _expecting_, though, so we need to
-      // check both scala and java collections
-      case _: GenericData.Array[_]
-        if tpe <:< typeOf[Array[_]] ||
-          tpe <:< typeOf[java.util.Collection[_]] ||
-          tpe <:< typeOf[Iterable[_]] =>
-        Some(decoder.decode(value))
-      // and similarly for maps
-      case _: java.util.Map[_, _]
-        if tpe <:< typeOf[java.util.Map[_, _]] ||
-          tpe <:< typeOf[Map[_, _]] =>
-        Some(decoder.decode(value))
-      // we compare the name in the record to the type name we supplied, if they match then this is correct type to decode to
-      case record: GenericData.Record if typeName == record.getSchema.getFullName => Some(decoder.decode(value))
-      // if nothing matched then this wasn't the type we expected
-      case _ => None
-    }
   }
 }
 
@@ -362,9 +285,9 @@ object Decoder extends LowPriorityDecoders {
 
         c.Expr[Decoder[T]](
           q"""
-          new _root_.com.sksamuel.avro4s.internal.Decoder[$tpe] {
+          new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
             override def decode(value: Any): $tpe = {
-              val decoded = _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$backingFieldTpe](value)
+              val decoded = _root_.com.sksamuel.avro4s.Decoder.decodeT[$backingFieldTpe](value)
               new $tpe(decoded)
             }
           }
@@ -401,7 +324,7 @@ object Decoder extends LowPriorityDecoders {
             // encoder for the backing type, and then we wrap it in an instance of the value class itself
             q"""{
                   val raw = record.get($name)
-                  val decoded = _root_.com.sksamuel.avro4s.internal.Decoder.decodeT[$backingFieldTpe](raw) : $backingFieldTpe
+                  val decoded = _root_.com.sksamuel.avro4s.Decoder.decodeT[$backingFieldTpe](raw) : $backingFieldTpe
                   new $fieldTpe(decoded) : $fieldTpe
                 }
              """
@@ -416,17 +339,17 @@ object Decoder extends LowPriorityDecoders {
               val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
               val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
 
-              q"""_root_.com.sksamuel.avro4s.internal.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($name, record, $companion.$defaultGetterMethod)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($name, record, $companion.$defaultGetterMethod)"""
 
             } else {
-              q"""_root_.com.sksamuel.avro4s.internal.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($name, record, null)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($name, record, null)"""
             }
           }
         }
 
         c.Expr[Decoder[T]](
           q"""
-          new _root_.com.sksamuel.avro4s.internal.Decoder[$tpe] {
+          new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
             override def decode(value: Any): $tpe = {
               val fullName = $fullName
               value match {

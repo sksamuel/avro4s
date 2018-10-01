@@ -2,7 +2,6 @@ package com.sksamuel.avro4s
 
 import java.io.{EOFException, InputStream}
 
-import com.sksamuel.avro4s.internal.Decoder
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericData, GenericDatumReader, GenericRecord}
 import org.apache.avro.io.DecoderFactory

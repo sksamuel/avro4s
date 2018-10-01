@@ -1,4 +1,4 @@
-package com.sksamuel.avro4s.internal
+package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
 import shapeless.{:+:, CNil, Coproduct, Generic, Inl, Inr}

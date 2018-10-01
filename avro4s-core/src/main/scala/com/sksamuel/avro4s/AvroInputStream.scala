@@ -4,7 +4,6 @@ import java.io.{ByteArrayInputStream, File, InputStream}
 import java.nio.ByteBuffer
 import java.nio.file.{Files, Path, Paths}
 
-import com.sksamuel.avro4s.internal.Decoder
 import org.apache.avro.Schema
 
 import scala.util.Try

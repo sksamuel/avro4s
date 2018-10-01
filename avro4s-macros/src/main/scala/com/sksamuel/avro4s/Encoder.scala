@@ -1,4 +1,4 @@
-package com.sksamuel.avro4s.internal
+package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
@@ -297,9 +297,9 @@ object Encoder extends CoproductEncoders {
       //
       //      c.Expr[Encoder[T]](
       //        q"""
-      //            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+      //            new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
       //              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-      //                _root_.com.sksamuel.avro4s.internal.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
+      //                _root_.com.sksamuel.avro4s.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
       //              }
       //            }
       //        """
@@ -331,11 +331,11 @@ object Encoder extends CoproductEncoders {
         // but we convert to an Array[Byte] or throw if we cannot perform this conversion.
         extractor.fixed match {
           case Some(_) =>
-            q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeFixed(t.$name)"""
+            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFixed(t.$name)"""
           case None =>
             // Note: If the field is a value class, then this macro will be summoned again
             // and the value type will be the type argument to the macro.
-            q"""_root_.com.sksamuel.avro4s.internal.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $fullName)"""
+            q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $fullName)"""
         }
       }
 
@@ -345,7 +345,7 @@ object Encoder extends CoproductEncoders {
       if (isValueClass) {
         c.Expr[Encoder[T]](
           q"""
-            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+            new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
               override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = Seq(..$fields).head
             }
         """
@@ -353,9 +353,9 @@ object Encoder extends CoproductEncoders {
       } else {
         c.Expr[Encoder[T]](
           q"""
-            new _root_.com.sksamuel.avro4s.internal.Encoder[$tpe] {
+            new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
               override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-                _root_.com.sksamuel.avro4s.internal.Encoder.buildRecord(schema, Seq(..$fields), $fullName)
+                _root_.com.sksamuel.avro4s.Encoder.buildRecord(schema, Seq(..$fields), $fullName)
               }
             }
         """

@@ -3,7 +3,8 @@ package com.sksamuel.avro4s.record.decoder
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 
-import com.sksamuel.avro4s.internal.{AvroSchema, Decoder}
+import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.Decoder
 import org.apache.avro.generic.GenericData
 import org.scalatest.{FunSuite, Matchers}
 

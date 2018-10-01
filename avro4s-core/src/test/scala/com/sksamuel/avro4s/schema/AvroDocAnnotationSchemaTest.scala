@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.AvroDoc
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.{AvroDoc, AvroSchema}
 import org.scalatest.{Matchers, WordSpec}
 
 class DocAnnotationSchemaTest extends WordSpec with Matchers {

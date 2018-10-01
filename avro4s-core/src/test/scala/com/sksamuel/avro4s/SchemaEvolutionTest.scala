@@ -2,7 +2,6 @@ package com.sksamuel.avro4s
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import com.sksamuel.avro4s.internal.AvroSchema
 import org.scalatest.{FunSuite, Matchers}
 
 class SchemaEvolutionTest extends FunSuite with Matchers {

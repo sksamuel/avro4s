@@ -1,6 +1,6 @@
 //package com.sksamuel.avro4s
 //
-//import com.sksamuel.avro4s.internal.AvroSchema
+//import com.sksamuel.avro4s.AvroSchema
 //import org.scalatest.{Matchers, WordSpec}
 //
 ///**

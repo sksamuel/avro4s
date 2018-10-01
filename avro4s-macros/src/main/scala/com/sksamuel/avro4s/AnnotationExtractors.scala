@@ -1,6 +1,4 @@
-package com.sksamuel.avro4s.internal
-
-import com.sksamuel.avro4s.{AvroAlias, AvroDoc, AvroErasedName, AvroFixed, AvroName, AvroNamespace, AvroProp}
+package com.sksamuel.avro4s
 
 case class Anno(className: String, args: Seq[Any])
 

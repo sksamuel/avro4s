@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.AvroFixed
-import com.sksamuel.avro4s.internal.{AvroSchema, Encoder}
+import com.sksamuel.avro4s.{AvroFixed, AvroSchema}
+import com.sksamuel.avro4s.Encoder
 import org.apache.avro.generic.GenericRecord
 import org.scalatest.{FunSuite, Matchers}
 

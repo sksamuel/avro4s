@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.schema
 
+import com.sksamuel.avro4s.AvroSchema
 import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
-import com.sksamuel.avro4s.internal.AvroSchema
 import org.scalatest.{Matchers, WordSpec}
 
 class BasicSchemasTest extends WordSpec with Matchers {

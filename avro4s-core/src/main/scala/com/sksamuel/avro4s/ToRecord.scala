@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.internal.{AvroSchema, SchemaFor, Encoder, Record}
 import org.apache.avro.Schema
 
 trait ToRecord[T] extends Serializable {

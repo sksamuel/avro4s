@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.internal.{AvroSchema, Decoder, SchemaFor}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 

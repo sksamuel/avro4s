@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.cats
 
 import cats.data.{NonEmptyList, NonEmptyVector}
-import com.sksamuel.avro4s.internal.SchemaFor
+import com.sksamuel.avro4s.SchemaFor
 import org.apache.avro.Schema
 
 import scala.language.implicitConversions

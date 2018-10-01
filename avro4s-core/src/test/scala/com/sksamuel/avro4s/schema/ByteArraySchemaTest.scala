@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.schema
 
 import java.nio.ByteBuffer
 
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.{FunSuite, Matchers}
 
 class ByteArraySchemaTest extends FunSuite with Matchers {

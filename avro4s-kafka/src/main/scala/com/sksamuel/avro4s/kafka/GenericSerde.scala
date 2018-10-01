@@ -2,8 +2,8 @@ package com.sksamuel.avro4s.kafka
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.internal.{AvroSchema, Decoder, Encoder, SchemaFor}
-import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream}
+import com.sksamuel.avro4s.{Decoder, Encoder}
+import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema, SchemaFor}
 import org.apache.avro.Schema
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 

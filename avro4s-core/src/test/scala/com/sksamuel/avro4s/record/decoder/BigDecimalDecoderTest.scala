@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.internal.{Decoder, AvroSchema}
+import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.Decoder
 import org.apache.avro.generic.GenericData
 import org.apache.avro.{Conversions, LogicalTypes}
 import org.scalatest.{FlatSpec, Matchers}

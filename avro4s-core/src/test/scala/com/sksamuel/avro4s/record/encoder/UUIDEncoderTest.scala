@@ -2,7 +2,8 @@ package com.sksamuel.avro4s.record.encoder
 
 import java.util.UUID
 
-import com.sksamuel.avro4s.internal.{Encoder, ImmutableRecord, AvroSchema}
+import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
 import org.scalatest.{Matchers, WordSpec}
 
 class UUIDEncoderTest extends WordSpec with Matchers {

@@ -1,11 +1,10 @@
-package com.sksamuel.avro4s.internal
+package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
-import com.sksamuel.avro4s.{DefaultNamingStrategy, NamingStrategy}
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
@@ -278,7 +277,7 @@ object SchemaFor extends LowPrioritySchemaFor {
     val annos = typeRef.pre.typeSymbol.annotations.map { a =>
       val name = a.tree.tpe.typeSymbol.fullName
       val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-      com.sksamuel.avro4s.internal.Anno(name, args)
+      Anno(name, args)
     }
 
     val extractor = new AnnotationExtractors(annos)
@@ -359,9 +358,9 @@ object SchemaFor extends LowPrioritySchemaFor {
         // and so we can use it to generate the default value
         if (f.isTerm && f.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
           val moduleSym = tpe.typeSymbol.companion
-          q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
         } else {
-          q"""{ _root_.com.sksamuel.avro4s.internal.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), null) }"""
+          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), null) }"""
         }
       }
 
@@ -370,8 +369,8 @@ object SchemaFor extends LowPrioritySchemaFor {
 
       c.Expr[SchemaFor[T]](
         q"""
-        new _root_.com.sksamuel.avro4s.internal.SchemaFor[$tpe] {
-          private val _schema = _root_.com.sksamuel.avro4s.internal.SchemaFor.buildSchema($recordName, $packageName, Seq(..$fields), Seq(..$annos), $isValueClass)
+        new _root_.com.sksamuel.avro4s.SchemaFor[$tpe] {
+          private val _schema = _root_.com.sksamuel.avro4s.SchemaFor.buildSchema($recordName, $packageName, Seq(..$fields), Seq(..$annos), $isValueClass)
           override def schema: _root_.org.apache.avro.Schema = _schema
         }
       """)

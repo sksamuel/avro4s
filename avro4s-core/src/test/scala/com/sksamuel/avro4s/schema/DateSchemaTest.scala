@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.schema
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalTime}
 
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.{FunSuite, Matchers}
 
 class DateSchemaTest extends FunSuite with Matchers {

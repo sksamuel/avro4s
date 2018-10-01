@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.internal.AvroSchema
-import com.sksamuel.avro4s.{NamingStrategy, PascalCase, SnakeCase}
+import com.sksamuel.avro4s.{AvroSchema, NamingStrategy, PascalCase, SnakeCase}
 import org.scalatest.{Matchers, WordSpec}
 
 class NamespaceStrategyFieldTest extends WordSpec with Matchers {

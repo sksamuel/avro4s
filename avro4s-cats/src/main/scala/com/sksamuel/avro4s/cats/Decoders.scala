@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.cats
 
 import cats.data.{NonEmptyList, NonEmptyVector}
-import com.sksamuel.avro4s.internal.Decoder
+import com.sksamuel.avro4s.Decoder
 
 import scala.language.implicitConversions
 

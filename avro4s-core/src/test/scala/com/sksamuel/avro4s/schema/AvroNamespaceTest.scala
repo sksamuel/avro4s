@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.AvroNamespace
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.{AvroNamespace, AvroSchema}
 import org.scalatest.{Matchers, WordSpec}
 
 class AvroNamespaceTest extends WordSpec with Matchers {

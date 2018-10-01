@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.{FunSuite, Matchers}
 import shapeless.{:+:, CNil}
 

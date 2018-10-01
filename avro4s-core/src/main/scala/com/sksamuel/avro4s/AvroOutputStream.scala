@@ -3,7 +3,6 @@ package com.sksamuel.avro4s
 import java.io.{File, OutputStream}
 import java.nio.file.{Files, Path, Paths}
 
-import com.sksamuel.avro4s.internal.Encoder
 import org.apache.avro.Schema
 import org.apache.avro.file.CodecFactory
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}

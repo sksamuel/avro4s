@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.schema
 
 import java.util.UUID
 
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.{Matchers, WordSpec}
 
 class UUIDSchemaTest extends WordSpec with Matchers {

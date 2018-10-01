@@ -2,7 +2,6 @@ package com.sksamuel.avro4s
 
 import java.io.InputStream
 
-import com.sksamuel.avro4s.internal.Decoder
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.io.DecoderFactory

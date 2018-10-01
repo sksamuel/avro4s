@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.internal.{Encoder, ImmutableRecord, AvroSchema}
+import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
 import com.sksamuel.avro4s.schema.{Colours, Wine}
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.scalatest.{Matchers, WordSpec}

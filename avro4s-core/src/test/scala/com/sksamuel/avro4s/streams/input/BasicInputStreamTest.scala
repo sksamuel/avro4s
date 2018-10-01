@@ -1,7 +1,5 @@
 package com.sksamuel.avro4s.streams.input
 
-import com.sksamuel.avro4s.internal.Decoder
-
 class BasicInputStreamTest extends InputStreamTest {
 
   case class BooleanTest(z: Boolean)
@@ -12,7 +10,6 @@ class BasicInputStreamTest extends InputStreamTest {
   case class LongTest(z: Long)
 
   test("read write out booleans") {
-    val decoder = Decoder[BooleanTest]
     writeRead(BooleanTest(true))
   }
 

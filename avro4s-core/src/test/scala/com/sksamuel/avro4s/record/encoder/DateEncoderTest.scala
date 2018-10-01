@@ -3,7 +3,8 @@ package com.sksamuel.avro4s.record.encoder
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 
-import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, ImmutableRecord}
+import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
 import org.scalatest.{FunSuite, Matchers}
 
 //noinspection ScalaDeprecation

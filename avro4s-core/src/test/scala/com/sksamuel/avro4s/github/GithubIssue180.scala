@@ -1,8 +1,7 @@
 package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.github.SampleProtocol.SubPart1.InnerEnum
-import com.sksamuel.avro4s.internal.AvroSchema
-import com.sksamuel.avro4s.{FromRecord, ToRecord}
+import com.sksamuel.avro4s.{AvroSchema, FromRecord, ToRecord}
 import org.scalatest.{FunSpec, Matchers}
 
 object TopEnum extends Enumeration {

@@ -2,8 +2,8 @@ package com.sksamuel.avro4s.streams.input
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.internal.{AvroSchema, Decoder, Encoder, SchemaFor}
-import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream}
+import com.sksamuel.avro4s.{Decoder, Encoder}
+import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema, SchemaFor}
 import org.scalatest.{FunSuite, Matchers}
 
 trait InputStreamTest extends FunSuite with Matchers {

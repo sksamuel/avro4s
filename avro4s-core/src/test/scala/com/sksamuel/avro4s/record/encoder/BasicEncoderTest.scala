@@ -1,7 +1,8 @@
 package com.sksamuel.avro4s.record.encoder
 
+import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
 import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
-import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, ImmutableRecord, SchemaFor}
+import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8

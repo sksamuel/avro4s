@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.internal.{AvroSchema, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{FunSuite, Matchers}
 

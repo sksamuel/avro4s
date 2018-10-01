@@ -2,7 +2,8 @@ package com.sksamuel.avro4s.record.encoder
 
 import java.nio.ByteBuffer
 
-import com.sksamuel.avro4s.internal.{AvroSchema, Encoder}
+import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.Encoder
 import org.apache.avro.generic.GenericRecord
 import org.scalatest.{FunSuite, Matchers}
 

@@ -1,7 +1,8 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.internal.SchemaFor.StringSchemaFor
-import com.sksamuel.avro4s.internal.{AvroSchema, Encoder, ImmutableRecord, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
+import com.sksamuel.avro4s.SchemaFor.StringSchemaFor
+import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
 import org.scalatest.{FunSuite, Matchers}

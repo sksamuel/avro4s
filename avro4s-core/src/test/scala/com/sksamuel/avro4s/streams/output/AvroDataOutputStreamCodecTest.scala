@@ -2,8 +2,7 @@ package com.sksamuel.avro4s.streams.output
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.AvroOutputStream
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema}
 import org.apache.avro.file.CodecFactory
 import org.scalatest.{Matchers, WordSpec}
 

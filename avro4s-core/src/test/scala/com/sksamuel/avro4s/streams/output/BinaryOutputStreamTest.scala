@@ -2,8 +2,8 @@ package com.sksamuel.avro4s.streams.output
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream}
-import com.sksamuel.avro4s.internal.{AvroSchema, Encoder}
+import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema}
+import com.sksamuel.avro4s.Encoder
 import org.scalatest.{Matchers, WordSpec}
 
 case class Work(name: String, year: Int, style: Style)

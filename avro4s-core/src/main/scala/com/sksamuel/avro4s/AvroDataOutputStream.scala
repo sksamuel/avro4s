@@ -2,7 +2,6 @@ package com.sksamuel.avro4s
 
 import java.io.OutputStream
 
-import com.sksamuel.avro4s.internal.{Encoder, ImmutableRecord}
 import org.apache.avro.Schema
 import org.apache.avro.file.{CodecFactory, DataFileWriter}
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.streams.output
 
-import com.sksamuel.avro4s.internal.AvroSchema
+import com.sksamuel.avro4s.AvroSchema
 import com.sksamuel.avro4s.schema.{Colours, Wine}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{FunSuite, Matchers}
