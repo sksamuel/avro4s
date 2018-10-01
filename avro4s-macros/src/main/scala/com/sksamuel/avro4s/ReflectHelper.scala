@@ -82,12 +82,13 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     * call it if you are sure the field has a default value.
     *
     * Note: The companion must be defined for this to work.
-    *
-    * Internal: the index offset will be + 1 since 0 is reserved for something which I forget.
-    * Nominally, the method is named name$default$N where in the case of constructor defaults,
-    * name would be <init>.
     */
   def defaultGetter(tpe: Type, index: Int): c.universe.MethodSymbol = {
+
+    // Internal: the index offset will be + 1 since 0 is reserved for something which I forget.
+    // Nominally, the method is named name$default$N where in the case of constructor defaults,
+    // name would be <init>.
+
     val getter = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
     // this is a method symbol for the default getter if it exists
     tpe.companion.member(TermName(getter.toString)).asMethod
