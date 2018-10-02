@@ -227,9 +227,11 @@ object Decoder extends LowPriorityDecoders {
 
   implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
     override def decode(value: Any): Either[A, B] = {
+      val aName = weakTypeOf[A].typeSymbol.fullName
+      val bName = weakTypeOf[B].typeSymbol.fullName
       safeFrom[A](value).map(Left[A, B])
         .orElse(safeFrom[B](value).map(Right[A, B]))
-        .getOrElse(sys.error(s"Could not decode $value into an either"))
+        .getOrElse(sys.error(s"Could not decode $value into Either[$aName, $bName]"))
     }
   }
 

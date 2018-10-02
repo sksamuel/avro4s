@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.{GenericContainer, GenericData}
 import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct, Generic, Inr}
 
@@ -49,10 +49,11 @@ trait LowPriorityDecoders {
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
 
-    def typeName: String = {
-      val nearestPackage = Stream.iterate(tpe.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head
-      s"${nearestPackage.fullName}.${tpe.typeSymbol.name.decodedName}"
-    }
+    def typeName: String = ReflectHelper.packageName(tpe.typeSymbol) + "." + tpe.typeSymbol.name.decodedName
+    //      val nearestPackage = Stream.iterate(tpe.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head
+    //      s"${nearestPackage.fullName}.${tpe.typeSymbol.name.decodedName}"
+    //    }
+
 
     value match {
       case _: Utf8 if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value))
@@ -77,7 +78,7 @@ trait LowPriorityDecoders {
           tpe <:< typeOf[Map[_, _]] =>
         Some(decoder.decode(value))
       // we compare the name in the record to the type name we supplied, if they match then this is correct type to decode to
-      case record: GenericData.Record if typeName == record.getSchema.getFullName => Some(decoder.decode(value))
+      case container: GenericContainer if typeName == container.getSchema.getFullName => Some(decoder.decode(value))
       // if nothing matched then this wasn't the type we expected
       case _ => None
     }
