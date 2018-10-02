@@ -3,7 +3,7 @@ package com.sksamuel.avro4s
 import org.apache.avro.Schema
 
 /**
-  * Converts from instances of T into [[Record]]s.
+  * Converts from instances of T into Record's.
   *
   * Note: This interface requires that T is marshalled
   * to an Avro GenericRecord / SpecificRecord, and therefore
