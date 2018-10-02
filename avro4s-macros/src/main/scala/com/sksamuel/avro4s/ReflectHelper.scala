@@ -68,7 +68,7 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     * until a package or a non-package object package is found.
     */
   def packageName(tpe: Type): String = {
-    Stream.iterate(tpe.typeSymbol)(_.owner)
+    Stream.iterate(tpe.typeSymbol.owner)(_.owner)
       .dropWhile(_.name.decodedName.toString == "package")
       .dropWhile(x => !x.isPackage && !x.isModuleClass)
       .head
@@ -140,7 +140,7 @@ object ReflectHelper {
   import scala.reflect.runtime.universe._
 
   // this impl must be kept inline with the impl in the reflect instance class
-  def packageName(sym: Symbol) = Stream.iterate(sym)(_.owner)
+  def packageName(sym: Symbol) = Stream.iterate(sym.owner)(_.owner)
     .dropWhile(_.name.decodedName.toString == "package")
     .dropWhile(x => !x.isPackage && !x.isModuleClass)
     .head

@@ -9,10 +9,10 @@ import org.apache.avro.Schema
   * to an Avro GenericRecord / SpecificRecord, and therefore
   * is limited to use by case classes. This interface
   * is essentially just a conveniece wrapper around an
-  * [[Encoder]] so you do not have to cast the result.
+  * Encoder so you do not have to cast the result.
   *
   * If you wish to convert a primitive or top level type, such
-  * as an Array, then use an [[Encoder]] directly.
+  * as an Array, then use an Encoder directly.
   *
   */
 trait ToRecord[T <: Product] extends Serializable {
