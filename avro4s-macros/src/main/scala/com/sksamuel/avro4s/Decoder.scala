@@ -328,9 +328,7 @@ object Decoder extends LowPriorityDecoders {
           // use the name of the field in the case class
           val resolvedFieldName = new AnnotationExtractors(reflect.annotations(fieldSym)).name.getOrElse(name)
 
-          val isFieldAValueType = reflect.isValueClass(fieldTpe)
-
-          if (isFieldAValueType) {
+          if (reflect.isValueClass(fieldTpe)) {
 
             val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
             val backingFieldTpe = valueCstr.typeSignature
@@ -347,18 +345,20 @@ object Decoder extends LowPriorityDecoders {
 
           } else {
 
-            // if the field is a param with a default value, then we know the getter method will be defined
-            // and so we can use it to generate the default value. otherwise, we invoke decode without a default
-            if (fieldSym.isTerm && fieldSym.asTerm.isParamWithDefault) {
+            val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+            val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+            val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
 
-              val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-              val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
-              val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
-
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, $companion.$defaultGetterMethod)"""
-
+            // if the default is defined, we will use that to populate, otherwise if the field is transient
+            // we will populate with none or null, otherwise an error will be raised
+            if (defaultGetterMethod.isMethod) {
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, $companion.$defaultGetterMethod, true)"""
+            } else if (reflect.isTransientOnField(tpe, fieldSym) && fieldTpe <:< typeOf[Option[_]]) {
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, None, true)"""
+            } else if (reflect.isTransientOnField(tpe, fieldSym)) {
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, null, true)"""
             } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, null)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, null, false)"""
             }
           }
         }
@@ -386,13 +386,18 @@ object Decoder extends LowPriorityDecoders {
     * we must apply the decoder to turn it into a scala compatible value.
     *
     * If the record does not have an entry for a field, and a scala default value is
-    * available, then we'll use that instead.
+    * available, then we'll use that instead. Alternatively, if the field is marked
+    * with @transient we will attempt to set None as the value.
     */
-  def decodeFieldOrApplyDefault[T](fieldName: String, record: GenericRecord, default: Any)(implicit decoder: Decoder[T]): T = {
+  def decodeFieldOrApplyDefault[T](fieldName: String,
+                                   record: GenericRecord,
+                                   default: Any,
+                                   useDefault: Boolean)
+                                  (implicit decoder: Decoder[T]): T = {
     if (record.getSchema.getField(fieldName) != null) {
       val value = record.get(fieldName)
       decoder.decode(value)
-    } else if (default != null) {
+    } else if (useDefault) {
       default.asInstanceOf[T]
     } else {
       sys.error(s"Record $record does not have a value for $fieldName and no default was defined")
