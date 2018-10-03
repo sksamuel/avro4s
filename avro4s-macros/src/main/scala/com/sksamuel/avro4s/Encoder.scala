@@ -289,8 +289,13 @@ object Encoder extends LowPriorityEncoders {
         .filterNot { case (fieldSym, _) => reflect.isTransientOnField(tpe, fieldSym) }
         .map { case (fieldSym, fieldTpe) =>
           val termName = fieldSym.asTerm.name
-          val stringName = fieldSym.name.decodedName.toString
-          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$termName, $stringName, schema, $fullName)"""
+
+          // we need to check @AvroName annotation on the field, because that will determine the name
+          // that we use when looking inside the schema to pull out the field
+          val annos = reflect.annotations(fieldSym)
+          val fieldName = new AnnotationExtractors(annos).name.getOrElse(fieldSym.name.decodedName.toString)
+
+          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$termName, $fieldName, schema, $fullName)"""
         }
 
       // An encoder for a value type just needs to pass through the given value into an encoder
@@ -341,8 +346,8 @@ object Encoder extends LowPriorityEncoders {
 
   /**
     * Encodes a field in a case class by bringing in an implicit encoder for the fields type.
-    * The schema passed in here is the schema for the containing type,
-    * and the index is the position of the field in the list of fields of the case class.
+    * The schema passed in here is the schema for the container type, and the fieldName
+    * is the name of the field in the avro schema.
     *
     * Note: The field may be a member of a subclass of a trait, in which case
     * the schema passed in will be a union. Therefore we must extract the correct
