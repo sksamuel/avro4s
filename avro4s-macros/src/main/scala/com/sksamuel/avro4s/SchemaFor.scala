@@ -282,7 +282,7 @@ object SchemaFor extends LowPrioritySchemaFor {
       val recordName = reflect.recordName(tpe)
 
       val fields = reflect
-        .caseClassAccessors(tpe)
+        .caseClassFields(tpe)
         .filterNot { case (fieldSym, _) => reflect.isTransient(fieldSym) }
         .zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
 

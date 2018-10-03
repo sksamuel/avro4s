@@ -263,11 +263,14 @@ object Encoder extends LowPriorityEncoders {
     val fullName = tpe.typeSymbol.fullName
     val isValueClass = reflect.isValueClass(tpe)
 
-    // we only encode case classes here
     if (!reflect.isCaseClass(tpe)) {
-      c.abort(c.enclosingPosition.pos, "This macro only encodes case classes")
+      c.abort(c.prefix.tree.pos, s"$fullName is not a case class: This macro is only designed to handle case classes")
     } else if (reflect.isSealed(tpe)) {
       c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
+    } else if (fullName.startsWith("scala") || fullName.startsWith("java")) {
+      c.abort(c.prefix.tree.pos, s"$fullName is a library type: Built in types should be handled by explicit typeclasses of SchemaFor and not this macro")
+    } else if (reflect.isScalaEnum(tpe)) {
+      c.abort(c.prefix.tree.pos, s"$fullName is a scala enum: Scala enum types should be handled by `scalaEnumSchemaFor`")
     } else {
 
       // each field needs to be converted into an avro compatible value
@@ -281,10 +284,14 @@ object Encoder extends LowPriorityEncoders {
 
       // Note: If the field is a value class, then this macro will be summoned again
       // and the value type will be the type argument to the macro.
-      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
-        val name = f.name.asInstanceOf[c.TermName]
-        q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $fullName)"""
-      }
+      val fields = reflect
+        .caseClassFields(tpe)
+        .filterNot { case (fieldSym, _) => reflect.isTransient(fieldSym) }
+        .zipWithIndex
+        .map { case ((fieldSym, fieldTpe), index) =>
+          val name = fieldSym.asTerm.getter.asTerm.name
+          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $fullName)"""
+        }
 
       // An encoder for a value type just needs to pass through the given value into an encoder
       // for the backing type. At runtime, the value type class won't exist, and the input

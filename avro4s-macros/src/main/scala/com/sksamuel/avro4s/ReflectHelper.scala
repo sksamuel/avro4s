@@ -35,7 +35,7 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     * For the given type, returns the parameters, which are defined as the decls
     * which are case accessors and vals
     */
-  def caseClassAccessors(tpe: c.universe.Type): List[(c.universe.Symbol, c.universe.Type)] = {
+  def caseClassFields(tpe: c.universe.Type): List[(c.universe.Symbol, c.universe.Type)] = {
     tpe.decls.collect {
       case t: TermSymbol if t.isCaseAccessor && t.isVal => t -> t.typeSignatureIn(tpe)
     }.toList
