@@ -281,8 +281,7 @@ object SchemaFor extends LowPrioritySchemaFor {
       val isValueClass = reflect.isValueClass(tpe)
       val recordName = reflect.recordName(tpe)
 
-      val fields = reflect.caseClassAccessors(tpe)
-        .filterNot { case (fieldSym, _) => reflect.isTransient(fieldSym) }
+      val fields = reflect.fieldsOf(tpe)
         .zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
 
         // the simple name of the field like "x"
@@ -329,23 +328,25 @@ object SchemaFor extends LowPrioritySchemaFor {
 
   /**
     * Builds an Avro Field with the field's Schema provided by an
-    * implicit instance of [[SchemaFor]]. There must be a instance of this typeclass
-    * in scope for any type we want to support in avro4s.
+    * implicit instance of [[SchemaFor]]. There must be a instance of this
+    * typeclass in scope for any type we want to support in avro4s.
     *
-    * Users can add their own mappings for types by implementing [[SchemaFor]] returning
-    * the appropriate Avro schema.
+    * Users can add their own mappings for types by implementing a [[SchemaFor]]
+    * instance for that type.
     */
-  def schemaField[B](name: String, packageName: String, annos: Seq[Anno], default: Any)
+  def schemaField[B](fieldName: String, packageName: String, annos: Seq[Anno], default: Any)
                     (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
 
     val extractor = new AnnotationExtractors(annos)
-    val namespace = extractor.namespace.getOrElse(packageName)
     val doc = extractor.doc.orNull
     val aliases = extractor.aliases
     val props = extractor.props
 
     // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
-    val resolvedName = extractor.name.fold(namingStrategy.to(name))(namingStrategy.to)
+    val name = extractor.name.fold(namingStrategy.to(fieldName))(namingStrategy.to)
+
+    // the namespace can be overriden with @AvroNamespace
+    val namespace = extractor.namespace.getOrElse(packageName)
 
     // the default may be a scala type that avro doesn't understand, so we must turn it into a java type
     val resolvedDefault = resolveDefault(default)
@@ -366,7 +367,7 @@ object SchemaFor extends LowPrioritySchemaFor {
     // to any schemas we have generated for this field
     val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schemaWithOrderedUnion, _)).getOrElse(schemaWithOrderedUnion)
 
-    val field = new Schema.Field(resolvedName, schemaWithResolvedNamespace, doc, resolvedDefault: AnyRef)
+    val field = new Schema.Field(name, schemaWithResolvedNamespace, doc, resolvedDefault: AnyRef)
     props.foreach { case (k, v) => field.addProp(k, v: AnyRef) }
     aliases.foreach(field.addAlias)
     field

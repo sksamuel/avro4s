@@ -6,8 +6,8 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
 import org.apache.avro.LogicalTypes.Decimal
+import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
-import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
@@ -18,12 +18,16 @@ import scala.math.BigDecimal.RoundingMode
 import scala.reflect.ClassTag
 
 /**
-  * An [[Encoder]] returns an Avro compatible value for a given
-  * type T and a Schema.
+  * An [[Encoder]] encodes a Scala value of type T into a compatible
+  * Avro value based on the given schema.
   *
-  * For example, a value of String, and a schema of type Schema.Type.STRING
-  * would return an instance of Utf8, whereas the same string and a
-  * schema of type Schema.Type.FIXED would return an Array[Byte].
+  * For example, given a string value, and a Schema.Type.STRING schema
+  * then the string would be encoded as an instance of Utf8, whereas
+  * the same string and a Schema.Type.FIXED would be encoded as an
+  *
+  * For example, an Encoder[String] would encode a string as an instance
+  * of Utf8 if the schema was Schema.Type.STRING, whereas for a
+  * Schema.Type.FIXED schema, it wuld return a GenericData.Fixed
   */
 trait Encoder[T] extends Serializable {
   self =>
@@ -62,11 +66,13 @@ object Encoder extends LowPriorityEncoders {
   }
 
   implicit object StringEncoder extends Encoder[String] {
-    override def encode(t: String, schema: Schema): AnyRef = {
-      if (schema.getType == Schema.Type.FIXED)
-        t.getBytes
-      else
-        new Utf8(t)
+    override def encode(value: String, schema: Schema): AnyRef = {
+      schema.getType match {
+        case Schema.Type.FIXED => new GenericData.Fixed(schema, value.getBytes)
+        case Schema.Type.BYTES => ByteBuffer.wrap(value.getBytes)
+        case Schema.Type.STRING => value
+        case _ => sys.error(s"Unable to encode a String for schema $schema")
+      }
     }
   }
 
@@ -102,33 +108,13 @@ object Encoder extends LowPriorityEncoders {
     override def encode(t: None.type, schema: Schema) = null
   }
 
-  implicit object UUIDEncoder extends Encoder[UUID] {
-    override def encode(t: UUID, schema: Schema): String = t.toString
-  }
-
-  implicit object DateEncoder extends Encoder[Date] {
-    override def encode(t: Date, schema: Schema): AnyRef = LocalDateEncoder.comap[Date](_.toLocalDate).encode(t, schema)
-  }
-
-  implicit object LocalTimeEncoder extends Encoder[LocalTime] {
-    override def encode(t: LocalTime, schema: Schema): AnyRef = IntEncoder.comap[LocalTime](lt => lt.toSecondOfDay * 1000 + lt.getNano / 1000).encode(t, schema)
-  }
-
-  implicit object LocalDateEncoder extends Encoder[LocalDate] {
-    override def encode(t: LocalDate, schema: Schema): AnyRef = IntEncoder.comap[LocalDate](_.toEpochDay.toInt).encode(t, schema)
-  }
-
-  implicit object LocalDateTimeEncoder extends Encoder[LocalDateTime] {
-    override def encode(t: LocalDateTime, schema: Schema): AnyRef = InstantEncoder.comap[LocalDateTime](_.toInstant(ZoneOffset.UTC)).encode(t, schema)
-  }
-
-  implicit object InstantEncoder extends Encoder[Instant] {
-    override def encode(t: Instant, schema: Schema): AnyRef = LongEncoder.comap[Instant](_.toEpochMilli).encode(t, schema)
-  }
-
-  implicit object TimestampEncoder extends Encoder[Timestamp] {
-    override def encode(t: Timestamp, schema: Schema): AnyRef = InstantEncoder.comap[Timestamp](_.toInstant).encode(t, schema)
-  }
+  implicit val UUIDEncoder = StringEncoder.comap[UUID](_.toString)
+  implicit val LocalTimeEncoder = IntEncoder.comap[LocalTime](lt => lt.toSecondOfDay * 1000 + lt.getNano / 1000)
+  implicit val LocalDateEncoder = IntEncoder.comap[LocalDate](_.toEpochDay.toInt)
+  implicit val InstantEncoder = LongEncoder.comap[Instant](_.toEpochMilli)
+  implicit val LocalDateTimeEncoder = InstantEncoder.comap[LocalDateTime](_.toInstant(ZoneOffset.UTC))
+  implicit val TimestampEncoder = InstantEncoder.comap[Timestamp](_.toInstant)
+  implicit val DateEncoder = LocalDateEncoder.comap[Date](_.toLocalDate)
 
   implicit def mapEncoder[V](implicit encoder: Encoder[V]): Encoder[Map[String, V]] = new Encoder[Map[String, V]] {
 
@@ -185,20 +171,18 @@ object Encoder extends LowPriorityEncoders {
   }
 
   implicit object ByteArrayEncoder extends Encoder[Array[Byte]] {
-    override def encode(t: Array[Byte], schema: Schema): ByteBuffer = ByteBuffer.wrap(t)
+    override def encode(t: Array[Byte], schema: Schema): AnyRef = {
+      schema.getType match {
+        case Schema.Type.FIXED => new GenericData.Fixed(schema, t)
+        case Schema.Type.BYTES => ByteBuffer.wrap(t)
+        case _ => sys.error(s"Unable to encode $t for schema $schema")
+      }
+    }
   }
 
-  implicit object ByteListEncoder extends Encoder[List[Byte]] {
-    override def encode(t: List[Byte], schema: Schema): ByteBuffer = ByteBuffer.wrap(t.toArray[Byte])
-  }
-
-  implicit object ByteSeqEncoder extends Encoder[Seq[Byte]] {
-    override def encode(t: Seq[Byte], schema: Schema): ByteBuffer = ByteBuffer.wrap(t.toArray[Byte])
-  }
-
-  implicit object ByteVectorEncoder extends Encoder[Vector[Byte]] {
-    override def encode(t: Vector[Byte], schema: Schema): ByteBuffer = ByteBuffer.wrap(t.toArray[Byte])
-  }
+  implicit val ByteListEncoder = ByteArrayEncoder.comap[List[Byte]](_.toArray[Byte])
+  implicit val ByteSeqEncoder = ByteArrayEncoder.comap[Seq[Byte]](_.toArray[Byte])
+  implicit val ByteVectorEncoder = ByteArrayEncoder.comap[Vector[Byte]](_.toArray[Byte])
 
   implicit object ByteBufferEncoder extends Encoder[ByteBuffer] {
     override def encode(t: ByteBuffer, schema: Schema): ByteBuffer = t
@@ -285,58 +269,20 @@ object Encoder extends LowPriorityEncoders {
       c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
     } else {
 
-      // if we have a value type then we want to return an Encoder that encodes
-      // the backing field. The schema passed to this encoder will not be
-      // a record schema, but a schema for the backing value and so it can be used
-      // directly rather than calling .getFields like we do for a non value type
-      //  if (valueType) {
+      // each field needs to be converted into an avro compatible value
+      // so scala primitives need to be converted to java boxed values, and
+      // annotations and logical types need to be taken into account
 
-      //      val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-      //      val backingType = valueCstr.typeSignature
-      //      val backingField = valueCstr.name.asInstanceOf[c.TermName]
-      //
-      //      c.Expr[Encoder[T]](
-      //        q"""
-      //            new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
-      //              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-      //                _root_.com.sksamuel.avro4s.Encoder.encodeT[$backingType](t.$backingField : $backingType, schema)
-      //              }
-      //            }
-      //        """
-      //      )
+      // We get the value for the field from the class by invoking the
+      // getter through t.$name, and then pass that value, and the schema for
+      // the record to an Encoder[<Type For Field>] which will then "encode"
+      // the value in an avro friendly way.
 
-      //} else {
-
-      // If not a value type we return an Encoder that will delegate to the buildRecord
-      // method, passing in the values fetched from each field in the case class,
-      // along with the schema and other metadata required
-
-      // each field will be invoked to get the raw value, before being passed to an
-      // encoder for that type to retrieve the happy happy avro value
+      // Note: If the field is a value class, then this macro will be summoned again
+      // and the value type will be the type argument to the macro.
       val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
-
         val name = f.name.asInstanceOf[c.TermName]
-        val annos = reflect.annotations(tpe.typeSymbol)
-        val extractor = new AnnotationExtractors(annos)
-
-        // each field needs to be converted into an avro compatible value
-        // so scala primitives need to be converted to java boxed values, and
-        // annotations and logical types need to be taken into account
-
-        // We get the instance for the field from the class by invoking the
-        // getter ( t.$name ) and then pass that value, and the schema for
-        // the record to an Encoder[<Type For Field>]
-
-        // if the field is annotated with @AvroFixed then we don't pull in an encoder in the normal way
-        // but we convert to an Array[Byte] or throw if we cannot perform this conversion.
-        extractor.fixed match {
-          case Some(_) =>
-            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFixed(t.$name)"""
-          case None =>
-            // Note: If the field is a value class, then this macro will be summoned again
-            // and the value type will be the type argument to the macro.
-            q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $fullName)"""
-        }
+        q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $fullName)"""
       }
 
       // An encoder for a value type just needs to pass through the given value into an encoder
@@ -409,13 +355,6 @@ object Encoder extends LowPriorityEncoders {
       case _ =>
         encoder.encode(t, schema)
     }
-  }
-
-  def encodeFixed(t: Any): Array[Byte] = t match {
-    case s: String => s.getBytes("UTF-8").array
-    case a: Array[Byte] => a
-    case v: Vector[_] if v.head.isInstanceOf[Byte] => v.asInstanceOf[Vector[Byte]].toArray
-    case other => sys.error(s"Cannot encode $other as Array[Byte] in fixed field")
   }
 
   def extractTraitSubschema(implClassName: String, schema: Schema): Schema = {
