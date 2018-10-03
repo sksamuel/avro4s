@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.schema
 import com.sksamuel.avro4s.{AvroDoc, AvroSchema}
 import org.scalatest.{Matchers, WordSpec}
 
-class DocAnnotationSchemaTest extends WordSpec with Matchers {
+class AvroDocSchemaTest extends WordSpec with Matchers {
 
   "@AvroDoc" should {
     "support doc annotation on class" in {

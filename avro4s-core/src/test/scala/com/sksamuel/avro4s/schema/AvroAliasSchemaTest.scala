@@ -11,7 +11,7 @@ class AvroAliasSchemaTest extends WordSpec with Matchers {
       @AvroAlias("queen")
       case class Annotated(str: String)
 
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_types.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_types.json"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
@@ -21,7 +21,7 @@ class AvroAliasSchemaTest extends WordSpec with Matchers {
       @AvroAlias("ledzep")
       case class Annotated(str: String)
 
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_types_multiple.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_types_multiple.json"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
@@ -29,7 +29,7 @@ class AvroAliasSchemaTest extends WordSpec with Matchers {
 
       case class Annotated(@AvroAlias("cold") str: String, @AvroAlias("kate") @AvroAlias("bush") long: Long, int: Int)
 
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_fields.avsc"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/aliases_on_fields.json"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }

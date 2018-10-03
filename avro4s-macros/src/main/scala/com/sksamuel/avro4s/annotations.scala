@@ -1,9 +1,12 @@
 package com.sksamuel.avro4s
 
 import scala.annotation.StaticAnnotation
+import scala.annotation.meta._
 
+@field
 case class AvroAlias(alias: String) extends StaticAnnotation
 
+@field
 case class AvroDoc(doc: String) extends StaticAnnotation
 
 /**
@@ -21,6 +24,7 @@ case class AvroDoc(doc: String) extends StaticAnnotation
   * which results in all usages of the value type having schema
   * FIXED with a size of 7 rather than the default.
   */
+@field
 case class AvroFixed(size: Int) extends StaticAnnotation
 
 /**
@@ -51,10 +55,13 @@ case class AvroFixed(size: Int) extends StaticAnnotation
   * it will compare the name in the record to the annotated value.
   *
   */
+@field
 case class AvroName(name: String) extends StaticAnnotation
 
+@field
 case class AvroNamespace(namespace: String) extends StaticAnnotation
 
+@field
 case class AvroProp(name: String, value: String) extends StaticAnnotation
 
 /**
@@ -69,4 +76,5 @@ case class AvroProp(name: String, value: String) extends StaticAnnotation
   * When this annotation is present on a type, the name used in the
   * schema will simply be the raw type, eg `Foo`.
   */
+@field
 class AvroErasedName extends StaticAnnotation

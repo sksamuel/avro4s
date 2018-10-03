@@ -281,16 +281,18 @@ object SchemaFor extends LowPrioritySchemaFor {
       val isValueClass = reflect.isValueClass(tpe)
       val recordName = reflect.recordName(tpe)
 
-      val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((f, fieldTpe), index) =>
+      val fields = reflect.caseClassAccessors(tpe)
+        .filterNot { case (fieldSym, _) => reflect.isTransient(fieldSym) }
+        .zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
 
         // the simple name of the field like "x"
-        val fieldName = f.name.decodedName.toString.trim
+        val fieldName = fieldSym.name.decodedName.toString.trim
 
         // if the field is a value type, we should include annotations defined on the value type as well
         val annos = if (reflect.isValueClass(fieldTpe)) {
-          reflect.annotationsqq(f) ++ reflect.annotationsqq(fieldTpe.typeSymbol)
+          reflect.annotationsqq(fieldSym) ++ reflect.annotationsqq(fieldTpe.typeSymbol)
         } else {
-          reflect.annotationsqq(f)
+          reflect.annotationsqq(fieldSym)
         }
 
         val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
@@ -304,7 +306,7 @@ object SchemaFor extends LowPrioritySchemaFor {
 
         // if the field is a param with a default value, then we know the getter method will be defined
         // and so we can use it to generate the default value
-        if (f.isTerm && f.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
+        if (fieldSym.isTerm && fieldSym.asTerm.isParamWithDefault && defaultGetterMethod.isMethod) {
           val moduleSym = tpe.typeSymbol.companion
           q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
         } else {

@@ -39,7 +39,6 @@ class BigDecimalSchemaTest extends WordSpec with Matchers {
       schema shouldBe expected
     }
     "allow big decimals to be encoded as strings when custom typeclasses are provided" in {
-      import com.sksamuel.avro4s.BigDecimalAsString._
       case class BigDecimalAsStringTest(decimal: BigDecimal)
       val schema = AvroSchema[BigDecimalAsStringTest]
       val expected = new org.apache.avro.Schema.Parser().parse(this.getClass.getResourceAsStream("/bigdecimal_as_string.json"))

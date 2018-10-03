@@ -33,6 +33,22 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     }.getOrElse(Nil)
   }
 
+  /**
+    * For the given type, returns the parameters, which are defined as the decls
+    * which are case accessors
+    */
+  def caseClassAccessors(tpe: c.universe.Type): List[(c.universe.Symbol, c.universe.Type)] = {
+    tpe.decls.collect {
+      case t: TermSymbol if t.isCaseAccessor && t.isVal => t -> t.typeSignatureIn(tpe)
+    }.toList
+  }
+
+  def isTransient(sym: c.universe.Symbol): Boolean = {
+    sym.annotations.exists { a =>
+      a.tree.tpe <:< typeOf[transient]
+    }
+  }
+
   def primaryConstructorParams(tpe: c.Type): List[(c.Symbol, c.Type)] = {
     val constructorTypeContext = primaryConstructor(tpe).get.typeSignatureIn(tpe).dealias
     val constructorArguments = constructorTypeContext.paramLists.reduce(_ ++ _)
