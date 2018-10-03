@@ -285,12 +285,12 @@ object Encoder extends LowPriorityEncoders {
       // Note: If the field is a value class, then this macro will be summoned again
       // and the value type will be the type argument to the macro.
       val fields = reflect
-        .caseClassFields(tpe)
-        .filterNot { case (fieldSym, _) => reflect.isTransient(fieldSym) }
-        .zipWithIndex
-        .map { case ((fieldSym, fieldTpe), index) =>
-          val name = fieldSym.asTerm.getter.asTerm.name
-          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$name, $index, schema, $fullName)"""
+        .constructorParameters(tpe)
+        .filterNot { case (fieldSym, _) => reflect.isTransientOnField(tpe, fieldSym) }
+        .map { case (fieldSym, fieldTpe) =>
+          val termName = fieldSym.asTerm.name
+          val stringName = fieldSym.name.decodedName.toString
+          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$termName, $stringName, schema, $fullName)"""
         }
 
       // An encoder for a value type just needs to pass through the given value into an encoder
@@ -350,14 +350,14 @@ object Encoder extends LowPriorityEncoders {
     * containing class, and comparing to the record full names in the subschemas.
     *
     */
-  def encodeField[T](t: T, index: Int, schema: Schema, containingClassFQN: String)(implicit encoder: Encoder[T]): AnyRef = {
+  def encodeField[T](t: T, fieldName: String, schema: Schema, containingClassFQN: String)(implicit encoder: Encoder[T]): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
         val subschema = extractTraitSubschema(containingClassFQN, schema)
-        val field = subschema.getFields.get(index)
+        val field = subschema.getField(fieldName)
         encoder.encode(t, field.schema)
       case Schema.Type.RECORD =>
-        val field = schema.getFields.get(index)
+        val field = schema.getField(fieldName)
         encoder.encode(t, field.schema)
       // otherwise we are encoding a simple field
       case _ =>

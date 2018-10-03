@@ -7,7 +7,7 @@ import com.sksamuel.avro4s.Decoder
 import org.apache.avro.generic.GenericData
 import org.scalatest.{Matchers, WordSpec}
 
-class UUIDEncoderTest extends WordSpec with Matchers {
+class UUIDDecoderTest extends WordSpec with Matchers {
 
   import scala.collection.JavaConverters._
 

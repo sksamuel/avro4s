@@ -318,7 +318,7 @@ object Decoder extends LowPriorityDecoders {
           sys.error(error)
         }
 
-        val fields = reflect.fieldsOf(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
+        val fields = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
 
           // this is the simple name of the field
           val name = fieldSym.name.decodedName.toString

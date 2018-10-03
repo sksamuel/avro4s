@@ -282,37 +282,35 @@ object SchemaFor extends LowPrioritySchemaFor {
       val recordName = reflect.recordName(tpe)
 
       val fields = reflect
-        .caseClassFields(tpe)
-        .filterNot { case (fieldSym, _) => reflect.isTransient(fieldSym) }
-        .zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
+        .constructorParameters(tpe)
+        .zipWithIndex
+        .filterNot { case ((fieldSym, _), _) => reflect.isTransientOnField(tpe, fieldSym) }
+        .map { case ((fieldSym, fieldTpe), index) =>
 
-        // the simple name of the field like "x"
-        val fieldName = fieldSym.name.decodedName.toString.trim
+          // the simple name of the field like "x"
+          val fieldName = fieldSym.name.decodedName.toString.trim
 
-        // if the field is a value type, we should include annotations defined on the value type as well
-        val annos = if (reflect.isValueClass(fieldTpe)) {
-          reflect.annotationsqq(fieldSym) ++ reflect.annotationsqq(fieldTpe.typeSymbol)
-        } else {
-          reflect.annotationsqq(fieldSym)
+          // if the field is a value type, we should include annotations defined on the value type as well
+          val annos = if (reflect.isValueClass(fieldTpe)) {
+            reflect.annotationsqq(fieldSym) ++ reflect.annotationsqq(fieldTpe.typeSymbol)
+          } else {
+            reflect.annotationsqq(fieldSym)
+          }
+
+          val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+
+          // gets the method symbol for the default getter if it exists
+          val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+          val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
+
+          // if the default getter exists then we can use it to generate the default value
+          if (defaultGetterMethod.isMethod) {
+            val moduleSym = tpe.typeSymbol.companion
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+          } else {
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), null) }"""
+          }
         }
-
-        val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-
-        // this gets the method that generates the default value for this field
-        // (if the field has a default value otherwise it is a NoSymbol)
-        val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
-
-        // this is a method symbol for the default getter if it exists
-        val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
-
-        // if the default getter exists then we can use it to generate the default value
-        if (defaultGetterMethod.isMethod) {
-          val moduleSym = tpe.typeSymbol.companion
-          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
-        } else {
-          q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), null) }"""
-        }
-      }
 
       // these are annotations on the class itself
       val annos = reflect.annotationsqq(tpe.typeSymbol)

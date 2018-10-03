@@ -21,19 +21,17 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     }
   }
 
-  def fieldsOf(tpe: c.universe.Type): List[(c.universe.Symbol, c.universe.Type)] = {
+  def constructorParameters(tpe: c.universe.Type): List[(c.universe.Symbol, c.universe.Type)] = {
     primaryConstructor(tpe).map { constructor =>
       val constructorTypeContext = constructor.typeSignatureIn(tpe).dealias
       constructorTypeContext.paramLists.headOption.map { symbols =>
-        symbols
-          .map(s => s -> s.typeSignatureIn(constructorTypeContext).dealias)
+        symbols.map(s => s -> s.typeSignatureIn(constructorTypeContext).dealias)
       }.getOrElse(Nil)
     }.getOrElse(Nil)
   }
 
   /**
-    * For the given type, returns the parameters, which are defined as the decls
-    * which are case accessors and vals
+    * For the given type, returns backing fields of the case class.
     */
   def caseClassFields(tpe: c.universe.Type): List[(c.universe.Symbol, c.universe.Type)] = {
     tpe.decls.collect {
@@ -42,18 +40,19 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
   }
 
   /**
-    * Returns true if for the given field name there exists a field with the same name
-    * that is annotaed with @transient.
-    *
-    * We use this method to find out whether @transient was used in our case class
-    * constructor, because transient annotations are attached to the field, but
-    * we take constructor setters as the basis for fields, because we need to find
-    * default methods.
+    * Returns true if the given type has a field of the given name marked as @transient.
     */
   def isTransientOnField(tpe: c.universe.Type, sym: c.universe.Symbol): Boolean = {
-    false
+    tpe.decls
+      .filter(_.isTerm)
+      .map(_.asTerm)
+      .filter(f => f.isVal && f.getter.isMethod && f.getter.name == sym.name)
+      .exists(isTransient)
   }
 
+  /**
+    * Returns true if this symbol contains an @transient annotation.
+    */
   def isTransient(sym: c.universe.Symbol): Boolean = {
     sym.annotations.exists { a =>
       a.tree.tpe <:< typeOf[transient]

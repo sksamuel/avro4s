@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.{AvroFixed, AvroSchema}
 import com.sksamuel.avro4s.Encoder
-import org.apache.avro.generic.GenericRecord
+import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.scalatest.{FunSuite, Matchers}
 
 @AvroFixed(8)
@@ -31,13 +31,13 @@ class FixedEncoderTest extends FunSuite with Matchers {
   test("support usage on strings") {
     val schema = AvroSchema[FixedString]
     val record = Encoder[FixedString].encode(FixedString("sam"), schema).asInstanceOf[GenericRecord]
-    record.get("mystring").asInstanceOf[Array[Byte]].toVector shouldBe Vector(115, 97, 109)
+    record.get("mystring").asInstanceOf[GenericData.Fixed].bytes.toVector shouldBe Vector(115, 97, 109)
   }
 
   test("support options of fixed") {
     val schema = AvroSchema[OptionFixedWrapper]
     val record = Encoder[OptionFixedWrapper].encode(OptionFixedWrapper(Some(FixedValueType("sam"))), schema).asInstanceOf[GenericRecord]
-    record.get("opt").asInstanceOf[Array[Byte]].toVector shouldBe Vector(115, 97, 109)
+    record.get("opt").asInstanceOf[GenericData.Fixed].bytes.toVector shouldBe Vector(115, 97, 109)
   }
 }
 

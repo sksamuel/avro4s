@@ -12,4 +12,3 @@ class TransientSchemaTest extends FunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 }
-

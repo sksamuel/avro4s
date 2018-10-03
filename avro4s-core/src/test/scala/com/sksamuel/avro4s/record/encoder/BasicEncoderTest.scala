@@ -4,7 +4,7 @@ import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
 import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
 import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
 import org.apache.avro.Schema
-import org.apache.avro.generic.GenericRecord
+import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
 
@@ -16,14 +16,14 @@ class BasicEncoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[Foo]
       Encoder[Foo].encode(Foo("hello"), schema) shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
     }
-    "encode strings as Array[Byte] when schema is fixed" in {
+    "encode strings as GenericData.Fixed when schema is fixed" in {
       case class Foo(s: String)
       implicit object StringFixedSchemaFor extends SchemaFor[String] {
         override def schema: Schema = Schema.createFixed("FixedString", null, null, 123)
       }
       val schema = AvroSchema[Foo]
       val record = Encoder[Foo].encode(Foo("hello"), schema).asInstanceOf[GenericRecord]
-      record.get("s").asInstanceOf[Array[Byte]].toList shouldBe Seq(104, 101, 108, 108, 111)
+      record.get("s").asInstanceOf[GenericData.Fixed].bytes().toList shouldBe Seq(104, 101, 108, 108, 111)
     }
     "encode longs" in {
       case class Foo(l: Long)
