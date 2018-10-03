@@ -370,7 +370,7 @@ object SchemaFor extends LowPrioritySchemaFor {
     field
   }
 
-  def buildSchema(name: String,
+  def buildSchema(className: String,
                   packageName: String,
                   fields: Seq[Schema.Field],
                   annotations: Seq[Anno],
@@ -380,6 +380,7 @@ object SchemaFor extends LowPrioritySchemaFor {
 
     val extractor = new AnnotationExtractors(annotations)
     val doc = extractor.doc.orNull
+    val name = extractor.name.getOrElse(className)
     val namespace = extractor.namespace.getOrElse(packageName)
     val aliases = extractor.aliases
     val props = extractor.props

@@ -9,7 +9,7 @@ class AvroNameDecoderTest extends FunSuite with Matchers {
 
   case class AvroNameDecoderTest(@AvroName("bar") foo: String)
 
-  test("decoder should take into account @AvroName") {
+  test("decoder should take into account @AvroName on fields") {
     val schema = AvroSchema[AvroNameDecoderTest]
     val record = new GenericData.Record(schema)
     record.put("bar", new Utf8("hello"))

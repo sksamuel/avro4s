@@ -69,8 +69,8 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     */
   def packageName(tpe: Type): String = {
     Stream.iterate(tpe.typeSymbol.owner)(_.owner)
+      .dropWhile(x => !x.isPackage && !x.isModuleClass && !x.isModule)
       .dropWhile(_.name.decodedName.toString == "package")
-      .dropWhile(x => !x.isPackage && !x.isModuleClass)
       .head
       .fullName
   }
@@ -141,8 +141,14 @@ object ReflectHelper {
 
   // this impl must be kept inline with the impl in the reflect instance class
   def packageName(sym: Symbol) = Stream.iterate(sym.owner)(_.owner)
+    .dropWhile(x => !x.isPackage && !x.isModuleClass && !x.isModule)
     .dropWhile(_.name.decodedName.toString == "package")
-    .dropWhile(x => !x.isPackage && !x.isModuleClass)
     .head
     .fullName
+
+  def annotations(sym: Symbol): List[Anno] = sym.annotations.map { a =>
+    val name = a.tree.tpe.typeSymbol.fullName
+    val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+    Anno(name, args)
+  }
 }

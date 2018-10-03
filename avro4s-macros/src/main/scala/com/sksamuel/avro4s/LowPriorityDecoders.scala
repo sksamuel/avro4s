@@ -49,11 +49,10 @@ trait LowPriorityDecoders {
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
 
-    def typeName: String = ReflectHelper.packageName(tpe.typeSymbol) + "." + tpe.typeSymbol.name.decodedName
+    def typeName: String = ReflectHelper.packageName(tpe.typeSymbol) + "." + AvroNameHelper.forClass(tpe)
     //      val nearestPackage = Stream.iterate(tpe.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head
     //      s"${nearestPackage.fullName}.${tpe.typeSymbol.name.decodedName}"
     //    }
-
 
     value match {
       case _: Utf8 if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value))

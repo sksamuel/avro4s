@@ -23,6 +23,34 @@ case class AvroDoc(doc: String) extends StaticAnnotation
   */
 case class AvroFixed(size: Int) extends StaticAnnotation
 
+/**
+  * [[AvroName]] allows the name used by Avro to be different
+  * from what is defined in code.
+  *
+  * For example, if a case class defines a field z, such as
+  * `case class Foo(z: String)` then normally this will be
+  * serialized as an entry 'z' in the Avro Record.
+  *
+  * However, if the field is annotated such as
+  * `case class Foo(@AvroName("x") z: String)` then the entry
+  * in the Avro Record will be for 'x'.
+  *
+  * Similarly for deserialization, if a field is annotated then
+  * the name that is looked up in the avro record will be the
+  * annotated name and not the field name in Scala.
+  *
+  * The second example is with classes. If a class is annotated
+  * with @AvroName then the name used in the record schema
+  * will not be the classname but the annotated value.
+  *
+  * This will also have an effect on serialization.
+  * For example, when decoding records into an Either, the
+  * decoder must decide if the value is a Left or a Right.
+  * It usually does this by comparing the name in the record
+  * to the classnames of the either types, but when annotated,
+  * it will compare the name in the record to the annotated value.
+  *
+  */
 case class AvroName(name: String) extends StaticAnnotation
 
 case class AvroNamespace(namespace: String) extends StaticAnnotation

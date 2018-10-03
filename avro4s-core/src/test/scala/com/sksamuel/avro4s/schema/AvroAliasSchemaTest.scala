@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.schema
 import com.sksamuel.avro4s.{AvroAlias, AvroSchema}
 import org.scalatest.{Matchers, WordSpec}
 
-class AvroAliasAnnotationSchemaTest extends WordSpec with Matchers {
+class AvroAliasSchemaTest extends WordSpec with Matchers {
 
   "SchemaEncoder" should {
     "support alias annotations on types" in {
