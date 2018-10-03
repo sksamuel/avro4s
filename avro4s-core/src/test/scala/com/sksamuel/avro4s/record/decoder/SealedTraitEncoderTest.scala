@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.AvroSchema
-import com.sksamuel.avro4s.Decoder
+import com.sksamuel.avro4s.{AvroNamespace, AvroSchema, Decoder, ImmutableRecord}
+import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
@@ -51,6 +51,17 @@ class SealedTraitDecoderTest extends FunSuite with Matchers {
 
     Decoder[Nibble].decode(nabble) shouldBe Nabble("foo", 44)
   }
+
+  test("use @AvroNamespace when choosing which type to decode") {
+
+    val appleschema = SchemaBuilder.record("Apple").namespace("market").fields().requiredDouble("weight").endRecord()
+    val orangeschema = SchemaBuilder.record("Orange").namespace("market").fields().requiredString("color").endRecord()
+    val union = SchemaBuilder.unionOf().`type`(appleschema).and().`type`(orangeschema).endUnion()
+    val schema = SchemaBuilder.record("Buy").fields().name("fruit").`type`(union).noDefault().endRecord()
+
+    Decoder[Buy].decode(ImmutableRecord(schema, Vector(ImmutableRecord(appleschema, Vector(java.lang.Double.valueOf(0.3)))))) shouldBe Buy(Apple(0.3))
+    Decoder[Buy].decode(ImmutableRecord(schema, Vector(ImmutableRecord(orangeschema, Vector(new Utf8("bright orange")))))) shouldBe Buy(Orange("bright orange"))
+  }
 }
 
 sealed trait Wibble
@@ -67,3 +78,14 @@ sealed trait Nibble
 case class Nobble(str: String, place: String) extends Nibble
 case class Nabble(str: String, age: Int) extends Nibble
 case class Napper(nibble: Nibble)
+
+sealed trait Fruit
+
+@AvroNamespace("market")
+final case class Apple(weight: Double) extends Fruit
+
+@AvroNamespace("market")
+final case class Orange(color: String) extends Fruit
+
+@AvroNamespace("market")
+final case class Buy(fruit: Fruit)

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroName, AvroSchema, Decoder, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, ImmutableRecord}
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
@@ -23,6 +23,14 @@ class EitherDecoderTest extends FunSuite with Matchers {
   case class Topple(b: Boolean)
 
   case class Test4(either: Either[Wobble, Topple])
+
+  @AvroNamespace("market")
+  case class Apple(s: String)
+
+  @AvroNamespace("market")
+  case class Orange(b: Boolean)
+
+  case class Test5(either: Either[Apple, Orange])
 
   test("decode union:T,U for Either[T,U] of primitives") {
     Decoder[Test].decode(ImmutableRecord(AvroSchema[Test], Vector(new Utf8("foo")))) shouldBe Test(Left("foo"))
@@ -48,6 +56,17 @@ class EitherDecoderTest extends FunSuite with Matchers {
 
     Decoder[Test4].decode(ImmutableRecord(schema, Vector(ImmutableRecord(tschema, Vector(java.lang.Boolean.valueOf(true)))))) shouldBe Test4(Right(Topple(true)))
     Decoder[Test4].decode(ImmutableRecord(schema, Vector(ImmutableRecord(wschema, Vector(new Utf8("zzz")))))) shouldBe Test4(Left(Wobble("zzz")))
+  }
+
+  test("use @AvroNamespace when choosing which Either to decode") {
+
+    val appleschema = SchemaBuilder.record("Apple").namespace("market").fields().requiredBoolean("s").endRecord()
+    val orangeschema = SchemaBuilder.record("Orange").namespace("market").fields().requiredString("b").endRecord()
+    val union = SchemaBuilder.unionOf().`type`(appleschema).and().`type`(orangeschema).endUnion()
+    val schema = SchemaBuilder.record("Test5").fields().name("either").`type`(union).noDefault().endRecord()
+
+    Decoder[Test5].decode(ImmutableRecord(schema, Vector(ImmutableRecord(orangeschema, Vector(java.lang.Boolean.valueOf(true)))))) shouldBe Test5(Right(Orange(true)))
+    Decoder[Test5].decode(ImmutableRecord(schema, Vector(ImmutableRecord(appleschema, Vector(new Utf8("zzz")))))) shouldBe Test5(Left(Apple("zzz")))
   }
 }
 
