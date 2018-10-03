@@ -9,11 +9,8 @@ case class P2(name: String)
 class GithubIssue110 extends FunSuite with Matchers {
 
   test("default value should be picked up") {
-
     val p1 = RecordFormat[P1]
     val p2 = RecordFormat[P2]
-
     val record = p2.to(P2("test"))
-    println(record)
   }
 }

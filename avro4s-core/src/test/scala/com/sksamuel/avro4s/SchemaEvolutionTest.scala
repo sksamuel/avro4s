@@ -14,9 +14,6 @@ class SchemaEvolutionTest extends FunSuite with Matchers {
 
   ignore("@AvroAlias should be used when a reader schema has a field missing from the write schema") {
 
-    println(AvroSchema[Version1].toString(true))
-    println(AvroSchema[Version2].toString(true))
-
     val v1schema = AvroSchema[Version1]
     val v1 = Version1("hello")
     val baos = new ByteArrayOutputStream()
