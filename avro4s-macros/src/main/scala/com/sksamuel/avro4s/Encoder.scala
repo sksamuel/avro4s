@@ -71,8 +71,7 @@ object Encoder extends LowPriorityEncoders {
       schema.getType match {
         case Schema.Type.FIXED => new GenericData.Fixed(schema, value.getBytes)
         case Schema.Type.BYTES => ByteBuffer.wrap(value.getBytes)
-        case Schema.Type.STRING => new Utf8(value)
-        case _ => sys.error(s"Unable to encode a String for schema $schema")
+        case _ => new Utf8(value)
       }
     }
   }
