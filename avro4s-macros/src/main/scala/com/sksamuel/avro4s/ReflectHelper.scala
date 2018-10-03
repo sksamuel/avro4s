@@ -22,25 +22,36 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
   }
 
   def fieldsOf(tpe: c.universe.Type): List[(c.universe.Symbol, c.universe.Type)] = {
-    val primaryConstructorOpt = primaryConstructor(tpe)
-
-    primaryConstructorOpt.map { constructor =>
+    primaryConstructor(tpe).map { constructor =>
       val constructorTypeContext = constructor.typeSignatureIn(tpe).dealias
-      val constructorArguments = constructorTypeContext.paramLists
-      constructorArguments.headOption.map { symbols =>
-        symbols.map(s => s -> s.typeSignatureIn(constructorTypeContext).dealias)
+      constructorTypeContext.paramLists.headOption.map { symbols =>
+        symbols
+          .map(s => s -> s.typeSignatureIn(constructorTypeContext).dealias)
       }.getOrElse(Nil)
     }.getOrElse(Nil)
   }
 
   /**
     * For the given type, returns the parameters, which are defined as the decls
-    * which are case accessors
+    * which are case accessors and vals
     */
   def caseClassAccessors(tpe: c.universe.Type): List[(c.universe.Symbol, c.universe.Type)] = {
     tpe.decls.collect {
       case t: TermSymbol if t.isCaseAccessor && t.isVal => t -> t.typeSignatureIn(tpe)
     }.toList
+  }
+
+  /**
+    * Returns true if for the given field name there exists a field with the same name
+    * that is annotaed with @transient.
+    *
+    * We use this method to find out whether @transient was used in our case class
+    * constructor, because transient annotations are attached to the field, but
+    * we take constructor setters as the basis for fields, because we need to find
+    * default methods.
+    */
+  def isTransientOnField(tpe: c.universe.Type, sym: c.universe.Symbol): Boolean = {
+    false
   }
 
   def isTransient(sym: c.universe.Symbol): Boolean = {

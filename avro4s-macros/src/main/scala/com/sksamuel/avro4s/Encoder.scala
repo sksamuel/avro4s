@@ -8,6 +8,7 @@ import java.util.UUID
 import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
+import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
@@ -70,7 +71,7 @@ object Encoder extends LowPriorityEncoders {
       schema.getType match {
         case Schema.Type.FIXED => new GenericData.Fixed(schema, value.getBytes)
         case Schema.Type.BYTES => ByteBuffer.wrap(value.getBytes)
-        case Schema.Type.STRING => value
+        case Schema.Type.STRING => new Utf8(value)
         case _ => sys.error(s"Unable to encode a String for schema $schema")
       }
     }
