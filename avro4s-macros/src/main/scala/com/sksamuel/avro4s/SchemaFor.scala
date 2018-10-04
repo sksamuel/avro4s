@@ -125,7 +125,7 @@ object SchemaFor extends LowPrioritySchemaFor {
     override def schema: Schema = {
       val elementSchema = schemaFor.schema
       val nullSchema = SchemaBuilder.builder().nullType()
-      SchemaFor.createSafeUnion(elementSchema, nullSchema)
+      SchemaHelper.createSafeUnion(elementSchema, nullSchema)
     }
   }
 
@@ -358,7 +358,7 @@ object SchemaFor extends LowPrioritySchemaFor {
 
     // for a union the type that has a default must be first
     val schemaWithOrderedUnion = if (schema.getType == Schema.Type.UNION && resolvedDefault != null) {
-      moveDefaultToHead(schema, resolvedDefault)
+      SchemaHelper.moveDefaultToHead(schema, resolvedDefault)
     } else schema
 
     // the field can override the namespace if the Namespace annotation is present on the field
@@ -446,40 +446,5 @@ object SchemaFor extends LowPrioritySchemaFor {
       case f: Float => java.lang.Float.valueOf(f)
       case other => other.toString
     }
-  }
-
-  def moveDefaultToHead(schema: Schema, default: Any): Schema = {
-    require(schema.getType == Schema.Type.UNION)
-    val defaultType = default match {
-      case _: String => Schema.Type.STRING
-      case _: Long => Schema.Type.LONG
-      case _: Int => Schema.Type.INT
-      case _: Boolean => Schema.Type.BOOLEAN
-      case _: Float => Schema.Type.FLOAT
-      case _: Double => Schema.Type.DOUBLE
-      case other => other
-    }
-    val (first, rest) = schema.getTypes.asScala.partition(_.getType == defaultType)
-    val result = Schema.createUnion(first.headOption.toSeq ++ rest: _*)
-    schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
-    result
-  }
-
-  def moveNullToHead(schema: Schema): Schema = {
-    val (nulls, rest) = schema.getTypes.asScala.partition(_.getType == Schema.Type.NULL)
-    val result = Schema.createUnion(nulls.headOption.toSeq ++ rest: _*)
-    schema.getAliases.asScala.foreach(result.addAlias)
-    schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
-    result
-  }
-
-  // creates a union schema type, with nested unions extracted, and duplicate nulls stripped
-  // union schemas can't contain other union schemas as a direct
-  // child, so whenever we create a union, we need to check if our
-  // children are unions and flatten
-  def createSafeUnion(schemas: Schema*): Schema = {
-    val flattened = schemas.flatMap(schema => scala.util.Try(schema.getTypes.asScala).getOrElse(Seq(schema)))
-    val (nulls, rest) = flattened.partition(_.getType == Schema.Type.NULL)
-    Schema.createUnion(nulls.headOption.toSeq ++ rest: _*)
   }
 }

@@ -46,7 +46,7 @@ trait LowPrioritySchemaFor {
   implicit def coproductSchema[S, T <: Coproduct](implicit basefor: SchemaFor[S], coproductFor: SchemaFor[T]): SchemaFor[S :+: T] = new SchemaFor[S :+: T] {
     val base = basefor.schema
     val coproduct = coproductFor.schema
-    override def schema: Schema = SchemaFor.createSafeUnion(base, coproduct)
+    override def schema: Schema = SchemaHelper.createSafeUnion(base, coproduct)
   }
 
   implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],

@@ -132,7 +132,7 @@ object Encoder extends LowPriorityEncoders {
 
     override def encode(ts: List[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
-      val arraySchema = extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
+      val arraySchema = SchemaHelper.extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
       ts.map(encoder.encode(_, arraySchema.getElementType)).asJava
     }
   }
@@ -143,7 +143,7 @@ object Encoder extends LowPriorityEncoders {
 
     override def encode(ts: Set[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
-      val arraySchema = extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
+      val arraySchema = SchemaHelper.extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
       ts.map(encoder.encode(_, arraySchema.getElementType)).toList.asJava
     }
   }
@@ -154,7 +154,7 @@ object Encoder extends LowPriorityEncoders {
 
     override def encode(ts: Vector[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
-      val arraySchema = extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
+      val arraySchema = SchemaHelper.extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
       ts.map(encoder.encode(_, arraySchema.getElementType)).asJava
     }
   }
@@ -165,7 +165,7 @@ object Encoder extends LowPriorityEncoders {
 
     override def encode(ts: Seq[T], schema: Schema): java.util.List[AnyRef] = {
       require(schema != null)
-      val arraySchema = extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
+      val arraySchema = SchemaHelper.extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
       ts.map(encoder.encode(_, arraySchema.getElementType)).asJava
     }
   }
@@ -334,7 +334,7 @@ object Encoder extends LowPriorityEncoders {
   def buildRecord(schema: Schema, values: Seq[AnyRef], containingClassFQN: String): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
-        val subschema = extractTraitSubschema(containingClassFQN, schema)
+        val subschema = SchemaHelper.extractTraitSubschema(containingClassFQN, schema)
         ImmutableRecord(subschema, values.toVector)
       case Schema.Type.RECORD =>
         ImmutableRecord(schema, values.toVector)
@@ -357,7 +357,7 @@ object Encoder extends LowPriorityEncoders {
   def encodeField[T](t: T, fieldName: String, schema: Schema, containingClassFQN: String)(implicit encoder: Encoder[T]): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
-        val subschema = extractTraitSubschema(containingClassFQN, schema)
+        val subschema = SchemaHelper.extractTraitSubschema(containingClassFQN, schema)
         val field = subschema.getField(fieldName)
         encoder.encode(t, field.schema)
       case Schema.Type.RECORD =>
@@ -366,23 +366,6 @@ object Encoder extends LowPriorityEncoders {
       // otherwise we are encoding a simple field
       case _ =>
         encoder.encode(t, schema)
-    }
-  }
-
-  def extractTraitSubschema(implClassName: String, schema: Schema): Schema = {
-    import scala.collection.JavaConverters._
-    require(schema.getType == Schema.Type.UNION, "Can only extract subschemas from a UNION")
-    schema.getTypes.asScala
-      .find(_.getFullName == implClassName)
-      .getOrElse(sys.error(s"Cannot find subschema for class $implClassName"))
-  }
-
-  def extractSchemaFromPossibleUnion(schema: Schema, `type`: Schema.Type): Schema = {
-    import scala.collection.JavaConverters._
-    schema.getType match {
-      case Schema.Type.UNION => schema.getTypes.asScala.find(_.getType == `type`).getOrElse(sys.error(s"Could not find a schema of type ${`type`} in union $schema"))
-      case Schema.Type.ARRAY => schema
-      case _ => sys.error(s"Require ARRAY schema but was $schema")
     }
   }
 }
