@@ -5,7 +5,6 @@ import java.nio.file.{Files, Path, Paths}
 
 import org.apache.avro.Schema
 import org.apache.avro.file.CodecFactory
-import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.EncoderFactory
 
 /**
@@ -22,33 +21,10 @@ import org.apache.avro.io.EncoderFactory
   */
 trait AvroOutputStream[T] {
   def close(): Unit
-  def close(closeUnderlying: Boolean): Unit
   def flush(): Unit
   def fSync(): Unit
   def write(t: T): Unit
   def write(ts: Seq[T]): Unit = ts.foreach(write)
-}
-
-
-class DefaultAvroOutputStream[T](os: OutputStream, schema: Schema, serializer: org.apache.avro.io.Encoder)
-                                (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
-
-  private val datumWriter = new GenericDatumWriter[GenericRecord](schema)
-
-  override def close(): Unit = close(true)
-  override def close(closeUnderlying: Boolean): Unit = {
-    flush()
-    if (closeUnderlying)
-      os.close()
-  }
-
-  override def write(t: T): Unit = {
-    val record = encoder.encode(t, schema).asInstanceOf[GenericRecord]
-    datumWriter.write(record, serializer)
-  }
-
-  override def flush(): Unit = serializer.flush()
-  override def fSync(): Unit = ()
 }
 
 object AvroOutputStream {

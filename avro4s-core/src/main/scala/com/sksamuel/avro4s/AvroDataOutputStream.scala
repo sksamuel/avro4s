@@ -37,13 +37,9 @@ case class AvroDataOutputStream[T](os: OutputStream,
       })
   }
 
-  override def close(): Unit = close(true)
-
-  override def close(closeUnderlying: Boolean): Unit = {
+  override def close(): Unit = {
     flush()
     writer.close()
-    if (closeUnderlying)
-      os.close()
   }
 
   override def write(t: T): Unit = {
