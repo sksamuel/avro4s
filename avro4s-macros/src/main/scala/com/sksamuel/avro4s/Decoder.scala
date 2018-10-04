@@ -5,7 +5,7 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
-import org.apache.avro.generic.GenericRecord
+import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes}
 import shapeless.ops.coproduct.Reify
@@ -43,12 +43,12 @@ object Decoder extends LowPriorityDecoders {
     override def decode(value: Any): Short = value.asInstanceOf[Int].toShort
   }
 
-  // specialized support for arrays of bytes which are likely to have been serialized as a byte buffer
-  // but could also by an array of bytes
   implicit object ByteArrayDecoder extends Decoder[Array[Byte]] {
+    // byte arrays can be encoded multiple ways
     override def decode(value: Any): Array[Byte] = value match {
       case buffer: ByteBuffer => buffer.array
       case array: Array[Byte] => array
+      case fixed: GenericData.Fixed => fixed.bytes()
     }
   }
 
