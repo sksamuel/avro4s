@@ -1,7 +1,8 @@
-package com.sksamuel.avro4s
+package com.sksamuel.avro4s.record.decoder
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
+import com.sksamuel.avro4s.{AvroAlias, AvroDataInputStream, AvroOutputStream, AvroSchema, RecordFormat}
 import org.scalatest.{FunSuite, Matchers}
 
 class SchemaEvolutionTest extends FunSuite with Matchers {
@@ -35,5 +36,9 @@ class SchemaEvolutionTest extends FunSuite with Matchers {
     val f2 = RecordFormat[P2]
 
     f1.from(f2.to(P2("foo"))) shouldBe P1("foo")
+  }
+
+  test("when decoding, if the record is missing a field that is present in the schema with a default, use that") {
+
   }
 }

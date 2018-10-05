@@ -23,14 +23,14 @@ final case class AvroJsonInputStream[T](in: InputStream,
   def iterator: Iterator[T] = Iterator.continually(next)
     .takeWhile(_.isSuccess)
     .map(_.get)
-    .map(decoder.decode)
+    .map(decoder.decode(_, readerSchema))
 
   def tryIterator: Iterator[Try[T]] = Iterator.continually(next)
     .takeWhile(_.isSuccess)
     .map(_.get)
-    .map(record => Try(decoder.decode(record)))
+    .map(record => Try(decoder.decode(record, readerSchema)))
 
-  def singleEntity: Try[T] = next.map(decoder.decode)
+  def singleEntity: Try[T] = next.map(decoder.decode(_, readerSchema))
 
   override def close(): Unit = in.close()
 }

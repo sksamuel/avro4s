@@ -7,7 +7,7 @@ import java.util.UUID
 
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, LogicalTypes}
+import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{Coproduct, Generic, HList}
@@ -17,13 +17,15 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.runtime.universe._
 
+/**
+  */
 trait Decoder[T] extends Serializable {
   self =>
 
-  def decode(value: Any): T
+  def decode(value: Any, schema: Schema): T
 
   def map[U](fn: T => U): Decoder[U] = new Decoder[U] {
-    override def decode(value: Any): U = fn(self.decode(value))
+    override def decode(value: Any, schema: Schema): U = fn(self.decode(value, schema))
   }
 }
 
@@ -31,21 +33,35 @@ object Decoder extends LowPriorityDecoders {
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
+  /**
+    * Create a decoder that always returns a single value.
+    */
+  final def const[A](a: A): Decoder[A] = new Decoder[A] {
+    override def decode(value: Any, schema: Schema): A = a
+  }
+
+  /**
+    * Create a decoder from a function.
+    */
+  final def instance[A](fn: (Any, Schema) => A): Decoder[A] = new Decoder[A] {
+    override def decode(value: Any, schema: Schema): A = fn(value, schema)
+  }
+
   implicit object BooleanDecoder extends Decoder[Boolean] {
-    override def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
+    override def decode(value: Any, schema: Schema): Boolean = value.asInstanceOf[Boolean]
   }
 
   implicit object ByteDecoder extends Decoder[Byte] {
-    override def decode(value: Any): Byte = value.asInstanceOf[Int].toByte
+    override def decode(value: Any, schema: Schema): Byte = value.asInstanceOf[Int].toByte
   }
 
   implicit object ShortDecoder extends Decoder[Short] {
-    override def decode(value: Any): Short = value.asInstanceOf[Int].toShort
+    override def decode(value: Any, schema: Schema): Short = value.asInstanceOf[Int].toShort
   }
 
   implicit object ByteArrayDecoder extends Decoder[Array[Byte]] {
     // byte arrays can be encoded multiple ways
-    override def decode(value: Any): Array[Byte] = value match {
+    override def decode(value: Any, schema: Schema): Array[Byte] = value match {
       case buffer: ByteBuffer => buffer.array
       case array: Array[Byte] => array
       case fixed: GenericData.Fixed => fixed.bytes()
@@ -53,37 +69,37 @@ object Decoder extends LowPriorityDecoders {
   }
 
   implicit object ByteBufferDecoder extends Decoder[ByteBuffer] {
-    override def decode(value: Any): ByteBuffer = ByteArrayDecoder.map(ByteBuffer.wrap).decode(value)
+    override def decode(value: Any, schema: Schema): ByteBuffer = ByteArrayDecoder.map(ByteBuffer.wrap).decode(value, schema)
   }
 
   implicit object ByteListDecoder extends Decoder[List[Byte]] {
-    override def decode(value: Any): List[Byte] = ByteArrayDecoder.decode(value).toList
+    override def decode(value: Any, schema: Schema): List[Byte] = ByteArrayDecoder.decode(value, schema).toList
   }
 
   implicit object ByteVectorDecoder extends Decoder[Vector[Byte]] {
-    override def decode(value: Any): Vector[Byte] = ByteArrayDecoder.decode(value).toVector
+    override def decode(value: Any, schema: Schema): Vector[Byte] = ByteArrayDecoder.decode(value, schema).toVector
   }
 
   implicit object ByteSeqDecoder extends Decoder[Seq[Byte]] {
-    override def decode(value: Any): Seq[Byte] = ByteArrayDecoder.decode(value).toSeq
+    override def decode(value: Any, schema: Schema): Seq[Byte] = ByteArrayDecoder.decode(value, schema).toSeq
   }
 
   implicit object DoubleDecoder extends Decoder[Double] {
-    override def decode(value: Any): Double = value match {
+    override def decode(value: Any, schema: Schema): Double = value match {
       case d: Double => d
       case d: java.lang.Double => d
     }
   }
 
   implicit object FloatDecoder extends Decoder[Float] {
-    override def decode(value: Any): Float = value match {
+    override def decode(value: Any, schema: Schema): Float = value match {
       case f: Float => f
       case f: java.lang.Float => f
     }
   }
 
   implicit object IntDecoder extends Decoder[Int] {
-    override def decode(value: Any): Int = value match {
+    override def decode(value: Any, schema: Schema): Int = value match {
       case byte: Byte => byte.toInt
       case short: Short => short.toInt
       case int: Int => int
@@ -92,7 +108,7 @@ object Decoder extends LowPriorityDecoders {
   }
 
   implicit object LongDecoder extends Decoder[Long] {
-    override def decode(value: Any): Long = value match {
+    override def decode(value: Any, schema: Schema): Long = value match {
       case byte: Byte => byte.toLong
       case short: Short => short.toLong
       case int: Int => int.toLong
@@ -103,34 +119,20 @@ object Decoder extends LowPriorityDecoders {
 
   implicit object LocalTimeDecoder extends Decoder[LocalTime] {
     // avro4s stores times as either millis since midnight or micros since midnight
-    override def decode(value: Any): LocalTime = value match {
+    override def decode(value: Any, schema: Schema): LocalTime = value match {
       case millis: Int => LocalTime.ofNanoOfDay(millis.toLong * 1000000)
       case micros: Long => LocalTime.ofNanoOfDay(micros * 1000)
     }
   }
 
-  implicit object LocalDateTimeDecoder extends Decoder[LocalDateTime] {
-    override def decode(value: Any): LocalDateTime = LongDecoder.map(millis => LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.UTC)).decode(value)
-  }
-
-  implicit object LocalDateDecoder extends Decoder[LocalDate] {
-    override def decode(value: Any): LocalDate = LongDecoder.map(LocalDate.ofEpochDay).decode(value)
-  }
-
-  implicit object InstantDecoder extends Decoder[Instant] {
-    override def decode(value: Any): Instant = LongDecoder.map(Instant.ofEpochMilli).decode(value)
-  }
-
-  implicit object DateDecoder extends Decoder[Date] {
-    override def decode(value: Any): Date = LocalDateDecoder.map(Date.valueOf).decode(value)
-  }
-
-  implicit object TimestampDecoder extends Decoder[Timestamp] {
-    override def decode(value: Any): Timestamp = LongDecoder.map(new Timestamp(_)).decode(value)
-  }
+  implicit val LocalDateTimeDecoder = LongDecoder.map(millis => LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.UTC))
+  implicit val LocalDateDecoder = LongDecoder.map(LocalDate.ofEpochDay)
+  implicit val InstantDecoder = LongDecoder.map(Instant.ofEpochMilli)
+  implicit val DateDecoder = LocalDateDecoder.map(Date.valueOf)
+  implicit val timestampDecoder = LongDecoder.map(new Timestamp(_))
 
   implicit object StringDecoder extends Decoder[String] {
-    override def decode(value: Any): String =
+    override def decode(value: Any, schema: Schema): String =
       value match {
         case null => sys.error("Cannot decode <null> into a string")
         case u: Utf8 => u.toString
@@ -141,20 +143,20 @@ object Decoder extends LowPriorityDecoders {
   }
 
   implicit object UUIDDecoder extends Decoder[UUID] {
-    override def decode(value: Any): UUID = UUID.fromString(value.toString)
+    override def decode(value: Any, schema: Schema): UUID = UUID.fromString(value.toString)
   }
 
   implicit def optionDecoder[T](implicit decoder: Decoder[T]) = new Decoder[Option[T]] {
-    override def decode(value: Any): Option[T] = if (value == null) None else Option(decoder.decode(value))
+    override def decode(value: Any, schema: Schema): Option[T] = if (value == null) None else Option(decoder.decode(value, schema))
   }
 
   implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = new Decoder[Vector[T]] {
 
     import scala.collection.JavaConverters._
 
-    override def decode(value: Any): Vector[T] = value match {
-      case array: Array[_] => array.map(decoder.decode).toVector
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toVector
+    override def decode(value: Any, schema: Schema): Vector[T] = value match {
+      case array: Array[_] => array.map(decoder.decode(_, schema)).toVector
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toVector
       case other => sys.error("Unsupported vector " + other)
     }
   }
@@ -164,9 +166,9 @@ object Decoder extends LowPriorityDecoders {
 
     import scala.collection.JavaConverters._
 
-    override def decode(value: Any): Array[T] = value match {
-      case array: Array[_] => array.map(decoder.decode)
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toArray
+    override def decode(value: Any, schema: Schema): Array[T] = value match {
+      case array: Array[_] => array.map(decoder.decode(_, schema))
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toArray
       case other => sys.error(s"Unsupported array type ${other.getClass} " + other)
     }
   }
@@ -175,9 +177,9 @@ object Decoder extends LowPriorityDecoders {
 
     import scala.collection.JavaConverters._
 
-    override def decode(value: Any): Set[T] = value match {
-      case array: Array[_] => array.map(decoder.decode).toSet
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toSet
+    override def decode(value: Any, schema: Schema): Set[T] = value match {
+      case array: Array[_] => array.map(decoder.decode(_, schema)).toSet
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toSet
       case other => sys.error("Unsupported array " + other)
     }
   }
@@ -186,9 +188,9 @@ object Decoder extends LowPriorityDecoders {
 
     import scala.collection.JavaConverters._
 
-    override def decode(value: Any): List[T] = value match {
-      case array: Array[_] => array.map(decoder.decode).toList
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toList
+    override def decode(value: Any, schema: Schema): List[T] = value match {
+      case array: Array[_] => array.map(decoder.decode(_, schema)).toList
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toList
       case other => sys.error("Unsupported array " + other)
     }
   }
@@ -197,9 +199,9 @@ object Decoder extends LowPriorityDecoders {
 
     import scala.collection.JavaConverters._
 
-    override def decode(value: Any): Seq[T] = value match {
-      case array: Array[_] => array.map(decoder.decode)
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toSeq
+    override def decode(value: Any, schema: Schema): Seq[T] = value match {
+      case array: Array[_] => array.map(decoder.decode(_, schema))
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toSeq
       case other => sys.error("Unsupported array " + other)
     }
   }
@@ -208,15 +210,15 @@ object Decoder extends LowPriorityDecoders {
 
     import scala.collection.JavaConverters._
 
-    override def decode(value: Any): Map[String, T] = value match {
-      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> valueDecoder.decode(v) }
+    override def decode(value: Any, schema: Schema): Map[String, T] = value match {
+      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> valueDecoder.decode(v, schema) }
       case other => sys.error("Unsupported map " + other)
     }
   }
 
   implicit def bigDecimalDecoder(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): Decoder[BigDecimal] = {
     new Decoder[BigDecimal] {
-      override def decode(value: Any): BigDecimal = {
+      override def decode(value: Any, schema: Schema): BigDecimal = {
         val decimalConversion = new Conversions.DecimalConversion
         val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
         val bytes = value.asInstanceOf[ByteBuffer]
@@ -226,17 +228,17 @@ object Decoder extends LowPriorityDecoders {
   }
 
   implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
-    override def decode(value: Any): Either[A, B] = {
+    override def decode(value: Any, schema: Schema): Either[A, B] = {
       val aName = weakTypeOf[A].typeSymbol.fullName
       val bName = weakTypeOf[B].typeSymbol.fullName
-      safeFrom[A](value).map(Left[A, B])
-        .orElse(safeFrom[B](value).map(Right[A, B]))
+      safeFrom[A](value, schema).map(Left[A, B])
+        .orElse(safeFrom[B](value, schema).map(Right[A, B]))
         .getOrElse(sys.error(s"Could not decode $value into Either[$aName, $bName]"))
     }
   }
 
   implicit def javaEnumDecoder[E <: Enum[E]](implicit tag: ClassTag[E]) = new Decoder[E] {
-    override def decode(t: Any): E = {
+    override def decode(t: Any, schema: Schema): E = {
       Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], t.toString)
     }
   }
@@ -252,13 +254,13 @@ object Decoder extends LowPriorityDecoders {
     val klass = Class.forName(typeRef.pre.typeSymbol.asClass.fullName + "$")
     val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
 
-    override def decode(t: Any): E = enum.withName(t.toString).asInstanceOf[E]
+    override def decode(t: Any, schema: Schema): E = enum.withName(t.toString).asInstanceOf[E]
   }
 
   implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit gen: Generic.Aux[T, C],
                                                                      objs: Reify.Aux[C, L],
                                                                      toList: ToList[L, T]): Decoder[T] = new Decoder[T] {
-    override def decode(value: Any): T = {
+    override def decode(value: Any, schema: Schema): T = {
       val name = value.toString
       toList(objs()).find(_.toString == name).getOrElse(sys.error(s"Uknown type $name"))
     }
@@ -296,7 +298,7 @@ object Decoder extends LowPriorityDecoders {
         c.Expr[Decoder[T]](
           q"""
           new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
-            override def decode(value: Any): $tpe = {
+            override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
               val decoded = _root_.com.sksamuel.avro4s.Decoder.decodeT[$backingFieldTpe](value)
               new $tpe(decoded)
             }
@@ -366,7 +368,7 @@ object Decoder extends LowPriorityDecoders {
         c.Expr[Decoder[T]](
           q"""
           new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
-            override def decode(value: Any): $tpe = {
+            override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
               val fullName = $fullName
               value match {
                 case record: _root_.org.apache.avro.generic.GenericRecord => $companion.apply(..$fields)
@@ -396,7 +398,7 @@ object Decoder extends LowPriorityDecoders {
                                   (implicit decoder: Decoder[T]): T = {
     if (record.getSchema.getField(fieldName) != null) {
       val value = record.get(fieldName)
-      decoder.decode(value)
+      decoder.decode(value, null)
     } else if (useDefault) {
       default.asInstanceOf[T]
     } else {
@@ -404,5 +406,5 @@ object Decoder extends LowPriorityDecoders {
     }
   }
 
-  def decodeT[T](value: Any)(implicit decoder: Decoder[T]): T = decoder.decode(value)
+  def decodeT[T](value: Any)(implicit decoder: Decoder[T]): T = decoder.decode(value, null)
 }

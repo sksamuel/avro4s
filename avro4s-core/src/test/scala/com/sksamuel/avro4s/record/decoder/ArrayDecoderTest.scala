@@ -31,7 +31,7 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[TestVectorBooleans]
       val record = new GenericData.Record(schema)
       record.put("booleans", List(true, false, true).asJava)
-      Decoder[TestVectorBooleans].decode(record) shouldBe TestVectorBooleans(Vector(true, false, true))
+      Decoder[TestVectorBooleans].decode(record, schema) shouldBe TestVectorBooleans(Vector(true, false, true))
     }
 
     "support array for an vector of records" in {
@@ -50,7 +50,7 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       val container = new GenericData.Record(containerSchema)
       container.put("records", List(record1, record2).asJava)
 
-      Decoder[TestVectorRecords].decode(container) shouldBe TestVectorRecords(Vector(Record("qwe", 123.4), Record("wer", 8234.324)))
+      Decoder[TestVectorRecords].decode(container, containerSchema) shouldBe TestVectorRecords(Vector(Record("qwe", 123.4), Record("wer", 8234.324)))
     }
 
     "support array for a scala.collection.immutable.Seq of primitives" in {
@@ -63,7 +63,7 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[TestArrayBooleans]
       val record = new GenericData.Record(schema)
       record.put("booleans", List(true, false, true).asJava)
-      Decoder[TestArrayBooleans].decode(record).booleans.toVector shouldBe Vector(true, false, true)
+      Decoder[TestArrayBooleans].decode(record, schema).booleans.toVector shouldBe Vector(true, false, true)
     }
 
     "support array for a List of primitives" in {
@@ -71,7 +71,7 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[TestListBooleans]
       val record = new GenericData.Record(schema)
       record.put("booleans", List(true, false, true).asJava)
-      Decoder[TestListBooleans].decode(record) shouldBe TestListBooleans(List(true, false, true))
+      Decoder[TestListBooleans].decode(record, schema) shouldBe TestListBooleans(List(true, false, true))
     }
 
     "support array for a List of records" in {
@@ -90,7 +90,7 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       val container = new GenericData.Record(containerSchema)
       container.put("records", List(record1, record2).asJava)
 
-      Decoder[TestListRecords].decode(container) shouldBe TestListRecords(List(Record("qwe", 123.4), Record("wer", 8234.324)))
+      Decoder[TestListRecords].decode(container, containerSchema) shouldBe TestListRecords(List(Record("qwe", 123.4), Record("wer", 8234.324)))
     }
 
     "support array for a scala.collection.immutable.Seq of records" in {
@@ -109,7 +109,7 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       val container = new GenericData.Record(containerSchema)
       container.put("records", List(record1, record2).asJava)
 
-      Decoder[TestSeqRecords].decode(container) shouldBe TestSeqRecords(Seq(Record("qwe", 123.4), Record("wer", 8234.324)))
+      Decoder[TestSeqRecords].decode(container, containerSchema) shouldBe TestSeqRecords(Seq(Record("qwe", 123.4), Record("wer", 8234.324)))
     }
 
     "support array for an Array of records" in {
@@ -128,7 +128,7 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       val container = new GenericData.Record(containerSchema)
       container.put("records", List(record1, record2).asJava)
 
-      Decoder[TestArrayRecords].decode(container).records.toVector shouldBe Vector(Record("qwe", 123.4), Record("wer", 8234.324))
+      Decoder[TestArrayRecords].decode(container, containerSchema).records.toVector shouldBe Vector(Record("qwe", 123.4), Record("wer", 8234.324))
     }
 
     "support array for a Set of records" in {
@@ -147,19 +147,19 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       val container = new GenericData.Record(containerSchema)
       container.put("records", List(record1, record2).asJava)
 
-      Decoder[TestSetRecords].decode(container) shouldBe TestSetRecords(Set(Record("qwe", 123.4), Record("wer", 8234.324)))
+      Decoder[TestSetRecords].decode(container, containerSchema) shouldBe TestSetRecords(Set(Record("qwe", 123.4), Record("wer", 8234.324)))
     }
     "support array for a Set of strings" in {
       val schema = AvroSchema[TestSetString]
       val record = new GenericData.Record(schema)
       record.put("strings", List("Qwe", "324", "q").asJava)
-      Decoder[TestSetString].decode(record) shouldBe TestSetString(Set("Qwe", "324", "q"))
+      Decoder[TestSetString].decode(record, schema) shouldBe TestSetString(Set("Qwe", "324", "q"))
     }
     "support array for a Set of doubles" in {
       val schema = AvroSchema[TestSetDoubles]
       val record = new GenericData.Record(schema)
       record.put("doubles", List(132.4324, 5.4, 0.123).asJava)
-      Decoder[TestSetDoubles].decode(record) shouldBe TestSetDoubles(Set(132.4324, 5.4, 0.123))
+      Decoder[TestSetDoubles].decode(record, schema) shouldBe TestSetDoubles(Set(132.4324, 5.4, 0.123))
     }
     //    "support Seq[Tuple2] issue #156" in {
     //      val schema = SchemaEncoder[TupleTest2]
@@ -169,16 +169,16 @@ class ArrayDecoderTest extends WordSpec with Matchers {
     //    }
 
     "support top level Seq[Double]" in {
-      Decoder[Seq[Double]].decode(Array(1.2, 34.5, 54.3)) shouldBe Seq(1.2, 34.5, 54.3)
+      Decoder[Seq[Double]].decode(Array(1.2, 34.5, 54.3), AvroSchema[Seq[Double]]) shouldBe Seq(1.2, 34.5, 54.3)
     }
     "support top level List[Int]" in {
-      Decoder[List[Int]].decode(Array(1, 4, 9)) shouldBe List(1, 4, 9)
+      Decoder[List[Int]].decode(Array(1, 4, 9), AvroSchema[Seq[Int]]) shouldBe List(1, 4, 9)
     }
     "support top level Vector[String]" in {
-      Decoder[Vector[String]].decode(Array("a", "z")) shouldBe Vector("a", "z")
+      Decoder[Vector[String]].decode(Array("a", "z"), AvroSchema[Seq[String]]) shouldBe Vector("a", "z")
     }
     "support top level Set[Boolean]" in {
-      Decoder[Set[Boolean]].decode(Array(true, false, true)) shouldBe Set(true, false)
+      Decoder[Set[Boolean]].decode(Array(true, false, true), AvroSchema[Seq[Boolean]]) shouldBe Set(true, false)
     }
   }
 }

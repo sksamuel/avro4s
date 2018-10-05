@@ -13,6 +13,6 @@ class AvroNameDecoderTest extends FunSuite with Matchers {
     val schema = AvroSchema[AvroNameDecoderTest]
     val record = new GenericData.Record(schema)
     record.put("bar", new Utf8("hello"))
-    Decoder[AvroNameDecoderTest].decode(record) shouldBe AvroNameDecoderTest("hello")
+    Decoder[AvroNameDecoderTest].decode(record, schema) shouldBe AvroNameDecoderTest("hello")
   }
 }

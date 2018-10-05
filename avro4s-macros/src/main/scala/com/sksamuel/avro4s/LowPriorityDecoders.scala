@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericContainer, GenericData}
 import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct, Generic, Inr}
@@ -10,8 +11,8 @@ trait LowPriorityDecoders {
 
   implicit def genCoproductDecoder[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
                                                       decoder: Decoder[C]): Decoder[T] = new Decoder[T] {
-    override def decode(value: Any): T = {
-      gen.from(decoder.decode(value))
+    override def decode(value: Any, schema: Schema): T = {
+      gen.from(decoder.decode(value, schema))
     }
   }
 
@@ -26,7 +27,7 @@ trait LowPriorityDecoders {
   // tried all the other cases and failed. But the Decoder[CNil]
   // needs to exist to supply a base case for the recursion.
   implicit object CNilDecoderValue extends Decoder[CNil] {
-    override def decode(value: Any): CNil = sys.error("This should never happen: CNil has no inhabitants")
+    override def decode(value: Any, schema: Schema): CNil = sys.error("This should never happen: CNil has no inhabitants")
   }
 
   // We're expecting to read a value of type S :+: T from avro.  Avro
@@ -36,15 +37,15 @@ trait LowPriorityDecoders {
 
   // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
   implicit def coproductDecoder[S: WeakTypeTag : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
-    override def decode(value: Any): S :+: T = {
-      safeFrom[S](value) match {
+    override def decode(value: Any, schema: Schema): S :+: T = {
+      safeFrom[S](value, schema) match {
         case Some(s) => Coproduct[S :+: T](s)
-        case None => Inr(decoder.decode(value))
+        case None => Inr(decoder.decode(value, schema))
       }
     }
   }
 
-  protected def safeFrom[T: WeakTypeTag](value: Any)(implicit decoder: Decoder[T]): Option[T] = {
+  protected def safeFrom[T: WeakTypeTag](value: Any, schema: Schema)(implicit decoder: Decoder[T]): Option[T] = {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
@@ -55,13 +56,13 @@ trait LowPriorityDecoders {
     //    }
 
     value match {
-      case _: Utf8 if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value))
-      case _: String if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value))
-      case true | false if tpe <:< typeOf[Boolean] => Some(decoder.decode(value))
-      case _: Int if tpe <:< typeOf[Int] => Some(decoder.decode(value))
-      case _: Long if tpe <:< typeOf[Long] => Some(decoder.decode(value))
-      case _: Double if tpe <:< typeOf[Double] => Some(decoder.decode(value))
-      case _: Float if tpe <:< typeOf[Float] => Some(decoder.decode(value))
+      case _: Utf8 if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value, schema))
+      case _: String if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value, schema))
+      case true | false if tpe <:< typeOf[Boolean] => Some(decoder.decode(value, schema))
+      case _: Int if tpe <:< typeOf[Int] => Some(decoder.decode(value, schema))
+      case _: Long if tpe <:< typeOf[Long] => Some(decoder.decode(value, schema))
+      case _: Double if tpe <:< typeOf[Double] => Some(decoder.decode(value, schema))
+      case _: Float if tpe <:< typeOf[Float] => Some(decoder.decode(value, schema))
       // we don't need to worry about the inner type of the array,
       // as avro schemas will not legally allow multiple arrays in a union
       // tpe is the type we're _expecting_, though, so we need to
@@ -70,14 +71,14 @@ trait LowPriorityDecoders {
         if tpe <:< typeOf[Array[_]] ||
           tpe <:< typeOf[java.util.Collection[_]] ||
           tpe <:< typeOf[Iterable[_]] =>
-        Some(decoder.decode(value))
+        Some(decoder.decode(value, schema))
       // and similarly for maps
       case _: java.util.Map[_, _]
         if tpe <:< typeOf[java.util.Map[_, _]] ||
           tpe <:< typeOf[Map[_, _]] =>
-        Some(decoder.decode(value))
+        Some(decoder.decode(value, schema))
       // we compare the name in the record to the type name we supplied, if they match then this is correct type to decode to
-      case container: GenericContainer if typeName == container.getSchema.getFullName => Some(decoder.decode(value))
+      case container: GenericContainer if typeName == container.getSchema.getFullName => Some(decoder.decode(value, schema))
       // if nothing matched then this wasn't the type we expected
       case _ => None
     }

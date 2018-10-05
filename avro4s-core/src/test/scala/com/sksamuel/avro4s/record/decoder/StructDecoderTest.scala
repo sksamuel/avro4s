@@ -35,7 +35,7 @@ class StructDecoderTest extends WordSpec with Matchers {
       bucks.put("lat", 12.34)
       bucks.put("long", 0.123)
 
-      Decoder[County].decode(bucks) shouldBe obj
+      Decoder[County].decode(bucks, countySchema) shouldBe obj
     }
   }
 }

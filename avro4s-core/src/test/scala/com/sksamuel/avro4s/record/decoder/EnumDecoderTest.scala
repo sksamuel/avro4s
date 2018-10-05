@@ -20,35 +20,35 @@ class EnumDecoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[JavaEnumClass]
       val record = new GenericData.Record(schema)
       record.put("wine", new EnumSymbol(schema.getField("wine").schema(), "CabSav"))
-      Decoder[JavaEnumClass].decode(record) shouldBe JavaEnumClass(Wine.CabSav)
+      Decoder[JavaEnumClass].decode(record, schema) shouldBe JavaEnumClass(Wine.CabSav)
     }
     "support optional java enums" in {
       val schema = AvroSchema[JavaOptionEnumClass]
 
       val record1 = new GenericData.Record(schema)
       record1.put("wine", new EnumSymbol(schema.getField("wine").schema(), "Merlot"))
-      Decoder[JavaOptionEnumClass].decode(record1) shouldBe JavaOptionEnumClass(Some(Wine.Merlot))
+      Decoder[JavaOptionEnumClass].decode(record1, schema) shouldBe JavaOptionEnumClass(Some(Wine.Merlot))
 
       val record2 = new GenericData.Record(schema)
       record2.put("wine", null)
-      Decoder[JavaOptionEnumClass].decode(record2) shouldBe JavaOptionEnumClass(None)
+      Decoder[JavaOptionEnumClass].decode(record2, schema) shouldBe JavaOptionEnumClass(None)
     }
     "support scala enums" in {
       val schema = AvroSchema[ScalaEnumClass]
       val record = new GenericData.Record(schema)
       record.put("colour", new EnumSymbol(schema.getField("colour").schema(), "Green"))
-      Decoder[ScalaEnumClass].decode(record) shouldBe ScalaEnumClass(Colours.Green)
+      Decoder[ScalaEnumClass].decode(record, schema) shouldBe ScalaEnumClass(Colours.Green)
     }
     "support optional scala enums" in {
       val schema = AvroSchema[ScalaOptionEnumClass]
 
       val record1 = new GenericData.Record(schema)
       record1.put("colour", new EnumSymbol(schema.getField("colour").schema(), "Amber"))
-      Decoder[ScalaOptionEnumClass].decode(record1) shouldBe ScalaOptionEnumClass(Some(Colours.Amber))
+      Decoder[ScalaOptionEnumClass].decode(record1, schema) shouldBe ScalaOptionEnumClass(Some(Colours.Amber))
 
       val record2 = new GenericData.Record(schema)
       record2.put("colour", null)
-      Decoder[ScalaOptionEnumClass].decode(record2) shouldBe ScalaOptionEnumClass(None)
+      Decoder[ScalaOptionEnumClass].decode(record2, schema) shouldBe ScalaOptionEnumClass(None)
     }
   }
 }

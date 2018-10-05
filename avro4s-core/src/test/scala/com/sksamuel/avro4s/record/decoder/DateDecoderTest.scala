@@ -22,42 +22,42 @@ class DateDecoderTest extends FunSuite with Matchers {
     val schema = AvroSchema[WithLocalTime]
     val record = new GenericData.Record(schema)
     record.put("z", 46245000)
-    Decoder[WithLocalTime].decode(record) shouldBe WithLocalTime(LocalTime.of(12, 50, 45))
+    Decoder[WithLocalTime].decode(record, schema) shouldBe WithLocalTime(LocalTime.of(12, 50, 45))
   }
 
   test("decode int to LocalDate") {
     val schema = AvroSchema[WithLocalDate]
     val record = new GenericData.Record(schema)
     record.put("z", 17784)
-    Decoder[WithLocalDate].decode(record) shouldBe WithLocalDate(LocalDate.of(2018, 9, 10))
+    Decoder[WithLocalDate].decode(record, schema) shouldBe WithLocalDate(LocalDate.of(2018, 9, 10))
   }
 
   test("decode int to java.sql.Date") {
     val schema = AvroSchema[WithDate]
     val record = new GenericData.Record(schema)
     record.put("z", 17784)
-    Decoder[WithDate].decode(record) shouldBe WithDate(Date.valueOf(LocalDate.of(2018, 9, 10)))
+    Decoder[WithDate].decode(record, schema) shouldBe WithDate(Date.valueOf(LocalDate.of(2018, 9, 10)))
   }
 
   test("decode long to LocalDateTime") {
     val schema = AvroSchema[WithLocalDateTime]
     val record = new GenericData.Record(schema)
     record.put("z", 1536580739000L)
-    Decoder[WithLocalDateTime].decode(record) shouldBe WithLocalDateTime(LocalDateTime.of(2018, 9, 10, 11, 58, 59))
+    Decoder[WithLocalDateTime].decode(record, schema) shouldBe WithLocalDateTime(LocalDateTime.of(2018, 9, 10, 11, 58, 59))
   }
 
   test("decode long to Timestamp") {
     val schema = AvroSchema[WithTimestamp]
     val record = new GenericData.Record(schema)
     record.put("z", 1538312231000L)
-    Decoder[WithTimestamp].decode(record) shouldBe WithTimestamp(new Timestamp(1538312231000L))
+    Decoder[WithTimestamp].decode(record, schema) shouldBe WithTimestamp(new Timestamp(1538312231000L))
   }
 
   test("decode long to Instant") {
     val schema = AvroSchema[WithInstant]
     val record = new GenericData.Record(schema)
     record.put("z", 1538312231000L)
-    Decoder[WithInstant].decode(record) shouldBe WithInstant(Instant.ofEpochMilli(1538312231000L))
+    Decoder[WithInstant].decode(record, schema) shouldBe WithInstant(Instant.ofEpochMilli(1538312231000L))
   }
 }
 

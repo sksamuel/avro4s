@@ -24,12 +24,18 @@ class AvroDataInputStream[T](in: InputStream,
 
   override def iterator: Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = dataFileReader.hasNext
-    override def next(): T = decoder.decode(dataFileReader.next)
+    override def next(): T = {
+      val record = dataFileReader.next
+      decoder.decode(record, readerSchema.getOrElse(record.getSchema))
+    }
   }
 
   override def tryIterator: Iterator[Try[T]] = new Iterator[Try[T]] {
     override def hasNext: Boolean = dataFileReader.hasNext
-    override def next(): Try[T] = Try(decoder.decode(dataFileReader.next))
+    override def next(): Try[T] = Try {
+      val record = dataFileReader.next
+      decoder.decode(record, readerSchema.getOrElse(record.getSchema))
+    }
   }
 
   override def close(): Unit = in.close()
