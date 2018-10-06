@@ -7,7 +7,7 @@ import java.util.UUID
 
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, LogicalTypes, Schema}
+import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{Coproduct, Generic, HList}
@@ -18,10 +18,23 @@ import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.runtime.universe._
 
 /**
+  * A [[Decoder]] is used to convert an Avro value, such as a [[GenericRecord]], [[org.apache.avro.specific.SpecificRecord]],
+  * [[org.apache.avro.generic.GenericFixed]], or basic JVM types, into a type that is compatible with Scala.
+  *
+  * An example is converting between values and Scala Options - if the value is null, then the decoder
+  * should emit a None. If the value is not null, then it should be wrapped in a Some.
+  *
+  * Another example is converting [[GenericData.Array]] or Java List into a Scala collection type.
   */
 trait Decoder[T] extends Serializable {
   self =>
 
+  /**
+    * Decodes the given value to an instance of T if possible.
+    * Otherwise throw an error.
+    *
+    * The provided schema is the reader schema.
+    */
   def decode(value: Any, schema: Schema): T
 
   def map[U](fn: T => U): Decoder[U] = new Decoder[U] {
@@ -266,9 +279,9 @@ object Decoder extends LowPriorityDecoders {
     }
   }
 
-  implicit def applyMacro[T]: Decoder[T] = macro applyMacroImpl[T]
+  implicit def applyMacro[T <: Product]: Decoder[T] = macro applyMacroImpl[T]
 
-  def applyMacroImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Decoder[T]] = {
+  def applyMacroImpl[T <: Product : c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Decoder[T]] = {
 
     import c.universe
     import c.universe._
@@ -325,6 +338,9 @@ object Decoder extends LowPriorityDecoders {
           // this is the simple name of the field
           val name = fieldSym.name.decodedName.toString
 
+          // the canonical name of the type
+          val fieldTypeName = fieldTpe.typeSymbol.fullName
+
           // the name we use to pull the value out of the record should take into
           // account any @AvroName annotations. If @AvroName is not defined then we
           // use the name of the field in the case class
@@ -351,16 +367,14 @@ object Decoder extends LowPriorityDecoders {
             val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
             val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
 
+            val transient = reflect.isTransientOnField(tpe, fieldSym)
+
             // if the default is defined, we will use that to populate, otherwise if the field is transient
             // we will populate with none or null, otherwise an error will be raised
             if (defaultGetterMethod.isMethod) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, $companion.$defaultGetterMethod, true)"""
-            } else if (reflect.isTransientOnField(tpe, fieldSym) && fieldTpe <:< typeOf[Option[_]]) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, None, true)"""
-            } else if (reflect.isTransientOnField(tpe, fieldSym)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, null, true)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
             } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, null, false)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
             }
           }
         }
@@ -383,26 +397,48 @@ object Decoder extends LowPriorityDecoders {
   }
 
   /**
-    * For each field in the target type, we must try to pull a value for that field out
-    * of the input GenericRecord. After we retrieve the avro value from the record
-    * we must apply the decoder to turn it into a scala compatible value.
+    * For a field in the target type (the case class we are marshalling to), we must
+    * try to pull a value from the Avro GenericRecord. After the value has been retrieved,
+    * it needs to be decoded into the appropriate Scala type.
     *
-    * If the record does not have an entry for a field, and a scala default value is
-    * available, then we'll use that instead. Alternatively, if the field is marked
-    * with @transient we will attempt to set None as the value.
+    * If the writer schema does not have an entry for the field then we can consider schema
+    * evolution using the following rules in the given order.
+    *
+    * 1. If the reader schema contains a default for this field, we will use that default.
+    * 2. If the parameter is defined with a scala default method then we will use that default value.
+    * 3. If the field is marked as @transient
+    *
+    * If none of these rules can be satisfied then an exception will be thrown.
     */
+  //noinspection TypeCheckCanBeMatch
   def decodeFieldOrApplyDefault[T](fieldName: String,
                                    record: GenericRecord,
-                                   default: Any,
-                                   useDefault: Boolean)
+                                   readerSchema: Schema,
+                                   scalaDefault: Any,
+                                   transient: Boolean)
                                   (implicit decoder: Decoder[T]): T = {
-    if (record.getSchema.getField(fieldName) != null) {
-      val value = record.get(fieldName)
-      decoder.decode(value, null)
-    } else if (useDefault) {
-      default.asInstanceOf[T]
-    } else {
-      sys.error(s"Record $record does not have a value for $fieldName and no default was defined")
+
+    implicit class RichSchema(s: Schema) {
+      def hasField(fieldName: String): Boolean = s.getField(fieldName) != null
+      def hasDefault(fieldName: String): Boolean = {
+        val field = s.getField(fieldName)
+        field != null && field.defaultVal() != null
+      }
+    }
+
+    record.getSchema.getField(fieldName) match {
+      case field: Schema.Field =>
+        val value = record.get(fieldName)
+        decoder.decode(value, field.schema)
+      case null if readerSchema.hasDefault(fieldName) =>
+        val default = readerSchema.getField(fieldName).defaultVal() match {
+          case JsonProperties.NULL_VALUE => null
+          case other => other
+        }
+        decoder.decode(default, readerSchema.getField(fieldName).schema)
+      case null if scalaDefault != null => scalaDefault.asInstanceOf[T]
+      case null if transient => None.asInstanceOf[T]
+      case _ => sys.error(s"Record $record does not have a value for $fieldName, no default was defined, and the field is not transient")
     }
   }
 
