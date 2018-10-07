@@ -159,7 +159,8 @@ object Decoder extends CoproductDecoders with TupleDecoders {
         case charseq: CharSequence => charseq.toString
         case bytebuf: ByteBuffer => new String(bytebuf.array)
         case a: Array[Byte] => new String(a)
-        case other => sys.error(s"Cannot decode $other into a string")
+        case null => sys.error("Cannot decode <null> as a string")
+        case other => sys.error(s"Cannot decode $other of type ${other.getClass} into a string")
       }
   }
 
@@ -169,7 +170,8 @@ object Decoder extends CoproductDecoders with TupleDecoders {
         case s: String => UUID.fromString(s)
         case bytebuf: ByteBuffer => UUID.fromString(new String(bytebuf.array))
         case a: Array[Byte] => UUID.fromString(new String(a))
-        case other => sys.error(s"Cannot decode $other into a UUID")
+        case null => sys.error("Cannot decode <null> as a UUID")
+        case other => sys.error(s"Cannot decode $other of type ${other.getClass} into a UUID")
       }
     }
   }
