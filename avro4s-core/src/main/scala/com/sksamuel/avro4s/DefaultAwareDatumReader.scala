@@ -5,7 +5,7 @@ import org.apache.avro.io.ResolvingDecoder
 import org.apache.avro.{AvroTypeException, Schema}
 
 class DefaultAwareDatumReader[T](writer: Schema, reader: Schema)
-  extends GenericDatumReader[T](writer, reader) {
+  extends GenericDatumReader[T](writer, reader, new DefaultAwareGenericData) {
   override def readField(r: scala.Any,
                          f: Schema.Field,
                          oldDatum: scala.Any,

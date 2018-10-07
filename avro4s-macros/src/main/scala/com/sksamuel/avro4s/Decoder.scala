@@ -42,7 +42,7 @@ trait Decoder[T] extends Serializable {
   }
 }
 
-object Decoder extends LowPriorityDecoders {
+object Decoder extends CoproductDecoders {
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
@@ -188,16 +188,7 @@ object Decoder extends LowPriorityDecoders {
     }
   }
 
-  implicit def setDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] = new Decoder[Set[T]] {
-
-    import scala.collection.JavaConverters._
-
-    override def decode(value: Any, schema: Schema): Set[T] = value match {
-      case array: Array[_] => array.map(decoder.decode(_, schema)).toSet
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toSet
-      case other => sys.error("Unsupported array " + other)
-    }
-  }
+  implicit def setDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] = seqDecoder[T](decoder).map(_.toSet)
 
   implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = new Decoder[List[T]] {
 
@@ -339,9 +330,6 @@ object Decoder extends LowPriorityDecoders {
 
           // this is the simple name of the field
           val name = fieldSym.name.decodedName.toString
-
-          // the canonical name of the type
-          val fieldTypeName = fieldTpe.typeSymbol.fullName
 
           // the name we use to pull the value out of the record should take into
           // account any @AvroName annotations. If @AvroName is not defined then we

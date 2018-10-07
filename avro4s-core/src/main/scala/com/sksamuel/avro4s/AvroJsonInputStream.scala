@@ -13,7 +13,7 @@ final case class AvroJsonInputStream[T](in: InputStream,
                                         readerSchema: Schema)
                                        (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
-  private val datumReader = new DefaultAwareDatumReader[GenericRecord](writerSchema, readerSchema, new DefaultAwareGenericData)
+  private val datumReader = new DefaultAwareDatumReader[GenericRecord](writerSchema, readerSchema)
   private val jsonDecoder = DecoderFactory.get.jsonDecoder(writerSchema, in)
 
   private def next = Try {
