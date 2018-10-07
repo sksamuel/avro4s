@@ -150,6 +150,8 @@ object Decoder extends LowPriorityDecoders {
         case null => sys.error("Cannot decode <null> into a string")
         case u: Utf8 => u.toString
         case s: String => s
+        case charseq: CharSequence => charseq.toString
+        case bytebuf: ByteBuffer => new String(bytebuf.array)
         case a: Array[Byte] => new String(a)
         case other => other.toString
       }
