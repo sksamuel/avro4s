@@ -26,7 +26,7 @@ class UUIDDecoderTest extends WordSpec with Matchers {
       val uuid2 = UUID.randomUUID()
 
       val record = new GenericData.Record(schema)
-      record.put("uuids", List(uuid1, uuid2).asJava)
+      record.put("uuids", List(uuid1.toString, uuid2.toString).asJava)
 
       Decoder[UUIDSeq].decode(record, schema) shouldBe UUIDSeq(List(uuid1, uuid2))
     }

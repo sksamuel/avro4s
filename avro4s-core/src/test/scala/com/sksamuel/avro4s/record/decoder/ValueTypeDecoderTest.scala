@@ -42,7 +42,7 @@ class ValueTypeDecoderTest extends FunSuite with Matchers {
     }
 
     implicit object FooValueTypeDecoder extends Decoder[FooValueType] {
-      override def decode(value: Any, schema: Schema): FooValueType = FooValueType(Decoder.IntDecoder.map(_.toString).decode(value, AvroSchema[FooValueType]))
+      override def decode(value: Any, schema: Schema): FooValueType = FooValueType(value.toString)
     }
 
     val schema = AvroSchema[Test]

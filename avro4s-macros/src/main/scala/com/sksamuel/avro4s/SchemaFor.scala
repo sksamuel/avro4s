@@ -56,17 +56,17 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     override def schema: Schema = _schema
   }
 
-  implicit val StringSchemaFor: SchemaFor[String] = const(SchemaBuilder.builder().stringType())
-  implicit val LongSchemaFor: SchemaFor[Long] = const(SchemaBuilder.builder().longType())
-  implicit val IntSchemaFor: SchemaFor[Int] = const(SchemaBuilder.builder().intType())
-  implicit val DoubleSchemaFor: SchemaFor[Double] = const(SchemaBuilder.builder().doubleType())
-  implicit val FloatSchemaFor: SchemaFor[Float] = const(SchemaBuilder.builder().floatType())
-  implicit val BooleanSchemaFor: SchemaFor[Boolean] = const(SchemaBuilder.builder().booleanType())
-  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = const(SchemaBuilder.builder().bytesType())
-  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = const(SchemaBuilder.builder().bytesType())
-  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = const(SchemaBuilder.builder().bytesType())
-  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = const(SchemaBuilder.builder().bytesType())
-  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = const(SchemaBuilder.builder().bytesType())
+  implicit val StringSchemaFor: SchemaFor[String] = const(SchemaBuilder.builder.stringType)
+  implicit val LongSchemaFor: SchemaFor[Long] = const(SchemaBuilder.builder.longType)
+  implicit val IntSchemaFor: SchemaFor[Int] = const(SchemaBuilder.builder.intType)
+  implicit val DoubleSchemaFor: SchemaFor[Double] = const(SchemaBuilder.builder.doubleType)
+  implicit val FloatSchemaFor: SchemaFor[Float] = const(SchemaBuilder.builder.floatType)
+  implicit val BooleanSchemaFor: SchemaFor[Boolean] = const(SchemaBuilder.builder.booleanType)
+  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = const(SchemaBuilder.builder.bytesType)
+  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = const(SchemaBuilder.builder.bytesType)
+  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = const(SchemaBuilder.builder.bytesType)
+  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = const(SchemaBuilder.builder.bytesType)
+  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = const(SchemaBuilder.builder.bytesType)
   implicit val ShortSchemaFor: SchemaFor[Short] = const(IntSchemaFor.schema)
   implicit val ByteSchemaFor: SchemaFor[Byte] = const(IntSchemaFor.schema)
 
@@ -81,7 +81,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
   }
 
   implicit def bigDecimalFor(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): SchemaFor[BigDecimal] = new SchemaFor[BigDecimal] {
-    override def schema = LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(ByteArraySchemaFor.schema)
+    override def schema = LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.bytesType)
   }
 
   implicit def eitherSchemaFor[A, B](implicit leftFor: SchemaFor[A], rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] = {
