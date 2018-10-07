@@ -5,7 +5,7 @@ import org.apache.avro.generic.{GenericContainer, GenericData}
 import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct, Generic, Inr}
 
-trait LowPriorityDecoders {
+trait LowPriorityDecoders extends TupleDecoders {
 
   import scala.reflect.runtime.universe._
 
