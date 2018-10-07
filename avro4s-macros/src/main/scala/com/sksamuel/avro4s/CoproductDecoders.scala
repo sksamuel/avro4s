@@ -5,7 +5,7 @@ import org.apache.avro.generic.{GenericContainer, GenericData}
 import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct, Generic, Inr}
 
-trait CoproductDecoders extends TupleDecoders {
+trait CoproductDecoders  {
 
   import scala.reflect.runtime.universe._
 

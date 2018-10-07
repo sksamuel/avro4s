@@ -43,7 +43,7 @@ object ScalePrecisionRoundingMode {
   implicit val default = ScalePrecisionRoundingMode(2, 8, UNNECESSARY)
 }
 
-object SchemaFor extends LowPrioritySchemaFor {
+object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
   import scala.collection.JavaConverters._
 

@@ -42,7 +42,7 @@ trait Decoder[T] extends Serializable {
   }
 }
 
-object Decoder extends CoproductDecoders {
+object Decoder extends CoproductDecoders with TupleDecoders {
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
