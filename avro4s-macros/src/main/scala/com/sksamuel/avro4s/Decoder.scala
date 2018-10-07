@@ -5,6 +5,7 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
+import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
@@ -69,7 +70,11 @@ object Decoder extends CoproductDecoders with TupleDecoders {
   }
 
   implicit object ShortDecoder extends Decoder[Short] {
-    override def decode(value: Any, schema: Schema): Short = value.asInstanceOf[Int].toShort
+    override def decode(value: Any, schema: Schema): Short = value match {
+      case b: Byte => b
+      case s: Short => s
+      case i: Int => i.toShort
+    }
   }
 
   implicit object ByteArrayDecoder extends Decoder[Array[Byte]] {
@@ -85,17 +90,9 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     override def decode(value: Any, schema: Schema): ByteBuffer = ByteArrayDecoder.map(ByteBuffer.wrap).decode(value, schema)
   }
 
-  implicit object ByteListDecoder extends Decoder[List[Byte]] {
-    override def decode(value: Any, schema: Schema): List[Byte] = ByteArrayDecoder.decode(value, schema).toList
-  }
-
-  implicit object ByteVectorDecoder extends Decoder[Vector[Byte]] {
-    override def decode(value: Any, schema: Schema): Vector[Byte] = ByteArrayDecoder.decode(value, schema).toVector
-  }
-
-  implicit object ByteSeqDecoder extends Decoder[Seq[Byte]] {
-    override def decode(value: Any, schema: Schema): Seq[Byte] = ByteArrayDecoder.decode(value, schema).toSeq
-  }
+  implicit val ByteListDecoder: Decoder[List[Byte]] = ByteArrayDecoder.map(_.toList)
+  implicit val ByteVectorDecoder: Decoder[Vector[Byte]] = ByteArrayDecoder.map(_.toVector)
+  implicit val ByteSeqDecoder: Decoder[Seq[Byte]] = ByteArrayDecoder.map(_.toSeq)
 
   implicit object DoubleDecoder extends Decoder[Double] {
     override def decode(value: Any, schema: Schema): Double = value match {
@@ -132,33 +129,49 @@ object Decoder extends CoproductDecoders with TupleDecoders {
 
   implicit object LocalTimeDecoder extends Decoder[LocalTime] {
     // avro4s stores times as either millis since midnight or micros since midnight
-    override def decode(value: Any, schema: Schema): LocalTime = value match {
-      case millis: Int => LocalTime.ofNanoOfDay(millis.toLong * 1000000)
-      case micros: Long => LocalTime.ofNanoOfDay(micros * 1000)
+    override def decode(value: Any, schema: Schema): LocalTime = {
+      schema.getLogicalType match {
+        case _: TimeMicros =>
+          value match {
+            case i: Int => LocalTime.ofNanoOfDay(i.toLong * 1000L)
+            case l: Long => LocalTime.ofNanoOfDay(l * 1000L)
+          }
+        case _: TimeMillis =>
+          value match {
+            case i: Int => LocalTime.ofNanoOfDay(i.toLong * 1000000L)
+            case l: Long => LocalTime.ofNanoOfDay(l * 1000000L)
+          }
+      }
     }
   }
 
-  implicit val LocalDateTimeDecoder = LongDecoder.map(millis => LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.UTC))
-  implicit val LocalDateDecoder = LongDecoder.map(LocalDate.ofEpochDay)
-  implicit val InstantDecoder = LongDecoder.map(Instant.ofEpochMilli)
-  implicit val DateDecoder = LocalDateDecoder.map(Date.valueOf)
-  implicit val timestampDecoder = LongDecoder.map(new Timestamp(_))
+  implicit val LocalDateTimeDecoder: Decoder[LocalDateTime] = LongDecoder.map(millis => LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.UTC))
+  implicit val LocalDateDecoder: Decoder[LocalDate] = LongDecoder.map(LocalDate.ofEpochDay)
+  implicit val InstantDecoder: Decoder[Instant] = LongDecoder.map(Instant.ofEpochMilli)
+  implicit val DateDecoder: Decoder[Date] = LocalDateDecoder.map(Date.valueOf)
+  implicit val TimestampDecoder: Decoder[Timestamp] = LongDecoder.map(new Timestamp(_))
 
   implicit object StringDecoder extends Decoder[String] {
     override def decode(value: Any, schema: Schema): String =
       value match {
-        case null => sys.error("Cannot decode <null> into a string")
         case u: Utf8 => u.toString
         case s: String => s
         case charseq: CharSequence => charseq.toString
         case bytebuf: ByteBuffer => new String(bytebuf.array)
         case a: Array[Byte] => new String(a)
-        case other => other.toString
+        case other => sys.error(s"Cannot decode $other into a string")
       }
   }
 
   implicit object UUIDDecoder extends Decoder[UUID] {
-    override def decode(value: Any, schema: Schema): UUID = UUID.fromString(value.toString)
+    override def decode(value: Any, schema: Schema): UUID = {
+      value match {
+        case s: String => UUID.fromString(s)
+        case bytebuf: ByteBuffer => UUID.fromString(new String(bytebuf.array))
+        case a: Array[Byte] => UUID.fromString(new String(a))
+        case other => sys.error(s"Cannot decode $other into a UUID")
+      }
+    }
   }
 
   implicit def optionDecoder[T](implicit decoder: Decoder[T]) = new Decoder[Option[T]] {

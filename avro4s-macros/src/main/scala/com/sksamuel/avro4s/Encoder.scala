@@ -108,13 +108,13 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     override def encode(t: None.type, schema: Schema) = null
   }
 
-  implicit val UUIDEncoder = StringEncoder.comap[UUID](_.toString)
-  implicit val LocalTimeEncoder = IntEncoder.comap[LocalTime](lt => lt.toSecondOfDay * 1000 + lt.getNano / 1000)
-  implicit val LocalDateEncoder = IntEncoder.comap[LocalDate](_.toEpochDay.toInt)
-  implicit val InstantEncoder = LongEncoder.comap[Instant](_.toEpochMilli)
-  implicit val LocalDateTimeEncoder = InstantEncoder.comap[LocalDateTime](_.toInstant(ZoneOffset.UTC))
-  implicit val TimestampEncoder = InstantEncoder.comap[Timestamp](_.toInstant)
-  implicit val DateEncoder = LocalDateEncoder.comap[Date](_.toLocalDate)
+  implicit val UUIDEncoder: Encoder[UUID] = StringEncoder.comap[UUID](_.toString)
+  implicit val LocalTimeEncoder: Encoder[LocalTime] = IntEncoder.comap[LocalTime](lt => lt.toSecondOfDay * 1000 + lt.getNano / 1000)
+  implicit val LocalDateEncoder: Encoder[LocalDate] = IntEncoder.comap[LocalDate](_.toEpochDay.toInt)
+  implicit val InstantEncoder: Encoder[Instant] = LongEncoder.comap[Instant](_.toEpochMilli)
+  implicit val LocalDateTimeEncoder: Encoder[LocalDateTime] = InstantEncoder.comap[LocalDateTime](_.toInstant(ZoneOffset.UTC))
+  implicit val TimestampEncoder: Encoder[Timestamp] = InstantEncoder.comap[Timestamp](_.toInstant)
+  implicit val DateEncoder: Encoder[Date] = LocalDateEncoder.comap[Date](_.toLocalDate)
 
   implicit def mapEncoder[V](implicit encoder: Encoder[V]): Encoder[Map[String, V]] = new Encoder[Map[String, V]] {
 
@@ -180,9 +180,9 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     }
   }
 
-  implicit val ByteListEncoder = ByteArrayEncoder.comap[List[Byte]](_.toArray[Byte])
-  implicit val ByteSeqEncoder = ByteArrayEncoder.comap[Seq[Byte]](_.toArray[Byte])
-  implicit val ByteVectorEncoder = ByteArrayEncoder.comap[Vector[Byte]](_.toArray[Byte])
+  implicit val ByteListEncoder: Encoder[List[Byte]] = ByteArrayEncoder.comap(_.toArray[Byte])
+  implicit val ByteSeqEncoder: Encoder[Seq[Byte]] = ByteArrayEncoder.comap(_.toArray[Byte])
+  implicit val ByteVectorEncoder: Encoder[Vector[Byte]] = ByteArrayEncoder.comap(_.toArray[Byte])
 
   implicit object ByteBufferEncoder extends Encoder[ByteBuffer] {
     override def encode(t: ByteBuffer, schema: Schema): ByteBuffer = t

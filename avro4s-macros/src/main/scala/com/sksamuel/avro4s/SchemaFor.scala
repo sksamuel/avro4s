@@ -49,60 +49,29 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
   def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
 
-  implicit object ByteSchemaFor extends SchemaFor[Byte] {
-    override def schema: Schema = IntSchemaFor.schema
+  /**
+    * Creates a [[SchemaFor]] that always returns the given constant value.
+    */
+  def const[T](_schema: Schema) = new SchemaFor[T] {
+    override def schema: Schema = _schema
   }
 
-  implicit object StringSchemaFor extends SchemaFor[String] {
-    override def schema: Schema = SchemaBuilder.builder().stringType()
-  }
-
-  implicit object LongSchemaFor extends SchemaFor[Long] {
-    override def schema: Schema = SchemaBuilder.builder().longType()
-  }
-
-  implicit object IntSchemaFor extends SchemaFor[Int] {
-    override def schema: Schema = SchemaBuilder.builder().intType()
-  }
-
-  implicit object DoubleSchemaFor extends SchemaFor[Double] {
-    override def schema: Schema = SchemaBuilder.builder().doubleType()
-  }
-
-  implicit object FloatSchemaFor extends SchemaFor[Float] {
-    override def schema: Schema = SchemaBuilder.builder().floatType()
-  }
-
-  implicit object BooleanSchemaFor extends SchemaFor[Boolean] {
-    override def schema: Schema = SchemaBuilder.builder().booleanType()
-  }
-
-  implicit object ShortSchemaFor extends SchemaFor[Short] {
-    override def schema: Schema = IntSchemaFor.schema
-  }
+  implicit val StringSchemaFor: SchemaFor[String] = const(SchemaBuilder.builder().stringType())
+  implicit val LongSchemaFor: SchemaFor[Long] = const(SchemaBuilder.builder().longType())
+  implicit val IntSchemaFor: SchemaFor[Int] = const(SchemaBuilder.builder().intType())
+  implicit val DoubleSchemaFor: SchemaFor[Double] = const(SchemaBuilder.builder().doubleType())
+  implicit val FloatSchemaFor: SchemaFor[Float] = const(SchemaBuilder.builder().floatType())
+  implicit val BooleanSchemaFor: SchemaFor[Boolean] = const(SchemaBuilder.builder().booleanType())
+  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = const(SchemaBuilder.builder().bytesType())
+  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = const(SchemaBuilder.builder().bytesType())
+  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = const(SchemaBuilder.builder().bytesType())
+  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = const(SchemaBuilder.builder().bytesType())
+  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = const(SchemaBuilder.builder().bytesType())
+  implicit val ShortSchemaFor: SchemaFor[Short] = const(IntSchemaFor.schema)
+  implicit val ByteSchemaFor: SchemaFor[Byte] = const(IntSchemaFor.schema)
 
   implicit object UUIDSchemaFor extends SchemaFor[UUID] {
-    override def schema: Schema = LogicalTypes.uuid().addToSchema(StringSchemaFor.schema)
-  }
-
-  implicit object ByteArraySchemaFor extends SchemaFor[Array[Byte]] {
-    override def schema: Schema = SchemaBuilder.builder().bytesType()
-  }
-
-  implicit object ByteSeqSchemaFor extends SchemaFor[Seq[Byte]] {
-    override def schema: Schema = ByteArraySchemaFor.schema
-  }
-
-  implicit object ByteListSchemaFor extends SchemaFor[List[Byte]] {
-    override def schema: Schema = ByteArraySchemaFor.schema
-  }
-
-  implicit object ByteVectorSchemaFor extends SchemaFor[Vector[Byte]] {
-    override def schema: Schema = ByteArraySchemaFor.schema
-  }
-
-  implicit object ByteBufferSchemaFor extends SchemaFor[ByteBuffer] {
-    override def schema: Schema = ByteArraySchemaFor.schema
+    override def schema: Schema = LogicalTypes.uuid().addToSchema(SchemaBuilder.builder.stringType)
   }
 
   implicit def mapSchemaFor[V](implicit schemaFor: SchemaFor[V]): SchemaFor[Map[String, V]] = {
@@ -166,27 +135,27 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
   }
 
   implicit object TimestampSchemaFor extends SchemaFor[Timestamp] {
-    override def schema = LogicalTypes.timestampMillis().addToSchema(LongSchemaFor.schema)
+    override def schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
   }
 
   implicit object LocalTimeSchemaFor extends SchemaFor[LocalTime] {
-    override def schema = LogicalTypes.timeMillis().addToSchema(IntSchemaFor.schema)
+    override def schema = LogicalTypes.timeMillis().addToSchema(SchemaBuilder.builder.intType)
   }
 
   implicit object LocalDateSchemaFor extends SchemaFor[LocalDate] {
-    override def schema = LogicalTypes.date().addToSchema(IntSchemaFor.schema)
+    override def schema = LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType)
   }
 
   implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
-    override def schema = LogicalTypes.timestampMillis().addToSchema(LongSchemaFor.schema)
+    override def schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
   }
 
   implicit object DateSchemaFor extends SchemaFor[java.sql.Date] {
-    override def schema = LogicalTypes.date().addToSchema(IntSchemaFor.schema)
+    override def schema = LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType)
   }
 
   implicit object InstantSchemaFor extends SchemaFor[Instant] {
-    override def schema = LogicalTypes.timestampMillis().addToSchema(LongSchemaFor.schema)
+    override def schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
   }
 
   implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = new SchemaFor[E] {
