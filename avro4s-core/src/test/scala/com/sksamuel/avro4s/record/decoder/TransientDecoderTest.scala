@@ -7,12 +7,12 @@ import org.scalatest.{FunSuite, Matchers}
 
 class TransientDecoderTest extends FunSuite with Matchers {
 
-  case class TransientFoo(a: String, @transient b: Option[String], @transient c: String)
+  case class TransientFoo(a: String, @transient b: Option[String])
 
-  test("decoder should populate transient fields with None or null") {
+  test("decoder should populate transient fields with None") {
     val schema = AvroSchema[TransientFoo]
     val record = new GenericData.Record(schema)
     record.put("a", new Utf8("hello"))
-    Decoder[TransientFoo].decode(record, schema) shouldBe TransientFoo("hello", None, null)
+    Decoder[TransientFoo].decode(record, schema) shouldBe TransientFoo("hello", None)
   }
 }
