@@ -42,7 +42,7 @@ trait Encoder[T] extends Serializable {
 
 case class Exported[A](instance: A) extends AnyVal
 
-object Encoder extends LowPriorityEncoders {
+object Encoder extends CoproductEncoders {
 
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 

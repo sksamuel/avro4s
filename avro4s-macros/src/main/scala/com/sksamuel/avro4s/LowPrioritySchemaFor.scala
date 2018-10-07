@@ -27,6 +27,38 @@ trait LowPrioritySchemaFor {
         .endRecord()
   }
 
+    implicit def tuple4SchemaFor[A, B, C, D](implicit
+                                              a: SchemaFor[A],
+                                              b: SchemaFor[B],
+                                              c: SchemaFor[C],
+                                              d: SchemaFor[D]): SchemaFor[(A, B, C, D)] = new SchemaFor[(A, B, C, D)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple4").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .name("_3").`type`(c.schema).noDefault()
+        .name("_4").`type`(d.schema).noDefault()
+        .endRecord()
+  }
+
+  implicit def tuple5SchemaFor[A, B, C, D, E](implicit
+                                              a: SchemaFor[A],
+                                              b: SchemaFor[B],
+                                              c: SchemaFor[C],
+                                              d: SchemaFor[D],
+                                              e: SchemaFor[E]): SchemaFor[(A, B, C, D, E)] = new SchemaFor[(A, B, C, D, E)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple5").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .name("_3").`type`(c.schema).noDefault()
+        .name("_4").`type`(d.schema).noDefault()
+        .name("_5").`type`(e.schema).noDefault()
+        .endRecord()
+  }
+
   // A coproduct is a union, or a generalised either.
   // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
 

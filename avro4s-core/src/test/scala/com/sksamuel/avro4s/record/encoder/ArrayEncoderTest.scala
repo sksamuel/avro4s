@@ -77,12 +77,30 @@ class ArrayEncoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[Test]
       Encoder[Test].encode(Test(Set(1.2, 34.5, 54.3)), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
     }
-    //    "support Seq[Tuple2] issue #156" in {
-    //      val schema = SchemaEncoder[TupleTest2]
-    //    }
-    //    "support Seq[Tuple3]" in {
-    //      val schema = SchemaEncoder[TupleTest3]
-    //    }
+//    "support Seq[Tuple2] issue #156" in {
+//      case class TupleTest2(first: String, second: Seq[(TupleTestA, TupleTestB)])
+//      case class TupleTestA(parameter: Int)
+//      case class TupleTestB(parameter: Int)
+//      val schema = AvroSchema[TupleTest2]
+//      Encoder[TupleTest2].encode(TupleTest2("hello", Seq()), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
+//    }
+//    "support Seq[Tuple3]" in {
+//      case class TupleTest3(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC)])
+//      case class TupleTestA(parameter: Int)
+//      case class TupleTestB(parameter: Int)
+//      case class TupleTestC(parameter: Int)
+//      val schema = AvroSchema[TupleTest3]
+//      Encoder[TupleTest3].encode(Test(Set(1.2, 34.5, 54.3)), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
+//    }
+//    "support Seq[Tuple4]" in {
+//      case class TupleTest4(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC, TupleTestD)])
+//      case class TupleTestA(parameter: Int)
+//      case class TupleTestB(parameter: Int)
+//      case class TupleTestC(parameter: Int)
+//      case class TupleTestD(parameter: Int)
+//      val schema = AvroSchema[TupleTest4]
+//      Encoder[TupleTest3].encode(Test(Set(1.2, 34.5, 54.3)), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
+//    }
     "support top level Seq[Double]" in {
       val schema = AvroSchema[Array[Double]]
       Encoder[Array[Double]].encode(Array(1.2, 34.5, 54.3), schema) shouldBe new GenericData.Array[Double](schema, List(1.2, 34.5, 54.3).asJava)
@@ -102,8 +120,3 @@ class ArrayEncoderTest extends WordSpec with Matchers {
   }
 }
 
-case class TupleTest2(first: String, second: Seq[(TupleTestA, TupleTestB)])
-case class TupleTest3(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC)])
-case class TupleTestA(parameter: Int)
-case class TupleTestB(parameter: Int)
-case class TupleTestC(parameter: Int)

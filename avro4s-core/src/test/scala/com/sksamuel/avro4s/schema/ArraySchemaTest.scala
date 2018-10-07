@@ -78,11 +78,18 @@ class ArraySchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support Seq[Tuple2] issue #156" in {
+      case class TupleTest2(first: String, second: Seq[(TupleTestA, TupleTestB)])
+      case class TupleTestA(parameter: Int)
+      case class TupleTestB(parameter: Int)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple2.json"))
       val schema = AvroSchema[TupleTest2]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support Seq[Tuple3]" in {
+      case class TupleTest3(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC)])
+      case class TupleTestA(parameter: Int)
+      case class TupleTestB(parameter: Int)
+      case class TupleTestC(parameter: Int)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple3.json"))
       val schema = AvroSchema[TupleTest3]
       schema.toString(true) shouldBe expected.toString(true)
@@ -142,8 +149,3 @@ class ArraySchemaTest extends WordSpec with Matchers {
   }
 }
 
-case class TupleTest2(first: String, second: Seq[(TupleTestA, TupleTestB)])
-case class TupleTest3(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC)])
-case class TupleTestA(parameter: Int)
-case class TupleTestB(parameter: Int)
-case class TupleTestC(parameter: Int)

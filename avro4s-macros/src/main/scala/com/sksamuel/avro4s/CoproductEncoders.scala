@@ -3,7 +3,7 @@ package com.sksamuel.avro4s
 import org.apache.avro.Schema
 import shapeless.{:+:, CNil, Coproduct, Generic, Inl, Inr}
 
-trait LowPriorityEncoders {
+trait CoproductEncoders extends TupleEncoders {
 
   implicit def genCoproductEncoder[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
                                                       coproductEncoder: Encoder[C]): Encoder[T] = new Encoder[T] {
