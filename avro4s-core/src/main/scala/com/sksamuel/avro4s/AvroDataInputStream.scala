@@ -16,9 +16,9 @@ class AvroDataInputStream[T](in: InputStream,
   // if no reader or writer schema is specified, then we create a reader that uses what's present in the files
   private val datumReader =
     if (writerSchema.isEmpty && readerSchema.isEmpty) new GenericDatumReader[GenericRecord]()
-    else if (writerSchema.isDefined && readerSchema.isDefined) new GenericDatumReader[GenericRecord](writerSchema.get, readerSchema.get)
-    else if (writerSchema.isDefined) new GenericDatumReader[GenericRecord](writerSchema.get)
-    else new GenericDatumReader[GenericRecord](readerSchema.get)
+    else if (writerSchema.isDefined && readerSchema.isDefined) new DefaultAwareDatumReader[GenericRecord](writerSchema.get, readerSchema.get)
+    else if (writerSchema.isDefined) DefaultAwareDatumReader[GenericRecord](writerSchema.get)
+    else DefaultAwareDatumReader[GenericRecord](readerSchema.get)
 
   private val dataFileReader = new DataFileStream[GenericRecord](in, datumReader)
 
