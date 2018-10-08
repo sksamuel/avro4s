@@ -13,12 +13,12 @@ sealed trait NamingStrategy {
 
   protected def toDelimited(delim: Char, s: String): String = {
     val word = ListBuffer.empty[Char]
-    word.addOne(s.head.toLower)
+    word += s.head.toLower
     s.tail.toCharArray.foreach { char =>
       if (char.isUpper) {
-        word.addOne(delim)
+        word.+=(delim)
       }
-      word.addOne(char.toLower)
+      word.+=(char.toLower)
     }
     word.result.mkString
   }
