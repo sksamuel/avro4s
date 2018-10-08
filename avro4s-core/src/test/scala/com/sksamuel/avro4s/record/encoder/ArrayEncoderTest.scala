@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.AvroSchema
-import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
@@ -58,14 +57,14 @@ class ArrayEncoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[Test]
       val nschema = AvroSchema[Nested]
       Encoder[Test].encode(Test(List(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector(new Utf8("qwe"))), ImmutableRecord(nschema, Vector(new Utf8("dfsg")))).asJava))
-
     }
     "generate array for a Set of records" in {
       case class Nested(goo: String)
       case class Test(set: Set[Nested])
       val schema = AvroSchema[Test]
       val nschema = AvroSchema[Nested]
-      Encoder[Test].encode(Test(Set(Nested("qwe"), Nested("dfsg"))), schema) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(nschema, Vector(new Utf8("qwe"))), ImmutableRecord(nschema, Vector(new Utf8("dfsg")))).asJava))
+      val record = Encoder[Test].encode(Test(Set(Nested("qwe"), Nested("dfsg"))), schema).asInstanceOf[ImmutableRecord]
+      record.values(0).asInstanceOf[java.util.Collection[Nested]].asScala.toSet shouldBe Set(ImmutableRecord(nschema, Vector(new Utf8("qwe"))), ImmutableRecord(nschema, Vector(new Utf8("dfsg"))))
     }
     "generate array for a Set of strings" in {
       case class Test(set: Set[String])
@@ -77,30 +76,30 @@ class ArrayEncoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[Test]
       Encoder[Test].encode(Test(Set(1.2, 34.5, 54.3)), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
     }
-//    "support Seq[Tuple2] issue #156" in {
-//      case class TupleTest2(first: String, second: Seq[(TupleTestA, TupleTestB)])
-//      case class TupleTestA(parameter: Int)
-//      case class TupleTestB(parameter: Int)
-//      val schema = AvroSchema[TupleTest2]
-//      Encoder[TupleTest2].encode(TupleTest2("hello", Seq()), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
-//    }
-//    "support Seq[Tuple3]" in {
-//      case class TupleTest3(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC)])
-//      case class TupleTestA(parameter: Int)
-//      case class TupleTestB(parameter: Int)
-//      case class TupleTestC(parameter: Int)
-//      val schema = AvroSchema[TupleTest3]
-//      Encoder[TupleTest3].encode(Test(Set(1.2, 34.5, 54.3)), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
-//    }
-//    "support Seq[Tuple4]" in {
-//      case class TupleTest4(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC, TupleTestD)])
-//      case class TupleTestA(parameter: Int)
-//      case class TupleTestB(parameter: Int)
-//      case class TupleTestC(parameter: Int)
-//      case class TupleTestD(parameter: Int)
-//      val schema = AvroSchema[TupleTest4]
-//      Encoder[TupleTest3].encode(Test(Set(1.2, 34.5, 54.3)), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
-//    }
+    //    "support Seq[Tuple2] issue #156" in {
+    //      case class TupleTest2(first: String, second: Seq[(TupleTestA, TupleTestB)])
+    //      case class TupleTestA(parameter: Int)
+    //      case class TupleTestB(parameter: Int)
+    //      val schema = AvroSchema[TupleTest2]
+    //      Encoder[TupleTest2].encode(TupleTest2("hello", Seq()), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
+    //    }
+    //    "support Seq[Tuple3]" in {
+    //      case class TupleTest3(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC)])
+    //      case class TupleTestA(parameter: Int)
+    //      case class TupleTestB(parameter: Int)
+    //      case class TupleTestC(parameter: Int)
+    //      val schema = AvroSchema[TupleTest3]
+    //      Encoder[TupleTest3].encode(Test(Set(1.2, 34.5, 54.3)), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
+    //    }
+    //    "support Seq[Tuple4]" in {
+    //      case class TupleTest4(first: String, second: Seq[(TupleTestA, TupleTestB, TupleTestC, TupleTestD)])
+    //      case class TupleTestA(parameter: Int)
+    //      case class TupleTestB(parameter: Int)
+    //      case class TupleTestC(parameter: Int)
+    //      case class TupleTestD(parameter: Int)
+    //      val schema = AvroSchema[TupleTest4]
+    //      Encoder[TupleTest3].encode(Test(Set(1.2, 34.5, 54.3)), schema) shouldBe ImmutableRecord(schema, Vector(Vector(1.2, 34.5, 54.3).asJava))
+    //    }
     "support top level Seq[Double]" in {
       val schema = AvroSchema[Array[Double]]
       Encoder[Array[Double]].encode(Array(1.2, 34.5, 54.3), schema) shouldBe new GenericData.Array[Double](schema, List(1.2, 34.5, 54.3).asJava)

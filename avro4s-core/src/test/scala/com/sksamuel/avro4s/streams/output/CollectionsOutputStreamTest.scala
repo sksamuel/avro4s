@@ -93,9 +93,8 @@ class CollectionsOutputStreamTest extends OutputStreamTest {
     case class Foo(a: String)
     case class Test(z: Set[Foo])
     writeRead(Test(Set(Foo("a"), Foo("b")))) { record =>
-      val array = record.get("z").asInstanceOf[GenericData.Array[Int]].asScala
-      array.head.asInstanceOf[GenericRecord].get("a") shouldBe new Utf8("a")
-      array.last.asInstanceOf[GenericRecord].get("a") shouldBe new Utf8("b")
+      val set = record.get("z").asInstanceOf[GenericData.Array[GenericRecord]].asScala.toSet
+      set.map(_.get("a")) shouldBe Set(new Utf8("a"), new Utf8("b"))
     }
   }
 
