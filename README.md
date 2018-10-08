@@ -143,7 +143,7 @@ Note: It is possible, but not necessary, to use both AvroName and AvroNamespace.
 
 
 
-### Adding properties and docs to a Schema.
+### Adding properties and docs to a Schema
 
 Avro allows a doc field, and arbitrary key/values to be added to generated schemas. Avro4s supports this through the use of `AvroDoc` and `AvroProp` annotations.
 
@@ -355,13 +355,13 @@ val ennio = format.from(record)
 Avro4s defines two typeclasses, `Encoder` and `Decoder` which do the work
 of mapping between scala values and Avro compatible values. There are built in encoders and decoders for all the common types.
 
-For example, given a string, and a schema of type `Schema.Type.STRING` then the default encoder would return an instance of Utf8, whereas
-the same string and a `Schema.Type.FIXED` schema would be encoded as an instance of GenericData.Fixed.
+For example, given a string, and a schema of type `Schema.Type.STRING` then the default encoder would return an instance of `Utf8`, whereas
+the same string and a `Schema.Type.FIXED` schema would be encoded as an instance of `GenericData.Fixed`.
 
-Another example is given an `Option[T]` then an instance of None would be encoded as null, and an instance of Some would be
+Another example is given an `Option[T]` then an instance of `None` would be encoded as null, and an instance of `Some` would be
 encoded as the underlying value.
 
-Decoders do the same work, but in reverse. They take an Avro value, such as Utf8 and return a scala value.
+Decoders do the same work, but in reverse. They take an Avro value, such as null and return a scala value, such as `Option`.
 
 ### Built in Type Mappings
 
@@ -455,7 +455,19 @@ implicit object DateTimeDecoder extends Decoder[LocalDateTime] {
 
 These typeclasses must be implicit and in scope when you use `AvroSchema` or `RecordFormat`.
 
+### Coproducts
 
+Avro supports generalised unions, eithers of more than two values.
+To represent these in scala, we use `shapeless.:+:`, such that `A :+: B :+: C :+: CNil` represents cases where a type is `A` OR `B` OR `C`.
+See shapeless' [documentation on coproducts](https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0#coproducts-and-discriminated-unions) for more on how to use coproducts.
+
+### Sealed hierarchies
+
+Scala sealed traits/classes are supported both when it comes to schema generation and conversions to/from `GenericRecord`.
+Generally sealed hierarchies are encoded as unions - in the same way like Coproducts.
+Under the hood, shapeless `Generic` is used to derive Coproduct representation for sealed hierarchy.
+
+When all descendants of sealed trait/class are singleton objects, optimized, enum-based encoding is used instead.
 
 
 ## Decimal scale, precision and rounding mode
@@ -512,16 +524,6 @@ object Product {
 ```
 
 This will result in a schema where both `BigDecimal` quantities have their own separate scale and precision.
-
-## Coproducts
-
-Avro supports generalised unions, eithers of more than two values. To represent these in scala, we use `shapeless.:+:`, such that `A :+: B :+: C :+: CNil` represents cases where a type is `A` OR `B` OR `C`. See shapeless' [documentation on coproducts](https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0#coproducts-and-discriminated-unions) for more on how to use coproducts.
-
-## Sealed hierarchies
-
-Scala sealed traits/classes are supported both when it comes to schema generation and conversions to/from `GenericRecord`. Generally sealed hierarchies are encoded as unions - in the same way like Coproducts. Under the hood, shapeless `Generic` is used to derive Coproduct representation for sealed hierarchy.
-
-When all descendants of sealed trait/class are singleton objects, optimized, enum-based encoding is used instead.
 
 
 ## Using avro4s in your project
