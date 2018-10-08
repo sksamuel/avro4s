@@ -22,13 +22,14 @@ import scala.reflect.ClassTag
   * An [[Encoder]] encodes a Scala value of type T into a compatible
   * Avro value based on the given schema.
   *
-  * For example, given a string value, and a Schema.Type.STRING schema
+  * For example, given a string, and a schema of type Schema.Type.STRING
   * then the string would be encoded as an instance of Utf8, whereas
   * the same string and a Schema.Type.FIXED would be encoded as an
+  * instance of GenericData.Fixed.
   *
-  * For example, an Encoder[String] would encode a string as an instance
-  * of Utf8 if the schema was Schema.Type.STRING, whereas for a
-  * Schema.Type.FIXED schema, it wuld return a GenericData.Fixed
+  * Another example is given a Scala enumeration value, and a schema of
+  * type Schema.Type.ENUM, the value would be encoded as an instance
+  * of GenericData.EnumSymbol.
   */
 trait Encoder[T] extends Serializable {
   self =>
