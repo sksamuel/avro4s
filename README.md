@@ -85,6 +85,137 @@ Where the generated schema is as follows:
 ```
 You can see that the schema generator handles nested case classes, sequences, primitives, etc. For a full list of supported object types, see the table later.
 
+### Overriding name and namespace
+
+Avro schemas for complex types (RECORDS) contain a name and a namespace. By default, these are the name of the class
+and the enclosing package name, but it is possible to customize these using the annotations `AvroName` and `AvroNamespace`.
+
+For example, the following class:
+
+```scala
+package com.foo
+case class Test(a: String)
+```
+
+Would normally have a schema like this:
+
+```json
+{
+  "type":"record",
+  "name":"Test",
+  "namespace":"com.foo",
+  "fields":[
+    {
+      "name":"a",
+      "type":"string"
+    }
+  ]
+}
+```
+
+However we can override the name and/or the namespace like this:
+
+```scala
+package com.foo
+
+@AvroName("Wibble")
+@AvroNamespace("com.other")
+case class Test(a: String)
+```
+
+And then the generated schema looks like this:
+
+```json
+{
+  "type":"record",
+  "name":"Wibble",
+  "namespace":"com.other",
+  "fields":[
+    {
+      "name":"a",
+      "type":"string"
+    }
+  ]
+}
+```
+
+Note: It is possible, but not necessary, to use both AvroName and AvroNamespace. You can just use one of them if you wish.
+
+
+
+### Adding properties and docs to a Schema.
+
+Avro allows a doc field, and arbitrary key/values to be added to generated schemas. Avro4s supports this through the use of `AvroDoc` and `AvroProp` annotations.
+
+These properties works on either complex or simple types - in other words, on both fields and classes. For example:
+
+```scala
+package com.sksamuel
+@AvroDoc("hello its me")
+case class Example(@AvroDoc("I am a string") str: String, @AvroDoc("I am a long") long: Long, int: Int)
+```
+
+Would result in the following schema:
+
+```json
+{
+  "type": "record",
+  "name": "Example",
+  "namespace": "com.sksamuel",
+  "fields": [
+    {
+      "name": "str",
+      "type": "string",
+      "doc" : "hello its me"
+    },
+    {
+      "name": "long",
+      "type": "long",
+      "doc" : "I am a long"
+    },
+    {
+      "name": "int",
+      "type": "int"
+    }
+  ]
+}
+```
+
+An example of properties:
+
+```scala
+package com.sksamuel
+@AvroProp("jack", "bruce")
+case class Annotated(@AvroProp("richard", "ashcroft") str: String, @AvroProp("kate", "bush") long: Long, int: Int)
+```
+
+Would generate this schema:
+
+```json
+{
+  "type": "record",
+  "name": "Annotated",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "str",
+      "type": "string",
+      "richard": "ashcroft"
+    },
+    {
+      "name": "long",
+      "type": "long",
+      "kate": "bush"
+    },
+    {
+      "name": "int",
+      "type": "int"
+    }
+  ],
+  "jack": "bruce"
+}
+```
+
 ### Overriding a Schema
 
 Behind the scenes, `AvroSchema` uses an implicit `SchemaFor`. This is the core typeclass which generates an Avro schema for a given Java or Scala type.
@@ -325,62 +456,7 @@ implicit object DateTimeDecoder extends Decoder[LocalDateTime] {
 These typeclasses must be implicit and in scope when you use `AvroSchema` or `RecordFormat`.
 
 
-## Overriding name and namespace
 
-Avro schemas for complex types (RECORDS) contain a name and a namespace. By default, these are the name of the class
-and the enclosing package name, but it is possible to customize these using the annotations `AvroName` and `AvroNamespace`.
-
-For example, the following class:
-
-```scala
-package com.foo
-case class Test(a: String)
-```
-
-Would normally have a schema like this:
-
-```json
-{
-  "type":"record",
-  "name":"Test",
-  "namespace":"com.foo",
-  "fields":[
-    {
-      "name":"a",
-      "type":"string"
-    }
-  ]
-}
-```
-
-However we can override the name and/or the namespace like this:
-
-
-```scala
-package com.foo
-
-@AvroName("Wibble")
-@AvroNamespace("com.other")
-case class Test(a: String)
-```
-
-And then the generated schema looks like this:
-
-```json
-{
-  "type":"record",
-  "name":"Wibble",
-  "namespace":"com.other",
-  "fields":[
-    {
-      "name":"a",
-      "type":"string"
-    }
-  ]
-}
-```
-
-Note: It is possible, but not necessary, to use both AvroName and AvroNamespace. You can just use one of them if you wish.
 
 ## Decimal scale, precision and rounding mode
 
