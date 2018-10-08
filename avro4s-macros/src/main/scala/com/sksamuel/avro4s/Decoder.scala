@@ -309,8 +309,14 @@ object Decoder extends CoproductDecoders with TupleDecoders {
 
       val valueType = reflect.isValueClass(tpe)
 
-      // if we have a value type then we want to return an decoder that decodes
-      // the backing field and wraps it in an instance of the value type
+      // In Scala, value types are erased at compile time. So in avro4s we assume that value types do not exist
+      // in the avro side, neither in the schema, nor in the input values. Therefore, when creating a decoder
+      // for a value type, the input will be a value of the underlying type. In other words, given a value type
+      // `Foo(s: String) extends AnyVal` - the input will be a String, not a record containing a String
+      // as it would be for a non-value type.
+
+      // So the generated decoder for a value type should simply pass through to a generated decoder for
+      // the underlying type without worrying about fields etc.
       if (valueType) {
 
         val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
@@ -320,7 +326,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           q"""
           new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
             override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
-              val decoded = _root_.com.sksamuel.avro4s.Decoder.decodeT[$backingFieldTpe](value)
+              val decoded = _root_.com.sksamuel.avro4s.Decoder.decodeT[$backingFieldTpe](value, schema)
               new $tpe(decoded)
             }
           }
@@ -351,36 +357,18 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           // use the name of the field in the case class
           val resolvedFieldName = new AnnotationExtractors(reflect.annotations(fieldSym)).name.getOrElse(name)
 
-          if (reflect.isValueClass(fieldTpe)) {
+          val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+          val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+          val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
 
-            val valueCstr = fieldTpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-            val backingFieldTpe = valueCstr.typeSignature
+          val transient = reflect.isTransientOnField(tpe, fieldSym)
 
-            // when we have a value type, the value type itself will never have existed in the data, so the
-            // value in the generic record needs to be decoded by a decoder for the underlying type.
-            // once we have that, we can just wrap it in the value type
-            q"""{
-                  val raw = record.get($name)
-                  val decoded = _root_.com.sksamuel.avro4s.Decoder.decodeT[$backingFieldTpe](raw) : $backingFieldTpe
-                  new $fieldTpe(decoded) : $fieldTpe
-                }
-             """
-
+          // if the default is defined, we will use that to populate, otherwise if the field is transient
+          // we will populate with none or null, otherwise an error will be raised
+          if (defaultGetterMethod.isMethod) {
+            q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
           } else {
-
-            val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-            val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
-            val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
-
-            val transient = reflect.isTransientOnField(tpe, fieldSym)
-
-            // if the default is defined, we will use that to populate, otherwise if the field is transient
-            // we will populate with none or null, otherwise an error will be raised
-            if (defaultGetterMethod.isMethod) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
-            } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
-            }
+            q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
           }
         }
 
@@ -447,5 +435,5 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     }
   }
 
-  def decodeT[T](value: Any)(implicit decoder: Decoder[T]): T = decoder.decode(value, null)
+  def decodeT[T](value: Any, schema: Schema)(implicit decoder: Decoder[T]): T = decoder.decode(value, schema)
 }

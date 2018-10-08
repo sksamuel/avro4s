@@ -1,10 +1,8 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
-import com.sksamuel.avro4s.Decoder
+import com.sksamuel.avro4s.{AvroSchema, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{FunSuite, Matchers}
 
 class ValueTypeDecoderTest extends FunSuite with Matchers {
@@ -33,23 +31,6 @@ class ValueTypeDecoderTest extends FunSuite with Matchers {
     record1.put("foo", new Utf8("hello"))
 
     Decoder[OptionTest].decode(record1, schema) shouldBe OptionTest(Some(FooValueType("hello")))
-  }
-
-  test("support custom typeclasses for nested value types") {
-
-    implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema: Schema = SchemaBuilder.builder().intType()
-    }
-
-    implicit object FooValueTypeDecoder extends Decoder[FooValueType] {
-      override def decode(value: Any, schema: Schema): FooValueType = FooValueType(value.toString)
-    }
-
-    val schema = AvroSchema[Test]
-    val record = new GenericData.Record(schema)
-    record.put("foo", 123)
-
-    Decoder[Test].decode(record, schema) shouldBe Test(FooValueType("123"))
   }
 }
 

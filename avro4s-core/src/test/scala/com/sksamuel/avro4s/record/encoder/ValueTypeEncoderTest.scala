@@ -1,8 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
-import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
-import org.apache.avro.{Schema, SchemaBuilder}
+import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
 
@@ -24,22 +22,6 @@ class ValueTypeEncoderTest extends FunSuite with Matchers {
     val schema = AvroSchema[Test]
     val record = Encoder[Test].encode(Test(Some(FooValueType("hello"))), schema)
     record shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
-  }
-
-  test("support custom typeclasses for nested value types") {
-
-    implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema: Schema = SchemaBuilder.builder().intType()
-    }
-
-    implicit object FooValueTypeEncoder extends Encoder[FooValueType] {
-      override def encode(t: FooValueType, schema: Schema): AnyRef = java.lang.Integer.valueOf(t.s.toInt)
-    }
-
-    case class Test(foo: FooValueType)
-    val schema = AvroSchema[Test]
-    val record = Encoder[Test].encode(Test(FooValueType("123")), schema)
-    record shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(123)))
   }
 }
 

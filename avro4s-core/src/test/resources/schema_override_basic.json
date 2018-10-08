@@ -5,7 +5,10 @@
   "fields": [
     {
       "name": "s",
-      "type": "bytes"
+      "type": {
+        "type": "bytes",
+        "foo": "bar"
+      }
     },
     {
       "name": "i",
