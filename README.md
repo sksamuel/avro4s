@@ -513,12 +513,12 @@ And you want to selectively use different scale/precision for the `price` and `l
 
 ``` scala
 object Price {
-  implicit val sp = ScaleAndPrecision(10,2)
+  implicit val sp = ScalePrecisionRoundingMode(10, 2, scala.math.BigDecimal.RoundingMode.UNNECESSARY)
   implicit val schema = SchemaFor[Price]
 }
 
 object Product {
-  implicit val sp = ScaleAndPrecision(8,4)
+  implicit val sp = ScalePrecisionRoundingMode(8, 4, scala.math.BigDecimal.RoundingMode.UNNECESSARY)
   implicit val schema = SchemaFor[Product]
 }
 ```
