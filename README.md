@@ -85,7 +85,7 @@ Where the generated schema is as follows:
 ```
 You can see that the schema generator handles nested case classes, sequences, primitives, etc. For a full list of supported object types, see the table later.
 
-### Overriding name and namespace
+### Overriding class name and namespace
 
 Avro schemas for complex types (RECORDS) contain a name and a namespace. By default, these are the name of the class
 and the enclosing package name, but it is possible to customize these using the annotations `AvroName` and `AvroNamespace`.
@@ -142,6 +142,21 @@ And then the generated schema looks like this:
 Note: It is possible, but not necessary, to use both AvroName and AvroNamespace. You can just use one of them if you wish.
 
 
+### Overriding a field name
+
+The `AvroName` annotation can also be used to override field names. This is useful when the record instances you are generating or reading
+need to have field names different from the scala case classes.
+
+For example, given the following class.
+
+```scala
+case class Foo(a: String, @AvroName("z") b : String)
+```
+
+Then a record of `Foo("a", "b")` would be written as `{ a: "a", z: "b" }`. Similarly, this record could be decoded back
+to an instance of Foo.
+
+Note: @AvroName does not add an alternative name for the field, but an override. If you wish to have alternatives then you want to use @AvroAlias.
 
 ### Adding properties and docs to a Schema
 
