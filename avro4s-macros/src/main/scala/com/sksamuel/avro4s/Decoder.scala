@@ -19,13 +19,15 @@ import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.runtime.universe._
 
 /**
-  * A [[Decoder]] is used to convert an Avro value, such as a [[GenericRecord]], [[org.apache.avro.specific.SpecificRecord]],
-  * [[org.apache.avro.generic.GenericFixed]], or basic JVM types, into a type that is compatible with Scala.
+  * A [[Decoder]] is used to convert an Avro value, such as a [[org.apache.avro.generic.GenericRecord]],
+  * [[org.apache.avro.specific.SpecificRecord]], [[org.apache.avro.generic.GenericFixed]],
+  * or basic JVM types, into a type that is compatible with Scala.
   *
   * An example is converting between values and Scala Options - if the value is null, then the decoder
   * should emit a None. If the value is not null, then it should be wrapped in a Some.
   *
-  * Another example is converting [[GenericData.Array]] or Java List into a Scala collection type.
+  * Another example is converting a [[org.apache.avro.generic.GenericData.Array]] or a Java util List
+  * into a Scala collection type.
   */
 trait Decoder[T] extends Serializable {
   self =>
