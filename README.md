@@ -417,7 +417,7 @@ import shapeless.{:+:, CNil}
 | Set[T]                       	| ARRAY<T>      	|                  	|
 | sealed trait of case classes 	| UNION<A,B>    	|                  	|
 | sealed trait of case objects 	| ENUM<A,B>     	|                  	|
-| Map[String, V>               	| MAP<V>        	|                  	|
+| Map[String, V>]              	| MAP<V>        	|                  	|
 | Either[A,B]                  	| UNION<A,B>    	|                  	|
 | A :+: B :+: C :+: CNil       	| UNION<A,B,C>  	|                  	|
 | case class T                 	| RECORD        	|                  	|
