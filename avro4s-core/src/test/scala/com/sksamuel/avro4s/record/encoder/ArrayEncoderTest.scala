@@ -115,7 +115,7 @@ class ArrayEncoderTest extends WordSpec with Matchers {
     }
     "support top level Set[Boolean]" in {
       val schema = AvroSchema[Set[Boolean]]
-      Encoder[Set[Boolean]].encode(Set(true, false, true), schema) shouldBe new GenericData.Array[Boolean](schema, List(true, false).asJava)
+      Encoder[Set[Boolean]].encode(Set(true, false, true), schema) shouldBe new GenericData.Array[Boolean](schema, Set(true, false).asJava)
     }
   }
 }
