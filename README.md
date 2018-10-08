@@ -11,108 +11,76 @@ The features of the library are:
 * Boilerplate free serialization of Scala types into Avro types
 * Boilerplate free deserialization of Avro types to Scala types
 
-## Changelog
-
-##### 1.8.3
-- Fixed issue with serializing optional unions of Java enums
-
-##### 1.8.2
-- Added support for @AvroName annotation #159
-- Tuple2 and Tuple3 now supported in Schema generation #156
-- Added support for LocalDateTime
-- Added native support for Seq[Byte] mapped to Schema.Type.Bytes
-- Bumped Avro library to 1.8.2
-- @AvroFixed support for Strings
-- @AvroNamespace works on traits
-- Support overriding namespace per field #171
-
-##### 1.8.1
-- Fix NPE in support for Scala enumerations #158
-- Added scaling support for BigDecmials #142
-
-##### 1.8.0
-- Fixed bug with conversions to and from BigDecimal #127
-- Fixed support for value classes in scala 2.11
-
-* 1.6.4 - Added support for Vectors
-* 1.6.3 - Fixed issue with decimal schema using strings instead of ints for scale and precision
-* 1.6.2 - Removed unused imports, fixed compiler warnings
-* 1.6.1 - Fixed bug when using Option with a default value of None. Updated sbt generator. Added better way to discrimate between tpyes (Ilya Epifanov). Optimized reflection lookup @simonsouter.
-* 1.6.0 - Added support for Coproducts (see section on coproducts) @SohumB. Added support for value classes. Bumped 2.12 cross build to M4.
-* 1.5.6 - Added support for setting scale and precision on BigDecimal @blbradley
-* 1.5.5 - Skipped
-* 1.5.4 - Added support for recursive types @SohumB
-* 1.5.3 - Added support for Option[X] in default parameters @jecos
-* 1.5.2 - Added support for ints, longs, booleans, doubles, arrays, enums and maps in default parameters @whazenberg
-* 1.5.1 - Fixed macro bug introduced in 1.5.0 which broke macro generation.
-* 1.5.0 - Upgraded to Avro 1.8.1. Deprecated factory methods in io classes in favour of more explicit naming. Added caching for the macro generation (thanks @jtvoorde).
-* 1.4.3 - Added support for json serialization
-* 1.4.1 - Added support for parameter defaults
-* 1.4.0 - Added better support for enums. Added support for UUIDs. Rewrote the macro backend. Added better binary support.
-* 1.3.3 - Added missing support for deserializing byte arrays
-* 1.3.0 - Added support for Scala 2.12. Removed 2.10 cross build. Fixed issues with private vals. Added binary (no schema) output stream. Exposed RecordFormat[T] typeclass to enable easy conversion of T to/from an Avro Record.
-* 1.2.0 - Added support for properties, doc fields, and aliases. These are set via annotations.
-* 1.1.0 - Added JSON document to Avro schema converter
-* 1.0.0 - Migrated all macros to use Shapeless. Fixed some trickier nested case class issues. Simplified API. Added support for java enums.
-* 0.94.0 - Added support for writing/reading Either and Option in serializer/deserializer. Fixed bug with array serialization.
-* 0.93.0 - Added support for either and options in schema generator. Added support for aliases via scala annotation.
-* 0.92.0 - Added support for unions (and unions of nulls to Options) and enums to class generator.
-
 ## Schemas
 
-Avro4s allows us to generate schemas directly from classes in a totally straightforward way. Let's define some classes.
+Unlike Json, Avro is a schema based format. You'll find yourself wanting to generate schemas frequently, and writing these by hand or through the Java based `SchemaBuilder`
+classes can be tiring for complex domain models. Avro4s allows us to generate schemas directly from case classes at compile time via macros. This gives you both the convenience
+of generated code, without the annoyance of having to run a code generation step, as well as avoiding the peformance penalty of runtime generated code.
+
+Let's define some classes.
 
 ```scala
 case class Ingredient(name: String, sugar: Double, fat: Double)
 case class Pizza(name: String, ingredients: Seq[Ingredient], vegetarian: Boolean, vegan: Boolean, calories: Int)
 ```
 
-Next is to invoke the `apply` method of `AvroSchema` passing in the top level type. This will return an `org.apache.avro.Schema` instance, from which you can output, write to a file etc.
+To generate an Avro Schema, we need to invoke the apply method of the `AvroSchema` object passing in the target type as a type parameter.
+This will return an `org.apache.avro.Schema` instance.
 
 ```scala
 import com.sksamuel.avro4s.AvroSchema
 val schema = AvroSchema[Pizza]
 ```
 
-Which will output the following schema:
+Where the generated schema is as follows:
 
 ```json
 {
-  "type" : "record",
-  "name" : "Pizza",
-  "namespace" : "com.sksamuel.avro4s.json",
-  "fields" : [ {
-    "name" : "name",
-    "type" : "string"
-  }, {
-    "name" : "ingredients",
-    "type" : {
-      "type" : "array",
-      "items" : {
-        "type" : "record",
-        "name" : "Ingredient",
-        "fields" : [ {
-          "name" : "name",
-          "type" : "string"
-        }, {
-          "name" : "sugar",
-          "type" : "double"
-        }, {
-          "name" : "fat",
-          "type" : "double"
-        } ]
+   "type":"record",
+   "name":"Pizza",
+   "namespace":"com.sksamuel.avro4s.json",
+   "fields":[
+      {
+         "name":"name",
+         "type":"string"
+      },
+      {
+         "name":"ingredients",
+         "type":{
+            "type":"array",
+            "items":{
+               "type":"record",
+               "name":"Ingredient",
+               "fields":[
+                  {
+                     "name":"name",
+                     "type":"string"
+                  },
+                  {
+                     "name":"sugar",
+                     "type":"double"
+                  },
+                  {
+                     "name":"fat",
+                     "type":"double"
+                  }
+               ]
+            }
+         }
+      },
+      {
+         "name":"vegetarian",
+         "type":"boolean"
+      },
+      {
+         "name":"vegan",
+         "type":"boolean"
+      },
+      {
+         "name":"calories",
+         "type":"int"
       }
-    }
-  }, {
-    "name" : "vegetarian",
-    "type" : "boolean"
-  }, {
-    "name" : "vegan",
-    "type" : "boolean"
-  }, {
-    "name" : "calories",
-    "type" : "int"
-  } ]
+   ]
 }
 ```
 You can see that the schema generator handles nested case classes, sequences, primitives, etc. For a full list of supported object types, see the table later.
@@ -128,11 +96,35 @@ implicit val schemaFor = SchemaFor[Recursive]
 val schema = AvroSchema[Recursive]
 ```
 
+## Overriding a Schema
+
+Behind the scenes, `AvroSchema` uses an implicit `SchemaFor`. This is the core typeclass which generates an Avro schema for a given Java or Scala type.
+There are `SchemaFor` instances for all the common JDK and SDK types, as well as macros that generate instances for case classes.
+
+In order to override how a schema is generatef you need to bring into scope an implicit `SchemaFor` for the type you want to override.
+As an example, lets say you wanted all Strings to be encoded as `Schema.Type.BYTES` rather than the standard `Schema.Type.STRING`.
+Then we could create an implicit like this:
+
+```scala
+implicit object MyStringOverride extends SchemaFor[String] {
+  override def schema: Schema = SchemaBuilder.builder.bytesType
+}
+
+case class Foo(a: String)
+
+val schema = AvroSchema[Foo]
+```
+
+Note: If you create an override like this, be aware that schemas in Avro are mutable, so don't share instances of the schemas.
+
 ## Input / Output
 
 ### Serializing
 
-Avro4s allows us to easily serialize case classes using an instance of `AvroOutputStream` which we write to, and close, just like you would any regular output stream. An `AvroOutputStream` can be created from a `File`, `Path`, or by wrapping another `OutputStream`. When we create one, we specify the type of objects that we will be serializing. Eg, to serialize instances of our Pizza class:
+Avro4s allows us to easily serialize case classes using an instance of `AvroOutputStream` which we write to, and close, just like you would any regular output stream.
+An `AvroOutputStream` can be created from a `File`, `Path`, or by wrapping another `OutputStream`.
+When we create one, weof  specify the type objects that we will be serializing and provide a writer schema.
+For example, to serialize instances of our Pizza class:
 
 ```scala
 import java.io.File
@@ -141,7 +133,9 @@ import com.sksamuel.avro4s.AvroOutputStream
 val pepperoni = Pizza("pepperoni", Seq(Ingredient("pepperoni", 12, 4.4), Ingredient("onions", 1, 0.4)), false, false, 98)
 val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pineapple", 5.2, 0.2)), false, false, 91)
 
-val os = AvroOutputStream.data[Pizza](new File("pizzas.avro"))
+val schema = AvroSchema[Pizza]
+
+val os = AvroOutputStream.data[Pizza].to(new File("pizzas.avro")).build(schema)
 os.write(Seq(pepperoni, hawaiian))
 os.flush()
 os.close()
@@ -149,12 +143,18 @@ os.close()
 
 ### Deserializing
 
-With avro4s we can easily deserialize a file back into Scala case classes. Given the `pizzas.avro` file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class. We first create an instance of the input stream specifying the types we will read back, and the file. Then we call iterator which will return a lazy iterator (reads on demand) of the data in the file. In this example, we'll load all data at once from the iterator via `toSet`.
+With avro4s we can easily deserialize a file back into Scala case classes.
+Given the `pizzas.avro` file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class.
+We first create an instance of the input stream specifying the types we will read back, the source file, and then build it using the schema.
+Then we call iterator which will return a lazy iterator (reads on demand) of the data in the file.
+In this example, we'll load all data at once from the iterator via `toSet`.
 
 ```scala
 import com.sksamuel.avro4s.AvroInputStream
 
-val is = AvroInputStream.data[Pizza](new File("pizzas.avro"))
+val schema = AvroSchema[Pizza]
+
+val is = AvroInputStream.data[Pizza].from(new File("pizzas.avro")).build(schema)
 val pizzas = is.iterator.toSet
 is.close()
 println(pizzas.mkString("\n"))
@@ -163,67 +163,39 @@ println(pizzas.mkString("\n"))
 Will print out:
 
 ```scala
-Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4)),false,false,500) Pizza(hawaiian,List(Ingredient(ham,1.5,5.6), Ingredient(pineapple,5.2,0.2)),false,false,500)
+Pizza(pepperoni,List(Ingredient(pepperoni,12.2,4.4), Ingredient(onions,1.2,0.4)),false,false,500)
+Pizza(hawaiian,List(Ingredient(ham,1.5,5.6), Ingredient(pineapple,5.2,0.2)),false,false,500)
 ```
 
-### Binary Serializing
-You can serialize to Binary using the `AvroBinaryOutputStream` which you can create directly or by using `AvroOutputStream.binary`.
-The difference with binary serialization is that the schema is not included in the output.
+### Binary and JSON Formats
+You can serialize as [binary](https://avro.apache.org/docs/1.8.2/spec.html#binary_encoding) or [json](https://avro.apache.org/docs/1.8.2/spec.html#json_encoding)
+by specifying the format when creating the input or output stream. In the earlier example we use `data` which is considered the "default" for Avro.
 
-Simply
+To use json or binary, you can do the following:
 
 ```scala
-case class Composer(name: String, birthplace: String, compositions: Seq[String])
-val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
+AvroOutputStream.binary.to(...).build(...)
+AvroOutputStream.json.to(...).build(...)
 
-val baos = new ByteArrayOutputStream()
-val output = AvroOutputStream.binary[Composer](baos)
-output.write(ennio)
-output.close()
-val bytes = baos.toByteArray
+AvroInputStream.binary.from(...).build(...)
+AvroInputStream.json.from(...).build(...)
 ```
 
-### Binary Deserializing
-You can deserialize Binary using the `AvroBinaryInputStream` which you can create directly or by using `AvroInputStream.binary`
-The difference with binary serialization is that the schema is not included in the data.
-  
-```scala
-val in = new ByteArrayInputStream(bytes)
-val input = AvroInputStream.binary[Composer](in)
-val result = input.iterator.toSeq
-result shouldBe Vector(ennio)
-```   
+Note: Binary serialization does not include the schema in the output.
 
-### JSON Serializing
-You can serialize to JSON using the `AvroJsonOutputStream` which you can create directly or by using `AvroOutputStream.json`
 
-Simply
+## Avro Records
 
-```scala
-case class Composer(name: String, birthplace: String, compositions: Seq[String])
-val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
+In Avro there are two container interfaces designed for complex types - `GenericRecord`, which is the most commonly used, along with the lesser used `SpecificRecord`.
+These record types are used with a schema of type `Schema.Type.RECORD`.
 
-val baos = new ByteArrayOutputStream()
-val output = AvroOutputStream.json[Composer](baos)
-output.write(ennio)
-output.close()
-println(baos.toString("UTF-8"))
-```
+To interface with the Avro Java API or with third party frameworks like Kafka it is sometimes desirable to convert between your case classes and these records,
+rather than using the input/output streams that avro4s provides.
 
-### JSON Deserializing
-You can deserialize JSON using the `AvroJsonInputStream` which you can create directly or by using `AvroInputStream.json`
-  
-```scala
-val json = "{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}"
-val in = new ByteInputStream(json.getBytes("UTF-8"), json.size)
-val input = AvroInputStream.json[Composer](in)
-val result = input.singleEntity
-result shouldBe Success(ennio)
-```   
+To perform conversions, avro4s provides the `RecordFormat` typeclass which converts to and from Scala case classes and Avro records.
 
-## Conversions to/from GenericRecord
-
-To interface with the Java API it is sometimes desirable to convert between your classes and the Avro `GenericRecord` type. You can do this easily in avro4s using the `RecordFormat` typeclass (this is what the input/output streams use behind the scenes). Eg,
+Note: In Avro, `GenericRecord` and `SpecificRecord` don't have a common "Record" interface (just a `Container` interface which simply provides for a schema without any methods for accessing values), so
+Avro4s has defined a `Record` trait, which is the union of the `GenericRecord` and `SpecificRecord` interfaces. This allows Avro4s to generate records which implement both interfaces.
 
 To convert from a class into a record:
 
@@ -231,7 +203,7 @@ To convert from a class into a record:
 case class Composer(name: String, birthplace: String, compositions: Seq[String])
 val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
 val format = RecordFormat[Composer]
-// record is of type GenericRecord
+// record is a type that implements both GenericRecord and Specific Record
 val record = format.to(ennio)
 ```
 
@@ -241,7 +213,6 @@ And to go from a record back into a type:
 // given some record from earlier
 val record = ...
 val format = RecordFormat[Composer]
-// is an instance of Composer
 val ennio = format.from(record)
 ```
 
@@ -293,34 +264,49 @@ import scala.collection.{Array, List, Seq, Iterable, Set, Map, Option, Either}
 import shapeless.{:+:, CNil}
 ```
 
-|Scala Type|Avro Type|
-|----------|---------|
-|Boolean|boolean|
-|Array[Byte]|bytes|
-|String|string or fixed|
-|Int|int|
-|Long|long|
-|BigDecimal|[decimal](https://avro.apache.org/docs/1.7.7/spec.html#Decimal) with default scale 2 and precision 8|
-|Double|double|
-|Float|float|
-|java.util.UUID|string|
-|java.time.LocalDate|string|
-|java.time.LocalDateTime|string|
-|Java Enums|enum|
-|sealed trait T|union|
-|sealed trait with only case objects|enum|
-|Array[T]|array|
-|List[T]|array|
-|Seq[T]|array|
-|Iterable[T]|array|
-|Set[T]|array|
-|Map[String, T]|map|
-|Option[T]|union:null,T|
-|Either[L, R]|union:L,R|
-|A :+: B :+: C :+: CNil|union:A,B,C|
-|Option[Either[L, R]]|union:null,L,R|
-|Option[A :+: B :+: C :+: CNil]|union:null,A,B,C|
-|T|record|
+| Scala Type                   	| Schema Type   	| Logical Type     	|
+|------------------------------	|---------------	|------------------	|
+| String                       	| STRING        	|                  	|
+| Boolean                      	| BOOLEAN       	|                  	|
+| Long                         	| LONG          	|                  	|
+| Int                          	| INT           	|                  	|
+| Short                        	| INT           	|                  	|
+| Byte                         	| INT           	|                  	|
+| Double                       	| DOUBLE        	|                  	|
+| Float                        	| FLOAT         	|                  	|
+| UUID                         	| STRING        	| UUID             	|
+| LocalDate                    	| INT           	| Date             	|
+| LocalTime                    	| INT           	| Time-Millis      	|
+| LocalDateTime                	| LONG          	| Timestamp-Millis 	|
+| java.sql.Date                	| INT           	| Date             	|
+| Instant                      	| LONG          	| Timestamp-Millis 	|
+| Timestamp                    	| LONG          	| Timestamp-Millis 	|
+| BigDecimal                   	| BYTES         	| Decimal<8,2>     	|
+| Option[T]                    	| UNION<null,T> 	|                  	|
+| Array[Byte]                  	| BYTES         	|                  	|
+| ByteBuffer                   	| BYTES         	|                  	|
+| Seq[Byte]                    	| BYTES         	|                  	|
+| List[Byte]                   	| BYTES         	|                  	|
+| Vector[Byte]                 	| BYTES         	|                  	|
+| Array[T]                     	| ARRAY<T>      	|                  	|
+| Vector[T]                    	| ARRAY<T>      	|                  	|
+| Seq[T]                       	| ARRAY<T>      	|                  	|
+| List[T]                      	| ARRAY<T>      	|                  	|
+| Set[T]                       	| ARRAY<T>      	|                  	|
+| sealed trait of case classes 	| UNION<A,B>    	|                  	|
+| sealed trait of case objects 	| ENUM<A,B>     	|                  	|
+| Map[String, V>               	| MAP<V>        	|                  	|
+| Either[A,B]                  	| UNION<A,B>    	|                  	|
+| A :+: B :+: C :+: CNil       	| UNION<A,B,C>  	|                  	|
+| case class T                 	| RECORD        	|                  	|
+| Scala enumeration            	| ENUM          	|                  	|
+| Java enumeration             	| ENUM          	|                  	|
+|                              	|               	|                  	|
+|                              	|               	|                  	|
+|                              	|               	|                  	|
+|                              	|               	|                  	|
+|                              	|               	|                  	|
+
 
 ## Custom Type Mappings
 
@@ -375,7 +361,7 @@ This will result in a schema where both `BigDecimal` quantities have their own s
 
 #### Gradle
 
-`compile 'com.sksamuel.avro4s:avro4s-core_2.11:xxx'`
+`compile 'com.sksamuel.avro4s:avro4s-core_2.12:xxx'`
 
 #### SBT
 
@@ -386,24 +372,12 @@ This will result in a schema where both `BigDecimal` quantities have their own s
 ```xml
 <dependency>
     <groupId>com.sksamuel.avro4s</groupId>
-    <artifactId>avro4s-core_2.11</artifactId>
+    <artifactId>avro4s-core_2.12</artifactId>
     <version>xxx</version>
 </dependency>
 ```
 
 Check the latest released version on [Maven Central](http://search.maven.org/#search|ga|1|g%3A%22com.sksamuel.avro4s%22)
-
-## Building and Testing
-
-This project is built with SBT. So to build
-```
-sbt compile
-```
-
-And to test
-```
-sbt test
-```
 
 ## Contributions
 Contributions to avro4s are always welcome. Good ways to contribute include:
