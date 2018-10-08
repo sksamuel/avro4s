@@ -7,20 +7,26 @@ import sbtrelease.ReleasePlugin
 /** Adds common settings automatically to all subprojects */
 object GlobalPlugin extends AutoPlugin {
 
-  val org = "com.sksamuel.avro4s"
+  object autoImport {
+    val org = "com.sksamuel.avro4s"
+    val AvroVersion = "1.8.2"
+    val Log4jVersion = "1.2.17"
+    val ScalatestVersion = "3.0.6-SNAP2"
+    val ScalaVersion = "2.13.0-M4"
+    val Slf4jVersion = "1.7.12"
+    val Json4sVersion = "3.6.1"
+    val CatsVersion = "1.4.0"
+    val ShapelessVersion = "2.3.3"
+  }
 
-  val AvroVersion = "1.8.2"
-  val Log4jVersion = "1.2.17"
-  val ScalatestVersion = "3.0.5"
-  val ScalaVersion = "2.12.7"
-  val Slf4jVersion = "1.7.12"
+  import autoImport._
 
   override def requires = ReleasePlugin
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq(ScalaVersion),
+    crossScalaVersions := Seq(ScalaVersion, "2.12.7"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(

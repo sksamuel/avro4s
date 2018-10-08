@@ -123,7 +123,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
 
     override def encode(map: Map[String, V], schema: Schema): java.util.Map[String, AnyRef] = {
       require(schema != null)
-      map.mapValues(encoder.encode(_, schema.getValueType)).asJava
+      map.mapValues(encoder.encode(_, schema.getValueType)).toMap.asJava
     }
   }
 

@@ -8,7 +8,7 @@ publish := {}
 val `avro4s-macros` = project.in(file("avro4s-macros"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.chuusai" %% "shapeless" % "2.3.3"
+      "com.chuusai" %% "shapeless" % ShapelessVersion
     )
   )
 
@@ -19,7 +19,7 @@ val `avro4s-json` = project.in(file("avro4s-json"))
   .dependsOn(`avro4s-core`)
   .settings(
     libraryDependencies ++= Seq(
-      "org.json4s" %% "json4s-native" % "3.5.3"
+      "org.json4s" %% "json4s-native" % Json4sVersion
     )
   )
 
@@ -27,7 +27,7 @@ val `avro4s-cats` = project.in(file("avro4s-cats"))
   .dependsOn(`avro4s-core`)
   .settings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "1.4.0"
+      "org.typelevel" %% "cats-core" % CatsVersion
     )
   )
 

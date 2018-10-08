@@ -161,7 +161,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
   implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = new SchemaFor[E] {
     override def schema: Schema = {
 
-      val annos = tag.runtimeClass.getAnnotations.map { a =>
+      val annos = tag.runtimeClass.getAnnotations.toList.map { a =>
         Anno(a.annotationType.getClass.getName, Nil)
       }
 

@@ -191,7 +191,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     import scala.collection.JavaConverters._
 
     override def decode(value: Any, schema: Schema): Vector[T] = value match {
-      case array: Array[_] => array.map(decoder.decode(_, schema)).toVector
+      case array: Array[_] => array.toVector.map(decoder.decode(_, schema))
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toVector
       case other => sys.error("Unsupported vector " + other)
     }
@@ -216,7 +216,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     import scala.collection.JavaConverters._
 
     override def decode(value: Any, schema: Schema): List[T] = value match {
-      case array: Array[_] => array.map(decoder.decode(_, schema)).toList
+      case array: Array[_] => array.toList.map(decoder.decode(_, schema))
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toList
       case other => sys.error("Unsupported array " + other)
     }
@@ -227,7 +227,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     import scala.collection.JavaConverters._
 
     override def decode(value: Any, schema: Schema): Seq[T] = value match {
-      case array: Array[_] => array.map(decoder.decode(_, schema))
+      case array: Array[_] => array.toSeq.map(decoder.decode(_, schema))
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toSeq
       case other => sys.error("Unsupported array " + other)
     }

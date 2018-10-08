@@ -16,7 +16,7 @@ trait CoproductSchemaFor {
 
     val base = basefor.schema
     val schemas = scala.util.Try(base.getTypes.asScala).getOrElse(Seq(base))
-    override def schema = Schema.createUnion(schemas: _*)
+    override def schema = Schema.createUnion(schemas.asJava)
   }
 
   // And here we continue the recursion up.

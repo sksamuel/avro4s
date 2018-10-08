@@ -12,7 +12,7 @@ object Decoders {
 
   implicit def nonEmptyListEncoder[T](decoder: Decoder[T]) = new Decoder[NonEmptyList[T]] {
     override def decode(value: Any, schema: Schema): NonEmptyList[T] = value match {
-      case array: Array[_] => NonEmptyList.fromListUnsafe(array.map(decoder.decode(_, schema)).toList)
+      case array: Array[_] => NonEmptyList.fromListUnsafe(array.toList.map(decoder.decode(_, schema)))
       case list: java.util.Collection[_] => NonEmptyList.fromListUnsafe(list.asScala.map(decoder.decode(_, schema)).toList)
       case other => sys.error("Unsupported type " + other)
     }
@@ -20,7 +20,7 @@ object Decoders {
 
   implicit def nonEmptyVectorEncoder[T](decoder: Decoder[T]) = new Decoder[NonEmptyVector[T]] {
     override def decode(value: Any, schema: Schema): NonEmptyVector[T] = value match {
-      case array: Array[_] => NonEmptyVector.fromVectorUnsafe(array.map(decoder.decode(_, schema)).toVector)
+      case array: Array[_] => NonEmptyVector.fromVectorUnsafe(array.toVector.map(decoder.decode(_, schema)))
       case list: java.util.Collection[_] => NonEmptyVector.fromVectorUnsafe(list.asScala.map(decoder.decode(_, schema)).toVector)
       case other => sys.error("Unsupported type " + other)
     }

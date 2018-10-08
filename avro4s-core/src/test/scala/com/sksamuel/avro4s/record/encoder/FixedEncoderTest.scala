@@ -6,7 +6,7 @@ import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.scalatest.{FunSuite, Matchers}
 
 @AvroFixed(8)
-case class QuarterSHA256(bytes: scala.collection.mutable.WrappedArray.ofByte) extends AnyVal
+case class QuarterSHA256(bytes: scala.collection.mutable.ArraySeq.ofByte) extends AnyVal
 
 case class FixedString(@AvroFixed(7) mystring: String)
 
@@ -19,7 +19,7 @@ case class OptionFixedWrapper(opt: Option[FixedValueType])
 class FixedEncoderTest extends FunSuite with Matchers {
 
   val m = AvroMessage(
-    QuarterSHA256(new scala.collection.mutable.WrappedArray.ofByte(Array[Byte](0, 1, 2, 3, 4, 5, 6, 7))),
+    QuarterSHA256(new scala.collection.mutable.ArraySeq.ofByte(Array[Byte](0, 1, 2, 3, 4, 5, 6, 7))),
     Array[Byte](0, 1, 2, 3)
   )
 
