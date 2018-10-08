@@ -85,18 +85,7 @@ Where the generated schema is as follows:
 ```
 You can see that the schema generator handles nested case classes, sequences, primitives, etc. For a full list of supported object types, see the table later.
 
-## Recursive Schemas
-
-Avro4s supports recursive schemas, but you will have to manually force the `SchemaFor` instance, instead of letting it be generated.
-
-``` scala
-case class Recursive(payload: Int, next: Option[Recursive])
-
-implicit val schemaFor = SchemaFor[Recursive]
-val schema = AvroSchema[Recursive]
-```
-
-## Overriding a Schema
+### Overriding a Schema
 
 Behind the scenes, `AvroSchema` uses an implicit `SchemaFor`. This is the core typeclass which generates an Avro schema for a given Java or Scala type.
 There are `SchemaFor` instances for all the common JDK and SDK types, as well as macros that generate instances for case classes.
@@ -117,21 +106,32 @@ val schema = AvroSchema[Foo]
 
 Note: If you create an override like this, be aware that schemas in Avro are mutable, so don't share instances of the schemas.
 
+### Recursive Schemas
+
+Avro4s supports recursive schemas, but you will have to manually force the `SchemaFor` instance, instead of letting it be generated.
+
+``` scala
+case class Recursive(payload: Int, next: Option[Recursive])
+
+implicit val schemaFor = SchemaFor[Recursive]
+val schema = AvroSchema[Recursive]
+```
+
 ## Input / Output
 
 ### Serializing
 
 Avro4s allows us to easily serialize case classes using an instance of `AvroOutputStream` which we write to, and close, just like you would any regular output stream.
 An `AvroOutputStream` can be created from a `File`, `Path`, or by wrapping another `OutputStream`.
-When we create one, weof  specify the type objects that we will be serializing and provide a writer schema.
+When we create one, we specify the type of objects that we will be serializing and provide a writer schema.
 For example, to serialize instances of our Pizza class:
 
 ```scala
 import java.io.File
 import com.sksamuel.avro4s.AvroOutputStream
 
-val pepperoni = Pizza("pepperoni", Seq(Ingredient("pepperoni", 12, 4.4), Ingredient("onions", 1, 0.4)), false, false, 98)
-val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pineapple", 5.2, 0.2)), false, false, 91)
+val pepperoni = Pizza("pepperoni", Seq(Ingredient("pepperoni", 12, 4.4), Ingredient("onions", 1, 0.4)), false, false, 598)
+val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pineapple", 5.2, 0.2)), false, false, 391)
 
 val schema = AvroSchema[Pizza]
 
@@ -143,10 +143,12 @@ os.close()
 
 ### Deserializing
 
-With avro4s we can easily deserialize a file back into Scala case classes.
+We can easily deserialize a file back into case classes.
 Given the `pizzas.avro` file we generated in the previous section on serialization, we will read this back in using the `AvroInputStream` class.
-We first create an instance of the input stream specifying the types we will read back, the source file, and then build it using the schema.
-Then we call iterator which will return a lazy iterator (reads on demand) of the data in the file.
+We first create an instance of the input stream specifying the types we will read back, the source file, and then build it using a reader schema.
+
+Once the input stream is created, we can invoke `iterator` which will return a lazy iterator that reads on demand the data in the file.
+
 In this example, we'll load all data at once from the iterator via `toSet`.
 
 ```scala
@@ -157,6 +159,7 @@ val schema = AvroSchema[Pizza]
 val is = AvroInputStream.data[Pizza].from(new File("pizzas.avro")).build(schema)
 val pizzas = is.iterator.toSet
 is.close()
+
 println(pizzas.mkString("\n"))
 ```
 
@@ -192,10 +195,10 @@ These record types are used with a schema of type `Schema.Type.RECORD`.
 To interface with the Avro Java API or with third party frameworks like Kafka it is sometimes desirable to convert between your case classes and these records,
 rather than using the input/output streams that avro4s provides.
 
-To perform conversions, avro4s provides the `RecordFormat` typeclass which converts to and from Scala case classes and Avro records.
+To perform conversions, use the `RecordFormat` typeclass which converts to/from case classes and Avro records.
 
-Note: In Avro, `GenericRecord` and `SpecificRecord` don't have a common "Record" interface (just a `Container` interface which simply provides for a schema without any methods for accessing values), so
-Avro4s has defined a `Record` trait, which is the union of the `GenericRecord` and `SpecificRecord` interfaces. This allows Avro4s to generate records which implement both interfaces.
+Note: In Avro, `GenericRecord` and `SpecificRecord` don't have a common _Record_ interface (just a `Container` interface which simply provides for a schema without any methods for accessing values), so
+avro4s has defined a `Record` trait, which is the union of the `GenericRecord` and `SpecificRecord` interfaces. This allows avro4s to generate records which implement both interfaces at the same time.
 
 To convert from a class into a record:
 
@@ -216,16 +219,16 @@ val format = RecordFormat[Composer]
 val ennio = format.from(record)
 ```
 
-## Set a schema's decimal scale, precision and rounding mode
+## Decimal scale, precision and rounding mode
 
-Bring an implicit `ScaleAndPrecisionAndRoundingMode` into scope before using `AvroSchema`.
+Bring an implicit `ScalePrecisionRoundingMode` into scope before using `AvroSchema`.
 
 ```scala
-import com.sksamuel.avro4s.ScaleAndPrecisionAndRoundingMode
+import com.sksamuel.avro4s.ScalePrecisionRoundingMode
 
 case class MyDecimal(d: BigDecimal)
 
-implicit val sp = ScaleAndPrecisionAndRoundingMode(8, 20, RoundingMode.HALF_UP)
+implicit val sp = ScalePrecisionRoundingMode(8, 20, RoundingMode.HALF_UP)
 val schema = AvroSchema[MyDecimal]
 ```
 
@@ -246,6 +249,31 @@ val schema = AvroSchema[MyDecimal]
 }
 ```
 
+### Selective Customisation
+
+You can selectively customise the way Avro4s generates certain parts of your hierarchy, thanks to implicit precedence. Suppose you have the following classes:
+
+```scala
+case class Product(name: String, price: Price, litres: BigDecimal)
+case class Price(currency: String, amount: BigDecimal)
+```
+
+And you want to selectively use different scale/precision for the `price` and `litres` quantities. You can do this by forcing the implicits in the corresponding companion objects.
+
+``` scala
+object Price {
+  implicit val sp = ScaleAndPrecision(10,2)
+  implicit val schema = SchemaFor[Price]
+}
+
+object Product {
+  implicit val sp = ScaleAndPrecision(8,4)
+  implicit val schema = SchemaFor[Product]
+}
+```
+
+This will result in a schema where both `BigDecimal` quantities have their own separate scale and precision.
+
 ## Coproducts
 
 Avro supports generalised unions, eithers of more than two values. To represent these in scala, we use `shapeless.:+:`, such that `A :+: B :+: C :+: CNil` represents cases where a type is `A` OR `B` OR `C`. See shapeless' [documentation on coproducts](https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0#coproducts-and-discriminated-unions) for more on how to use coproducts.
@@ -258,6 +286,19 @@ When all descendants of sealed trait/class are singleton objects, optimized, enu
 
 
 ## Type Mappings
+
+Avro4s defines two typeclasses, `Encoder` and `Decoder` which do the work
+of mapping between scala values and Avro compatible values. There are built in encoders and decoders for all the common types.
+
+For example, given a string, and a schema of type `Schema.Type.STRING` then the default encoder would return an instance of Utf8, whereas
+the same string and a `Schema.Type.FIXED` schema would be encoded as an instance of GenericData.Fixed.
+
+Another example is given an `Option[T]` then an instance of None would be encoded as null, and an instance of Some would be
+encoded as the underlying value.
+
+Decoders do the same work, but in reverse. They take an Avro value, such as Utf8 and return a scala value.
+
+### Built in Type Mappings
 
 ``` scala
 import scala.collection.{Array, List, Seq, Iterable, Set, Map, Option, Either}
@@ -301,61 +342,54 @@ import shapeless.{:+:, CNil}
 | case class T                 	| RECORD        	|                  	|
 | Scala enumeration            	| ENUM          	|                  	|
 | Java enumeration             	| ENUM          	|                  	|
-|                              	|               	|                  	|
-|                              	|               	|                  	|
-|                              	|               	|                  	|
-|                              	|               	|                  	|
-|                              	|               	|                  	|
 
+### Custom Type Mappings
 
-## Custom Type Mappings
+It is very easy to add custom type mappings. To do this, we bring into scope a custom implicit of `Encoder[T]` and/or `Decoder[T]`.
 
-It is very easy to add custom type mappings. To do this, you need to create instances of `ToSchema`, `ToValue` and `FromValue` typeclasses.
-
-`ToSchema` is used to generate an Avro schema for a given JVM type. `ToValue` is used to convert an instance of a JVM type into an instance of the Avro type. And `FromValue` is used to convert an instance of the Avro type into the JVM type.
-
-For example, to create a mapping for `org.joda.time.DateTime` that we wish to store as an ISO Date string, then we can do the following:
+For example, to create a custom type mapping for a type Foo which writes out the contents in upper case, but always reads
+the contents in lower case, we can do the following:
 
 ```scala
-implicit object DateTimeToSchema extends ToSchema[DateTime] {
+case class Foo(a: String, b: String)
+
+implicit object FooEncoder extends Encoder[Foo] {
+  override def encode(foo: Foo, schema: Schema): AnyRef = {
+    val record = new GenericData.Record(schema)
+    record.put("a", foo.a.toUpperCase)
+    record.put("b", foo.b.toUpperCase)
+    record
+  }
+}
+
+implicit object FooDecoder extends Decoder[Foo] {
+  override def decode(value: Any, schema: Schema): Foo = {
+    val record = value.asInstanceOf[GenericRecord]
+    Foo(record.get("a").toString.toLowerCase, record.get("b").toString.toLowerCase)
+  }
+}
+```
+
+Another example is changing the way we serialize `LocalDateTime` to store these dates as ISO strings. In this case, we are
+also changing the schema type from the default LONG to STRING, so we must add an implicit `SchemaFor` as well as the encoders
+and decoders.
+
+```scala
+implicit object DateTimeSchemaFor extends SchemaFor[LocalDateTime] {
   override val schema: Schema = Schema.create(Schema.Type.STRING)
 }
 
-implicit object DateTimeToValue extends ToValue[DateTime] {
-  override def apply(value: DateTime): String = ISODateTimeFormat.dateTime().print(value)
+implicit object DateTimeEncoder extends Encoder[LocalDateTime] {
+  override def apply(value: LocalDateTime, schema: Schema): AnyRef = ISODateTimeFormat.dateTime().print(value)
 }
 
-implicit object DateTimeFromValue extends FromValue[DateTime] {
-  override def apply(value: Any, field: Field): DateTime = ISODateTimeFormat.dateTime().parseDateTime(value.toString())
-}
-```
-
-These typeclasses must be implicit and in scope when you invoke `AvroSchema` or create an `AvroInputStream`/`AvroOutputStream`.
-
-## Selective Customisation
-
-You can selectively customise the way Avro4s generates certain parts of your hierarchy, thanks to implicit precedence. Suppose you have the following classes:
-
-```scala
-case class Product(name: String, price: Price, litres: BigDecimal)
-case class Price(currency: String, amount: BigDecimal)
-```
-
-And you want to selectively use different scale/precision for the `price` and `litres` quantities. You can do this by forcing the implicits in the corresponding companion objects.
-
-``` scala
-object Price {
-  implicit val sp = ScaleAndPrecision(10,2)
-  implicit val schema = SchemaFor[Price]
-}
-
-object Product {
-  implicit val sp = ScaleAndPrecision(8,4)
-  implicit val schema = SchemaFor[Product]
+implicit object DateTimeDecoder extends Decoder[LocalDateTime] {
+  override def apply(value: Any, field: Field): LocalDateTime = ISODateTimeFormat.dateTime().parseDateTime(value.toString)
 }
 ```
 
-This will result in a schema where both `BigDecimal` quantities have their own separate scale and precision.
+These typeclasses must be implicit and in scope when you use `AvroSchema` or `RecordFormat`.
+
 
 ## Using avro4s in your project
 
