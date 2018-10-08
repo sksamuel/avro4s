@@ -219,72 +219,6 @@ val format = RecordFormat[Composer]
 val ennio = format.from(record)
 ```
 
-## Decimal scale, precision and rounding mode
-
-Bring an implicit `ScalePrecisionRoundingMode` into scope before using `AvroSchema`.
-
-```scala
-import com.sksamuel.avro4s.ScalePrecisionRoundingMode
-
-case class MyDecimal(d: BigDecimal)
-
-implicit val sp = ScalePrecisionRoundingMode(8, 20, RoundingMode.HALF_UP)
-val schema = AvroSchema[MyDecimal]
-```
-
-```json
-{
-  "type":"record",
-  "name":"MyDecimal",
-  "namespace":"$iw",
-  "fields":[{
-    "name":"d",
-    "type":{
-      "type":"bytes",
-      "logicalType":"decimal",
-      "scale":"8",
-      "precision":"20"
-    }
-  }]
-}
-```
-
-### Selective Customisation
-
-You can selectively customise the way Avro4s generates certain parts of your hierarchy, thanks to implicit precedence. Suppose you have the following classes:
-
-```scala
-case class Product(name: String, price: Price, litres: BigDecimal)
-case class Price(currency: String, amount: BigDecimal)
-```
-
-And you want to selectively use different scale/precision for the `price` and `litres` quantities. You can do this by forcing the implicits in the corresponding companion objects.
-
-``` scala
-object Price {
-  implicit val sp = ScaleAndPrecision(10,2)
-  implicit val schema = SchemaFor[Price]
-}
-
-object Product {
-  implicit val sp = ScaleAndPrecision(8,4)
-  implicit val schema = SchemaFor[Product]
-}
-```
-
-This will result in a schema where both `BigDecimal` quantities have their own separate scale and precision.
-
-## Coproducts
-
-Avro supports generalised unions, eithers of more than two values. To represent these in scala, we use `shapeless.:+:`, such that `A :+: B :+: C :+: CNil` represents cases where a type is `A` OR `B` OR `C`. See shapeless' [documentation on coproducts](https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0#coproducts-and-discriminated-unions) for more on how to use coproducts.
-
-## Sealed hierarchies
-
-Scala sealed traits/classes are supported both when it comes to schema generation and conversions to/from `GenericRecord`. Generally sealed hierarchies are encoded as unions - in the same way like Coproducts. Under the hood, shapeless `Generic` is used to derive Coproduct representation for sealed hierarchy.
-
-When all descendants of sealed trait/class are singleton objects, optimized, enum-based encoding is used instead.
-
-
 ## Type Mappings
 
 Avro4s defines two typeclasses, `Encoder` and `Decoder` which do the work
@@ -389,6 +323,129 @@ implicit object DateTimeDecoder extends Decoder[LocalDateTime] {
 ```
 
 These typeclasses must be implicit and in scope when you use `AvroSchema` or `RecordFormat`.
+
+
+## Overriding name and namespace
+
+Avro schemas for complex types (RECORDS) contain a name and a namespace. By default, these are the name of the class
+and the enclosing package name, but it is possible to customize these using the annotations `AvroName` and `AvroNamespace`.
+
+For example, the following class:
+
+```scala
+package com.foo
+case class Test(a: String)
+```
+
+Would normally have a schema like this:
+
+```json
+{
+  "type":"record",
+  "name":"Test",
+  "namespace":"com.foo",
+  "fields":[
+    {
+      "name":"a",
+      "type":"string"
+    }
+  ]
+}
+```
+
+However we can override the name and/or the namespace like this:
+
+
+```scala
+package com.foo
+
+@AvroName("Wibble")
+@AvroNamespace("com.other")
+case class Test(a: String)
+```
+
+And then the generated schema looks like this:
+
+```json
+{
+  "type":"record",
+  "name":"Wibble",
+  "namespace":"com.other",
+  "fields":[
+    {
+      "name":"a",
+      "type":"string"
+    }
+  ]
+}
+```
+
+Note: It is possible, but not necessary, to use both AvroName and AvroNamespace. You can just use one of them if you wish.
+
+## Decimal scale, precision and rounding mode
+
+Bring an implicit `ScalePrecisionRoundingMode` into scope before using `AvroSchema`.
+
+```scala
+import com.sksamuel.avro4s.ScalePrecisionRoundingMode
+
+case class MyDecimal(d: BigDecimal)
+
+implicit val sp = ScalePrecisionRoundingMode(8, 20, RoundingMode.HALF_UP)
+val schema = AvroSchema[MyDecimal]
+```
+
+```json
+{
+  "type":"record",
+  "name":"MyDecimal",
+  "namespace":"com.foo",
+  "fields":[{
+    "name":"d",
+    "type":{
+      "type":"bytes",
+      "logicalType":"decimal",
+      "scale":"8",
+      "precision":"20"
+    }
+  }]
+}
+```
+
+### Selective Customisation
+
+You can selectively customise the way Avro4s generates certain parts of your hierarchy, thanks to implicit precedence. Suppose you have the following classes:
+
+```scala
+case class Product(name: String, price: Price, litres: BigDecimal)
+case class Price(currency: String, amount: BigDecimal)
+```
+
+And you want to selectively use different scale/precision for the `price` and `litres` quantities. You can do this by forcing the implicits in the corresponding companion objects.
+
+``` scala
+object Price {
+  implicit val sp = ScaleAndPrecision(10,2)
+  implicit val schema = SchemaFor[Price]
+}
+
+object Product {
+  implicit val sp = ScaleAndPrecision(8,4)
+  implicit val schema = SchemaFor[Product]
+}
+```
+
+This will result in a schema where both `BigDecimal` quantities have their own separate scale and precision.
+
+## Coproducts
+
+Avro supports generalised unions, eithers of more than two values. To represent these in scala, we use `shapeless.:+:`, such that `A :+: B :+: C :+: CNil` represents cases where a type is `A` OR `B` OR `C`. See shapeless' [documentation on coproducts](https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0#coproducts-and-discriminated-unions) for more on how to use coproducts.
+
+## Sealed hierarchies
+
+Scala sealed traits/classes are supported both when it comes to schema generation and conversions to/from `GenericRecord`. Generally sealed hierarchies are encoded as unions - in the same way like Coproducts. Under the hood, shapeless `Generic` is used to derive Coproduct representation for sealed hierarchy.
+
+When all descendants of sealed trait/class are singleton objects, optimized, enum-based encoding is used instead.
 
 
 ## Using avro4s in your project
