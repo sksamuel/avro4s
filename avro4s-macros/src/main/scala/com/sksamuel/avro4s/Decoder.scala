@@ -299,7 +299,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     private def getTypeName[T](clazz: Class[T]): String = {
       val mirror = runtimeMirror(clazz.getClassLoader)
       val tpe = mirror.classSymbol(clazz).toType
-      AvroNameResolver.forClass(tpe).asInstanceOf[String]
+      AvroNameResolver.forClass(tpe).toString
     }
 
   }
