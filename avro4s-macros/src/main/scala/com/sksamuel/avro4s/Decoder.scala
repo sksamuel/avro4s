@@ -174,6 +174,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     override def decode(value: Any, schema: Schema): UUID = {
       value match {
         case s: String => UUID.fromString(s)
+        case u: Utf8 => UUID.fromString(u.toString)
         case bytebuf: ByteBuffer => UUID.fromString(new String(bytebuf.array))
         case a: Array[Byte] => UUID.fromString(new String(a))
         case null => sys.error("Cannot decode <null> as a UUID")
