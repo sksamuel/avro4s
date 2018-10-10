@@ -5,6 +5,8 @@ import java.util.UUID
 import com.sksamuel.avro4s.AvroSchema
 import com.sksamuel.avro4s.Decoder
 import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.GenericData
+import org.apache.avro.util.{Utf8}
 import org.scalatest.{Matchers, WordSpec}
 
 class UUIDDecoderTest extends WordSpec with Matchers {
@@ -17,6 +19,13 @@ class UUIDDecoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[UUIDTest]
       val record = new GenericData.Record(schema)
       record.put("uuid", uuid.toString)
+      Decoder[UUIDTest].decode(record, schema) shouldBe UUIDTest(uuid)
+    }
+    "decode UUIDSs encoded as Utf8" in {
+      val uuid = UUID.randomUUID()
+      val schema = AvroSchema[UUIDTest]
+      val record = new GenericData.Record(schema)
+      record.put("uuid", new Utf8(uuid.toString))
       Decoder[UUIDTest].decode(record, schema) shouldBe UUIDTest(uuid)
     }
     "decode seq of uuids" in {
