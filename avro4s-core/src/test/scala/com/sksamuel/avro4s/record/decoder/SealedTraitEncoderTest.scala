@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroNamespace, AvroSchema, Decoder, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroNamespace, AvroName, AvroSchema, Decoder, ImmutableRecord}
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
@@ -62,6 +62,19 @@ class SealedTraitDecoderTest extends FunSuite with Matchers {
     Decoder[Buy].decode(ImmutableRecord(schema, Vector(ImmutableRecord(appleschema, Vector(java.lang.Double.valueOf(0.3))))), schema) shouldBe Buy(Apple(0.3))
     Decoder[Buy].decode(ImmutableRecord(schema, Vector(ImmutableRecord(orangeschema, Vector(new Utf8("bright orange"))))), schema) shouldBe Buy(Orange("bright orange"))
   }
+
+  test("use @AvroNamespace and @AvroName with sealed traits of case objects") {
+    val thingySchema = SchemaBuilder.enumeration("thingy").symbols("whim_wham", "widget")
+    val schema = SchemaBuilder.record("ThingHolder").fields().name("thing").`type`(thingySchema).noDefault().endRecord()
+    val record1 = new GenericData.Record(schema)
+    record1.put("thing", "whim_wham")
+
+    val record2 = new GenericData.Record(schema)
+    record2.put("thing", "widget")
+
+    Decoder[ThingHolder].decode(record1, schema) shouldBe ThingHolder(WhimWham)
+    Decoder[ThingHolder].decode(record2, schema) shouldBe ThingHolder(Widget)
+  }
 }
 
 sealed trait Wibble
@@ -89,3 +102,12 @@ final case class Orange(color: String) extends Fruit
 
 @AvroNamespace("market")
 final case class Buy(fruit: Fruit)
+
+final case class ThingHolder(thing: Thingy)
+
+@AvroName("thingy")
+sealed trait Thingy
+@AvroName("whim_wham")
+case object WhimWham extends Thingy
+@AvroName("widget")
+case object Widget extends Thingy

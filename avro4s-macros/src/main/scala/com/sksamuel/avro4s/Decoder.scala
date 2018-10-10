@@ -289,8 +289,18 @@ object Decoder extends CoproductDecoders with TupleDecoders {
                                                                      toList: ToList[L, T]): Decoder[T] = new Decoder[T] {
     override def decode(value: Any, schema: Schema): T = {
       val name = value.toString
-      toList(objs()).find(_.toString == name).getOrElse(sys.error(s"Uknown type $name"))
+      val variants = toList(objs())
+      variants.find(v => {
+        getTypeName(v.getClass) == name
+      }).getOrElse(sys.error(s"Unknown type $name"))
     }
+
+    private def getTypeName[T](clazz: Class[T]): String = {
+      val mirror = runtimeMirror(clazz.getClassLoader)
+      val tpe = mirror.classSymbol(clazz).toType
+      AvroNameResolver.forClass(tpe).toString
+    }
+
   }
 
   implicit def applyMacro[T <: Product]: Decoder[T] = macro applyMacroImpl[T]

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.{AvroSchema, AvroName}
 import org.scalatest.{FunSuite, Matchers}
 
 class SealedTraitSchemaTest extends FunSuite with Matchers {
@@ -37,7 +37,8 @@ class SealedTraitSchemaTest extends FunSuite with Matchers {
 }
 
 sealed trait Dibble
-case object Dobble extends Dibble
+@AvroName("Dobble")
+case object Dobbles extends Dibble
 case object Dabble extends Dibble
 
 sealed trait Wibble

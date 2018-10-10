@@ -221,7 +221,13 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     val packageName = ct.runtimeClass.getPackage.getName
     val namespace = extractor.namespace.getOrElse(packageName)
     val name = extractor.name.getOrElse(ct.runtimeClass.getSimpleName)
-    val symbols = toList(objs()).map(_.toString)
+    val symbols = toList(objs()).map(v => symbolName(v.getClass))
+
+    private def symbolName[T](clazz: Class[T]): String = {
+      val mirror = runtimeMirror(clazz.getClassLoader)
+      val tpe = mirror.classSymbol(clazz).toType
+      AvroNameResolver.forClass(tpe).toString
+    }
 
     override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
   }
