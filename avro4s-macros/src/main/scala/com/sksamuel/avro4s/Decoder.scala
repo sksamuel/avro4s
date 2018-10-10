@@ -291,7 +291,6 @@ object Decoder extends CoproductDecoders with TupleDecoders {
       val name = value.toString
       val variants = toList(objs())
       variants.find(v => {
-        println(getTypeName(v.getClass))
         getTypeName(v.getClass) == name
       }).getOrElse(sys.error(s"Unknown type $name"))
     }
