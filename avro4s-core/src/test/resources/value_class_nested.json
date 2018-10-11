@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "Wibble",
-  "namespace": "com.sksamuel.avro4s.schema",
+  "namespace": "com.sksamuel.avro4s.schema.ValueTypeSchemaTest",
   "fields": [
     {
       "name": "value",

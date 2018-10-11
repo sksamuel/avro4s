@@ -34,6 +34,16 @@ class SealedTraitSchemaTest extends FunSuite with Matchers {
     val schema = AvroSchema[Dibble]
     schema.toString(true) shouldBe expected.toString(true)
   }
+
+  test("classes nested in objects should be encoded with consistent package name") {
+    sealed trait Inner
+    case class InnerOne(value: Double) extends Inner
+    case class InnerTwo(height: Double) extends Inner
+    case class Outer(inner: Inner)
+    val schema = AvroSchema[Outer]
+    schema.getNamespace() shouldBe "com.sksamuel.avro4s.schema.SealedTraitSchemaTest"
+  }
+
 }
 
 sealed trait Dibble

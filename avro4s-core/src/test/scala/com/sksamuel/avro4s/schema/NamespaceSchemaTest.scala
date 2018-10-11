@@ -23,7 +23,7 @@ class NamespaceSchemaTest extends FunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("local classes should use the namespace of their parent classes package") {
+  test("local classes should use the namespace of their parent object package") {
     case class NamespaceTestFoo(inner: String)
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/local_class_namespace.json"))
     val schema = AvroSchema[NamespaceTestFoo]
