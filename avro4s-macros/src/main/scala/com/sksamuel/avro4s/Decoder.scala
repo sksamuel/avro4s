@@ -257,13 +257,11 @@ object Decoder extends CoproductDecoders with TupleDecoders {
 
   implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
     override def decode(value: Any, schema: Schema): Either[A, B] = {
+      val aName = weakTypeOf[A].typeSymbol.fullName
+      val bName = weakTypeOf[B].typeSymbol.fullName
       safeFrom[A](value, schema).map(Left[A, B])
         .orElse(safeFrom[B](value, schema).map(Right[A, B]))
-        .getOrElse {
-          val aName = AvroNameResolver.fullName(weakTypeOf[A])
-          val bName = AvroNameResolver.fullName(weakTypeOf[B])
-          sys.error(s"Could not decode $value into Either[$aName, $bName]")
-        }
+        .getOrElse(sys.error(s"Could not decode $value into Either[$aName, $bName]"))
     }
   }
 
@@ -298,11 +296,12 @@ object Decoder extends CoproductDecoders with TupleDecoders {
       }).getOrElse(sys.error(s"Unknown type $name"))
     }
 
-    private def getTypeName[G](clazz: Class[G]): String = {
+    private def getTypeName[T](clazz: Class[T]): String = {
       val mirror = runtimeMirror(clazz.getClassLoader)
       val tpe = mirror.classSymbol(clazz).toType
-      AvroNameResolver.name(tpe)
+      AvroNameResolver.forClass(tpe).toString
     }
+
   }
 
   implicit def applyMacro[T <: Product]: Decoder[T] = macro applyMacroImpl[T]

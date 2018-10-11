@@ -49,7 +49,11 @@ trait CoproductDecoders  {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
-    def typeName: String = AvroNameResolver.fullName(tpe)
+
+    def typeName: String = AvroNamespaceResolver.forClass(tpe) + "." + AvroNameResolver.forClass(tpe)
+    //      val nearestPackage = Stream.iterate(tpe.typeSymbol.owner)(_.owner).dropWhile(!_.isPackage).head
+    //      s"${nearestPackage.fullName}.${tpe.typeSymbol.name.decodedName}"
+    //    }
 
     value match {
       case _: Utf8 if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value, schema))

@@ -13,7 +13,7 @@ object SchemaHelper {
     require(schema.getType == Schema.Type.UNION, "Can only extract subschemas from a UNION")
     schema.getTypes.asScala
       .find(_.getFullName == implClassName)
-      .getOrElse(sys.error(s"Cannot find subschema for class $implClassName in union of ${schema.getTypes}"))
+      .getOrElse(sys.error(s"Cannot find subschema for class $implClassName"))
   }
 
   /**
