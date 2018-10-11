@@ -1,6 +1,8 @@
 package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData
+import org.apache.avro.util.Utf8
 
 object SchemaHelper {
 
@@ -38,11 +40,14 @@ object SchemaHelper {
     require(schema.getType == Schema.Type.UNION)
     val defaultType = default match {
       case _: String => Schema.Type.STRING
+      case _: Utf8 => Schema.Type.STRING
       case _: Long => Schema.Type.LONG
       case _: Int => Schema.Type.INT
       case _: Boolean => Schema.Type.BOOLEAN
       case _: Float => Schema.Type.FLOAT
       case _: Double => Schema.Type.DOUBLE
+      case _: Array[Byte] => Schema.Type.BYTES
+      case _: GenericData.EnumSymbol => Schema.Type.ENUM
       case other => other
     }
     val (first, rest) = schema.getTypes.asScala.partition(_.getType == defaultType)

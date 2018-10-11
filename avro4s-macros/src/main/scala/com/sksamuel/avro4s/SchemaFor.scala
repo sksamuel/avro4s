@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
-import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
+import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{Coproduct, Generic, HList}
@@ -223,7 +223,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     val name = extractor.name.getOrElse(ct.runtimeClass.getSimpleName)
     val symbols = toList(objs()).map(v => symbolName(v.getClass))
 
-    private def symbolName[T](clazz: Class[T]): String = {
+    private def symbolName[A](clazz: Class[A]): String = {
       val mirror = runtimeMirror(clazz.getClassLoader)
       val tpe = mirror.classSymbol(clazz).toType
       AvroNameResolver.forClass(tpe).toString
@@ -281,9 +281,9 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
           // if the default getter exists then we can use it to generate the default value
           if (defaultGetterMethod.isMethod) {
             val moduleSym = tpe.typeSymbol.companion
-            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
           } else {
-            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaField[$fieldTpe]($fieldName, $packageName, Seq(..$annos), null) }"""
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $packageName, Seq(..$annos)) }"""
           }
         }
 
@@ -300,6 +300,18 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     }
   }
 
+  def schemaFieldNoDefault[B](fieldName: String, packageName: String, annos: Seq[Anno])
+                             (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+    schemaField[B](fieldName, packageName, annos, NoDefault)(schemaFor, namingStrategy)
+  }
+
+  def schemaFieldWithDefault[B](fieldName: String, packageName: String, annos: Seq[Anno], default: B)
+                               (implicit schemaFor: SchemaFor[B], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+    // the default may be a scala type that avro doesn't understand, so we must turn
+    // it into an avro compatible type by using an encoder.
+    schemaField[B](fieldName, packageName, annos, Default(encoder.encode(default, schemaFor.schema)))(schemaFor, namingStrategy)
+  }
+
   /**
     * Builds an Avro Field with the field's Schema provided by an
     * implicit instance of [[SchemaFor]]. There must be a instance of this
@@ -307,8 +319,13 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     *
     * Users can add their own mappings for types by implementing a [[SchemaFor]]
     * instance for that type.
+    *
+    * @param fieldName   the name of the field as defined in the case class
+    * @param packageName the name of the package that contains the case class definition
+    * @param default     an instance of the Default ADT which contains an avro compatible default value
+    *                    if such a default applies to this field
     */
-  def schemaField[B](fieldName: String, packageName: String, annos: Seq[Anno], default: Any)
+  def schemaField[B](fieldName: String, packageName: String, annos: Seq[Anno], default: Default)
                     (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
 
     val extractor = new AnnotationExtractors(annos)
@@ -322,8 +339,13 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     // the namespace can be overriden with @AvroNamespace
     val namespace = extractor.namespace.getOrElse(packageName)
 
-    // the default may be a scala type that avro doesn't understand, so we must turn it into a java type
-    val resolvedDefault = resolveDefault(default)
+    // the special NullDefault is used when null is actually the default value.
+    // The case of having no default at all is represented by NoDefault
+    val encodedDefault: AnyRef = default match {
+      case NoDefault => null
+      case NullDefault => JsonProperties.NULL_VALUE
+      case MethodDefault(x) => DefaultResolver(x, schemaFor.schema)
+    }
 
     // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
     // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
@@ -332,16 +354,20 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     }
 
     // for a union the type that has a default must be first
-    val schemaWithOrderedUnion = if (schema.getType == Schema.Type.UNION && resolvedDefault != null) {
-      SchemaHelper.moveDefaultToHead(schema, resolvedDefault)
-    } else schema
+    // if there is no default then we'll move null to head (if present)
+    val schemaWithOrderedUnion = (schema.getType, encodedDefault) match {
+      case (Schema.Type.UNION, null) => SchemaHelper.moveDefaultToHead(schema, null)
+      case (Schema.Type.UNION, JsonProperties.NULL_VALUE) => SchemaHelper.moveDefaultToHead(schema, null)
+      case (Schema.Type.UNION, defaultValue) => SchemaHelper.moveDefaultToHead(schema, defaultValue)
+      case _ => schema
+    }
 
     // the field can override the namespace if the Namespace annotation is present on the field
     // we may have annotated our field with @AvroNamespace so this namespace should be applied
     // to any schemas we have generated for this field
     val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schemaWithOrderedUnion, _)).getOrElse(schemaWithOrderedUnion)
 
-    val field = new Schema.Field(name, schemaWithResolvedNamespace, doc, resolvedDefault: AnyRef)
+    val field = new Schema.Field(name, schemaWithResolvedNamespace, doc, encodedDefault)
     props.foreach { case (k, v) => field.addProp(k, v: AnyRef) }
     aliases.foreach(field.addAlias)
     field
@@ -400,26 +426,14 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
       case _ => schema
     }
   }
-
-  // returns a default value that is compatible with the datatype
-  // for example, we might define a case class with a UUID field with a default value
-  // of UUID.randomUUID(), but in avro UUIDs are logical types. Therefore the default
-  // values must be converted into a base type avro understands.
-  // another example would be `name: Option[String] = Some("abc")`, we can't use
-  // the Some as the default, the inner value needs to be extracted
-  private def resolveDefault(default: Any): AnyRef = {
-    default match {
-      case null => null
-      case uuid: UUID => uuid.toString
-      case bd: BigDecimal => java.lang.Double.valueOf(bd.underlying.doubleValue)
-      case Some(value) => resolveDefault(value)
-      case b: Boolean => java.lang.Boolean.valueOf(b)
-      case i: Int => java.lang.Integer.valueOf(i)
-      case d: Double => java.lang.Double.valueOf(d)
-      case s: Short => java.lang.Short.valueOf(s)
-      case l: Long => java.lang.Long.valueOf(l)
-      case f: Float => java.lang.Float.valueOf(f)
-      case other => other.toString
-    }
-  }
 }
+
+sealed trait Default
+
+object Default {
+  def apply(x: AnyRef): Default = if (x == null) NullDefault else MethodDefault(x)
+}
+
+case class MethodDefault(value: AnyRef) extends Default
+case object NullDefault extends Default
+case object NoDefault extends Default

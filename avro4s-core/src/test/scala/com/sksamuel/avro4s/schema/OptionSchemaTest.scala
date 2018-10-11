@@ -29,7 +29,7 @@ class OptionSchemaTest extends FunSuite with Matchers {
     val schema = AvroSchema[OptionWithDefault]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option_default_value.json"))
     schema.toString(true) shouldBe expected.toString(true)
-}
+  }
 }
 
 case class OptionWithDefault(name: Option[String] = Some("f"))

@@ -41,7 +41,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("allow overriding built in Encoder implicit for a value type") {
+  test("allow overriding built in SchemaFor implicit for a value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
       override def schema: Schema = {
@@ -58,7 +58,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("allow overriding built in Encoder implicit for a top level value type") {
+  test("allow overriding built in SchemaFor implicit for a top level value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
       override def schema: Schema = {
