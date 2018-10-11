@@ -205,9 +205,15 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     import scala.collection.JavaConverters._
 
     override def encode(t: Option[T], schema: Schema): AnyRef = {
-      // if the option is none we just return null, otherwise we encode the value
-      // by finding the non null schema
-      val nonNullSchema = schema.getTypes.asScala.find(_.getType != Schema.Type.NULL).get
+      val nonNullSchema = schema.getTypes().size match {
+        // if the option is none we just return null, otherwise we encode the value
+        // by finding the non null schema
+        case 2 => schema.getTypes.asScala.find(_.getType != Schema.Type.NULL).get
+        case otherwise => {
+          val remainingSchemas = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL)
+          Schema.createUnion(remainingSchemas.toList.asJava)
+        }
+      }
       t.map(encoder.encode(_, nonNullSchema)).orNull
     }
   }
