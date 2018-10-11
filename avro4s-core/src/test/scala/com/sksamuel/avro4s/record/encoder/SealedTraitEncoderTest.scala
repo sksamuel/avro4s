@@ -54,6 +54,13 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     Encoder[Dibble].encode(Dobble, schema) shouldBe new GenericData.EnumSymbol(schema, Dobble)
     Encoder[Dibble].encode(Dabble, schema) shouldBe new GenericData.EnumSymbol(schema, Dabble)
   }
+
+  test("options of sealed traits should be encoded correctly") {
+    val schema = AvroSchema[MeasurableThing]
+    val record = Encoder[MeasurableThing].encode(MeasurableThing(Some(WidthDimension(1.23))), schema).asInstanceOf[GenericRecord]
+    val width = record.get("dimension").asInstanceOf[GenericRecord]
+    width.get("width") shouldBe 1.23
+  }
 }
 
 sealed trait Dibble
@@ -75,3 +82,9 @@ sealed trait Nibble
 case class Nobble(str: String, place: String) extends Nibble
 case class Nabble(str: String, age: Int) extends Nibble
 case class Napper(nibble: Nibble)
+
+sealed trait Dimension
+case class HeightDimension(height: Double) extends Dimension
+case class WidthDimension(width: Double) extends Dimension
+case class MeasurableThing(dimension: Option[Dimension])
+
