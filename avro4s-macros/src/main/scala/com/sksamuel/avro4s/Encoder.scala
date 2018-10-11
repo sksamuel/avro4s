@@ -123,7 +123,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
 
     override def encode(map: Map[String, V], schema: Schema): java.util.Map[String, AnyRef] = {
       require(schema != null)
-      map.mapValues(encoder.encode(_, schema.getValueType)).toMap.asJava
+      map.mapValues(encoder.encode(_, schema.getValueType)).asJava
     }
   }
 
@@ -205,14 +205,13 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     import scala.collection.JavaConverters._
 
     override def encode(t: Option[T], schema: Schema): AnyRef = {
-      val nonNullSchema = schema.getTypes().size match {
+      val nonNullSchema = schema.getTypes.size match {
         // if the option is none we just return null, otherwise we encode the value
         // by finding the non null schema
         case 2 => schema.getTypes.asScala.find(_.getType != Schema.Type.NULL).get
-        case otherwise => {
+        case _ =>
           val remainingSchemas = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL)
           Schema.createUnion(remainingSchemas.toList.asJava)
-        }
       }
       t.map(encoder.encode(_, nonNullSchema)).orNull
     }
@@ -267,6 +266,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     val reflect = ReflectHelper(c)
     val tpe = weakTypeTag[T].tpe
     val fullName = tpe.typeSymbol.fullName
+    val fullRecordName = AvroNameResolver.fullName(c)(tpe)
     val isValueClass = reflect.isValueClass(tpe)
 
     if (!reflect.isCaseClass(tpe)) {
@@ -301,7 +301,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
           val annos = reflect.annotations(fieldSym)
           val fieldName = new AnnotationExtractors(annos).name.getOrElse(fieldSym.name.decodedName.toString)
 
-          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$termName, $fieldName, schema, $fullName)"""
+          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$termName, $fieldName, schema, $fullRecordName)"""
         }
 
       // An encoder for a value type just needs to pass through the given value into an encoder
@@ -320,7 +320,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
           q"""
             new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
               override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-                _root_.com.sksamuel.avro4s.Encoder.buildRecord(schema, Seq(..$fields), $fullName)
+                _root_.com.sksamuel.avro4s.Encoder.buildRecord(schema, Seq(..$fields), $fullRecordName)
               }
             }
         """
@@ -337,11 +337,15 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     * the case class may have been a subclass of a trait. In this case
     * the schema will be a union and so we must extract the correct
     * subschema from the union.
+    *
+    * @param recordName the name of the record in Avro, taking into
+    *                   account Avro modifiers such as @AvroNamespace and @AvroErasedName.
+    *                   The name is used for extracting the specific subschema from a union schema.
     */
-  def buildRecord(schema: Schema, values: Seq[AnyRef], containingClassFQN: String): AnyRef = {
+  def buildRecord(schema: Schema, values: Seq[AnyRef], recordName: String): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
-        val subschema = SchemaHelper.extractTraitSubschema(containingClassFQN, schema)
+        val subschema = SchemaHelper.extractTraitSubschema(recordName, schema)
         ImmutableRecord(subschema, values.toVector)
       case Schema.Type.RECORD =>
         ImmutableRecord(schema, values.toVector)
