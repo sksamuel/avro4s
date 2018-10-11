@@ -255,6 +255,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
       val isValueClass = reflect.isValueClass(tpe)
       val recordName = reflect.recordName(tpe)
+      val defaultNamespace = fullName.split('.').dropRight(1).mkString(".")
 
       val fields = reflect
         .constructorParameters(tpe)
@@ -281,9 +282,9 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
           // if the default getter exists then we can use it to generate the default value
           if (defaultGetterMethod.isMethod) {
             val moduleSym = tpe.typeSymbol.companion
-            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $packageName, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $defaultNamespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
           } else {
-            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $packageName, Seq(..$annos)) }"""
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $defaultNamespace, Seq(..$annos)) }"""
           }
         }
 
@@ -293,7 +294,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
       c.Expr[SchemaFor[T]](
         q"""
         new _root_.com.sksamuel.avro4s.SchemaFor[$tpe] {
-          private val _schema = _root_.com.sksamuel.avro4s.SchemaFor.buildSchema($recordName, $packageName, Seq(..$fields), Seq(..$annos), $isValueClass)
+          private val _schema = _root_.com.sksamuel.avro4s.SchemaFor.buildSchema($recordName, $defaultNamespace, Seq(..$fields), Seq(..$annos), $isValueClass)
           override def schema: _root_.org.apache.avro.Schema = _schema
         }
       """)
