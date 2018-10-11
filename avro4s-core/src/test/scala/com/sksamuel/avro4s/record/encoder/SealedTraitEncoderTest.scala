@@ -54,6 +54,18 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     Encoder[Dibble].encode(Dobble, schema) shouldBe new GenericData.EnumSymbol(schema, Dobble)
     Encoder[Dibble].encode(Dabble, schema) shouldBe new GenericData.EnumSymbol(schema, Dabble)
   }
+
+  test("classes nested in objects should be encoded with consistent package name") {
+    sealed trait Inner
+    case class InnerOne(value: Double) extends Inner
+    case class InnerTwo(height: Double) extends Inner
+    case class Outer(inner: Inner)
+    val schema = AvroSchema[Outer]
+    val record = Encoder[Outer].encode(Outer(InnerOne(1.23)), schema).asInstanceOf[GenericRecord]
+    val inner = record.get("inner").asInstanceOf[GenericRecord]
+    inner.get("value") shouldBe 1.23
+  }
+
 }
 
 sealed trait Dibble
