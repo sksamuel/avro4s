@@ -268,7 +268,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     val tpe = weakTypeTag[T].tpe
     val typeName = tpe.typeSymbol.name.toString
     val fullName = tpe.typeSymbol.fullName
-    val defaultNamespace = reflect.packageName(tpe)
+    val defaultNamespace = fullName.split('.').dropRight(1).mkString(".")
     val isValueClass = reflect.isValueClass(tpe)
 
     if (!reflect.isCaseClass(tpe)) {
