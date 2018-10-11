@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "SalesRecord",
-  "namespace": "com.sksamuel.avro4s.github",
+  "namespace": "com.sksamuel.avro4s.github.GithubIssue12",
   "fields": [
     {
       "name": "saleId",

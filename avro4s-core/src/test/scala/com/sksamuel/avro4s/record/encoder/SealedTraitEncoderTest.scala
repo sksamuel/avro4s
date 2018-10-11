@@ -61,6 +61,17 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     val width = record.get("dimension").asInstanceOf[GenericRecord]
     width.get("width") shouldBe 1.23
   }
+
+  test("classes nested in objects should be encoded correctly") {
+    sealed trait Inner
+    case class InnerOne(value: Double) extends Inner
+    case class InnerTwo(height: Double) extends Inner
+    case class Outer(inner: Inner)
+    val schema = AvroSchema[Outer]
+    val record = Encoder[Outer].encode(Outer(InnerTwo(1.23)), schema).asInstanceOf[GenericRecord]
+    val inner = record.get("inner").asInstanceOf[GenericRecord]
+    inner.get("height") shouldBe 1.23
+  }
 }
 
 sealed trait Dibble

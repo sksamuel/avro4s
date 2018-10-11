@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "UUIDOption",
-  "namespace": "com.sksamuel.avro4s.schema",
+  "namespace": "com.sksamuel.avro4s.schema.UUIDSchemaTest",
   "fields": [
     {
       "name": "uuid",

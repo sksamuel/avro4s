@@ -8,6 +8,7 @@
       "type": {
         "type": "enum",
         "name": "Colours",
+        "namespace": "com.sksamuel.avro4s.schema",
         "symbols": [
           "Amber",
           "Green",

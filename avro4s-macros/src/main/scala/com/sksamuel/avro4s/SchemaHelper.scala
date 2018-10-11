@@ -8,12 +8,12 @@ object SchemaHelper {
 
   import scala.collection.JavaConverters._
 
-  def extractTraitSubschema(implClassName: String, schema: Schema): Schema = {
+  def extractTraitSubschema(typeName: String, schema: Schema): Schema = {
     import scala.collection.JavaConverters._
     require(schema.getType == Schema.Type.UNION, "Can only extract subschemas from a UNION")
     schema.getTypes.asScala
-      .find(_.getFullName == implClassName)
-      .getOrElse(sys.error(s"Cannot find subschema for class $implClassName"))
+      .find(_.getFullName == typeName)
+      .getOrElse(sys.error(s"Cannot find subschema for type name $typeName"))
   }
 
   /**

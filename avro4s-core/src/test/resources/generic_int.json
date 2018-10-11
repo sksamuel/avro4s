@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "Generic__Int",
-  "namespace": "com.sksamuel.avro4s.schema",
+  "namespace": "com.sksamuel.avro4s.schema.GenericSchemaTest",
   "fields": [
     {
       "name": "t",

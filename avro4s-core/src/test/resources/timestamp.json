@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "TimestampTest",
-  "namespace": "com.sksamuel.avro4s.schema",
+  "namespace": "com.sksamuel.avro4s.schema.DateSchemaTest",
   "fields": [
     {
       "name": "ts",

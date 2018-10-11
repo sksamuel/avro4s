@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "DateTest",
-  "namespace": "com.sksamuel.avro4s.schema",
+  "namespace": "com.sksamuel.avro4s.schema.DateSchemaTest",
   "fields": [
     {
       "name": "date",

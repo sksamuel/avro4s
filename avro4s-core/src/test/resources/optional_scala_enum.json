@@ -9,6 +9,7 @@
         "null",
         {
           "type": "enum",
+          "namespace": "com.sksamuel.avro4s.schema",
           "name": "Colours",
           "symbols": [
             "Amber",

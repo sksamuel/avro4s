@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "NestedListString",
-  "namespace": "com.sksamuel.avro4s.schema",
+  "namespace": "com.sksamuel.avro4s.schema.ArraySchemaTest",
   "fields": [
     {
       "name": "list",
