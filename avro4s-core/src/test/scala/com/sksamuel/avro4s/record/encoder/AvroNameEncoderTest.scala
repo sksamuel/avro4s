@@ -23,6 +23,12 @@ class AvroNameEncoderTest extends FunSuite with Matchers {
     val contents = abox.get("contents").asInstanceOf[GenericRecord]
     contents.get("length") shouldBe 1.23
   }
+
+  test("encoding sealed traits of case objects should take into account AvroName") {
+    val schema = AvroSchema[Ship]
+    val record = Encoder[Ship].encode(Ship(Atlantic), schema).asInstanceOf[GenericRecord]
+    record.get("location").toString shouldBe "atlantic"
+  }
 }
 
 @AvroNamespace("storage.boxes")
@@ -36,5 +42,12 @@ case class Cucumber(length: Double) extends Food
 @AvroNamespace("storage.boxes")
 @AvroName("blackberry")
 case class Blackberry(colour: String) extends Food
+
+sealed trait Ocean
+@AvroName("atlantic")
+case object Atlantic extends Ocean
+@AvroName("pacific")
+case object Pacific extends Ocean
+case class Ship(location: Ocean)
 
 

@@ -211,25 +211,10 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
                                                                      objs: Reify.Aux[C, L],
                                                                      toList: ToList[L, T]): SchemaFor[T] = new SchemaFor[T] {
     val tpe = weakTypeTag[T]
-    val annos = tpe.tpe.typeSymbol.annotations.map { a =>
-      val name = a.tree.tpe.typeSymbol.fullName
-      val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-      Anno(name, args)
-    }
-    val extractor = new AnnotationExtractors(annos)
-    val className = ct.runtimeClass.getCanonicalName
-    val packageName = ct.runtimeClass.getPackage.getName
-    val namespace = extractor.namespace.getOrElse(packageName)
-    val name = extractor.name.getOrElse(ct.runtimeClass.getSimpleName)
-    val symbols = toList(objs()).map(v => symbolName(v.getClass))
+    val nr = NameResolution(tpe.tpe)
+    val symbols = toList(objs()).map(v => NameResolution(v.getClass).name)
 
-    private def symbolName[A](clazz: Class[A]): String = {
-      val mirror = runtimeMirror(clazz.getClassLoader)
-      val tpe = mirror.classSymbol(clazz).toType
-      AvroNameResolver.forClass(tpe).toString
-    }
-
-    override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
+    override def schema: Schema = SchemaBuilder.enumeration(nr.name).namespace(nr.namespace).symbols(symbols: _*)
   }
 
   implicit def applyMacro[T]: SchemaFor[T] = macro applyMacroImpl[T]
