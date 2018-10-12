@@ -2,9 +2,9 @@ package com.sksamuel.avro4s
 
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
+import scala.reflect.runtime.universe
 
 class ReflectHelper[C <: whitebox.Context](val c: C) {
-
   import c.universe
   import c.universe._
 
@@ -138,27 +138,7 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     Anno(name, args)
   }
 
-  /**
-    * Returns the appropriate name for this type to be used when creating
-    * an avro record. This method takes into account any type parameters
-    * and whether the type has been annotated with @AvroErasedName.
-    *
-    * The format for a generated name is `rawname__typea_typeb_typec`. That is
-    * a double underscore delimits the raw type from the start of the type
-    * parameters and then each type parameter is delimited by a single underscore.
-    */
-  def recordName(tpe: Type): String = {
-    val annos = annotations(tpe.typeSymbol)
-    val erasedName = tpe.typeSymbol.name.decodedName.toString
-    if (new AnnotationExtractors(annos).erased) {
-      erasedName
-    } else {
-      tpe.typeArgs match {
-        case Nil => erasedName
-        case args => erasedName + "__" + args.map(recordName).mkString("_")
-      }
-    }
-  }
+  def defaultNamespace(sym: c.universe.Symbol): String = sym.fullName.split('.').dropRight(1).mkString(".")
 }
 
 object ReflectHelper {
@@ -181,4 +161,6 @@ object ReflectHelper {
     val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
     Anno(name, args)
   }
+
+  def defaultNamespace(sym: universe.Symbol): String = sym.fullName.split('.').dropRight(1).mkString(".")
 }

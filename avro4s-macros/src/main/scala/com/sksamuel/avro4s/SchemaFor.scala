@@ -242,7 +242,9 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     val tpe = weakTypeOf[T]
     val fullName = tpe.typeSymbol.fullName
     val packageName = reflect.packageName(tpe)
-    val defaultNamespace = fullName.split('.').dropRight(1).mkString(".")
+    val resolution = NameResolution(c)(tpe)
+    val namespace = resolution.namespace
+    val name = resolution.name
 
     if (!reflect.isCaseClass(tpe)) {
       c.abort(c.prefix.tree.pos, s"$fullName is not a case class: This macro is only designed to handle case classes")
@@ -255,7 +257,6 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     } else {
 
       val isValueClass = reflect.isValueClass(tpe)
-      val recordName = reflect.recordName(tpe)
 
       val fields = reflect
         .constructorParameters(tpe)
@@ -282,9 +283,9 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
           // if the default getter exists then we can use it to generate the default value
           if (defaultGetterMethod.isMethod) {
             val moduleSym = tpe.typeSymbol.companion
-            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $defaultNamespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
           } else {
-            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $defaultNamespace, Seq(..$annos)) }"""
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
           }
         }
 
@@ -294,23 +295,23 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
       c.Expr[SchemaFor[T]](
         q"""
         new _root_.com.sksamuel.avro4s.SchemaFor[$tpe] {
-          private val _schema = _root_.com.sksamuel.avro4s.SchemaFor.buildSchema($recordName, $defaultNamespace, Seq(..$fields), Seq(..$annos), $isValueClass)
+          private val _schema = _root_.com.sksamuel.avro4s.SchemaFor.buildSchema($name, $namespace, Seq(..$fields), Seq(..$annos), $isValueClass)
           override def schema: _root_.org.apache.avro.Schema = _schema
         }
       """)
     }
   }
 
-  def schemaFieldNoDefault[B](fieldName: String, packageName: String, annos: Seq[Anno])
+  def schemaFieldNoDefault[B](fieldName: String, namespace: String, annos: Seq[Anno])
                              (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
-    schemaField[B](fieldName, packageName, annos, NoDefault)(schemaFor, namingStrategy)
+    schemaField[B](fieldName, namespace, annos, NoDefault)(schemaFor, namingStrategy)
   }
 
-  def schemaFieldWithDefault[B](fieldName: String, packageName: String, annos: Seq[Anno], default: B)
+  def schemaFieldWithDefault[B](fieldName: String, namespace: String, annos: Seq[Anno], default: B)
                                (implicit schemaFor: SchemaFor[B], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
     // the default may be a scala type that avro doesn't understand, so we must turn
     // it into an avro compatible type by using an encoder.
-    schemaField[B](fieldName, packageName, annos, Default(encoder.encode(default, schemaFor.schema)))(schemaFor, namingStrategy)
+    schemaField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.schema)))(schemaFor, namingStrategy)
   }
 
   /**
@@ -321,12 +322,12 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     * Users can add their own mappings for types by implementing a [[SchemaFor]]
     * instance for that type.
     *
-    * @param fieldName   the name of the field as defined in the case class
-    * @param packageName the name of the package that contains the case class definition
-    * @param default     an instance of the Default ADT which contains an avro compatible default value
-    *                    if such a default applies to this field
+    * @param fieldName the name of the field as defined in the case class
+    * @param namespace the name of the package that contains the case class definition
+    * @param default   an instance of the Default ADT which contains an avro compatible default value
+    *                  if such a default applies to this field
     */
-  def schemaField[B](fieldName: String, packageName: String, annos: Seq[Anno], default: Default)
+  def schemaField[B](fieldName: String, namespace: String, annos: Seq[Anno], default: Default)
                     (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
 
     val extractor = new AnnotationExtractors(annos)
@@ -336,9 +337,6 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
     // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
     val name = extractor.name.fold(namingStrategy.to(fieldName))(namingStrategy.to)
-
-    // the namespace can be overriden with @AvroNamespace
-    val namespace = extractor.namespace.getOrElse(packageName)
 
     // the special NullDefault is used when null is actually the default value.
     // The case of having no default at all is represented by NoDefault
@@ -374,8 +372,14 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     field
   }
 
-  def buildSchema(className: String,
-                  packageName: String,
+  /**
+    * Builds a new Avro Schema.
+    *
+    * @param name the encoded Avro record name, taking into account
+    *             annnotations and type parameters.
+    */
+  def buildSchema(name: String,
+                  namespace: String,
                   fields: Seq[Schema.Field],
                   annotations: Seq[Anno],
                   valueType: Boolean): Schema = {
@@ -384,8 +388,6 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
     val extractor = new AnnotationExtractors(annotations)
     val doc = extractor.doc.orNull
-    val name = extractor.name.getOrElse(className)
-    val namespace = extractor.namespace.getOrElse(packageName)
     val aliases = extractor.aliases
     val props = extractor.props
 

@@ -123,7 +123,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
 
     override def encode(map: Map[String, V], schema: Schema): java.util.Map[String, AnyRef] = {
       require(schema != null)
-      map.mapValues(encoder.encode(_, schema.getValueType)).toMap.asJava
+      map.mapValues(encoder.encode(_, schema.getValueType)).asJava
     }
   }
 
@@ -205,14 +205,13 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     import scala.collection.JavaConverters._
 
     override def encode(t: Option[T], schema: Schema): AnyRef = {
-      val nonNullSchema = schema.getTypes().size match {
+      val nonNullSchema = schema.getTypes.size match {
         // if the option is none we just return null, otherwise we encode the value
         // by finding the non null schema
         case 2 => schema.getTypes.asScala.find(_.getType != Schema.Type.NULL).get
-        case otherwise => {
+        case _ =>
           val remainingSchemas = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL)
           Schema.createUnion(remainingSchemas.toList.asJava)
-        }
       }
       t.map(encoder.encode(_, nonNullSchema)).orNull
     }
@@ -266,10 +265,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
 
     val reflect = ReflectHelper(c)
     val tpe = weakTypeTag[T].tpe
-    val typeName = tpe.typeSymbol.name.toString
     val fullName = tpe.typeSymbol.fullName
-    val defaultNamespace = fullName.split('.').dropRight(1).mkString(".")
-    val isValueClass = reflect.isValueClass(tpe)
 
     if (!reflect.isCaseClass(tpe)) {
       c.abort(c.prefix.tree.pos, s"$fullName is not a case class: This macro is only designed to handle case classes")
@@ -280,8 +276,9 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     } else if (reflect.isScalaEnum(tpe)) {
       c.abort(c.prefix.tree.pos, s"$fullName is a scala enum: Scala enum types should be handled by `scalaEnumSchemaFor`")
     } else {
-      val annosq = reflect.annotationsqq(tpe.typeSymbol)
-      val nameResolutionq = q"""_root_.com.sksamuel.avro4s.NameResolution($typeName, $defaultNamespace, Seq(..$annosq))"""
+
+      val nameResolution = NameResolution(c)(tpe)
+      val isValueClass = reflect.isValueClass(tpe)
 
       // each field needs to be converted into an avro compatible value
       // so scala primitives need to be converted to java boxed values, and
@@ -306,7 +303,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
 
           val fieldName = new AnnotationExtractors(annos).name.getOrElse(fieldSym.name.decodedName.toString)
 
-          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$termName, $fieldName, schema, $nameResolutionq)"""
+          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})"""
         }
 
       // An encoder for a value type just needs to pass through the given value into an encoder
@@ -325,7 +322,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
           q"""
             new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
               override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-                _root_.com.sksamuel.avro4s.Encoder.buildRecord(schema, Seq(..$fields), $nameResolutionq)
+                _root_.com.sksamuel.avro4s.Encoder.buildRecord(schema, Seq(..$fields), ${nameResolution.fullName})
               }
             }
         """
@@ -342,11 +339,16 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     * the case class may have been a subclass of a trait. In this case
     * the schema will be a union and so we must extract the correct
     * subschema from the union.
+    *
+    * @param fullName the full name of the record in Avro, taking into
+    *                 account Avro modifiers such as @AvroNamespace
+    *                 and @AvroErasedName. This name is used for
+    *                 extracting the specific subschema from a union schema.
     */
-  def buildRecord(schema: Schema, values: Seq[AnyRef], nameResolution: NameResolution): AnyRef = {
+  def buildRecord(schema: Schema, values: Seq[AnyRef], fullName: String): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
-        val subschema = SchemaHelper.extractTraitSubschema(nameResolution.fullName, schema)
+        val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
         ImmutableRecord(subschema, values.toVector)
       case Schema.Type.RECORD =>
         ImmutableRecord(schema, values.toVector)
@@ -356,20 +358,21 @@ object Encoder extends CoproductEncoders with TupleEncoders {
   }
 
   /**
-    * Encodes a field in a case class by bringing in an implicit encoder for the fields type.
+    * Encodes a field in a case class by bringing in an implicit encoder for the field's type.
     * The schema passed in here is the schema for the container type, and the fieldName
     * is the name of the field in the avro schema.
     *
     * Note: The field may be a member of a subclass of a trait, in which case
     * the schema passed in will be a union. Therefore we must extract the correct
-    * subschema from the union. We can do this by using the name of the
+    * subschema from the union. We can do this by using the fullName of the
     * containing class, and comparing to the record full names in the subschemas.
     *
     */
-  def encodeField[T](t: T, fieldName: String, schema: Schema, nameResolution: NameResolution)(implicit encoder: Encoder[T]): AnyRef = {
+  def encodeField[T](t: T, fieldName: String, schema: Schema, fullName: String)
+                    (implicit encoder: Encoder[T]): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
-        val subschema = SchemaHelper.extractTraitSubschema(nameResolution.fullName, schema)
+        val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
         val field = subschema.getField(fieldName)
         encoder.encode(t, field.schema)
       case Schema.Type.RECORD =>
