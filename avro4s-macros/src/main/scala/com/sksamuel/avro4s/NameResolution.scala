@@ -71,4 +71,10 @@ object NameResolution {
     ReflectHelper.defaultNamespace(tpe.typeSymbol),
     ReflectHelper.annotations(tpe.typeSymbol)
   )
+
+  def apply[A](clazz: Class[A]): NameResolution = {
+    val mirror = universe.runtimeMirror(clazz.getClassLoader)
+    val tpe = mirror.classSymbol(clazz).toType
+    NameResolution(tpe)
+  }
 }

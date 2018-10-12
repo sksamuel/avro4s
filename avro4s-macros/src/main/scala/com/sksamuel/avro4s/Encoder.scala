@@ -55,16 +55,15 @@ object Encoder extends CoproductEncoders with TupleEncoders {
 
     protected val schema: Schema = {
       val tpe = weakTypeTag[T]
-      val namespace = tpe.tpe.typeSymbol.annotations.map(_.toString)
-        .find(_.startsWith("com.sksamuel.avro4s.AvroNamespace"))
-        .map(_.stripPrefix("com.sksamuel.avro4s.AvroNamespace(\"").stripSuffix("\")"))
-        .getOrElse(ct.runtimeClass.getPackage.getName)
-      val name = ct.runtimeClass.getSimpleName
-      val symbols = toList(objs()).map(_.toString).asJava
-      Schema.createEnum(name, null, namespace, symbols)
+      val nr = NameResolution(tpe.tpe)
+      val symbols = toList(objs()).map(v => NameResolution(v.getClass).name).asJava
+      Schema.createEnum(nr.name, null, nr.namespace, symbols)
     }
 
-    override def encode(value: T, schema: Schema): EnumSymbol = new EnumSymbol(schema, value.toString)
+    override def encode(value: T, schema: Schema): EnumSymbol = new EnumSymbol(
+      schema,
+      NameResolution(value.getClass).name
+    )
   }
 
   implicit object StringEncoder extends Encoder[String] {
