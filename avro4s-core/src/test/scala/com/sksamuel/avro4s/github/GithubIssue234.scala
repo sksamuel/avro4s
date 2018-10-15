@@ -5,8 +5,11 @@ import com.sksamuel.avro4s._
 
 object Issue234 {
   case class TestEntry(name: String)
-  case class Test(id: Int, entries: List[TestEntry])
-  val format: RecordFormat[Test] = RecordFormat[Test]
+  sealed trait TestTrait
+  sealed class TestClass extends TestTrait
+  final case class Test(id: Int, entries: List[TestEntry]) extends TestClass
+  final case class ContainsTestTrait(testTrait: TestTrait)
+  val format: RecordFormat[ContainsTestTrait] = RecordFormat[ContainsTestTrait]
 }
 
 class GithubIssue234 extends FunSuite with Matchers {
