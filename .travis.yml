@@ -2,10 +2,9 @@ language: scala
 
 scala:
 - 2.12.7
-- 2.13.0-M5
 
 script:
-- sbt clean test
+- sbt +test
 
 jdk:
 - oraclejdk8
