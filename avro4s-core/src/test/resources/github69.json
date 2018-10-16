@@ -1,0 +1,37 @@
+{
+  "type": "record",
+  "name": "Message__MyRecord",
+  "namespace": "com.sksamuel.avro4s.github",
+  "fields": [
+    {
+      "name": "payload",
+      "type": {
+        "type": "record",
+        "name": "MyRecord",
+        "fields": [
+          {
+            "name": "key",
+            "type": "string"
+          },
+          {
+            "name": "str1",
+            "type": "string"
+          },
+          {
+            "name": "str2",
+            "type": "string"
+          },
+          {
+            "name": "int1",
+            "type": "int"
+          }
+        ]
+      }
+    },
+    {
+      "name": "identity",
+      "type": "string",
+      "default": "5b16ca84-f9e1-46a9-bc5c-8c0052b6dd16"
+    }
+  ]
+}
