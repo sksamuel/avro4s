@@ -62,14 +62,13 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     width.get("width") shouldBe 1.23
   }
 
-  test("sealed trait classes with optional elements inside case classes should be encoded correctly") {
+  test("sealed trait classes with optional elements inside case classes should derive without divergence") {
     case class Outer(inner: Inner)
     sealed trait Inner
     case class InnerOne(value: Double, optVal: Option[Float]) extends Inner
     case class InnerTwo(height: Double) extends Inner
     val e = Encoder[Outer]
     val schema = AvroSchema[Outer]
-    val record = Encoder[Outer].encode(Outer(InnerOne(1.23, None)), schema).asInstanceOf[GenericRecord]
   }
 
   test("classes nested in objects should be encoded correctly") {
