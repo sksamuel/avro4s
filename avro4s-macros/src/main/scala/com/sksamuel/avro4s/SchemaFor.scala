@@ -8,7 +8,7 @@ import java.util.UUID
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList}
+import shapeless.{Coproduct, Generic, HList, Lazy}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
@@ -288,15 +288,15 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
   }
 
   def schemaFieldNoDefault[B](fieldName: String, namespace: String, annos: Seq[Anno])
-                             (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
-    schemaField[B](fieldName, namespace, annos, NoDefault)(schemaFor, namingStrategy)
+                             (implicit schemaFor: Lazy[SchemaFor[B]], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+    schemaField[B](fieldName, namespace, annos, NoDefault)(schemaFor.value, namingStrategy)
   }
 
   def schemaFieldWithDefault[B](fieldName: String, namespace: String, annos: Seq[Anno], default: B)
-                               (implicit schemaFor: SchemaFor[B], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+                               (implicit schemaFor: Lazy[SchemaFor[B]], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
     // the default may be a scala type that avro doesn't understand, so we must turn
     // it into an avro compatible type by using an encoder.
-    schemaField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.schema)))(schemaFor, namingStrategy)
+    schemaField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.value.schema)))(schemaFor.value, namingStrategy)
   }
 
   /**

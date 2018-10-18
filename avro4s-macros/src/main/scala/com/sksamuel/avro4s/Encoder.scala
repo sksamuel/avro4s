@@ -12,7 +12,7 @@ import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList}
+import shapeless.{Coproduct, Generic, HList, Lazy}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode
@@ -370,18 +370,18 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     *
     */
   def encodeField[T](t: T, fieldName: String, schema: Schema, fullName: String)
-                    (implicit encoder: Encoder[T]): AnyRef = {
+                    (implicit encoder: Lazy[Encoder[T]]): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
         val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
         val field = subschema.getField(fieldName)
-        encoder.encode(t, field.schema)
+        encoder.value.encode(t, field.schema)
       case Schema.Type.RECORD =>
         val field = schema.getField(fieldName)
-        encoder.encode(t, field.schema)
+        encoder.value.encode(t, field.schema)
       // otherwise we are encoding a simple field
       case _ =>
-        encoder.encode(t, schema)
+        encoder.value.encode(t, schema)
     }
   }
 

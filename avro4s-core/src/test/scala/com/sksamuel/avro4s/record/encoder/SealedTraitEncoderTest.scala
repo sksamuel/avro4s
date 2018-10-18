@@ -67,6 +67,7 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     sealed trait Inner
     case class InnerOne(value: Double, optVal: Option[Float]) extends Inner
     case class InnerTwo(height: Double) extends Inner
+    val e = Encoder[Outer]
     val schema = AvroSchema[Outer]
     val record = Encoder[Outer].encode(Outer(InnerOne(1.23, None)), schema).asInstanceOf[GenericRecord]
   }
