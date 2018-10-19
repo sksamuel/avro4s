@@ -24,7 +24,10 @@ case class NameResolution(erasedName: String,
     * Returns the full record name (namespace + name) for use in an Avro
     * record taking into account annotations and type parameters.
     */
-  def fullName: String = namespace + "." + name
+  def fullName: String = namespace.trim() match {
+    case "" => name
+    case otherwise => namespace + "." + name
+  }
 
   /**
     * Returns the namespace for this type to be used when creating
