@@ -2,9 +2,17 @@ package com.sksamuel.avro4s
 
 import scala.annotation.StaticAnnotation
 
-case class AvroAlias(alias: String) extends StaticAnnotation
+case class AvroAlias(alias: String) extends AvroAliasable
 
-case class AvroDoc(doc: String) extends StaticAnnotation
+trait AvroAliasable extends StaticAnnotation {
+  val alias: String
+}
+
+case class AvroDoc(doc: String) extends AvroDocumentable
+
+trait AvroDocumentable extends StaticAnnotation {
+  val doc: String
+}
 
 /**
   * [[AvroFixed]] overrides the schema type for a field or a value class
@@ -21,7 +29,12 @@ case class AvroDoc(doc: String) extends StaticAnnotation
   * which results in all usages of the value type having schema
   * FIXED with a size of 7 rather than the default.
   */
-case class AvroFixed(size: Int) extends StaticAnnotation
+case class AvroFixed(size: Int) extends AvroFixable
+
+trait AvroFixable extends StaticAnnotation {
+  val size: Int
+}
+
 
 /**
   * [[AvroName]] allows the name used by Avro to be different
@@ -51,11 +64,26 @@ case class AvroFixed(size: Int) extends StaticAnnotation
   * it will compare the name in the record to the annotated value.
   *
   */
-case class AvroName(name: String) extends StaticAnnotation
+case class AvroName(name: String) extends AvroNameable
 
-case class AvroNamespace(namespace: String) extends StaticAnnotation
+trait AvroNameable extends StaticAnnotation {
+  val name: String
+}
 
-case class AvroProp(name: String, value: String) extends StaticAnnotation
+
+case class AvroNamespace(namespace: String) extends AvroNamespaceable
+
+trait AvroNamespaceable extends StaticAnnotation {
+  val namespace: String
+}
+
+case class AvroProp(name: String, value:String) extends AvroProperty
+
+trait AvroProperty extends StaticAnnotation {
+  val name: String
+  val value: String
+}
+
 
 /**
   * This annotation is used to disable generics in the encoding
