@@ -19,7 +19,7 @@ class AnnotationExtractors(annos: Seq[Anno]) {
 
   def name: Option[String] = findFirst(classOf[AvroNameable])
 
-  def props: Map[String, String] = annos.filter( c=> classOf[AvroProperty].isAssignableFrom(Class.forName(c.className))).map { anno =>
+  def props: Map[String, String] = annos.filter(c => classOf[AvroProperty].isAssignableFrom(Class.forName(c.className))).map { anno =>
     anno.args.head.toString -> anno.args(1).toString
   }.toMap
 
