@@ -11,7 +11,7 @@ import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList}
+import shapeless.{Coproduct, Generic, HList, Lazy}
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -318,6 +318,8 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     val fullName = tpe.typeSymbol.fullName
     val packageName = reflect.packageName(tpe)
 
+    val nameResolution = NameResolution(c)(tpe)
+
     if (!reflect.isCaseClass(tpe)) {
       c.abort(c.enclosingPosition.pos, s"This macro can only encode case classes, not instance of $tpe")
     } else if (reflect.isSealed(tpe)) {
@@ -428,7 +430,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
                                    readerSchema: Schema,
                                    scalaDefault: Any,
                                    transient: Boolean)
-                                  (implicit decoder: Decoder[T]): T = {
+                                  (implicit decoder: Lazy[Decoder[T]]): T = {
 
     implicit class RichSchema(s: Schema) {
       def hasField(fieldName: String): Boolean = s.getField(fieldName) != null
@@ -441,18 +443,18 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     record.getSchema.getField(fieldName) match {
       case field: Schema.Field =>
         val value = record.get(fieldName)
-        decoder.decode(value, field.schema)
+        decoder.value.decode(value, field.schema)
       case null if readerSchema.hasDefault(fieldName) =>
         val default = readerSchema.getField(fieldName).defaultVal() match {
           case JsonProperties.NULL_VALUE => null
           case other => other
         }
-        decoder.decode(default, readerSchema.getField(fieldName).schema)
+        decoder.value.decode(default, readerSchema.getField(fieldName).schema)
       case null if scalaDefault != null => scalaDefault.asInstanceOf[T]
       case null if transient => None.asInstanceOf[T]
       case _ => sys.error(s"Record $record does not have a value for $fieldName, no default was defined, and the field is not transient")
     }
   }
 
-  def decodeT[T](value: Any, schema: Schema)(implicit decoder: Decoder[T]): T = decoder.decode(value, schema)
+  def decodeT[T](value: Any, schema: Schema)(implicit decoder: Lazy[Decoder[T]]): T = decoder.value.decode(value, schema)
 }

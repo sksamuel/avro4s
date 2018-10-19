@@ -75,6 +75,10 @@ class SealedTraitDecoderTest extends FunSuite with Matchers {
     Decoder[ThingHolder].decode(record1, schema) shouldBe ThingHolder(WhimWham)
     Decoder[ThingHolder].decode(record2, schema) shouldBe ThingHolder(Widget)
   }
+
+  test("sealed trait classes with optional elements inside case classes should derive withou implicit divergence") {
+    val d = Decoder[Coat]
+  }
 }
 
 sealed trait Wibble
@@ -111,3 +115,8 @@ sealed trait Thingy
 case object WhimWham extends Thingy
 @AvroName("widget")
 case object Widget extends Thingy
+
+case class Coat(liner: CoatLiner)
+sealed trait CoatLiner
+case class WoolenLiner(thickness: Double, colour: Option[String]) extends CoatLiner
+case class CottonLiner(washable: Boolean) extends CoatLiner
