@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroNamespace, AvroSchema}
+import com.sksamuel.avro4s.{AvroNamespace, AvroSchema, Encoder, SchemaFor, Decoder}
 import org.scalatest.{Matchers, WordSpec}
 
 class AvroNamespaceTest extends WordSpec with Matchers {
@@ -57,6 +57,13 @@ class AvroNamespaceTest extends WordSpec with Matchers {
       val schema = AvroSchema[Location]
       schema.toString(true) shouldBe expected.toString(true)
     }
+
+    "support encoding and decoding with empty namespaces" in {
+      val spaceship = Spaceship(MiserableCosmos(true))
+      val encoded = Encoder[Spaceship].encode(spaceship, SchemaFor[Spaceship].schema)
+      val decoded = Decoder[Spaceship].decode(encoded, SchemaFor[Spaceship].schema)
+      spaceship shouldBe decoded
+    }
   }
 }
 
@@ -76,3 +83,12 @@ sealed trait Africa
 case object Cameroon extends Africa
 case object Comoros extends Africa
 case object Chad extends Africa
+
+@AvroNamespace("")
+case class Spaceship(cosmos: Cosmos)
+@AvroNamespace("")
+sealed trait Cosmos
+@AvroNamespace("")
+case class FunCosmos(amountOfFun: Float) extends Cosmos
+@AvroNamespace("")
+case class MiserableCosmos(isTrulyAwful: Boolean) extends Cosmos
