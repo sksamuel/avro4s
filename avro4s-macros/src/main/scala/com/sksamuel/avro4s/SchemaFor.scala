@@ -165,7 +165,13 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     override def schema: Schema = {
 
       val annos = tag.runtimeClass.getAnnotations.toList.map { a =>
-        Anno(a.annotationType.getClass.getName, Map.empty)
+        val tb = currentMirror.mkToolBox()
+
+        val args = tb.compile(tb.parse(a.toString)).apply() match {
+          case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
+          case _ => Map.empty[String, String]
+        }
+        Anno(a.annotationType.getClass.getName, args)
       }
 
       val extractor = new AnnotationExtractors(annos)
@@ -198,8 +204,8 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
       val name = a.tree.tpe.typeSymbol.fullName
       val tb = currentMirror.mkToolBox()
       val args = tb.compile(tb.parse(a.toString)).apply() match {
-        case c: AvroFieldReflection => c.getAllFields
-        case _ => Map.empty[String, AnyRef]
+        case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
+        case _ => Map.empty[String, String]
       }
       Anno(name, args)
     }

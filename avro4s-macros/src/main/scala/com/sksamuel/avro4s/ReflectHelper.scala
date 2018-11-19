@@ -130,7 +130,12 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     */
   def annotationsqq(sym: Symbol): List[c.universe.Tree] = sym.annotations.map { a =>
     val name = a.tree.tpe.typeSymbol.fullName
-    val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+    val tb = currentMirror.mkToolBox()
+
+    val args = tb.compile(tb.parse(a.toString)).apply() match {
+      case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
+      case _ => Map.empty[String, String]
+    }
     q"_root_.com.sksamuel.avro4s.Anno($name, $args)"
   }
 
@@ -139,8 +144,8 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     val tb = currentMirror.mkToolBox()
 
     val args = tb.compile(tb.parse(a.toString)).apply() match {
-      case c: AvroFieldReflection => c.getAllFields
-      case _ => Map.empty[String, AnyRef]
+      case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
+      case _ => Map.empty[String, String]
     }
     Anno(name, args)
   }
@@ -167,8 +172,8 @@ object ReflectHelper {
     val name = a.tree.tpe.typeSymbol.fullName
     val tb = currentMirror.mkToolBox()
     val args = tb.compile(tb.parse(a.toString)).apply() match {
-      case c: AvroFieldReflection => c.getAllFields
-      case _ => Map.empty[String, AnyRef]
+      case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
+      case _ => Map.empty[String, String]
     }
     Anno(name, args)
   }

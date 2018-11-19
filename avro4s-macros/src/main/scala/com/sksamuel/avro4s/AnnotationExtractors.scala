@@ -1,36 +1,13 @@
 package com.sksamuel.avro4s
 
-case class Anno(className: String, args: Map[String,AnyRef])
+case class Anno(className: String, args: Map[String,String])
 
 class AnnotationExtractors(annos: Seq[Anno]) {
 
   // returns the value of the first arg from the first annotation that matches the given class
-  private def findFirst(argument: String, clazz: Class[_]): Option[String] = {
+  private def findFirst(argument: String, clazz: Class[_]): Option[String] = annos.find(c => clazz.isAssignableFrom(Class.forName(c.className))).flatMap(_.args.get(argument).map(_.toString))
 
-    val result = annos.find(c => clazz.isAssignableFrom(Class.forName(c.className))).flatMap(_.args.get(argument).map(_.toString))
-    result match {
-      case Some(x) => println(s"Found for $argument `$x` in ${clazz.getCanonicalName}")
-      case None if annos.nonEmpty =>
-        println(s"Found None for $argument in ${clazz.getCanonicalName}")
-        println(annos)
-      case _ => Nil
-    }
-    result
-  }
-
-
-  private def findAll(argument: String, clazz: Class[_]): Seq[String] = {
-    val result = annos.filter(c => clazz.isAssignableFrom(Class.forName(c.className))).flatMap(_.args.get(argument).map(_.toString))
-    result match {
-      case x if result.nonEmpty => println(s"Found for $argument `$x` in ${clazz.getCanonicalName}")
-      case _ if annos.nonEmpty =>
-        println(s"Found None for $argument in ${clazz.getCanonicalName}")
-        println(annos)
-      case _ => Nil
-    }
-    result
-  }
-
+  private def findAll(argument: String, clazz: Class[_]): Seq[String] = annos.filter(c => clazz.isAssignableFrom(Class.forName(c.className))).flatMap(_.args.get(argument).map(_.toString))
 
   private def exists(clazz: Class[_]): Boolean = annos.exists(c => clazz.isAssignableFrom(Class.forName(c.className)))
 
