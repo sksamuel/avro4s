@@ -2,11 +2,10 @@ package com.sksamuel.avro4s.github
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s._
+import com.sksamuel.avro4s.{AvroFixed, AvroInputStream, AvroOutputStream, AvroSchema}
 import org.scalatest.{FunSuite, Matchers}
 
-@AvroName("Data")
-case class Data(@AvroName("name")uuid: Option[UUID])
+case class Data(uuid: Option[UUID])
 case class UUID(@AvroFixed(8) bytes: Array[Byte])
 
 class GithubIssue193 extends FunSuite with Matchers {
