@@ -2,15 +2,15 @@ package com.sksamuel.avro4s
 
 import scala.annotation.StaticAnnotation
 
-case class AvroAlias(alias: String) extends AvroAliasable
+case class AvroAlias(override val alias: String) extends AvroAliasable
 
-trait AvroAliasable extends StaticAnnotation {
+trait AvroAliasable extends AvroFieldReflection {
   val alias: String
 }
 
-case class AvroDoc(doc: String) extends AvroDocumentable
+case class AvroDoc(override val doc: String) extends AvroDocumentable
 
-trait AvroDocumentable extends StaticAnnotation {
+trait AvroDocumentable extends AvroFieldReflection {
   val doc: String
 }
 
@@ -21,17 +21,17 @@ trait AvroDocumentable extends StaticAnnotation {
   *
   * This annotation can be used in the following ways:
   *
-  * - On a field, eg case class `Foo(@AvroField(10) name: String)`
+  * - On a field, eg   class `Foo(@AvroField(10) name: String)`
   * which results in the field `name` having schema type FIXED with
   * a size of 10.
   *
-  * - On a value type, eg `@AvroField(7) case class Foo(name: String) extends AnyVal`
+  * - On a value type, eg `@AvroField(7)   class Foo(name: String) extends AnyVal`
   * which results in all usages of the value type having schema
   * FIXED with a size of 7 rather than the default.
   */
-case class AvroFixed(size: Int) extends AvroFixable
+case class AvroFixed(override val size: Int) extends AvroFixable
 
-trait AvroFixable extends StaticAnnotation {
+trait AvroFixable extends AvroFieldReflection {
   val size: Int
 }
 
@@ -40,12 +40,12 @@ trait AvroFixable extends StaticAnnotation {
   * [[AvroName]] allows the name used by Avro to be different
   * from what is defined in code.
   *
-  * For example, if a case class defines a field z, such as
-  * `case class Foo(z: String)` then normally this will be
+  * For example, if a   class defines a field z, such as
+  * `  class Foo(z: String)` then normally this will be
   * serialized as an entry 'z' in the Avro Record.
   *
   * However, if the field is annotated such as
-  * `case class Foo(@AvroName("x") z: String)` then the entry
+  * `  class Foo(@AvroName("x") z: String)` then the entry
   * in the Avro Record will be for 'x'.
   *
   * Similarly for deserialization, if a field is annotated then
@@ -64,23 +64,27 @@ trait AvroFixable extends StaticAnnotation {
   * it will compare the name in the record to the annotated value.
   *
   */
-case class AvroName(name: String) extends AvroNameable
+case class AvroName(override val name: String) extends AvroNameable
 
-trait AvroNameable extends StaticAnnotation {
+sealed trait AvroNameable extends AvroFieldReflection {
   val name: String
 }
 
 
-case class AvroNamespace(namespace: String) extends AvroNamespaceable
+case class AvroNamespace(override val namespace: String) extends AvroNamespaceable
 
-trait AvroNamespaceable extends StaticAnnotation {
+sealed trait AvroNamespaceable extends AvroFieldReflection {
   val namespace: String
 }
 
-case class AvroProp(name: String, value:String) extends AvroProperty
+case class AvroProp(override val key: String, override val value:String) extends AvroProperty
 
-trait AvroProperty extends StaticAnnotation {
-  val name: String
+case class AvroProp2(override val doc: String) extends AvroNameable with AvroDocumentable {
+  override val name: String = "static"
+}
+
+trait AvroProperty extends AvroFieldReflection{
+  val key: String
   val value: String
 }
 
@@ -97,4 +101,20 @@ trait AvroProperty extends StaticAnnotation {
   * When this annotation is present on a type, the name used in the
   * schema will simply be the raw type, eg `Foo`.
   */
-class AvroErasedName extends StaticAnnotation
+case class AvroErasedName() extends AvroFieldReflection
+
+
+trait AvroFieldReflection extends StaticAnnotation {
+  private def getClassFields(clazz: Class[_]): Map[String, AnyRef] = {
+    val fields = clazz.getDeclaredFields.map(field => {
+      field setAccessible true
+      field.getName -> field.get(this)
+    }).toMap
+    if(clazz.getSuperclass != null){
+      fields ++ getClassFields(clazz.getSuperclass)
+    }
+    fields
+  }
+
+  def getAllFields = getClassFields(this.getClass)
+}

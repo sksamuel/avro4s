@@ -3,6 +3,8 @@ package com.sksamuel.avro4s
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe
+import scala.reflect.runtime.currentMirror
+import scala.tools.reflect.ToolBox
 
 class ReflectHelper[C <: whitebox.Context](val c: C) {
   import c.universe
@@ -134,7 +136,12 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
 
   def annotations(sym: Symbol): List[Anno] = sym.annotations.map { a =>
     val name = a.tree.tpe.typeSymbol.fullName
-    val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+    val tb = currentMirror.mkToolBox()
+
+    val args = tb.compile(tb.parse(a.toString)).apply() match {
+      case c: AvroFieldReflection => c.getAllFields
+      case _ => Map.empty[String, AnyRef]
+    }
     Anno(name, args)
   }
 
@@ -158,7 +165,11 @@ object ReflectHelper {
 
   def annotations(sym: Symbol): List[Anno] = sym.annotations.map { a =>
     val name = a.tree.tpe.typeSymbol.fullName
-    val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+    val tb = currentMirror.mkToolBox()
+    val args = tb.compile(tb.parse(a.toString)).apply() match {
+      case c: AvroFieldReflection => c.getAllFields
+      case _ => Map.empty[String, AnyRef]
+    }
     Anno(name, args)
   }
 

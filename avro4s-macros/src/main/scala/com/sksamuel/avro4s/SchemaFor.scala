@@ -16,6 +16,9 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe._
+import scala.reflect.runtime.currentMirror
+import scala.tools.reflect.ToolBox
+
 
 /**
   * A [[SchemaFor]] generates an Avro Schema for a Scala or Java type.
@@ -162,7 +165,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     override def schema: Schema = {
 
       val annos = tag.runtimeClass.getAnnotations.toList.map { a =>
-        Anno(a.annotationType.getClass.getName, Nil)
+        Anno(a.annotationType.getClass.getName, Map.empty)
       }
 
       val extractor = new AnnotationExtractors(annos)
@@ -193,7 +196,11 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
     val annos = typeRef.pre.typeSymbol.annotations.map { a =>
       val name = a.tree.tpe.typeSymbol.fullName
-      val args = a.tree.children.tail.map(_.toString.stripPrefix("\"").stripSuffix("\""))
+      val tb = currentMirror.mkToolBox()
+      val args = tb.compile(tb.parse(a.toString)).apply() match {
+        case c: AvroFieldReflection => c.getAllFields
+        case _ => Map.empty[String, AnyRef]
+      }
       Anno(name, args)
     }
 
