@@ -66,14 +66,13 @@ trait AvroFixable extends AvroFieldReflection {
   */
 case class AvroName(override val name: String) extends AvroNameable
 
-sealed trait AvroNameable extends AvroFieldReflection {
+trait AvroNameable extends AvroFieldReflection {
   val name: String
 }
 
-
 case class AvroNamespace(override val namespace: String) extends AvroNamespaceable
 
-sealed trait AvroNamespaceable extends AvroFieldReflection {
+trait AvroNamespaceable extends AvroFieldReflection {
   val namespace: String
 }
 
@@ -100,7 +99,7 @@ trait AvroProperty extends AvroFieldReflection{
 case class AvroErasedName() extends AvroFieldReflection
 
 
-trait AvroFieldReflection extends StaticAnnotation {
+sealed trait AvroFieldReflection extends StaticAnnotation {
   private def getClassFields(clazz: Class[_]): Map[String, Any] = {
     val fields = clazz.getDeclaredFields.map(field => {
       field setAccessible true
