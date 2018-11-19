@@ -21,11 +21,11 @@ trait AvroDocumentable extends AvroFieldReflection {
   *
   * This annotation can be used in the following ways:
   *
-  * - On a field, eg   class `Foo(@AvroField(10) name: String)`
+  * - On a field, eg case class `Foo(@AvroField(10) name: String)`
   * which results in the field `name` having schema type FIXED with
   * a size of 10.
   *
-  * - On a value type, eg `@AvroField(7)   class Foo(name: String) extends AnyVal`
+  * - On a value type, eg `@AvroField(7) case class Foo(name: String) extends AnyVal`
   * which results in all usages of the value type having schema
   * FIXED with a size of 7 rather than the default.
   */
@@ -40,12 +40,12 @@ trait AvroFixable extends AvroFieldReflection {
   * [[AvroName]] allows the name used by Avro to be different
   * from what is defined in code.
   *
-  * For example, if a   class defines a field z, such as
-  * `  class Foo(z: String)` then normally this will be
+  * For example, if a case class defines a field z, such as
+  * `case class Foo(z: String)` then normally this will be
   * serialized as an entry 'z' in the Avro Record.
   *
   * However, if the field is annotated such as
-  * `  class Foo(@AvroName("x") z: String)` then the entry
+  * `case class Foo(@AvroName("x") z: String)` then the entry
   * in the Avro Record will be for 'x'.
   *
   * Similarly for deserialization, if a field is annotated then
