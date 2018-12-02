@@ -19,7 +19,7 @@ import org.apache.avro.io.EncoderFactory
   * See the methods on the companion object to create instances of each
   * of these types of stream.
   */
-trait AvroOutputStream[T] {
+trait AvroOutputStream[T] extends AutoCloseable {
   def close(): Unit
   def flush(): Unit
   def fSync(): Unit

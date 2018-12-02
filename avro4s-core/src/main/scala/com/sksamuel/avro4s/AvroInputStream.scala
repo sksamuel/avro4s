@@ -8,7 +8,7 @@ import org.apache.avro.Schema
 
 import scala.util.Try
 
-trait AvroInputStream[T] {
+trait AvroInputStream[T] extends AutoCloseable {
 
   /**
     * Closes this stream and any underlying resources.
