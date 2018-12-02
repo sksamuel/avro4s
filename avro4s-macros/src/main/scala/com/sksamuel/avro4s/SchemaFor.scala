@@ -8,7 +8,7 @@ import java.util.UUID
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList}
+import shapeless.{Coproduct, Generic, HList, Lazy}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
@@ -261,6 +261,8 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
           val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
 
+          val isCaseClass = reflect.isCaseClass(fieldTpe)
+
           // gets the method symbol for the default getter if it exists
           val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
           val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
@@ -268,9 +270,17 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
           // if the default getter exists then we can use it to generate the default value
           if (defaultGetterMethod.isMethod) {
             val moduleSym = tpe.typeSymbol.companion
-            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+            if (isCaseClass) {
+              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+            } else {
+              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+            }
           } else {
-            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
+            if (isCaseClass) {
+              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
+            } else {
+              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
+            }
           }
         }
 
@@ -289,14 +299,26 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
   def schemaFieldNoDefault[B](fieldName: String, namespace: String, annos: Seq[Anno])
                              (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
-    schemaField[B](fieldName, namespace, annos, NoDefault)(schemaFor, namingStrategy)
+    buildField[B](fieldName, namespace, annos, NoDefault, schemaFor, namingStrategy)
+  }
+
+  def schemaFieldNoDefaultLazy[B](fieldName: String, namespace: String, annos: Seq[Anno])
+                                 (implicit schemaFor: Lazy[SchemaFor[B]], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+    buildField[B](fieldName, namespace, annos, NoDefault, schemaFor.value, namingStrategy)
   }
 
   def schemaFieldWithDefault[B](fieldName: String, namespace: String, annos: Seq[Anno], default: B)
                                (implicit schemaFor: SchemaFor[B], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
     // the default may be a scala type that avro doesn't understand, so we must turn
     // it into an avro compatible type by using an encoder.
-    schemaField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.schema)))(schemaFor, namingStrategy)
+    buildField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.schema)), schemaFor, namingStrategy)
+  }
+
+  def schemaFieldWithDefaultLazy[B](fieldName: String, namespace: String, annos: Seq[Anno], default: B)
+                                   (implicit schemaFor: Lazy[SchemaFor[B]], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+    // the default may be a scala type that avro doesn't understand, so we must turn
+    // it into an avro compatible type by using an encoder.
+    buildField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.value.schema)), schemaFor.value, namingStrategy)
   }
 
   /**
@@ -312,8 +334,12 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     * @param default   an instance of the Default ADT which contains an avro compatible default value
     *                  if such a default applies to this field
     */
-  def schemaField[B](fieldName: String, namespace: String, annos: Seq[Anno], default: Default)
-                    (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+  private def buildField[B](fieldName: String,
+                            namespace: String,
+                            annos: Seq[Anno],
+                            default: Default,
+                            schemaFor: SchemaFor[B],
+                            namingStrategy: NamingStrategy): Schema.Field = {
 
     val extractor = new AnnotationExtractors(annos)
     val doc = extractor.doc.orNull
