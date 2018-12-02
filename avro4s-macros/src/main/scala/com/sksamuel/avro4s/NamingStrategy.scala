@@ -29,7 +29,13 @@ case object DefaultNamingStrategy extends NamingStrategy {
 }
 
 case object PascalCase extends NamingStrategy {
-  override def to(name: String): String = name.head.toUpper + name.tail
+  override def to(name: String): String = {
+    if (name.length == 1) name.toUpperCase else {
+      val chars = name.toCharArray
+      chars(0) = chars(0).toUpper
+      new String(chars)
+    }
+  }
 }
 
 case object SnakeCase extends NamingStrategy {
