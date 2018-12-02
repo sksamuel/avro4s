@@ -12,7 +12,7 @@ import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList}
+import shapeless.{Coproduct, Generic, HList, Lazy}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode
@@ -302,9 +302,14 @@ object Encoder extends CoproductEncoders with TupleEncoders {
           // that we use when looking inside the schema to pull out the field
           val annos = reflect.annotations(fieldSym)
 
-          val fieldName = new AnnotationExtractors(annos).name.getOrElse(fieldSym.name.decodedName.toString)
+          val isCaseClassOrSealed = reflect.isCaseClass(fieldTpe) || reflect.isSealed(fieldTpe)
 
-          q"""_root_.com.sksamuel.avro4s.Encoder.encodeField[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})"""
+          val fieldName = new AnnotationExtractors(annos).name.getOrElse(fieldSym.name.decodedName.toString)
+          if (isCaseClassOrSealed) {
+            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldNotLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})"""
+          } else {
+            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})"""
+          }
         }
 
       // An encoder for a value type just needs to pass through the given value into an encoder
@@ -358,6 +363,17 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     }
   }
 
+  def encodeFieldNotLazy[T](t: T, fieldName: String, schema: Schema, fullName: String)
+                           (implicit encoder: Encoder[T]): AnyRef = {
+    encodeField(t, fieldName, schema, fullName, encoder)
+  }
+
+
+  def encodeFieldLazy[T](t: T, fieldName: String, schema: Schema, fullName: String)
+                        (implicit encoder: Lazy[Encoder[T]]): AnyRef = {
+    encodeField(t, fieldName, schema, fullName, encoder.value)
+  }
+
   /**
     * Encodes a field in a case class by bringing in an implicit encoder for the field's type.
     * The schema passed in here is the schema for the container type, and the fieldName
@@ -369,8 +385,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     * containing class, and comparing to the record full names in the subschemas.
     *
     */
-  def encodeField[T](t: T, fieldName: String, schema: Schema, fullName: String)
-                    (implicit encoder: Encoder[T]): AnyRef = {
+  private def encodeField[T](t: T, fieldName: String, schema: Schema, fullName: String, encoder: Encoder[T]): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
         val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
@@ -384,5 +399,4 @@ object Encoder extends CoproductEncoders with TupleEncoders {
         encoder.encode(t, schema)
     }
   }
-
 }
