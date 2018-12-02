@@ -69,7 +69,7 @@ class JsonToAvroConverter(namespace: String,
     }
 
     def decapitalize(s: String): String = {
-      if (s.nonEmpty) s.head.toLower + s.tail else s
+      if (s.nonEmpty) s.head.toLower.toString + s.tail else s
     }
 
     from match {

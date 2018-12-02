@@ -32,7 +32,7 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit val FooOverrideEncoder = new Encoder[Foo] {
-      override def encode(t: Foo, schema: Schema): AnyRef = t.b + ":" + t.i
+      override def encode(t: Foo, schema: Schema): AnyRef = t.b.toString + ":" + t.i
     }
 
     case class Foo(b: Boolean, i: Int)
