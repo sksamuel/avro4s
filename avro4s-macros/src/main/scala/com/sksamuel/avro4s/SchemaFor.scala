@@ -261,8 +261,6 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
           val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
 
-          val isCaseClass = reflect.isCaseClass(fieldTpe)
-
           // gets the method symbol for the default getter if it exists
           val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
           val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
@@ -270,13 +268,13 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
           // if the default getter exists then we can use it to generate the default value
           if (defaultGetterMethod.isMethod) {
             val moduleSym = tpe.typeSymbol.companion
-            if (isCaseClass) {
+            if (reflect.isMacroGenerated(fieldTpe)) {
               q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
             } else {
               q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
             }
           } else {
-            if (isCaseClass) {
+            if (reflect.isMacroGenerated(fieldTpe)) {
               q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
             } else {
               q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""

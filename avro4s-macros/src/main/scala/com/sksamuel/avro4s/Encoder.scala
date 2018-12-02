@@ -301,11 +301,9 @@ object Encoder extends CoproductEncoders with TupleEncoders {
           // we need to check @AvroName annotation on the field, because that will determine the name
           // that we use when looking inside the schema to pull out the field
           val annos = reflect.annotations(fieldSym)
-
-          val isCaseClassOrSealed = reflect.isCaseClass(fieldTpe) || reflect.isSealed(fieldTpe)
-
           val fieldName = new AnnotationExtractors(annos).name.getOrElse(fieldSym.name.decodedName.toString)
-          if (isCaseClassOrSealed) {
+
+          if (reflect.isMacroGenerated(fieldTpe)) {
             q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldNotLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})"""
           } else {
             q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})"""

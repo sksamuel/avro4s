@@ -79,6 +79,17 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     */
   def isSealed(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed
 
+  def isLibraryType(tpe: Type): Boolean = tpe.typeSymbol.fullName.startsWith("scala") || tpe.typeSymbol.fullName.startsWith("java") || tpe.typeSymbol.fullName.startsWith("javax")
+
+  /**
+    * Returns true if SchemaFor, Encoder or Decoder for this type should be generated
+    * by an avro4s or shapeless macro. Returns false if there should be an implicit in scope
+    * without using a macro.
+    */
+  def isMacroGenerated(tpe: Type): Boolean = {
+    !isLibraryType(tpe) && !isScalaEnum(tpe) && (isCaseClass(tpe) || isSealed(tpe))
+  }
+
   /**
     * If a value class, returns the type that the value class is wrapping.
     * Otherwise returns the type itself

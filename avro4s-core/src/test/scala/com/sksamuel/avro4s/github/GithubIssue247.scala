@@ -5,7 +5,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 case class B(b: Map[String, String])
 
-case class A(a: List[B])
+case class A(a: Seq[B])
 
 class GithubIssue247 extends FunSuite with Matchers {
   test("Diverging implicit expansion error on case class ") {

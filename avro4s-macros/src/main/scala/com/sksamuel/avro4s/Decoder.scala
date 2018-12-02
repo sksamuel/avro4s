@@ -381,18 +381,17 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
 
           val transient = reflect.isTransientOnField(tpe, fieldSym)
-          val isCaseClassOrSealed = reflect.isCaseClass(fieldTpe) || reflect.isSealed(fieldTpe)
 
           // if the default is defined, we will use that to populate, otherwise if the field is transient
           // we will populate with none or null, otherwise an error will be raised
           if (defaultGetterMethod.isMethod) {
-            if (isCaseClassOrSealed) {
+            if (reflect.isMacroGenerated(fieldTpe)) {
               q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
             } else {
               q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
             }
           } else {
-            if (isCaseClassOrSealed) {
+            if (reflect.isMacroGenerated(fieldTpe)) {
               q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
             } else {
               q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""

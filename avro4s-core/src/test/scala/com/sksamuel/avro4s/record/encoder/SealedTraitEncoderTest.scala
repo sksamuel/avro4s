@@ -72,6 +72,15 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     val inner = record.get("inner").asInstanceOf[GenericRecord]
     inner.get("height") shouldBe 1.23
   }
+
+  test("sealed trait classes with optional elements inside case classes should be encoded correctly") {
+    case class Outer(inner: Inner)
+    sealed trait Inner
+    case class InnerOne(value: Double, optVal: Option[Float]) extends Inner
+    case class InnerTwo(height: Double) extends Inner
+    val schema = AvroSchema[Outer]
+    val record = Encoder[Outer].encode(Outer(InnerOne(1.23, None)), schema).asInstanceOf[GenericRecord]
+  }
 }
 
 sealed trait Dibble
