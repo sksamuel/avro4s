@@ -9,8 +9,8 @@ case class A(a: Seq[B])
 
 class GithubIssue247 extends FunSuite with Matchers {
   test("Diverging implicit expansion error on case class ") {
-    println(AvroSchema[A])
-    println(Encoder[A])
-    println(Decoder[A])
+    AvroSchema[A]
+    Encoder[A]
+    Decoder[A]
   }
 }
