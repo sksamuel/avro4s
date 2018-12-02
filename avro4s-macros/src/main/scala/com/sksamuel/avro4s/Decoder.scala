@@ -11,7 +11,7 @@ import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList}
+import shapeless.{Coproduct, Generic, HList, Lazy}
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -381,13 +381,22 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
 
           val transient = reflect.isTransientOnField(tpe, fieldSym)
+          val isCaseClassOrSealed = reflect.isCaseClass(fieldTpe) || reflect.isSealed(fieldTpe)
 
           // if the default is defined, we will use that to populate, otherwise if the field is transient
           // we will populate with none or null, otherwise an error will be raised
           if (defaultGetterMethod.isMethod) {
-            q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
+            if (isCaseClassOrSealed) {
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
+            } else {
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
+            }
           } else {
-            q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefault[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
+            if (isCaseClassOrSealed) {
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
+            } else {
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
+            }
           }
         }
 
@@ -406,6 +415,24 @@ object Decoder extends CoproductDecoders with TupleDecoders {
         )
       }
     }
+  }
+
+  def decodeFieldOrApplyDefaultNotLazy[T](fieldName: String,
+                                       record: GenericRecord,
+                                       readerSchema: Schema,
+                                       scalaDefault: Any,
+                                       transient: Boolean)
+                                      (implicit decoder: Decoder[T]): T = {
+    decodeFieldOrApplyDefault(fieldName, record, readerSchema, scalaDefault, transient, decoder)
+  }
+
+  def decodeFieldOrApplyDefaultLazy[T](fieldName: String,
+                                          record: GenericRecord,
+                                          readerSchema: Schema,
+                                          scalaDefault: Any,
+                                          transient: Boolean)
+                                         (implicit decoder: Lazy[Decoder[T]]): T = {
+    decodeFieldOrApplyDefault(fieldName, record, readerSchema, scalaDefault, transient, decoder.value)
   }
 
   /**
@@ -427,8 +454,8 @@ object Decoder extends CoproductDecoders with TupleDecoders {
                                    record: GenericRecord,
                                    readerSchema: Schema,
                                    scalaDefault: Any,
-                                   transient: Boolean)
-                                  (implicit decoder: Decoder[T]): T = {
+                                   transient: Boolean,
+                                   decoder: Decoder[T]): T = {
 
     implicit class RichSchema(s: Schema) {
       def hasField(fieldName: String): Boolean = s.getField(fieldName) != null
