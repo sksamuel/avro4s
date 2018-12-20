@@ -2,9 +2,17 @@ package com.sksamuel.avro4s
 
 import scala.annotation.StaticAnnotation
 
-case class AvroAlias(alias: String) extends StaticAnnotation
+case class AvroAlias(override val alias: String) extends AvroAliasable
 
-case class AvroDoc(doc: String) extends StaticAnnotation
+trait AvroAliasable extends AvroFieldReflection {
+  val alias: String
+}
+
+case class AvroDoc(override val doc: String) extends AvroDocumentable
+
+trait AvroDocumentable extends AvroFieldReflection {
+  val doc: String
+}
 
 /**
   * [[AvroFixed]] overrides the schema type for a field or a value class
@@ -21,7 +29,12 @@ case class AvroDoc(doc: String) extends StaticAnnotation
   * which results in all usages of the value type having schema
   * FIXED with a size of 7 rather than the default.
   */
-case class AvroFixed(size: Int) extends StaticAnnotation
+case class AvroFixed(override val size: Int) extends AvroFixable
+
+trait AvroFixable extends AvroFieldReflection {
+  val size: Int
+}
+
 
 /**
   * [[AvroName]] allows the name used by Avro to be different
@@ -51,11 +64,25 @@ case class AvroFixed(size: Int) extends StaticAnnotation
   * it will compare the name in the record to the annotated value.
   *
   */
-case class AvroName(name: String) extends StaticAnnotation
+case class AvroName(override val name: String) extends AvroNameable
 
-case class AvroNamespace(namespace: String) extends StaticAnnotation
+trait AvroNameable extends AvroFieldReflection {
+  val name: String
+}
 
-case class AvroProp(name: String, value: String) extends StaticAnnotation
+case class AvroNamespace(override val namespace: String) extends AvroNamespaceable
+
+trait AvroNamespaceable extends AvroFieldReflection {
+  val namespace: String
+}
+
+case class AvroProp(override val key: String, override val value:String) extends AvroProperty
+
+trait AvroProperty extends AvroFieldReflection{
+  val key: String
+  val value: String
+}
+
 
 /**
   * This annotation is used to disable generics in the encoding
@@ -69,4 +96,20 @@ case class AvroProp(name: String, value: String) extends StaticAnnotation
   * When this annotation is present on a type, the name used in the
   * schema will simply be the raw type, eg `Foo`.
   */
-class AvroErasedName extends StaticAnnotation
+case class AvroErasedName() extends AvroFieldReflection
+
+
+sealed trait AvroFieldReflection extends StaticAnnotation {
+  private def getClassFields(clazz: Class[_]): Map[String, Any] = {
+    val fields = clazz.getDeclaredFields.map(field => {
+      field setAccessible true
+      field.getName -> field.get(this)
+    }).toMap
+    if(clazz.getSuperclass != null){
+      fields ++ getClassFields(clazz.getSuperclass)
+    }
+    fields
+  }
+
+  def getAllFields = getClassFields(this.getClass)
+}

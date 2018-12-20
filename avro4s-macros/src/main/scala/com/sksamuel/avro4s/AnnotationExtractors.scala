@@ -1,26 +1,26 @@
 package com.sksamuel.avro4s
 
-case class Anno(className: String, args: Seq[Any])
+case class Anno(className: String, args: Map[String,String])
 
 class AnnotationExtractors(annos: Seq[Anno]) {
 
   // returns the value of the first arg from the first annotation that matches the given class
-  private def findFirst(clazz: Class[_]): Option[String] = annos.find(_.className == clazz.getName).map(_.args.head.toString)
+  private def findFirst(argument: String, clazz: Class[_]): Option[String] = annos.find(c => clazz.isAssignableFrom(Class.forName(c.className))).flatMap(_.args.get(argument).map(_.toString))
 
-  private def findAll(clazz: Class[_]): Seq[String] = annos.filter(_.className == clazz.getName).map(_.args.head.toString)
+  private def findAll(argument: String, clazz: Class[_]): Seq[String] = annos.filter(c => clazz.isAssignableFrom(Class.forName(c.className))).flatMap(_.args.get(argument).map(_.toString))
 
-  private def exists(clazz: Class[_]): Boolean = annos.exists(_.className == clazz.getName)
+  private def exists(clazz: Class[_]): Boolean = annos.exists(c => clazz.isAssignableFrom(Class.forName(c.className)))
 
-  def namespace: Option[String] = findFirst(classOf[AvroNamespace])
-  def doc: Option[String] = findFirst(classOf[AvroDoc])
-  def aliases: Seq[String] = findAll(classOf[AvroAlias])
+  def namespace: Option[String] = findFirst("namespace", classOf[AvroNamespaceable])
+  def doc: Option[String] = findFirst("doc", classOf[AvroDocumentable])
+  def aliases: Seq[String] = findAll("alias",classOf[AvroAliasable])
 
-  def fixed: Option[Int] = findFirst(classOf[AvroFixed]).map(_.toInt)
+  def fixed: Option[Int] = findFirst("size",classOf[AvroFixable]).map(_.toInt)
 
-  def name: Option[String] = findFirst(classOf[AvroName])
+  def name: Option[String] = findFirst("name",classOf[AvroNameable])
 
-  def props: Map[String, String] = annos.filter(_.className == classOf[AvroProp].getName).map { anno =>
-    anno.args.head.toString -> anno.args(1).toString
+  def props: Map[String, String] = annos.filter(c => classOf[AvroProperty].isAssignableFrom(Class.forName(c.className))).map { anno =>
+    anno.args("key").toString -> anno.args("value").toString
   }.toMap
 
   def erased: Boolean = exists(classOf[AvroErasedName])
