@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroProp, AvroSchema}
+import com.sksamuel.avro4s.{AvroProp, AvroProps, AvroSchema}
 import org.scalatest.{Matchers, WordSpec}
 
 class AvroPropSchemaTest extends WordSpec with Matchers {
@@ -17,6 +17,13 @@ class AvroPropSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/props_annotation_field.avsc"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
+    }
+    "should support multiple annotations" in {
+      case class MultipleAnnotations(@AvroProps(Map("cold" -> "play", "kate" -> "bush")) @AvroProp("led", "zeppelin") str: String, long: Long, int:Int)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/multi_props_annotation_field.avsc"))
+      val schema = AvroSchema[MultipleAnnotations]
+      schema.toString(true) shouldBe expected.toString(true)
+
     }
   }
 }

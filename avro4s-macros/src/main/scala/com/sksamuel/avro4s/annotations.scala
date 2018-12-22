@@ -76,11 +76,14 @@ trait AvroNamespaceable extends AvroFieldReflection {
   val namespace: String
 }
 
-case class AvroProp(override val key: String, override val value:String) extends AvroProperty
+case class AvroProp(key: String, value:String) extends AvroProperty {
+  override val properties: Map[String, String] = Map(key -> value)
+}
+
+case class AvroProps(override val properties: Map[String,String]) extends AvroProperty
 
 trait AvroProperty extends AvroFieldReflection{
-  val key: String
-  val value: String
+  val properties: Map[String,String]
 }
 
 
@@ -111,5 +114,5 @@ sealed trait AvroFieldReflection extends StaticAnnotation {
     fields
   }
 
-  def getAllFields = getClassFields(this.getClass)
+  def getAllFieldsz:Map[String,Any] = getClassFields(this.getClass)
 }

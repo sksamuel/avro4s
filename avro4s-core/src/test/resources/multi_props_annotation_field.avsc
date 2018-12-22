@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "MultipleAnnotations",
+  "namespace": "com.sksamuel.avro4s.schema.AvroPropSchemaTest",
+  "fields": [
+    {
+      "name": "str",
+      "type": "string",
+      "cold": "play",
+      "kate": "bush",
+      "led": "zeppelin"
+    },
+    {
+      "name": "long",
+      "type": "long"
+    },
+    {
+      "name": "int",
+      "type": "int"
+    }
+  ]
+}
