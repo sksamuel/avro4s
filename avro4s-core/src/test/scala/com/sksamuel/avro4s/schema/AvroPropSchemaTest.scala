@@ -19,7 +19,7 @@ class AvroPropSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
     "should support multiple annotations" in {
-      case class MultipleAnnotations(@AvroProps(Map("cold" -> "play", "kate" -> "bush")) @AvroProp("led", "zeppelin") str: String, long: Long, int:Int)
+      case class MultipleAnnotations(@AvroProps(Map("cold" -> "play", "kate" -> "bush")) @AvroProp("great", "true") str: String, long: Long, int:Int)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/multi_props_annotation_field.avsc"))
       val schema = AvroSchema[MultipleAnnotations]
       schema.toString(true) shouldBe expected.toString(true)

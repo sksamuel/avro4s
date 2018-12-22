@@ -1,10 +1,13 @@
 package com.sksamuel.avro4s
 
+import org.codehaus.jackson.map.ObjectMapper
+
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.currentMirror
 import scala.tools.reflect.ToolBox
+import collection.JavaConverters._
 
 class ReflectHelper[C <: whitebox.Context](val c: C) {
   import c.universe
@@ -144,6 +147,13 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     val tb = currentMirror.mkToolBox()
 
     val args = tb.compile(tb.parse(a.toString)).apply() match {
+      case c: AvroProperty => c.getAllFields.map { case (k, v) =>
+        if (k.equals("properties"))
+        //Needs to be converted to Java due to the fact the jackson serializes other properties then just the information found in the map
+          (k, new ObjectMapper().writeValueAsString(v.asInstanceOf[Map[String,String]].asJava))
+        else
+          (k, v.toString)
+      }
       case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
       case _ => Map.empty[String, String]
     }
@@ -155,6 +165,13 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     val tb = currentMirror.mkToolBox()
 
     val args = tb.compile(tb.parse(a.toString)).apply() match {
+      case c: AvroProperty => c.getAllFields.map { case (k, v) =>
+        if (k.equals("properties"))
+        //Needs to be converted to Java due to the fact the jackson serializes other properties then just the information found in the map
+          (k, new ObjectMapper().writeValueAsString(v.asInstanceOf[Map[String,String]].asJava))
+        else
+          (k, v.toString)
+      }
       case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
       case _ => Map.empty[String, String]
     }
@@ -183,6 +200,13 @@ object ReflectHelper {
     val name = a.tree.tpe.typeSymbol.fullName
     val tb = currentMirror.mkToolBox()
     val args = tb.compile(tb.parse(a.toString)).apply() match {
+      case c: AvroProperty => c.getAllFields.map { case (k, v) =>
+        if (k.equals("properties"))
+          //Needs to be converted to Java due to the fact the jackson serializes other properties then just the information found in the map
+          (k, new ObjectMapper().writeValueAsString(v.asInstanceOf[Map[String,String]].asJava))
+        else
+          (k, v.toString)
+      }
       case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
       case _ => Map.empty[String, String]
     }

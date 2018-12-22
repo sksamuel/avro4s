@@ -6,6 +6,7 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
+import org.codehaus.jackson.map.ObjectMapper
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{Coproduct, Generic, HList, Lazy}
@@ -168,6 +169,13 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
         val tb = currentMirror.mkToolBox()
 
         val args = tb.compile(tb.parse(a.toString)).apply() match {
+          case c: AvroProperty => c.getAllFields.map { case (k, v) =>
+            if (k.equals("properties"))
+            //Needs to be converted to Java due to the fact the jackson serializes other properties then just the information found in the map
+              (k, new ObjectMapper().writeValueAsString(v.asInstanceOf[Map[String,String]].asJava))
+            else
+              (k, v.toString)
+          }
           case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
           case _ => Map.empty[String, String]
         }
@@ -204,6 +212,13 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
       val name = a.tree.tpe.typeSymbol.fullName
       val tb = currentMirror.mkToolBox()
       val args = tb.compile(tb.parse(a.toString)).apply() match {
+        case c: AvroProperty => c.getAllFields.map { case (k, v) =>
+          //Needs to be converted to Java due to the fact the jackson serializes other properties then just the information found in the map
+          if (k.equals("properties"))
+            (k, new ObjectMapper().writeValueAsString(v.asInstanceOf[Map[String,String]].asJava))
+          else
+            (k, v.toString)
+        }
         case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
         case _ => Map.empty[String, String]
       }

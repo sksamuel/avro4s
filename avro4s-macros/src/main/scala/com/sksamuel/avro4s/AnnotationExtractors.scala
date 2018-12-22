@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
-import scala.util.matching.Regex
+import org.codehaus.jackson.map.ObjectMapper
+import collection.JavaConverters._
 
 case class Anno(className: String, args: Map[String,String])
 
@@ -21,27 +22,12 @@ class AnnotationExtractors(annos: Seq[Anno]) {
 
   def name: Option[String] = findFirst("name",classOf[AvroNameable])
 
-  def props: Map[String, String] = annos.filter(c => classOf[AvroProperty].isAssignableFrom(Class.forName(c.className))).flatMap(x => stringToMap(x.args("properties"))).toMap
-
-  private def stringToMap(string: String): Map[String,String] = {
-    //Get the map elements
-    AnnotationExtractors.betweenParentheses.findFirstIn(string)
-      //Drop the surrounding ()
-      .map(_.drop(1).dropRight(1)) match {
-      case Some(mapElements) =>
-        //Get list of tuples (ie a -> b)
-        mapElements.split(", ").toList
-          //Break make into tuples and convert into map
-        .flatMap(_.split(AnnotationExtractors.arrowsNotInQuotes)).grouped(2).collect { case a :: b :: Nil => (a,b) }.toMap
-      case None => Map.empty
-    }
-  }
-
+  def props: Map[String, String] = annos.filter(c => classOf[AvroProperty].isAssignableFrom(Class.forName(c.className)))
+    .flatMap(x => {
+      val mapper = new ObjectMapper()
+      //Needs to bec converted into a java.lang.Object due to the fact that jackson serializes data like "true" as a boolean rather then a stringified boolean
+      mapper.readValue(x.args("properties").getBytes, classOf[java.util.Map[String,java.lang.Object]]).asScala.map{case (k,v) => (k,v.toString)}
+    }).toMap
 
   def erased: Boolean = exists(classOf[AvroErasedName])
-}
-
-object AnnotationExtractors {
-  private val betweenParentheses: Regex = "\\(([^\\)]+)\\)".r
-  private val arrowsNotInQuotes: String = "\\s(?!\\B\"[^\"]*)->(?![^\"]*\"\\B)\\s"
 }
