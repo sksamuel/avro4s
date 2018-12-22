@@ -114,5 +114,5 @@ sealed trait AvroFieldReflection extends StaticAnnotation {
     fields
   }
 
-  def getAllFieldsz:Map[String,Any] = getClassFields(this.getClass)
+  def getAllFields:Map[String,Any] = getClassFields(this.getClass)
 }
