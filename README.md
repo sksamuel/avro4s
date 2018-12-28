@@ -516,6 +516,12 @@ val schema = AvroSchema[MyDecimal]
 }
 ```
 
+### Type Parameters
+
+When serializing a class with one or more type parameters, the avro name used in a schema is the name of the raw type, plus the actual type parameters. In other words, it would be of the form `rawtype__typeparam1_typeparam2_..._typeparamN`. So for example, the schema for a type `Event[Foo]` would have the avro name `event__foo`.
+
+You can disable this by annotating the class with `@AvroErasedName` which uses the JVM erased name - in other words, it drops type parameter information. So the aforementioned `Event[Foo]` would be simply `event`.
+
 ### Selective Customisation
 
 You can selectively customise the way Avro4s generates certain parts of your hierarchy, thanks to implicit precedence. Suppose you have the following classes:
