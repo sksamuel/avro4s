@@ -37,18 +37,20 @@ trait CoproductDecoders  {
 
   // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
   implicit def coproductDecoder[S: WeakTypeTag : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
+    private[this] val decoderOfS: Decoder[S] = implicitly[Decoder[S]]
+    private[this] val tpe = implicitly[WeakTypeTag[S]].tpe
+
     override def decode(value: Any, schema: Schema): S :+: T = {
-      safeFrom[S](value, schema) match {
+      safeFrom[S](value, tpe, schema)(decoderOfS) match {
         case Some(s) => Coproduct[S :+: T](s)
         case None => Inr(decoder.decode(value, schema))
       }
     }
   }
 
-  protected def safeFrom[T: WeakTypeTag](value: Any, schema: Schema)(implicit decoder: Decoder[T]): Option[T] = {
+  protected def safeFrom[T](value: Any, tpe: Type, schema: Schema)(implicit decoder: Decoder[T]): Option[T] = {
     import scala.reflect.runtime.universe.typeOf
 
-    val tpe = implicitly[WeakTypeTag[T]].tpe
     def typeName: String = NameResolution(tpe).fullName
 
     value match {

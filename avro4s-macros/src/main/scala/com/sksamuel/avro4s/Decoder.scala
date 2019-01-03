@@ -256,12 +256,15 @@ object Decoder extends CoproductDecoders with TupleDecoders {
   }
 
   implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
+    private val tpeA = implicitly[WeakTypeTag[A]].tpe
+    private val tpeB = implicitly[WeakTypeTag[B]].tpe
+
     override def decode(value: Any, schema: Schema): Either[A, B] = {
-      safeFrom[A](value, schema).map(Left[A, B])
-        .orElse(safeFrom[B](value, schema).map(Right[A, B]))
+      safeFrom[A](value, tpeA, schema).map(Left[A, B])
+        .orElse(safeFrom[B](value, tpeB, schema).map(Right[A, B]))
         .getOrElse {
-          val aName = NameResolution(weakTypeOf[A])
-          val bName = NameResolution(weakTypeOf[B])
+          val aName = NameResolution(tpeA)
+          val bName = NameResolution(tpeB)
           sys.error(s"Could not decode $value into Either[$aName, $bName]")
         }
     }
@@ -366,6 +369,15 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           sys.error(error)
         }
 
+        val decoders = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
+
+          if (reflect.isMacroGenerated(fieldTpe)) {
+            q"""implicitly[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]"""
+          } else {
+            q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]]"""
+          }
+        }
+
         val fields = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
 
           // this is the simple name of the field
@@ -386,15 +398,15 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           // we will populate with none or null, otherwise an error will be raised
           if (defaultGetterMethod.isMethod) {
             if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
             } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
             }
           } else {
             if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
             } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
             }
           }
         }
@@ -402,6 +414,8 @@ object Decoder extends CoproductDecoders with TupleDecoders {
         c.Expr[Decoder[T]](
           q"""
           new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
+            private[this] val decoders = Array(..$decoders)
+
             override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
               val fullName = $fullName
               value match {
