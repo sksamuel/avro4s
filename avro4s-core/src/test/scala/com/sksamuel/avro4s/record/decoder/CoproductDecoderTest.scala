@@ -8,12 +8,12 @@ import shapeless.{:+:, CNil, Coproduct}
 
 class CoproductDecoderTest extends FunSuite with Matchers {
 
-//  test("coproducts with primitives") {
-//    val schema = AvroSchema[CPWrapper]
-//    val record = new GenericData.Record(schema)
-//    record.put("u", new Utf8("wibble"))
-//    Decoder[CPWrapper].decode(record, schema) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
-//  }
+  test("coproducts with primitives") {
+    val schema = AvroSchema[CPWrapper]
+    val record = new GenericData.Record(schema)
+    record.put("u", new Utf8("wibble"))
+    Decoder[CPWrapper].decode(record, schema) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
+  }
 
   test("coproducts with case classes") {
     val schema = AvroSchema[CPWrapper]
@@ -21,14 +21,7 @@ class CoproductDecoderTest extends FunSuite with Matchers {
     gimble.put("x", new Utf8("foo"))
     val record = new GenericData.Record(schema)
     record.put("u", gimble)
-    val decoder = Decoder[CPWrapper]
-    println("xxxx1")
-    decoder.decode(record, schema) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))
-    println("xxxx2")
-    decoder.decode(record, schema) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))
-    println("xxxx3")
-    decoder.decode(record, schema) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))
-
+    Decoder[CPWrapper].decode(record, schema) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))
   }
 }
 

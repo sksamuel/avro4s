@@ -256,15 +256,15 @@ object Decoder extends CoproductDecoders with TupleDecoders {
   }
 
   implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
-    private val tpeA = implicitly[WeakTypeTag[A]].tpe
-    private val tpeB = implicitly[WeakTypeTag[B]].tpe
+    private[this] val safeFromA: SafeFrom[A] = makeSafeFrom[A]
+    private[this] val safeFromB: SafeFrom[B] = makeSafeFrom[B]
 
     override def decode(value: Any, schema: Schema): Either[A, B] = {
-      safeFrom[A](value, tpeA, schema).map(Left[A, B])
-        .orElse(safeFrom[B](value, tpeB, schema).map(Right[A, B]))
+      safeFromA.safeFrom(value, schema).map(Left[A, B])
+        .orElse(safeFromB.safeFrom(value, schema).map(Right[A, B]))
         .getOrElse {
-          val aName = NameResolution(tpeA)
-          val bName = NameResolution(tpeB)
+          val aName = NameResolution(implicitly[WeakTypeTag[A]].tpe)
+          val bName = NameResolution(implicitly[WeakTypeTag[B]].tpe)
           sys.error(s"Could not decode $value into Either[$aName, $bName]")
         }
     }
@@ -354,7 +354,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
               new $tpe(decoded)
             }
           }
-       """
+          """
         )
 
       } else {
@@ -371,8 +371,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           sys.error(error)
         }
 
-        val decoders = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
-
+        val decoders = reflect.constructorParameters(tpe).map { case (_, fieldTpe) =>
           if (reflect.isMacroGenerated(fieldTpe)) {
             q"""implicitly[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]"""
           } else {
