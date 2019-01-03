@@ -284,10 +284,12 @@ object Decoder extends CoproductDecoders with TupleDecoders {
       case t@TypeRef(_, _, _) => t
     }
 
-    val klass = Class.forName(typeRef.pre.typeSymbol.asClass.fullName + "$")
-    val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
+    override def decode(t: Any, schema: Schema): E = {
+      val klass = Class.forName(typeRef.pre.typeSymbol.asClass.fullName + "$")
+      val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
 
-    override def decode(t: Any, schema: Schema): E = enum.withName(t.toString).asInstanceOf[E]
+      enum.withName(t.toString).asInstanceOf[E]
+    }
   }
 
   implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit gen: Generic.Aux[T, C],
