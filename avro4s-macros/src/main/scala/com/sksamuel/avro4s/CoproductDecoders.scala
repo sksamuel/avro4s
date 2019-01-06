@@ -37,46 +37,115 @@ trait CoproductDecoders  {
 
   // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
   implicit def coproductDecoder[S: WeakTypeTag : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
+    private[this] val safeFromS = makeSafeFrom[S]
+
     override def decode(value: Any, schema: Schema): S :+: T = {
-      safeFrom[S](value, schema) match {
+      safeFromS.safeFrom(value, schema) match {
         case Some(s) => Coproduct[S :+: T](s)
         case None => Inr(decoder.decode(value, schema))
       }
     }
   }
 
-  protected def safeFrom[T: WeakTypeTag](value: Any, schema: Schema)(implicit decoder: Decoder[T]): Option[T] = {
+  protected abstract class SafeFrom[T : Decoder] {
+    protected val decoder: Decoder[T] = implicitly[Decoder[T]]
+    def safeFrom(value: Any, schema: Schema): Option[T]
+  }
+
+  protected def makeSafeFrom[T : Decoder : WeakTypeTag]: SafeFrom[T] = {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
-    def typeName: String = NameResolution(tpe).fullName
 
-    value match {
-      case _: Utf8 if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value, schema))
-      case _: String if tpe <:< typeOf[java.lang.String] => Some(decoder.decode(value, schema))
-      case true | false if tpe <:< typeOf[Boolean] => Some(decoder.decode(value, schema))
-      case _: Int if tpe <:< typeOf[Int] => Some(decoder.decode(value, schema))
-      case _: Long if tpe <:< typeOf[Long] => Some(decoder.decode(value, schema))
-      case _: Double if tpe <:< typeOf[Double] => Some(decoder.decode(value, schema))
-      case _: Float if tpe <:< typeOf[Float] => Some(decoder.decode(value, schema))
-      // we don't need to worry about the inner type of the array,
-      // as avro schemas will not legally allow multiple arrays in a union
-      // tpe is the type we're _expecting_, though, so we need to
-      // check both scala and java collections
-      case _: GenericData.Array[_]
-        if tpe <:< typeOf[Array[_]] ||
-          tpe <:< typeOf[java.util.Collection[_]] ||
-          tpe <:< typeOf[Iterable[_]] =>
-        Some(decoder.decode(value, schema))
-      // and similarly for maps
-      case _: java.util.Map[_, _]
-        if tpe <:< typeOf[java.util.Map[_, _]] ||
-          tpe <:< typeOf[Map[_, _]] =>
-        Some(decoder.decode(value, schema))
-      // we compare the name in the record to the type name we supplied, if they match then this is correct type to decode to
-      case container: GenericContainer if typeName == container.getSchema.getFullName => Some(decoder.decode(value, schema))
-      // if nothing matched then this wasn't the type we expected
-      case _ => None
+    if (tpe <:< typeOf[java.lang.String]) {
+      new SafeFrom[T] {
+        override def safeFrom(value: Any, schema: Schema): Option[T] = {
+          value match {
+            case _: Utf8 => Some(decoder.decode(value, schema))
+            case _: String => Some(decoder.decode(value, schema))
+            case _ => None
+          }
+        }
+      }
+    } else if (tpe <:< typeOf[Boolean]) {
+      new SafeFrom[T] {
+        override def safeFrom(value: Any, schema: Schema): Option[T] = {
+          value match {
+            case true | false => Some(decoder.decode(value, schema))
+            case _ => None
+          }
+        }
+      }
+    } else if (tpe <:< typeOf[Int]) {
+      new SafeFrom[T] {
+        override def safeFrom(value: Any, schema: Schema): Option[T] = {
+          value match {
+            case _: Int => Some(decoder.decode(value, schema))
+            case _ => None
+          }
+        }
+      }
+    } else if (tpe <:< typeOf[Long]) {
+      new SafeFrom[T] {
+        override def safeFrom(value: Any, schema: Schema): Option[T] = {
+          value match {
+            case  _: Long => Some(decoder.decode(value, schema))
+            case _ => None
+          }
+        }
+      }
+    } else if (tpe <:< typeOf[Double]) {
+      new SafeFrom[T] {
+        override def safeFrom(value: Any, schema: Schema): Option[T] = {
+          value match {
+            case  _: Double => Some(decoder.decode(value, schema))
+            case _ => None
+          }
+        }
+      }
+    } else if (tpe <:< typeOf[Float]) {
+      new SafeFrom[T] {
+        override def safeFrom(value: Any, schema: Schema): Option[T] = {
+          value match {
+            case  _: Float => Some(decoder.decode(value, schema))
+            case _ => None
+          }
+        }
+      }
+    } else if (tpe <:< typeOf[Array[_]] ||
+        tpe <:< typeOf[java.util.Collection[_]] ||
+        tpe <:< typeOf[Iterable[_]]) {
+
+      new SafeFrom[T] {
+        override def safeFrom(value: Any, schema: Schema): Option[T] = {
+          value match {
+            case _: GenericData.Array[_] => Some(decoder.decode(value, schema))
+            case _ => None
+          }
+        }
+      }
+    } else if (tpe <:< typeOf[java.util.Map[_, _]] ||
+      tpe <:< typeOf[Map[_, _]]) {
+
+      new SafeFrom[T] {
+        override def safeFrom(value: Any, schema: Schema): Option[T] = {
+          value match {
+            case _: java.util.Map[_, _] => Some(decoder.decode(value, schema))
+            case _ => None
+          }
+        }
+      }
+    } else {
+      new SafeFrom[T] {
+        private[this] val typeName: String = NameResolution(tpe).fullName
+
+        override def safeFrom(value: Any, schema: Schema): Option[T] = {
+          value match {
+            case container: GenericContainer if typeName == container.getSchema.getFullName => Some(decoder.decode(value, schema))
+            case _ => None
+          }
+        }
+      }
     }
   }
 }

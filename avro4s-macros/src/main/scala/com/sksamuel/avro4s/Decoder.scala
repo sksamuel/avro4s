@@ -256,12 +256,15 @@ object Decoder extends CoproductDecoders with TupleDecoders {
   }
 
   implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
+    private[this] val safeFromA: SafeFrom[A] = makeSafeFrom[A]
+    private[this] val safeFromB: SafeFrom[B] = makeSafeFrom[B]
+
     override def decode(value: Any, schema: Schema): Either[A, B] = {
-      safeFrom[A](value, schema).map(Left[A, B])
-        .orElse(safeFrom[B](value, schema).map(Right[A, B]))
+      safeFromA.safeFrom(value, schema).map(Left[A, B])
+        .orElse(safeFromB.safeFrom(value, schema).map(Right[A, B]))
         .getOrElse {
-          val aName = NameResolution(weakTypeOf[A])
-          val bName = NameResolution(weakTypeOf[B])
+          val aName = NameResolution(implicitly[WeakTypeTag[A]].tpe)
+          val bName = NameResolution(implicitly[WeakTypeTag[B]].tpe)
           sys.error(s"Could not decode $value into Either[$aName, $bName]")
         }
     }
@@ -281,10 +284,12 @@ object Decoder extends CoproductDecoders with TupleDecoders {
       case t@TypeRef(_, _, _) => t
     }
 
-    val klass = Class.forName(typeRef.pre.typeSymbol.asClass.fullName + "$")
-    val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
+    override def decode(t: Any, schema: Schema): E = {
+      val klass = Class.forName(typeRef.pre.typeSymbol.asClass.fullName + "$")
+      val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
 
-    override def decode(t: Any, schema: Schema): E = enum.withName(t.toString).asInstanceOf[E]
+      enum.withName(t.toString).asInstanceOf[E]
+    }
   }
 
   implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit gen: Generic.Aux[T, C],
@@ -349,7 +354,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
               new $tpe(decoded)
             }
           }
-       """
+          """
         )
 
       } else {
@@ -364,6 +369,14 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           Console.err.println(error)
           c.error(c.enclosingPosition.pos, error)
           sys.error(error)
+        }
+
+        val decoders = reflect.constructorParameters(tpe).map { case (_, fieldTpe) =>
+          if (reflect.isMacroGenerated(fieldTpe)) {
+            q"""implicitly[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]"""
+          } else {
+            q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]]"""
+          }
         }
 
         val fields = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
@@ -386,15 +399,15 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           // we will populate with none or null, otherwise an error will be raised
           if (defaultGetterMethod.isMethod) {
             if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
             } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
             }
           } else {
             if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
             } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)"""
+              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
             }
           }
         }
@@ -402,6 +415,8 @@ object Decoder extends CoproductDecoders with TupleDecoders {
         c.Expr[Decoder[T]](
           q"""
           new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
+            private[this] val decoders = Array(..$decoders)
+
             override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
               val fullName = $fullName
               value match {
