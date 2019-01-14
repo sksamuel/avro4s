@@ -11,9 +11,14 @@ object SchemaHelper {
   def extractTraitSubschema(fullName: String, schema: Schema): Schema = {
     import scala.collection.JavaConverters._
     require(schema.getType == Schema.Type.UNION, s"Can only extract subschemas from a UNION but was given $schema")
-    schema.getTypes.asScala
-      .find(_.getFullName == fullName)
-      .getOrElse(sys.error(s"Cannot find subschema for type name $fullName in ${schema.getTypes}"))
+    val subTypes = schema.getTypes.asScala
+    if (subTypes.count( _.getType != Schema.Type.NULL )==1) {
+      subTypes.find( _.getType != Schema.Type.NULL ).get
+    } else {
+      subTypes
+        .find(_.getFullName == fullName)
+        .getOrElse(sys.error(s"Cannot find subschema for type name $fullName in ${schema.getTypes}"))
+    }
   }
 
   /**
