@@ -14,15 +14,27 @@ object SchemaHelper {
     val types = schema.getTypes
     val size = types.size
 
+    var result: Schema = null
+    var nullIndex: Int = -1
     var i = 0
-    while(i < size && types.get(i).getFullName != fullName) {
-      i = i + 1
-    }
+    do {
+      val s = types.get(i)
+      if (s.getFullName == fullName) {
+        result = s
+      } else if (s.getType == Schema.Type.NULL) {
+        nullIndex = i
+      }
 
-    if (i == size) {
-      sys.error(s"Cannot find subschema for type name $fullName in ${schema.getTypes}")
+      i = i + 1
+
+    } while (i < size && result == null)
+
+    if (result != null) {
+      result
+    } else if (nullIndex != -1 && size == 2) {
+      types.get(i - nullIndex)
     } else {
-      types.get(i)
+      sys.error(s"Cannot find subschema for type name $fullName in ${schema.getTypes}")
     }
   }
 
