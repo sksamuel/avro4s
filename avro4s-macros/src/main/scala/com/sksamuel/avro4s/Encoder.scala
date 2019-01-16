@@ -281,6 +281,18 @@ object Encoder extends CoproductEncoders with TupleEncoders {
       val nameResolution = NameResolution(c)(tpe)
       val isValueClass = reflect.isValueClass(tpe)
 
+      val nonTransientConstructorFields = reflect
+        .constructorParameters(tpe)
+        .filterNot { case (fieldSym, _) => reflect.isTransientOnField(tpe, fieldSym) }
+
+      val encoders = nonTransientConstructorFields.map { case (_, fieldTpe) =>
+        if (reflect.isMacroGenerated(fieldTpe)) {
+          q"""implicitly[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]"""
+        } else {
+          q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]]"""
+        }
+      }
+
       // each field needs to be converted into an avro compatible value
       // so scala primitives need to be converted to java boxed values, and
       // annotations and logical types need to be taken into account
@@ -292,10 +304,8 @@ object Encoder extends CoproductEncoders with TupleEncoders {
 
       // Note: If the field is a value class, then this macro will be summoned again
       // and the value type will be the type argument to the macro.
-      val fields = reflect
-        .constructorParameters(tpe)
-        .filterNot { case (fieldSym, _) => reflect.isTransientOnField(tpe, fieldSym) }
-        .map { case (fieldSym, fieldTpe) =>
+      val fields = nonTransientConstructorFields.zipWithIndex
+        .map { case ((fieldSym, fieldTpe), index) =>
           val termName = fieldSym.asTerm.name
 
           // we need to check @AvroName annotation on the field, because that will determine the name
@@ -304,9 +314,9 @@ object Encoder extends CoproductEncoders with TupleEncoders {
           val fieldName = new AnnotationExtractors(annos).name.getOrElse(fieldSym.name.decodedName.toString)
 
           if (reflect.isMacroGenerated(fieldTpe)) {
-            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldNotLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})"""
+            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldNotLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})(encoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]])"""
           } else {
-            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})"""
+            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})(encoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]])"""
           }
         }
 
@@ -317,6 +327,8 @@ object Encoder extends CoproductEncoders with TupleEncoders {
         c.Expr[Encoder[T]](
           q"""
             new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
+              private[this] val encoders = Array(..$encoders)
+
               override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = Seq(..$fields).head
             }
         """
@@ -325,8 +337,10 @@ object Encoder extends CoproductEncoders with TupleEncoders {
         c.Expr[Encoder[T]](
           q"""
             new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
+              private[this] val encoders = Array(..$encoders)
+
               override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-                _root_.com.sksamuel.avro4s.Encoder.buildRecord(schema, Seq(..$fields), ${nameResolution.fullName})
+                _root_.com.sksamuel.avro4s.Encoder.buildRecord(schema, Vector(..$fields), ${nameResolution.fullName})
               }
             }
         """
@@ -349,13 +363,13 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     *                 and @AvroErasedName. This name is used for
     *                 extracting the specific subschema from a union schema.
     */
-  def buildRecord(schema: Schema, values: Seq[AnyRef], fullName: String): AnyRef = {
+  def buildRecord(schema: Schema, values: Vector[AnyRef], fullName: String): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
         val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
-        ImmutableRecord(subschema, values.toVector)
+        ImmutableRecord(subschema, values)
       case Schema.Type.RECORD =>
-        ImmutableRecord(schema, values.toVector)
+        ImmutableRecord(schema, values)
       case _ =>
         sys.error(s"Trying to encode a field from schema $schema which is neither a RECORD nor a UNION")
     }
