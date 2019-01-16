@@ -14,6 +14,11 @@ object SchemaHelper {
     val types = schema.getTypes
     val size = types.size
 
+    require(size > 0, s"Cannot extract subschema from empty UNION $schema")
+
+    // Finds the matching schema and keeps track a null type if any.
+    // If no matching schema is found in a union of size 2 the other type is returned, regardless of its name.
+    // See https://github.com/sksamuel/avro4s/issues/268
     var result: Schema = null
     var nullIndex: Int = -1
     var i = 0
@@ -29,9 +34,9 @@ object SchemaHelper {
 
     } while (i < size && result == null)
 
-    if (result != null) {
+    if (result != null) { // Return the name based match
       result
-    } else if (nullIndex != -1 && size == 2) {
+    } else if (nullIndex != -1 && size == 2) { // Return the non null type.
       types.get(i - nullIndex)
     } else {
       sys.error(s"Cannot find subschema for type name $fullName in ${schema.getTypes}")
