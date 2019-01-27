@@ -209,7 +209,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     import scala.collection.JavaConverters._
 
     override def decode(value: Any, schema: Schema): Seq[T] = value match {
-      case array: Array[_] => array.map(decoder.decode(_, schema.getElementType)).toSeq
+      case array: Array[_] => array.toSeq.map(decoder.decode(_, schema.getElementType))
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType)).toSeq
       case other => sys.error("Unsupported array " + other)
     }
