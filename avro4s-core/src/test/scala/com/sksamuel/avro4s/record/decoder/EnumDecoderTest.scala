@@ -24,9 +24,10 @@ class EnumDecoderTest extends WordSpec with Matchers {
     }
     "support optional java enums" in {
       val schema = AvroSchema[JavaOptionEnumClass]
+      val wineSchema = AvroSchema[Wine]
 
       val record1 = new GenericData.Record(schema)
-      record1.put("wine", new EnumSymbol(schema.getField("wine").schema(), "Merlot"))
+      record1.put("wine", new EnumSymbol(wineSchema, "Merlot"))
       Decoder[JavaOptionEnumClass].decode(record1, schema) shouldBe JavaOptionEnumClass(Some(Wine.Merlot))
 
       val record2 = new GenericData.Record(schema)
@@ -41,9 +42,10 @@ class EnumDecoderTest extends WordSpec with Matchers {
     }
     "support optional scala enums" in {
       val schema = AvroSchema[ScalaOptionEnumClass]
+      val colourSchema = AvroSchema[Colours.Value]
 
       val record1 = new GenericData.Record(schema)
-      record1.put("colour", new EnumSymbol(schema.getField("colour").schema(), "Amber"))
+      record1.put("colour", new EnumSymbol(colourSchema, "Amber"))
       Decoder[ScalaOptionEnumClass].decode(record1, schema) shouldBe ScalaOptionEnumClass(Some(Colours.Amber))
 
       val record2 = new GenericData.Record(schema)

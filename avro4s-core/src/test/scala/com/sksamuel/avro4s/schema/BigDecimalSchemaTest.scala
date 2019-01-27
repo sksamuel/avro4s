@@ -1,8 +1,10 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, ScalePrecisionRoundingMode, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{Matchers, WordSpec}
+
+import scala.math.BigDecimal.RoundingMode
 
 case class BigDecimalSeqOption(biggies: Seq[Option[BigDecimal]])
 case class BigDecimalSeq(biggies: Seq[BigDecimal])
@@ -15,6 +17,13 @@ class BigDecimalSchemaTest extends WordSpec with Matchers {
       case class Test(decimal: BigDecimal)
       val schema = AvroSchema[Test]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal.json"))
+      schema shouldBe expected
+    }
+    "accept big decimal as logical type on bytes with custom scale and precision" in {
+      implicit val sp = ScalePrecisionRoundingMode(8, 20 , RoundingMode.HALF_UP)
+      case class Test(decimal: BigDecimal)
+      val schema = AvroSchema[Test]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal-scale-and-precision.json"))
       schema shouldBe expected
     }
     "support big decimal with default" in {

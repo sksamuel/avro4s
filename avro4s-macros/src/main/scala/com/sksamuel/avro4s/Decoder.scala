@@ -17,6 +17,7 @@ import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.runtime.universe._
+import scala.collection.JavaConverters._
 
 /**
   * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,
@@ -165,6 +166,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
         case charseq: CharSequence => charseq.toString
         case bytebuf: ByteBuffer => new String(bytebuf.array)
         case a: Array[Byte] => new String(a)
+        case fixed: GenericData.Fixed => new String(fixed.bytes())
         case null => sys.error("Cannot decode <null> as a string")
         case other => sys.error(s"Cannot decode $other of type ${other.getClass} into a string")
       }
@@ -184,7 +186,14 @@ object Decoder extends CoproductDecoders with TupleDecoders {
   }
 
   implicit def optionDecoder[T](implicit decoder: Decoder[T]) = new Decoder[Option[T]] {
-    override def decode(value: Any, schema: Schema): Option[T] = if (value == null) None else Option(decoder.decode(value, schema))
+    override def decode(value: Any, schema: Schema): Option[T] = if (value == null) None else {
+      // Options are Union schemas of ["null", other], the decoder may require the other schema
+      val nonNullSchema = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL).toList match {
+        case schema :: Nil => schema
+        case multipleSchemas => Schema.createUnion(multipleSchemas.asJava)
+      }
+      Option(decoder.decode(value, nonNullSchema))
+    }
   }
 
   implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = new Decoder[Vector[T]] {
@@ -244,15 +253,11 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     }
   }
 
-  implicit def bigDecimalDecoder(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): Decoder[BigDecimal] = {
-    new Decoder[BigDecimal] {
-      override def decode(value: Any, schema: Schema): BigDecimal = {
-        val decimalConversion = new Conversions.DecimalConversion
-        val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
-        val bytes = value.asInstanceOf[ByteBuffer]
-        decimalConversion.fromBytes(bytes, null, decimalType)
-      }
-    }
+  implicit object BigDecimalDecoder extends Decoder[BigDecimal] {
+    private val decimalConversion = new Conversions.DecimalConversion
+    override def decode(value: Any, schema: Schema): BigDecimal =
+      // TODO if the encoder is allowing encoding to strings should this not also allow String decoding?
+      decimalConversion.fromBytes(value.asInstanceOf[ByteBuffer], schema, schema.getLogicalType)
   }
 
   implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {

@@ -23,6 +23,15 @@ class CoproductDecoderTest extends FunSuite with Matchers {
     record.put("u", gimble)
     Decoder[CPWrapper].decode(record, schema) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))
   }
+
+  test("coproducts with options") {
+    val schema = AvroSchema[CPWithOption]
+    val gimble = new GenericData.Record(AvroSchema[Gimble])
+    gimble.put("x", new Utf8("foo"))
+    val record = new GenericData.Record(schema)
+    record.put("u", gimble)
+    Decoder[CPWithOption].decode(record, schema) shouldBe CPWithOption(Some(Coproduct[CPWrapper.ISBG](Gimble("foo"))))
+  }
 }
 
 case class CPWithArray(u: CPWrapper.SSI)

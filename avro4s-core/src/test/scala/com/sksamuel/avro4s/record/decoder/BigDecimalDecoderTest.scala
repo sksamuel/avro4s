@@ -25,5 +25,9 @@ class BigDecimalDecoderTest extends FlatSpec with Matchers {
     val record = new GenericData.Record(schema)
     record.put("big", bytes)
     Decoder[OptionalBigDecimal].decode(record, schema) shouldBe OptionalBigDecimal(Option(BigDecimal(123.45)))
+
+    val emptyRecord = new GenericData.Record(schema)
+    emptyRecord.put("big", null)
+    Decoder[OptionalBigDecimal].decode(emptyRecord, schema) shouldBe OptionalBigDecimal(None)
   }
 }
