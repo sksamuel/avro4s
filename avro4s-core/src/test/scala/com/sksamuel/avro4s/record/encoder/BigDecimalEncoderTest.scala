@@ -1,11 +1,12 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
+import com.sksamuel.avro4s._
 import com.sksamuel.avro4s.SchemaFor.StringSchemaFor
-import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
 import org.scalatest.{FunSuite, Matchers}
+
+import scala.math.BigDecimal.RoundingMode
 
 class BigDecimalEncoderTest extends FunSuite with Matchers {
 
@@ -22,6 +23,20 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
     val bytes = new Conversions.DecimalConversion().toBytes(BigDecimal(12.34).bigDecimal, s, s.getLogicalType)
 
     Encoder[Test].encode(obj, schema) shouldBe ImmutableRecord(schema, Vector(bytes))
+  }
+
+  test("Allow Override of roundingMode") {
+    case class Test(decimal: BigDecimal)
+
+    implicit val sp = ScalePrecisionRoundingMode(2, 10, RoundingMode.HALF_UP)
+    val schema = AvroSchema[Test]
+    val s = schema.getField("decimal").schema()
+
+    val bytesRoundedDown = new Conversions.DecimalConversion().toBytes(BigDecimal(12.34).bigDecimal, s, s.getLogicalType)
+    Encoder[Test].encode(Test(12.3449), schema) shouldBe ImmutableRecord(schema, Vector(bytesRoundedDown))
+
+    val bytesRoundedUp = new Conversions.DecimalConversion().toBytes(BigDecimal(12.35).bigDecimal, s, s.getLogicalType)
+    Encoder[Test].encode(Test(12.345), schema) shouldBe ImmutableRecord(schema, Vector(bytesRoundedUp))
   }
 
   test("support optional big decimals") {

@@ -189,56 +189,28 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     override def decode(value: Any, schema: Schema): Option[T] = if (value == null) None else {
       // Options are Union schemas of ["null", other], the decoder may require the other schema
       val nonNullSchema = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL).toList match {
-        case schema :: Nil => schema
+        case s :: Nil => s
         case multipleSchemas => Schema.createUnion(multipleSchemas.asJava)
       }
       Option(decoder.decode(value, nonNullSchema))
     }
   }
 
-  implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = new Decoder[Vector[T]] {
+  implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = seqDecoder[T](decoder).map(_.toVector)
 
-    import scala.collection.JavaConverters._
-
-    override def decode(value: Any, schema: Schema): Vector[T] = value match {
-      case array: Array[_] => array.toVector.map(decoder.decode(_, schema))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toVector
-      case other => sys.error("Unsupported vector " + other)
-    }
-  }
-
-  implicit def arrayDecoder[T](implicit decoder: Decoder[T],
-                               tag: ClassTag[T]): Decoder[Array[T]] = new Decoder[Array[T]] {
-
-    import scala.collection.JavaConverters._
-
-    override def decode(value: Any, schema: Schema): Array[T] = value match {
-      case array: Array[_] => array.map(decoder.decode(_, schema))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toArray
-      case other => sys.error(s"Unsupported array type ${other.getClass} " + other)
-    }
-  }
+  implicit def arrayDecoder[T](implicit decoder: Decoder[T], classTag: ClassTag[T]): Decoder[Array[T]] = seqDecoder[T](decoder).map(_.toArray)
 
   implicit def setDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] = seqDecoder[T](decoder).map(_.toSet)
 
-  implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = new Decoder[List[T]] {
-
-    import scala.collection.JavaConverters._
-
-    override def decode(value: Any, schema: Schema): List[T] = value match {
-      case array: Array[_] => array.toList.map(decoder.decode(_, schema))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toList
-      case other => sys.error("Unsupported array " + other)
-    }
-  }
+  implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = seqDecoder[T](decoder).map(_.toList)
 
   implicit def seqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = new Decoder[Seq[T]] {
 
     import scala.collection.JavaConverters._
 
     override def decode(value: Any, schema: Schema): Seq[T] = value match {
-      case array: Array[_] => array.toSeq.map(decoder.decode(_, schema))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toSeq
+      case array: Array[_] => array.map(decoder.decode(_, schema.getElementType)).toSeq
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType)).toSeq
       case other => sys.error("Unsupported array " + other)
     }
   }
@@ -248,7 +220,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     import scala.collection.JavaConverters._
 
     override def decode(value: Any, schema: Schema): Map[String, T] = value match {
-      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> valueDecoder.decode(v, schema) }
+      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> valueDecoder.decode(v, schema.getValueType) }
       case other => sys.error("Unsupported map " + other)
     }
   }
@@ -257,6 +229,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     private val decimalConversion = new Conversions.DecimalConversion
     override def decode(value: Any, schema: Schema): BigDecimal =
       // TODO if the encoder is allowing encoding to strings should this not also allow String decoding?
+      // TODO also allow fixed
       decimalConversion.fromBytes(value.asInstanceOf[ByteBuffer], schema, schema.getLogicalType)
   }
 
