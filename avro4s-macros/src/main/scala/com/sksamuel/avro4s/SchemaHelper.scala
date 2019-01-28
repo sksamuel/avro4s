@@ -9,15 +9,37 @@ object SchemaHelper {
   import scala.collection.JavaConverters._
 
   def extractTraitSubschema(fullName: String, schema: Schema): Schema = {
-    import scala.collection.JavaConverters._
     require(schema.getType == Schema.Type.UNION, s"Can only extract subschemas from a UNION but was given $schema")
-    val subTypes = schema.getTypes.asScala
-    if (subTypes.count( _.getType != Schema.Type.NULL )==1) {
-      subTypes.find( _.getType != Schema.Type.NULL ).get
+
+    val types = schema.getTypes
+    val size = types.size
+
+    require(size > 0, s"Cannot extract subschema from empty UNION $schema")
+
+    // Finds the matching schema and keeps track a null type if any.
+    // If no matching schema is found in a union of size 2 the other type is returned, regardless of its name.
+    // See https://github.com/sksamuel/avro4s/issues/268
+    var result: Schema = null
+    var nullIndex: Int = -1
+    var i = 0
+    do {
+      val s = types.get(i)
+      if (s.getFullName == fullName) {
+        result = s
+      } else if (s.getType == Schema.Type.NULL) {
+        nullIndex = i
+      }
+
+      i = i + 1
+
+    } while (i < size && result == null)
+
+    if (result != null) { // Return the name based match
+      result
+    } else if (nullIndex != -1 && size == 2) { // Return the non null type.
+      types.get(i - nullIndex)
     } else {
-      subTypes
-        .find(_.getFullName == fullName)
-        .getOrElse(sys.error(s"Cannot find subschema for type name $fullName in ${schema.getTypes}"))
+      sys.error(s"Cannot find subschema for type name $fullName in ${schema.getTypes}")
     }
   }
 
