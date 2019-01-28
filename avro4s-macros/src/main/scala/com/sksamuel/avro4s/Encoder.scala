@@ -235,7 +235,10 @@ object Encoder extends CoproductEncoders with TupleEncoders {
           val scaledValue = value.setScale(decimal.getScale, sp.roundingMode)
           decimalConversion.toBytes(scaledValue.bigDecimal, schema, decimal)
         }.encode(t, schema)
-        case Schema.Type.FIXED => sys.error("Unsupported. PR Please!") // TODO decimalConversion.toFixed
+        case Schema.Type.FIXED =>
+          val decimal = schema.getLogicalType.asInstanceOf[Decimal]
+          val scaledValue = t.setScale(decimal.getScale, sp.roundingMode)
+          decimalConversion.toFixed(scaledValue.bigDecimal, schema, schema.getLogicalType)
         case _ => sys.error(s"Cannot serialize BigDecimal as ${schema.getType}")
       }
     }

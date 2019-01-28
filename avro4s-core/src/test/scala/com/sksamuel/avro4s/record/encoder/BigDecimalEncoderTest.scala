@@ -2,8 +2,9 @@ package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s._
 import com.sksamuel.avro4s.SchemaFor.StringSchemaFor
+import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, Schema}
+import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.math.BigDecimal.RoundingMode
@@ -61,5 +62,15 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
 
     val schema = AvroSchema[Test]
     Encoder[Test].encode(Test(123.66), schema) shouldBe ImmutableRecord(schema, Vector(new Utf8("123.66")))
+  }
+  test("allow bigdecimals to be encoded as generic fixed") {
+    case class Test(s: BigDecimal)
+    implicit object BigDecimalAsFixed extends SchemaFor[BigDecimal] {
+      override def schema: Schema = LogicalTypes.decimal(10, 8).addToSchema(
+        Schema.createFixed("BigDecimal", null, null, 8))
+    }
+    val schema = AvroSchema[Test]
+    val record = Encoder[Test].encode(Test(12345678), schema).asInstanceOf[GenericRecord]
+    record.get("s").asInstanceOf[GenericData.Fixed].bytes().toList shouldBe Seq(0, 4, 98, -43, 55, 43, -114, 0)
   }
 }

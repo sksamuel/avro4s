@@ -1,9 +1,9 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.AvroSchema
-import com.sksamuel.avro4s.Decoder
-import org.apache.avro.generic.GenericData
-import org.apache.avro.{Conversions, LogicalTypes}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, Encoder, SchemaFor}
+import com.sksamuel.avro4s.SchemaFor.StringSchemaFor
+import org.apache.avro.generic.{GenericData, GenericFixed}
+import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import org.scalatest.{FlatSpec, Matchers}
 
 case class WithBigDecimal(decimal: BigDecimal)
@@ -29,5 +29,22 @@ class BigDecimalDecoderTest extends FlatSpec with Matchers {
     val emptyRecord = new GenericData.Record(schema)
     emptyRecord.put("big", null)
     Decoder[OptionalBigDecimal].decode(emptyRecord, schema) shouldBe OptionalBigDecimal(None)
+  }
+
+  it should "be able to decode strings as bigdecimals" in {
+    implicit object BigDecimalAsString extends SchemaFor[BigDecimal] {
+      override def schema: Schema = StringSchemaFor.schema
+    }
+    Decoder[BigDecimal].decode("123.45", BigDecimalAsString.schema) shouldBe BigDecimal(123.45)
+  }
+
+  it should "be able to decode generic fixed as bigdecimals" in {
+    implicit object BigDecimalAsFixed extends SchemaFor[BigDecimal] {
+      override def schema: Schema = LogicalTypes.decimal(10, 8).addToSchema(
+        Schema.createFixed("BigDecimal", null, null, 8))
+    }
+
+    val fixed = GenericData.get().createFixed(null, Array[Byte](0, 4, 98, -43, 55, 43, -114, 0), BigDecimalAsFixed.schema)
+    Decoder[BigDecimal].decode(fixed, BigDecimalAsFixed.schema) shouldBe BigDecimal(12345678)
   }
 }

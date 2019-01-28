@@ -6,7 +6,7 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
-import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
@@ -227,10 +227,13 @@ object Decoder extends CoproductDecoders with TupleDecoders {
 
   implicit object BigDecimalDecoder extends Decoder[BigDecimal] {
     private val decimalConversion = new Conversions.DecimalConversion
-    override def decode(value: Any, schema: Schema): BigDecimal =
-      // TODO if the encoder is allowing encoding to strings should this not also allow String decoding?
-      // TODO also allow fixed
-      decimalConversion.fromBytes(value.asInstanceOf[ByteBuffer], schema, schema.getLogicalType)
+    private val asString = StringDecoder.map(BigDecimal(_))
+    override def decode(value: Any, schema: Schema): BigDecimal = schema.getType match {
+      case Schema.Type.STRING => asString.decode(value, schema)
+      case Schema.Type.BYTES => ByteBufferDecoder.map(decimalConversion.fromBytes(_, schema, schema.getLogicalType)).decode(value, schema)
+      case Schema.Type.FIXED => decimalConversion.fromFixed(value.asInstanceOf[GenericFixed], schema, schema.getLogicalType)
+      case other => sys.error(s"Unsupported type for BigDecimals: $other, $schema")
+    }
   }
 
   implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
