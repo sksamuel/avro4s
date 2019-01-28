@@ -6,7 +6,7 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
-import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
@@ -17,6 +17,7 @@ import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.runtime.universe._
+import scala.collection.JavaConverters._
 
 /**
   * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,
@@ -165,6 +166,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
         case charseq: CharSequence => charseq.toString
         case bytebuf: ByteBuffer => new String(bytebuf.array)
         case a: Array[Byte] => new String(a)
+        case fixed: GenericData.Fixed => new String(fixed.bytes())
         case null => sys.error("Cannot decode <null> as a string")
         case other => sys.error(s"Cannot decode $other of type ${other.getClass} into a string")
       }
@@ -184,52 +186,31 @@ object Decoder extends CoproductDecoders with TupleDecoders {
   }
 
   implicit def optionDecoder[T](implicit decoder: Decoder[T]) = new Decoder[Option[T]] {
-    override def decode(value: Any, schema: Schema): Option[T] = if (value == null) None else Option(decoder.decode(value, schema))
-  }
-
-  implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = new Decoder[Vector[T]] {
-
-    import scala.collection.JavaConverters._
-
-    override def decode(value: Any, schema: Schema): Vector[T] = value match {
-      case array: Array[_] => array.toVector.map(decoder.decode(_, schema))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toVector
-      case other => sys.error("Unsupported vector " + other)
+    override def decode(value: Any, schema: Schema): Option[T] = if (value == null) None else {
+      // Options are Union schemas of ["null", other], the decoder may require the other schema
+      val nonNullSchema = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL).toList match {
+        case s :: Nil => s
+        case multipleSchemas => Schema.createUnion(multipleSchemas.asJava)
+      }
+      Option(decoder.decode(value, nonNullSchema))
     }
   }
 
-  implicit def arrayDecoder[T](implicit decoder: Decoder[T],
-                               tag: ClassTag[T]): Decoder[Array[T]] = new Decoder[Array[T]] {
+  implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = seqDecoder[T](decoder).map(_.toVector)
 
-    import scala.collection.JavaConverters._
-
-    override def decode(value: Any, schema: Schema): Array[T] = value match {
-      case array: Array[_] => array.map(decoder.decode(_, schema))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toArray
-      case other => sys.error(s"Unsupported array type ${other.getClass} " + other)
-    }
-  }
+  implicit def arrayDecoder[T](implicit decoder: Decoder[T], classTag: ClassTag[T]): Decoder[Array[T]] = seqDecoder[T](decoder).map(_.toArray)
 
   implicit def setDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] = seqDecoder[T](decoder).map(_.toSet)
 
-  implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = new Decoder[List[T]] {
-
-    import scala.collection.JavaConverters._
-
-    override def decode(value: Any, schema: Schema): List[T] = value match {
-      case array: Array[_] => array.toList.map(decoder.decode(_, schema))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toList
-      case other => sys.error("Unsupported array " + other)
-    }
-  }
+  implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = seqDecoder[T](decoder).map(_.toList)
 
   implicit def seqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = new Decoder[Seq[T]] {
 
     import scala.collection.JavaConverters._
 
     override def decode(value: Any, schema: Schema): Seq[T] = value match {
-      case array: Array[_] => array.toSeq.map(decoder.decode(_, schema))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema)).toSeq
+      case array: Array[_] => array.toSeq.map(decoder.decode(_, schema.getElementType))
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType)).toSeq
       case other => sys.error("Unsupported array " + other)
     }
   }
@@ -239,19 +220,19 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     import scala.collection.JavaConverters._
 
     override def decode(value: Any, schema: Schema): Map[String, T] = value match {
-      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> valueDecoder.decode(v, schema) }
+      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> valueDecoder.decode(v, schema.getValueType) }
       case other => sys.error("Unsupported map " + other)
     }
   }
 
-  implicit def bigDecimalDecoder(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): Decoder[BigDecimal] = {
-    new Decoder[BigDecimal] {
-      override def decode(value: Any, schema: Schema): BigDecimal = {
-        val decimalConversion = new Conversions.DecimalConversion
-        val decimalType = LogicalTypes.decimal(sp.precision, sp.scale)
-        val bytes = value.asInstanceOf[ByteBuffer]
-        decimalConversion.fromBytes(bytes, null, decimalType)
-      }
+  implicit object BigDecimalDecoder extends Decoder[BigDecimal] {
+    private val decimalConversion = new Conversions.DecimalConversion
+    private val asString = StringDecoder.map(BigDecimal(_))
+    override def decode(value: Any, schema: Schema): BigDecimal = schema.getType match {
+      case Schema.Type.STRING => asString.decode(value, schema)
+      case Schema.Type.BYTES => ByteBufferDecoder.map(decimalConversion.fromBytes(_, schema, schema.getLogicalType)).decode(value, schema)
+      case Schema.Type.FIXED => decimalConversion.fromFixed(value.asInstanceOf[GenericFixed], schema, schema.getLogicalType)
+      case other => sys.error(s"Unsupported type for BigDecimals: $other, $schema")
     }
   }
 

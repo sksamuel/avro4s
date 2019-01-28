@@ -15,7 +15,6 @@ import shapeless.ops.hlist.ToList
 import shapeless.{Coproduct, Generic, HList, Lazy}
 
 import scala.language.experimental.macros
-import scala.math.BigDecimal.RoundingMode
 import scala.reflect.ClassTag
 
 /**
@@ -206,13 +205,11 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     import scala.collection.JavaConverters._
 
     override def encode(t: Option[T], schema: Schema): AnyRef = {
-      val nonNullSchema = schema.getTypes.size match {
-        // if the option is none we just return null, otherwise we encode the value
-        // by finding the non null schema
-        case 2 => schema.getTypes.asScala.find(_.getType != Schema.Type.NULL).get
-        case _ =>
-          val remainingSchemas = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL)
-          Schema.createUnion(remainingSchemas.toList.asJava)
+      // if the option is none we just return null, otherwise we encode the value
+      // by finding the non null schema
+      val nonNullSchema = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL).toList match {
+        case s :: Nil => s
+        case multipleSchemas => Schema.createUnion(multipleSchemas.asJava)
       }
       t.map(encoder.encode(_, nonNullSchema)).orNull
     }
@@ -225,30 +222,26 @@ object Encoder extends CoproductEncoders with TupleEncoders {
     }
   }
 
-  implicit object BigDecimalEncoder extends Encoder[BigDecimal] {
+  private val decimalConversion = new Conversions.DecimalConversion
 
-    override def encode(t: BigDecimal, schema: Schema): AnyRef = {
+  implicit def bigDecimalEncoder(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): Encoder[BigDecimal] =
+    (t: BigDecimal, schema: Schema) => {
 
       // we support encoding big decimals in three ways - fixed, bytes or as a String
       schema.getType match {
         case Schema.Type.STRING => StringEncoder.encode(t.toString, schema)
-        case Schema.Type.BYTES => ByteBufferEncoder.comap[BigDecimal] { _ =>
-
+        case Schema.Type.BYTES => ByteBufferEncoder.comap[BigDecimal] { value =>
           val decimal = schema.getLogicalType.asInstanceOf[Decimal]
-          require(decimal != null)
-
-          val decimalConversion = new Conversions.DecimalConversion
-          val decimalType = LogicalTypes.decimal(decimal.getPrecision, decimal.getScale)
-
-          val scaledValue = t.setScale(decimal.getScale, RoundingMode.HALF_UP)
-          decimalConversion.toBytes(scaledValue.bigDecimal, null, decimalType)
-
+          val scaledValue = value.setScale(decimal.getScale, sp.roundingMode)
+          decimalConversion.toBytes(scaledValue.bigDecimal, schema, decimal)
         }.encode(t, schema)
-        case Schema.Type.FIXED => sys.error("Unsupported. PR Please!")
+        case Schema.Type.FIXED =>
+          val decimal = schema.getLogicalType.asInstanceOf[Decimal]
+          val scaledValue = t.setScale(decimal.getScale, sp.roundingMode)
+          decimalConversion.toFixed(scaledValue.bigDecimal, schema, schema.getLogicalType)
         case _ => sys.error(s"Cannot serialize BigDecimal as ${schema.getType}")
       }
     }
-  }
 
   implicit def javaEnumEncoder[E <: Enum[_]]: Encoder[E] = new Encoder[E] {
     override def encode(t: E, schema: Schema): EnumSymbol = new EnumSymbol(schema, t.name)
