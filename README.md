@@ -174,22 +174,23 @@ case class Example(@AvroDoc("I am a string") str: String, @AvroDoc("I am a long"
 Would result in the following schema:
 
 ```json
-{
+{  
   "type": "record",
   "name": "Example",
   "namespace": "com.sksamuel",
-  "fields": [
-    {
+  "doc":"hello its me",
+  "fields": [  
+    {  
       "name": "str",
       "type": "string",
-      "doc" : "hello its me"
+      "doc" : "I am a string"
     },
-    {
+    {  
       "name": "long",
       "type": "long",
       "doc" : "I am a long"
     },
-    {
+    {  
       "name": "int",
       "type": "int"
     }
