@@ -224,8 +224,8 @@ object Encoder extends CoproductEncoders with TupleEncoders {
 
   private val decimalConversion = new Conversions.DecimalConversion
 
-  implicit def bigDecimalEncoder(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): Encoder[BigDecimal] =
-    (t: BigDecimal, schema: Schema) => {
+  implicit def bigDecimalEncoder(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): Encoder[BigDecimal] = new Encoder[BigDecimal] {
+    override def encode(t: BigDecimal, schema: Schema) = {
 
       // we support encoding big decimals in three ways - fixed, bytes or as a String
       schema.getType match {
@@ -242,6 +242,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
         case _ => sys.error(s"Cannot serialize BigDecimal as ${schema.getType}")
       }
     }
+  }
 
   implicit def javaEnumEncoder[E <: Enum[_]]: Encoder[E] = new Encoder[E] {
     override def encode(t: E, schema: Schema): EnumSymbol = new EnumSymbol(schema, t.name)
