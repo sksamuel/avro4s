@@ -259,16 +259,15 @@ object Decoder extends CoproductDecoders with TupleDecoders {
 
   implicit def scalaEnumDecoder[E <: Enumeration#Value](implicit tag: WeakTypeTag[E]) = new Decoder[E] {
 
-    import scala.reflect.NameTransformer._
+    val mirror: Mirror = runtimeMirror(getClass.getClassLoader)
 
-    val typeRef = tag.tpe match {
-      case t@TypeRef(_, _, _) => t
+    val enum = tag.tpe match {
+      case TypeRef(enumType, _, _) =>
+        val moduleSymbol = enumType.termSymbol.asModule
+        mirror.reflectModule(moduleSymbol).instance.asInstanceOf[Enumeration]
     }
 
     override def decode(t: Any, schema: Schema): E = {
-      val klass = Class.forName(typeRef.pre.typeSymbol.asClass.fullName + "$")
-      val enum = klass.getField(MODULE_INSTANCE_NAME).get(null).asInstanceOf[Enumeration]
-
       enum.withName(t.toString).asInstanceOf[E]
     }
   }
