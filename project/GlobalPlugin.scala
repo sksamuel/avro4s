@@ -14,7 +14,7 @@ object GlobalPlugin extends AutoPlugin {
     val ScalatestVersion = "3.0.6-SNAP5"
     val ScalaVersion = "2.12.7"
     val Slf4jVersion = "1.7.25"
-    val Json4sVersion = "3.6.4"
+    val Json4sVersion = "3.6.5"
     val CatsVersion = "1.6.0"
     val ShapelessVersion = "2.3.3"
   }
