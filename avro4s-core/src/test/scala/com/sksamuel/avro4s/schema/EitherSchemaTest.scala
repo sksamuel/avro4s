@@ -30,5 +30,8 @@ class EitherSchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "flatten nested unions and move null to first position" in {
+      AvroSchema[Either[String, Option[Int]]].toString shouldBe """["null","string","int"]"""
+    }
   }
 }

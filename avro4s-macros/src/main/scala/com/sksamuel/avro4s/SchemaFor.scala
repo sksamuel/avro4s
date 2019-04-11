@@ -89,7 +89,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
   implicit def eitherSchemaFor[A, B](implicit leftFor: SchemaFor[A], rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] = {
     new SchemaFor[Either[A, B]] {
-      override def schema: Schema = Schema.createUnion(leftFor.schema, rightFor.schema)
+      override def schema: Schema = SchemaHelper.createSafeUnion(leftFor.schema, rightFor.schema)
     }
   }
 
