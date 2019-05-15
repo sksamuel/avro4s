@@ -15,8 +15,8 @@ import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
-import scala.reflect.runtime.universe._
 import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
 
 
@@ -220,9 +220,10 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
   implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
                                                                      tag: TypeTag[T],
-                                                                     gen: Generic.Aux[T, C],
+                                                                     gen: Lazy[Generic.Aux[T, C]],
                                                                      objs: Reify.Aux[C, L],
                                                                      toList: ToList[L, T]): SchemaFor[T] = new SchemaFor[T] {
+    implicit val gen0 = gen.value
     val tpe = weakTypeTag[T]
     val nr = NameResolution(tpe.tpe)
     val symbols = toList(objs()).map(v => NameResolution(v.getClass).name)
@@ -281,17 +282,9 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
           // if the default getter exists then we can use it to generate the default value
           if (defaultGetterMethod.isMethod) {
             val moduleSym = tpe.typeSymbol.companion
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
-            } else {
-              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
-            }
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
           } else {
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
-            } else {
-              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
-            }
+            q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
           }
         }
 

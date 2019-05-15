@@ -5,19 +5,19 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
-import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
 import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
+import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{Coproduct, Generic, HList, Lazy}
 
+import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.runtime.universe._
-import scala.collection.JavaConverters._
 
 /**
   * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,
@@ -352,11 +352,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
         }
 
         val decoders = reflect.constructorParameters(tpe).map { case (_, fieldTpe) =>
-          if (reflect.isMacroGenerated(fieldTpe)) {
-            q"""implicitly[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]"""
-          } else {
-            q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]]"""
-          }
+          q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]]"""
         }
 
         val fields = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
@@ -378,17 +374,9 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           // if the default is defined, we will use that to populate, otherwise if the field is transient
           // we will populate with none or null, otherwise an error will be raised
           if (defaultGetterMethod.isMethod) {
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
-            } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
-            }
+            q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
           } else {
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
-            } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
-            }
+            q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
           }
         }
 

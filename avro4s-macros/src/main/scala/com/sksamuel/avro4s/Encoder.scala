@@ -5,9 +5,9 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
-import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
+import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
@@ -280,11 +280,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
         .filterNot { case (fieldSym, _) => reflect.isTransientOnField(tpe, fieldSym) }
 
       val encoders = nonTransientConstructorFields.map { case (_, fieldTpe) =>
-        if (reflect.isMacroGenerated(fieldTpe)) {
-          q"""implicitly[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]"""
-        } else {
-          q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]]"""
-        }
+        q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]]"""
       }
 
       // each field needs to be converted into an avro compatible value
@@ -307,11 +303,7 @@ object Encoder extends CoproductEncoders with TupleEncoders {
           val annos = reflect.annotations(fieldSym)
           val fieldName = new AnnotationExtractors(annos).name.getOrElse(fieldSym.name.decodedName.toString)
 
-          if (reflect.isMacroGenerated(fieldTpe)) {
-            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldNotLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})(encoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]])"""
-          } else {
-            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})(encoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]])"""
-          }
+          q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})(encoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]])"""
         }
 
       // An encoder for a value type just needs to pass through the given value into an encoder
