@@ -5,19 +5,19 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
-import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
 import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
+import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
 import shapeless.{Coproduct, Generic, HList, Lazy}
 
+import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.runtime.universe._
-import scala.collection.JavaConverters._
 
 /**
   * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,

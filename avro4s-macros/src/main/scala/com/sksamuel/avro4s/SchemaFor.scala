@@ -15,8 +15,8 @@ import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
-import scala.reflect.runtime.universe._
 import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
 
 

@@ -30,4 +30,5 @@ trait CoproductSchemaFor {
                                                coproductFor: SchemaFor[C]): SchemaFor[T] = new SchemaFor[T] {
     override def schema: Schema = coproductFor.schema
   }
+
 }

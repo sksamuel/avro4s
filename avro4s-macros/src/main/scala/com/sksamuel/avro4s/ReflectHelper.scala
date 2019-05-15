@@ -2,8 +2,8 @@ package com.sksamuel.avro4s
 
 import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.whitebox
-import scala.reflect.runtime.universe
 import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe
 import scala.tools.reflect.ToolBox
 
 class ReflectHelper[C <: whitebox.Context](val c: C) {
@@ -83,13 +83,15 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
 
   def isLibraryType(tpe: Type): Boolean = tpe.typeSymbol.fullName.startsWith("scala") || tpe.typeSymbol.fullName.startsWith("java") || tpe.typeSymbol.fullName.startsWith("javax")
 
+  def isShapelessType(tpe: Type): Boolean = tpe.typeSymbol.fullName.contains("shapeless")
+
   /**
     * Returns true if SchemaFor, Encoder or Decoder for this type should be generated
     * by an avro4s or shapeless macro. Returns false if there should be an implicit in scope
     * without using a macro.
     */
   def isMacroGenerated(tpe: Type): Boolean = {
-    !isLibraryType(tpe) && !isScalaEnum(tpe) && (isCaseClass(tpe) || isSealed(tpe))
+    !isSealed(tpe) && !isShapelessType(tpe) && !isLibraryType(tpe) && !isScalaEnum(tpe) && isCaseClass(tpe)
   }
 
   /**
