@@ -44,7 +44,7 @@ object ScalePrecisionRoundingMode {
   implicit val default = ScalePrecisionRoundingMode(2, 8, UNNECESSARY)
 }
 
-object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
+object SchemaFor {
 
   import scala.collection.JavaConverters._
 
@@ -307,8 +307,9 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
       // this is a big hacky until magnolia can do it for us
       val objs = ctx.subtypes.forall { subtype =>
         try {
-          runtimeMirror.staticModule(subtype.typeName.full)
-          true
+          // to be a case object, we need the object, but no class
+          val module = runtimeMirror.staticModule(subtype.typeName.full)
+          !runtimeMirror.staticClass(subtype.typeName.full).isCaseClass
         } catch {
           case NonFatal(_) => false
         }

@@ -14,7 +14,8 @@ class BasicEncoderTest extends WordSpec with Matchers {
     "encode strings as UTF8" in {
       case class Foo(s: String)
       val schema = AvroSchema[Foo]
-      Encoder[Foo].encode(Foo("hello"), schema) shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
+      val record = Encoder[Foo].encode(Foo("hello"), schema)
+      record shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
     }
     "encode strings as GenericData.Fixed when schema is fixed" in {
       case class Foo(s: String)

@@ -5,8 +5,8 @@ import magnolia.TypeName
 import scala.reflect.macros.whitebox
 
 /**
-  * Implements methods to retrieve a suitable record name and namespace
-  * for a given Scala type, taking into account type parameters and annotations.
+  * Extracts name and namespace from a [[TypeName]].
+  * Takes into consideration provided annotations.
   */
 case class Namer(typeName: TypeName, annos: Seq[Any]) {
 
@@ -20,9 +20,14 @@ case class Namer(typeName: TypeName, annos: Seq[Any]) {
 
   // the name of the scala class with type parameters encoded,
   // Eg, List[Int] would be `List__Int`
+  // Eg, Type[A, B] would be `Type__A_B`
   private val genericName = {
-    val targs = typeName.typeArguments.map(_.short).mkString("_")
-    typeName + "__" + targs
+    if (typeName.typeArguments.isEmpty) {
+      erasedName
+    } else {
+      val targs = typeName.typeArguments.map(_.short).mkString("_")
+      typeName.short + "__" + targs
+    }
   }
 
   /**

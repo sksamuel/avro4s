@@ -11,10 +11,11 @@ import org.apache.avro.{Conversions, Schema}
 /**
   * When we set a default on an avro field, the type must match
   * the schema definition. For example, if our field has a schema
-  * of type Long, then the default must be a number value.
+  * of type UUID, then the default must be a String, or for a schema
+  * of Long, then the type must be a java Long and not a Scala long.
   *
-  * This class will accept an Avro encoded value and convert it
-  * to a suitable default type.
+  * This class will accept a scala value and convert it into a type
+  * suitable for Avro and the provided schema.
   */
 object DefaultResolver {
   def apply(value: Any, schema: Schema): AnyRef = value match {

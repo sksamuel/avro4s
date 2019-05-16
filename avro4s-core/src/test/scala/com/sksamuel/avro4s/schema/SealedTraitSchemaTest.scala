@@ -41,7 +41,7 @@ class SealedTraitSchemaTest extends FunSuite with Matchers {
     case class InnerTwo(height: Double) extends Inner
     case class Outer(inner: Inner)
     val schema = AvroSchema[Outer]
-    schema.getNamespace() shouldBe "com.sksamuel.avro4s.schema.SealedTraitSchemaTest"
+    schema.getNamespace shouldBe "com.sksamuel.avro4s.schema.SealedTraitSchemaTest"
   }
 
 }
