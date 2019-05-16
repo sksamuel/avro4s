@@ -5,19 +5,19 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
+import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
-import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
+import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord, IndexedRecord}
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
+import org.apache.avro.{Conversions, JsonProperties, Schema}
 import shapeless.ops.coproduct.Reify
 import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList, Lazy}
+import shapeless.{Coproduct, Generic, HList}
 
+import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
-import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.runtime.universe._
-import scala.collection.JavaConverters._
 
 /**
   * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,
@@ -50,9 +50,13 @@ trait Decoder[T] extends Serializable {
   }
 }
 
-object Decoder extends CoproductDecoders with TupleDecoders {
+object Decoder extends TupleDecoders {
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
+
+  type Typeclass[T] = Decoder[T]
+
+  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
   /**
     * Create a decoder that always returns a single value.
@@ -272,162 +276,71 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     }
   }
 
-  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit gen: Generic.Aux[T, C],
-                                                                     objs: Reify.Aux[C, L],
-                                                                     toList: ToList[L, T]): Decoder[T] = new Decoder[T] {
-    override def decode(value: Any, schema: Schema): T = {
-      val name = value.toString
-      val variants = toList(objs())
-      variants.find(v => {
-        getTypeName(v.getClass) == name
-      }).getOrElse(sys.error(s"Unknown type $name"))
-    }
+  //  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit gen: Generic.Aux[T, C],
+  //                                                                     objs: Reify.Aux[C, L],
+  //                                                                     toList: ToList[L, T]): Decoder[T] = new Decoder[T] {
+  //    override def decode(value: Any, schema: Schema): T = {
+  //      val name = value.toString
+  //      val variants = toList(objs())
+  //      variants.find(v => {
+  //        getTypeName(v.getClass) == name
+  //      }).getOrElse(sys.error(s"Unknown type $name"))
+  //    }
+  //
+  //    private def getTypeName[G](clazz: Class[G]): String = {
+  //      val mirror = runtimeMirror(clazz.getClassLoader)
+  //      val tpe = mirror.classSymbol(clazz).toType
+  //      AvroNameResolver.forClass(tpe).toString
+  //    }
+  //
+  //  }
 
-    private def getTypeName[G](clazz: Class[G]): String = {
-      val mirror = runtimeMirror(clazz.getClassLoader)
-      val tpe = mirror.classSymbol(clazz).toType
-      AvroNameResolver.forClass(tpe).toString
-    }
 
-  }
-
-  implicit def applyMacro[T <: Product]: Decoder[T] = macro applyMacroImpl[T]
-
-  def applyMacroImpl[T <: Product : c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Decoder[T]] = {
-
-    import c.universe
-    import c.universe._
-
-    val reflect = ReflectHelper(c)
-    val tpe = weakTypeTag[T].tpe
-    val fullName = tpe.typeSymbol.fullName
-    val packageName = reflect.packageName(tpe)
-
-    if (!reflect.isCaseClass(tpe)) {
-      c.abort(c.enclosingPosition.pos, s"This macro can only encode case classes, not instance of $tpe")
-    } else if (reflect.isSealed(tpe)) {
-      c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
-    } else if (packageName.startsWith("scala")) {
-      c.abort(c.prefix.tree.pos, s"$fullName is a scala type: Built in types should be handled by explicit typeclasses of SchemaFor and not this macro")
-    } else {
-
-      val valueType = reflect.isValueClass(tpe)
-
-      // In Scala, value types are erased at compile time. So in avro4s we assume that value types do not exist
-      // in the avro side, neither in the schema, nor in the input values. Therefore, when creating a decoder
-      // for a value type, the input will be a value of the underlying type. In other words, given a value type
-      // `Foo(s: String) extends AnyVal` - the input will be a String, not a record containing a String
-      // as it would be for a non-value type.
-
-      // So the generated decoder for a value type should simply pass through to a generated decoder for
-      // the underlying type without worrying about fields etc.
-      if (valueType) {
-
-        val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-        val backingFieldTpe = valueCstr.typeSignature
-
-        c.Expr[Decoder[T]](
-          q"""
-          new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
-            override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
-              val decoded = _root_.com.sksamuel.avro4s.Decoder.decodeT[$backingFieldTpe](value, schema)
-              new $tpe(decoded)
-            }
-          }
-          """
-        )
-
-      } else {
-
-        // the companion object where the apply construction method is located
-        // without this we cannot instantiate the case class
-        // we also need this to extract default values
-        val companion = tpe.typeSymbol.companion
-
-        if (companion == NoSymbol) {
-          val error = s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a top level scope."
-          Console.err.println(error)
-          c.error(c.enclosingPosition.pos, error)
-          sys.error(error)
-        }
-
-        val decoders = reflect.constructorParameters(tpe).map { case (_, fieldTpe) =>
-          if (reflect.isMacroGenerated(fieldTpe)) {
-            q"""implicitly[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]"""
-          } else {
-            q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]]"""
-          }
-        }
-
-        val fields = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
-
-          // this is the simple name of the field
-          val name = fieldSym.name.decodedName.toString
-
-          // the name we use to pull the value out of the record should take into
-          // account any @AvroName annotations. If @AvroName is not defined then we
-          // use the name of the field in the case class
-          val resolvedFieldName = new AnnotationExtractors(reflect.annotations(fieldSym)).name.getOrElse(name)
-
-          val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-          val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
-          val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
-
-          val transient = reflect.isTransientOnField(tpe, fieldSym)
-
-          // if the default is defined, we will use that to populate, otherwise if the field is transient
-          // we will populate with none or null, otherwise an error will be raised
-          if (defaultGetterMethod.isMethod) {
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
-            } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
-            }
-          } else {
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
-            } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
-            }
-          }
-        }
-
-        c.Expr[Decoder[T]](
-          q"""
-          new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
-            private[this] val decoders = Array(..$decoders)
-
-            override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
-              val fullName = $fullName
-              value match {
-                case record: _root_.org.apache.avro.generic.GenericRecord => $companion.apply(..$fields)
-                case _ => sys.error("This decoder decodes GenericRecord => " + fullName + " but has been invoked with " + value)
-              }
-            }
-          }
-          """
-        )
-      }
-    }
-  }
-
-  def decodeFieldOrApplyDefaultNotLazy[T](fieldName: String,
-                                       record: GenericRecord,
-                                       readerSchema: Schema,
-                                       scalaDefault: Any,
-                                       transient: Boolean)
-                                      (implicit decoder: Decoder[T]): T = {
-    decodeFieldOrApplyDefault(fieldName, record, readerSchema, scalaDefault, transient, decoder)
-  }
-
-  def decodeFieldOrApplyDefaultLazy[T](fieldName: String,
-                                          record: GenericRecord,
-                                          readerSchema: Schema,
-                                          scalaDefault: Any,
-                                          transient: Boolean)
-                                         (implicit decoder: Lazy[Decoder[T]]): T = {
-    decodeFieldOrApplyDefault(fieldName, record, readerSchema, scalaDefault, transient, decoder.value)
-  }
+  //
+  //      } else {
+  //
+  //        val decoders = reflect.constructorParameters(tpe).map { case (_, fieldTpe) =>
+  //          if (reflect.isMacroGenerated(fieldTpe)) {
+  //            q"""implicitly[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]"""
+  //          } else {
+  //            q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]]"""
+  //          }
+  //        }
+  //
+  //        val fields = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
+  //
+  //          // this is the simple name of the field
+  //          val name = fieldSym.name.decodedName.toString
+  //
+  //          // the name we use to pull the value out of the record should take into
+  //          // account any @AvroName annotations. If @AvroName is not defined then we
+  //          // use the name of the field in the case class
+  //          val resolvedFieldName = new AnnotationExtractors(reflect.annotations(fieldSym)).name.getOrElse(name)
+  //
+  //          val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+  //          val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+  //          val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
+  //
+  //          val transient = reflect.isTransientOnField(tpe, fieldSym)
+  //
+  //          // if the default is defined, we will use that to populate, otherwise if the field is transient
+  //          // we will populate with none or null, otherwise an error will be raised
+  //          if (defaultGetterMethod.isMethod) {
+  //            if (reflect.isMacroGenerated(fieldTpe)) {
+  //              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
+  //            } else {
+  //              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
+  //            }
+  //          } else {
+  //            if (reflect.isMacroGenerated(fieldTpe)) {
+  //              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
+  //            } else {
+  //              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
+  //            }
+  //          }
+  //        }
+  //    }
+  //  }
 
   /**
     * For a field in the target type (the case class we are marshalling to), we must
@@ -443,7 +356,6 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     *
     * If none of these rules can be satisfied then an exception will be thrown.
     */
-  //noinspection TypeCheckCanBeMatch
   def decodeFieldOrApplyDefault[T](fieldName: String,
                                    record: GenericRecord,
                                    readerSchema: Schema,
@@ -476,4 +388,65 @@ object Decoder extends CoproductDecoders with TupleDecoders {
   }
 
   def decodeT[T](value: Any, schema: Schema)(implicit decoder: Decoder[T]): T = decoder.decode(value, schema)
+
+
+  def combine[T](klass: CaseClass[Typeclass, T]): Decoder[T] = {
+
+    // In Scala, value types are erased at compile time. So in avro4s we assume that value types do not exist
+    // in the avro side, neither in the schema, nor in the input values. Therefore, when creating a decoder
+    // for a value type, the input will be a value of the underlying type. In other words, given a value type
+    // `Foo(s: String) extends AnyVal` - the input will be a String, not a record containing a String
+    // as it would be for a non-value type.
+
+    // So the generated decoder for a value type should simply pass through to a generated decoder for
+    // the underlying type without worrying about fields etc.
+    if (klass.isValueClass) {
+      new Decoder[T] {
+        override def decode(value: Any, schema: Schema): T = {
+          val decoded = klass.parameters.head.typeclass.decode(value, schema)
+          klass.rawConstruct(List(decoded))
+        }
+      }
+    } else {
+      new Decoder[T] {
+        override def decode(value: Any, schema: Schema): T = {
+          value match {
+            case record: IndexedRecord =>
+              val values = klass.parameters.map { param =>
+                val value = record.get(param.index)
+                param.typeclass.decode(value, schema.getFields.get(param.index).schema())
+              }
+              klass.rawConstruct(values)
+            case _ => sys.error("This decoder can only handle types of IndexedRecord or it's subtypes such as GenericRecord")
+          }
+        }
+      }
+    }
+  }
+
+  def decodeField[T](fieldName: String,
+                     record: GenericRecord,
+                     readerSchema: Schema,
+                     scalaDefault: Any,
+                     transient: Boolean,
+                     decoder: Decoder[T]): T = {
+    record.getSchema.getField(fieldName) match {
+      case field: Schema.Field =>
+        val value = record.get(fieldName)
+        decoder.decode(value, field.schema)
+      //      case null if readerSchema.hasDefault(fieldName) =>
+      //        val default = readerSchema.getField(fieldName).defaultVal() match {
+      //          case JsonProperties.NULL_VALUE => null
+      //          case other => other
+      //        }
+      //        decoder.decode(default, readerSchema.getField(fieldName).schema)
+      case null if scalaDefault != null => scalaDefault.asInstanceOf[T]
+      case null if transient => None.asInstanceOf[T]
+      case _ => sys.error(s"Record $record does not have a value for $fieldName, no default was defined, and the field is not transient")
+    }
+  }
+
+  def dispatch[T](ctx: SealedTrait[Typeclass, T]): Decoder[T] = new Decoder[T] {
+    override def decode(value: Any, schema: Schema): T = ???
+  }
 }
