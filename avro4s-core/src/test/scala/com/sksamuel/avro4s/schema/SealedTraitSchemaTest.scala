@@ -47,9 +47,9 @@ class SealedTraitSchemaTest extends FunSuite with Matchers {
 }
 
 sealed trait Dibble
+case object Dabble extends Dibble
 @AvroName("Dobble")
 case object Dobbles extends Dibble
-case object Dabble extends Dibble
 
 sealed trait Wibble
 case class Wobble(str: String) extends Wibble
@@ -57,11 +57,11 @@ case class Wabble(dbl: Double) extends Wibble
 case class Wrapper(wibble: Wibble)
 
 sealed trait Tibble
-case class Tobble(str: String, place: String) extends Tibble
 case class Tabble(str: Double, age: Int) extends Tibble
+case class Tobble(str: String, place: String) extends Tibble
 case class Trapper(tibble: Tibble)
 
 sealed trait Nibble
-case class Nobble(str: String, place: String) extends Nibble
 case class Nabble(str: String, age: Int) extends Nibble
+case class Nobble(str: String, place: String) extends Nibble
 case class Napper(nibble: Nibble)

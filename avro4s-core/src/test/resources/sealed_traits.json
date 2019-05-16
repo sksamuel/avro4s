@@ -8,21 +8,21 @@
       "type": [
         {
           "type": "record",
-          "name": "Wabble",
-          "fields": [
-            {
-              "name": "dbl",
-              "type": "double"
-            }
-          ]
-        },
-        {
-          "type": "record",
           "name": "Wobble",
           "fields": [
             {
               "name": "str",
               "type": "string"
+            }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "Wabble",
+          "fields": [
+            {
+              "name": "dbl",
+              "type": "double"
             }
           ]
         }

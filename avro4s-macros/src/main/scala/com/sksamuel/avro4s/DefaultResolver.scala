@@ -18,10 +18,12 @@ import org.apache.avro.{Conversions, Schema}
   */
 object DefaultResolver {
   def apply(value: Any, schema: Schema): AnyRef = value match {
+    case Some(x) => apply(x, schema)
     case u: Utf8 => u.toString
     case uuid: UUID => uuid.toString
     case enum: GenericData.EnumSymbol => enum.toString
     case fixed: GenericData.Fixed => fixed.bytes()
+    case bd: BigDecimal => bd.toString()
     case byteBuffer: ByteBuffer if schema.getLogicalType.isInstanceOf[Decimal] =>
       val decimalConversion = new Conversions.DecimalConversion
       val bd = decimalConversion.fromBytes(byteBuffer, schema, schema.getLogicalType)

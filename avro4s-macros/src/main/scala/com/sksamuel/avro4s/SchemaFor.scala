@@ -15,6 +15,7 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
+import scala.util.control.NonFatal
 
 
 /**
@@ -256,7 +257,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     val aliases = extractor.aliases
     val props = extractor.props
 
-    val resolution = NameResolution2(klass.typeName, klass.annotations)
+    val resolution = Namer(klass.typeName, klass.annotations)
     val namespace = resolution.namespace
     val name = resolution.name
 
@@ -298,7 +299,33 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
   def dispatch[T](ctx: SealedTrait[Typeclass, T]): SchemaFor[T] = new SchemaFor[T] {
     override def schema: Schema = {
-      ctx.subtypes.head.typeclass.schema
+
+      import scala.reflect.runtime.universe
+
+      val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
+
+      // if all objects then we encode as enums, otherwise as a union
+      // this is a big hacky until magnolia can do it for us
+      val objs = ctx.subtypes.forall { subtype =>
+        try {
+          runtimeMirror.staticModule(subtype.typeName.full)
+          true
+        } catch {
+          case NonFatal(_) => false
+        }
+      }
+
+      if (objs) {
+        val symbols = ctx.subtypes.map { sub =>
+          val namer = Namer(sub.typeName, sub.annotations)
+          namer.name
+        }
+        val namer = Namer(ctx.typeName, ctx.annotations)
+        SchemaBuilder.enumeration(namer.name).namespace(namer.namespace).symbols(symbols: _*)
+      } else {
+        val schemas = ctx.subtypes.map(_.typeclass.schema)
+        SchemaHelper.createSafeUnion(schemas: _*)
+      }
     }
   }
 

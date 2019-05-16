@@ -8,11 +8,11 @@ import scala.reflect.macros.whitebox
   * Implements methods to retrieve a suitable record name and namespace
   * for a given Scala type, taking into account type parameters and annotations.
   */
-case class NameResolution2(typeName: TypeName, annos: Seq[Any]) {
+case class Namer(typeName: TypeName, annos: Seq[Any]) {
 
   private val extractor = new AnnotationExtractors(annos)
 
-  private val defaultNamespace = typeName.owner.replaceAll("\\.<local .*?>", "")
+  private val defaultNamespace = typeName.owner.replaceAll("\\.<local .*?>", "").stripSuffix(".package")
 
   // the name of the scala class without type parameters.
   // Eg, List[Int] would be List.
