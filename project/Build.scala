@@ -5,7 +5,7 @@ import sbt._
 import sbtrelease.ReleasePlugin
 
 /** Adds common settings automatically to all subprojects */
-object GlobalPlugin extends AutoPlugin {
+object Build extends AutoPlugin {
 
   object autoImport {
     val org = "com.sksamuel.avro4s"
@@ -35,7 +35,7 @@ object GlobalPlugin extends AutoPlugin {
       "utf8",
       "-Xfatal-warnings",
       "-feature",
-     //"-Xlog-implicits",
+      "-Xlog-implicits",
       "-language:existentials"
     ),
     javacOptions := Seq("-source", "1.8", "-target", "1.8"),
