@@ -5,18 +5,15 @@ import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
+import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
-import shapeless.ops.coproduct.Reify
-import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList, Lazy}
+import shapeless.{:+:, CNil, Coproduct}
 
 import scala.language.experimental.macros
 import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
 import scala.reflect.ClassTag
-import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
-import scala.reflect.macros.whitebox
-import scala.reflect.runtime.universe._
 import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
 
 
@@ -49,6 +46,10 @@ object ScalePrecisionRoundingMode {
 object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
 
   import scala.collection.JavaConverters._
+
+  type Typeclass[T] = SchemaFor[T]
+
+  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
   def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
 
@@ -168,7 +169,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
         val tb = currentMirror.mkToolBox()
 
         val args = tb.compile(tb.parse(a.toString)).apply() match {
-          case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
+          case c: AvroFieldReflection => c.getAllFields.map { case (k, v) => (k, v.toString) }
           case _ => Map.empty[String, String]
         }
         Anno(a.annotationType.getClass.getName, args)
@@ -184,153 +185,6 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     }
   }
 
-  implicit def scalaEnumSchemaFor[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = new SchemaFor[E] {
-
-    val typeRef = tag.tpe match {
-      case t@TypeRef(_, _, _) => t
-    }
-
-    val valueType = typeOf[E]
-    val pre = typeRef.pre.typeSymbol.typeSignature.members
-    val syms = pre.filter { sym =>
-      !sym.isMethod &&
-        !sym.isType &&
-        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
-    }.map { sym =>
-      sym.name.decodedName.toString.trim
-    }.toList.sorted
-
-    val annos = typeRef.pre.typeSymbol.annotations.map { a =>
-      val name = a.tree.tpe.typeSymbol.fullName
-      val tb = currentMirror.mkToolBox()
-      val args = tb.compile(tb.parse(a.toString)).apply() match {
-        case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
-        case _ => Map.empty[String, String]
-      }
-      Anno(name, args)
-    }
-
-    val extractor = new AnnotationExtractors(annos)
-
-    val namespace = extractor.namespace.getOrElse(typeRef.pre.typeSymbol.owner.fullName)
-    val name = extractor.name.getOrElse(typeRef.pre.typeSymbol.name.decodedName.toString)
-
-    override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
-  }
-
-  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
-                                                                     tag: TypeTag[T],
-                                                                     gen: Generic.Aux[T, C],
-                                                                     objs: Reify.Aux[C, L],
-                                                                     toList: ToList[L, T]): SchemaFor[T] = new SchemaFor[T] {
-    val tpe = weakTypeTag[T]
-    val nr = NameResolution(tpe.tpe)
-    val symbols = toList(objs()).map(v => NameResolution(v.getClass).name)
-
-    override def schema: Schema = SchemaBuilder.enumeration(nr.name).namespace(nr.namespace).symbols(symbols: _*)
-  }
-
-  implicit def applyMacro[T]: SchemaFor[T] = macro applyMacroImpl[T]
-
-  def applyMacroImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
-    import c.universe
-    import c.universe._
-
-    val reflect = ReflectHelper(c)
-    val tpe = weakTypeOf[T]
-    val fullName = tpe.typeSymbol.fullName
-    val packageName = reflect.packageName(tpe)
-    val resolution = NameResolution(c)(tpe)
-    val namespace = resolution.namespace
-    val name = resolution.name
-
-    if (!reflect.isCaseClass(tpe)) {
-      c.abort(c.prefix.tree.pos, s"$fullName is not a case class: This macro is only designed to handle case classes")
-    } else if (reflect.isSealed(tpe)) {
-      c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
-    } else if (packageName.startsWith("scala") || packageName.startsWith("java")) {
-      c.abort(c.prefix.tree.pos, s"$fullName is a library type: Built in types should be handled by explicit typeclasses of SchemaFor and not this macro")
-    } else if (reflect.isScalaEnum(tpe)) {
-      c.abort(c.prefix.tree.pos, s"$fullName is a scala enum: Scala enum types should be handled by `scalaEnumSchemaFor`")
-    } else {
-
-      val isValueClass = reflect.isValueClass(tpe)
-
-      val fields = reflect
-        .constructorParameters(tpe)
-        .zipWithIndex
-        .filterNot { case ((fieldSym, _), _) => reflect.isTransientOnField(tpe, fieldSym) }
-        .map { case ((fieldSym, fieldTpe), index) =>
-
-          // the simple name of the field like "x"
-          val fieldName = fieldSym.name.decodedName.toString.trim
-
-          // if the field is a value type, we should include annotations defined on the value type as well
-          val annos = if (reflect.isValueClass(fieldTpe)) {
-            reflect.annotationsqq(fieldSym) ++ reflect.annotationsqq(fieldTpe.typeSymbol)
-          } else {
-            reflect.annotationsqq(fieldSym)
-          }
-
-          val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-
-          // gets the method symbol for the default getter if it exists
-          val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
-          val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
-
-          // if the default getter exists then we can use it to generate the default value
-          if (defaultGetterMethod.isMethod) {
-            val moduleSym = tpe.typeSymbol.companion
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
-            } else {
-              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
-            }
-          } else {
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
-            } else {
-              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
-            }
-          }
-        }
-
-      // these are annotations on the class itself
-      val annos = reflect.annotationsqq(tpe.typeSymbol)
-
-      c.Expr[SchemaFor[T]](
-        q"""
-        new _root_.com.sksamuel.avro4s.SchemaFor[$tpe] {
-          private val _schema = _root_.com.sksamuel.avro4s.SchemaFor.buildSchema($name, $namespace, Seq(..$fields), Seq(..$annos), $isValueClass)
-          override def schema: _root_.org.apache.avro.Schema = _schema
-        }
-      """)
-    }
-  }
-
-  def schemaFieldNoDefault[B](fieldName: String, namespace: String, annos: Seq[Anno])
-                             (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
-    buildField[B](fieldName, namespace, annos, NoDefault, schemaFor, namingStrategy)
-  }
-
-  def schemaFieldNoDefaultLazy[B](fieldName: String, namespace: String, annos: Seq[Anno])
-                                 (implicit schemaFor: Lazy[SchemaFor[B]], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
-    buildField[B](fieldName, namespace, annos, NoDefault, schemaFor.value, namingStrategy)
-  }
-
-  def schemaFieldWithDefault[B](fieldName: String, namespace: String, annos: Seq[Anno], default: B)
-                               (implicit schemaFor: SchemaFor[B], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
-    // the default may be a scala type that avro doesn't understand, so we must turn
-    // it into an avro compatible type by using an encoder.
-    buildField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.schema)), schemaFor, namingStrategy)
-  }
-
-  def schemaFieldWithDefaultLazy[B](fieldName: String, namespace: String, annos: Seq[Anno], default: B)
-                                   (implicit schemaFor: Lazy[SchemaFor[B]], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
-    // the default may be a scala type that avro doesn't understand, so we must turn
-    // it into an avro compatible type by using an encoder.
-    buildField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.value.schema)), schemaFor.value, namingStrategy)
-  }
 
   /**
     * Builds an Avro Field with the field's Schema provided by an
@@ -340,32 +194,33 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     * Users can add their own mappings for types by implementing a [[SchemaFor]]
     * instance for that type.
     *
-    * @param fieldName the name of the field as defined in the case class
-    * @param namespace the name of the package that contains the case class definition
-    * @param default   an instance of the Default ADT which contains an avro compatible default value
-    *                  if such a default applies to this field
+    * @param label   the name of the field as defined in the case class
+    * @param annos   the name of the package that contains the case class definition
+    * @param default an instance of the Default ADT which contains an avro compatible default value
+    *                if such a default applies to this field
     */
-  private def buildField[B](fieldName: String,
-                            namespace: String,
-                            annos: Seq[Anno],
-                            default: Default,
+  private def buildField[B](label: String,
+                            annos: Seq[Any],
                             schemaFor: SchemaFor[B],
-                            namingStrategy: NamingStrategy): Schema.Field = {
+                            default: Option[B],
+                            namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
 
     val extractor = new AnnotationExtractors(annos)
     val doc = extractor.doc.orNull
     val aliases = extractor.aliases
     val props = extractor.props
 
-    // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
-    val name = extractor.name.fold(namingStrategy.to(fieldName))(namingStrategy.to)
+    val namespace = "todo.namespace"
 
-    // the special NullDefault is used when null is actually the default value.
-    // The case of having no default at all is represented by NoDefault
+    // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
+    val name = extractor.name.fold(namingStrategy.to(label))(namingStrategy.to)
+
+    // the default value may be none, in which case it was not defined, or Some(null), in which case it was defined
+    // and set to null, or something else, in which case it's a non null value
     val encodedDefault: AnyRef = default match {
-      case NoDefault => null
-      case NullDefault => JsonProperties.NULL_VALUE
-      case MethodDefault(x) => DefaultResolver(x, schemaFor.schema)
+      case None => null
+      case Some(null) => JsonProperties.NULL_VALUE
+      case Some(other) => DefaultResolver(other, schemaFor.schema)
     }
 
     // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
@@ -394,42 +249,303 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     field
   }
 
-  /**
-    * Builds a new Avro Schema.
-    *
-    * @param name the encoded Avro record name, taking into account
-    *             annnotations and type parameters.
-    */
-  def buildSchema(name: String,
-                  namespace: String,
-                  fields: Seq[Schema.Field],
-                  annotations: Seq[Anno],
-                  valueType: Boolean): Schema = {
+  def combine[T](klass: CaseClass[Typeclass, T]): SchemaFor[T] = {
 
-    import scala.collection.JavaConverters._
-
-    val extractor = new AnnotationExtractors(annotations)
+    val extractor = new AnnotationExtractors(klass.annotations)
     val doc = extractor.doc.orNull
     val aliases = extractor.aliases
     val props = extractor.props
 
-    // if the class is a value type, then we need to use the schema for the single field of the type
-    // if we have a value type AND @AvroFixed is present, then we return a schema of type fixed
-    if (valueType) {
-      val field = fields.head
-      extractor.fixed.fold(field.schema) { size =>
-        val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
-        props.foreach { case (k, v) => builder.prop(k, v) }
-        builder.size(size)
+    val resolution = NameResolution2(klass.typeName, klass.annotations)
+    val namespace = resolution.namespace
+    val name = resolution.name
+
+    // if the class is a value type, then we need to use the schema for the single field inside the type
+    // in other words, if we have `case class Foo(str:String)` then this just acts like a string
+    // if we have a value type AND @AvroFixed is present on the class, then we simply return a schema of type fixed
+    if (klass.isValueClass) {
+
+      val param = klass.parameters.head
+
+      val s = extractor.fixed match {
+        case Some(size) =>
+          val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
+          props.foreach { case (k, v) => builder.prop(k, v) }
+          builder.size(size)
+        case None => param.typeclass.schema
       }
+
+      new SchemaFor[T] {
+        override def schema: Schema = s
+      }
+
     } else {
+
+      val fields = klass.parameters.map { param =>
+        buildField(param.label, param.annotations, param.typeclass, param.default)
+      }
+
       val record = Schema.createRecord(name, doc, namespace, false)
       aliases.foreach(record.addAlias)
       props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
       record.setFields(fields.asJava)
-      record
+
+      new SchemaFor[T] {
+        override def schema: Schema = record
+      }
     }
   }
+
+  def dispatch[T](ctx: SealedTrait[Typeclass, T]): SchemaFor[T] = new SchemaFor[T] {
+    override def schema: Schema = {
+      ctx.subtypes.head.typeclass.schema
+    }
+  }
+
+  implicit def scalaEnumSchemaFor[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = new SchemaFor[E] {
+
+    val typeRef = tag.tpe match {
+      case t@TypeRef(_, _, _) => t
+    }
+
+    val valueType = typeOf[E]
+    val pre = typeRef.pre.typeSymbol.typeSignature.members
+    val syms = pre.filter { sym =>
+      !sym.isMethod &&
+        !sym.isType &&
+        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
+    }.map { sym =>
+      sym.name.decodedName.toString.trim
+    }.toList.sorted
+
+    val annos = typeRef.pre.typeSymbol.annotations.map { a =>
+      val name = a.tree.tpe.typeSymbol.fullName
+      val tb = currentMirror.mkToolBox()
+      val args = tb.compile(tb.parse(a.toString)).apply() match {
+        case c: AvroFieldReflection => c.getAllFields.map { case (k, v) => (k, v.toString) }
+        case _ => Map.empty[String, String]
+      }
+      Anno(name, args)
+    }
+
+    val extractor = new AnnotationExtractors(annos)
+
+    val namespace = extractor.namespace.getOrElse(typeRef.pre.typeSymbol.owner.fullName)
+    val name = extractor.name.getOrElse(typeRef.pre.typeSymbol.name.decodedName.toString)
+
+    override def schema: Schema = SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
+  }
+
+  //  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
+  //                                                                     tag: TypeTag[T],
+  //                                                                     gen: Generic.Aux[T, C],
+  //                                                                     objs: Reify.Aux[C, L],
+  //                                                                     toList: ToList[L, T]): SchemaFor[T] = new SchemaFor[T] {
+  //    val tpe = weakTypeTag[T]
+  //    val nr = NameResolution(tpe.tpe)
+  //    val symbols = toList(objs()).map(v => NameResolution(v.getClass).name)
+  //
+  //    override def schema: Schema = SchemaBuilder.enumeration(nr.name).namespace(nr.namespace).symbols(symbols: _*)
+  //  }
+
+  //  def applyMacroImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[SchemaFor[T]] = {
+  //    import c.universe
+  //    import c.universe._
+  //
+  //    val reflect = ReflectHelper(c)
+  //    val tpe = weakTypeOf[T]
+  //    val fullName = tpe.typeSymbol.fullName
+  //    val packageName = reflect.packageName(tpe)
+  //    val resolution = NameResolution(c)(tpe)
+  //    val namespace = resolution.namespace
+  //    val name = resolution.name
+  //
+  //    if (!reflect.isCaseClass(tpe)) {
+  //      c.abort(c.prefix.tree.pos, s"$fullName is not a case class: This macro is only designed to handle case classes")
+  //    } else if (reflect.isSealed(tpe)) {
+  //      c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
+  //    } else if (packageName.startsWith("scala") || packageName.startsWith("java")) {
+  //      c.abort(c.prefix.tree.pos, s"$fullName is a library type: Built in types should be handled by explicit typeclasses of SchemaFor and not this macro")
+  //    } else if (reflect.isScalaEnum(tpe)) {
+  //      c.abort(c.prefix.tree.pos, s"$fullName is a scala enum: Scala enum types should be handled by `scalaEnumSchemaFor`")
+  //    } else {
+  //
+  //      val isValueClass = reflect.isValueClass(tpe)
+  //
+  //      val fields = reflect
+  //        .constructorParameters(tpe)
+  //        .zipWithIndex
+  //        .filterNot { case ((fieldSym, _), _) => reflect.isTransientOnField(tpe, fieldSym) }
+  //        .map { case ((fieldSym, fieldTpe), index) =>
+  //
+  //          // the simple name of the field like "x"
+  //          val fieldName = fieldSym.name.decodedName.toString.trim
+  //
+  //          // if the field is a value type, we should include annotations defined on the value type as well
+  //          val annos = if (reflect.isValueClass(fieldTpe)) {
+  //            reflect.annotationsqq(fieldSym) ++ reflect.annotationsqq(fieldTpe.typeSymbol)
+  //          } else {
+  //            reflect.annotationsqq(fieldSym)
+  //          }
+  //
+  //          val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+  //
+  //          // gets the method symbol for the default getter if it exists
+  //          val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
+  //          val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
+  //
+  //          // if the default getter exists then we can use it to generate the default value
+  //          if (defaultGetterMethod.isMethod) {
+  //            val moduleSym = tpe.typeSymbol.companion
+  //            if (reflect.isMacroGenerated(fieldTpe)) {
+  //              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+  //            } else {
+  //              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldWithDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos), $moduleSym.$defaultGetterMethod) }"""
+  //            }
+  //          } else {
+  //            if (reflect.isMacroGenerated(fieldTpe)) {
+  //              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefault[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
+  //            } else {
+  //              q"""{ _root_.com.sksamuel.avro4s.SchemaFor.schemaFieldNoDefaultLazy[$fieldTpe]($fieldName, $namespace, Seq(..$annos)) }"""
+  //            }
+  //          }
+  //        }
+  //
+  //      // these are annotations on the class itself
+  //      val annos = reflect.annotationsqq(tpe.typeSymbol)
+  //
+  //      c.Expr[SchemaFor[T]](
+  //        q"""
+  //        new _root_.com.sksamuel.avro4s.SchemaFor[$tpe] {
+  //          private val _schema = _root_.com.sksamuel.avro4s.SchemaFor.buildSchema($name, $namespace, Seq(..$fields), Seq(..$annos), $isValueClass)
+  //          override def schema: _root_.org.apache.avro.Schema = _schema
+  //        }
+  //      """)
+  //    }
+  //  }
+
+  //  def schemaFieldNoDefault[B](fieldName: String, namespace: String, annos: Seq[Anno])
+  //                             (implicit schemaFor: SchemaFor[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+  //    buildField[B](fieldName, namespace, annos, NoDefault, schemaFor, namingStrategy)
+  //  }
+  //
+  //  def schemaFieldNoDefaultLazy[B](fieldName: String, namespace: String, annos: Seq[Anno])
+  //                                 (implicit schemaFor: Lazy[SchemaFor[B]], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+  //    buildField[B](fieldName, namespace, annos, NoDefault, schemaFor.value, namingStrategy)
+  //  }
+  //
+  //  def schemaFieldWithDefault[B](fieldName: String, namespace: String, annos: Seq[Anno], default: B)
+  //                               (implicit schemaFor: SchemaFor[B], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+  //    // the default may be a scala type that avro doesn't understand, so we must turn
+  //    // it into an avro compatible type by using an encoder.
+  //    buildField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.schema)), schemaFor, namingStrategy)
+  //  }
+  //
+  //  def schemaFieldWithDefaultLazy[B](fieldName: String, namespace: String, annos: Seq[Anno], default: B)
+  //                                   (implicit schemaFor: Lazy[SchemaFor[B]], encoder: Encoder[B], namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema.Field = {
+  //    // the default may be a scala type that avro doesn't understand, so we must turn
+  //    // it into an avro compatible type by using an encoder.
+  //    buildField[B](fieldName, namespace, annos, Default(encoder.encode(default, schemaFor.value.schema)), schemaFor.value, namingStrategy)
+  //  }
+
+  //  /**
+  //    * Builds an Avro Field with the field's Schema provided by an
+  //    * implicit instance of [[SchemaFor]]. There must be a instance of this
+  //    * typeclass in scope for any type we want to support in avro4s.
+  //    *
+  //    * Users can add their own mappings for types by implementing a [[SchemaFor]]
+  //    * instance for that type.
+  //    *
+  //    * @param fieldName the name of the field as defined in the case class
+  //    * @param namespace the name of the package that contains the case class definition
+  //    * @param default   an instance of the Default ADT which contains an avro compatible default value
+  //    *                  if such a default applies to this field
+  //    */
+  //  private def buildField[B](fieldName: String,
+  //                            namespace: String,
+  //                            annos: Seq[Anno],
+  //                            default: Default,
+  //                            schemaFor: SchemaFor[B],
+  //                            namingStrategy: NamingStrategy): Schema.Field = {
+  //
+  //    val extractor = new AnnotationExtractors(annos)
+  //    val doc = extractor.doc.orNull
+  //    val aliases = extractor.aliases
+  //    val props = extractor.props
+  //
+  //    // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
+  //    val name = extractor.name.fold(namingStrategy.to(fieldName))(namingStrategy.to)
+  //
+  //    // the special NullDefault is used when null is actually the default value.
+  //    // The case of having no default at all is represented by NoDefault
+  //    val encodedDefault: AnyRef = default match {
+  //      case NoDefault => null
+  //      case NullDefault => JsonProperties.NULL_VALUE
+  //      case MethodDefault(x) => DefaultResolver(x, schemaFor.schema)
+  //    }
+  //
+  //    // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
+  //    // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
+  //    val schema = extractor.fixed.fold(schemaFor.schema) { size =>
+  //      SchemaBuilder.fixed(name).doc(doc).namespace(namespace).size(size)
+  //    }
+  //
+  //    // for a union the type that has a default must be first
+  //    // if there is no default then we'll move null to head (if present)
+  //    val schemaWithOrderedUnion = (schema.getType, encodedDefault) match {
+  //      case (Schema.Type.UNION, null) => SchemaHelper.moveDefaultToHead(schema, null)
+  //      case (Schema.Type.UNION, JsonProperties.NULL_VALUE) => SchemaHelper.moveDefaultToHead(schema, null)
+  //      case (Schema.Type.UNION, defaultValue) => SchemaHelper.moveDefaultToHead(schema, defaultValue)
+  //      case _ => schema
+  //    }
+  //
+  //    // the field can override the namespace if the Namespace annotation is present on the field
+  //    // we may have annotated our field with @AvroNamespace so this namespace should be applied
+  //    // to any schemas we have generated for this field
+  //    val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schemaWithOrderedUnion, _)).getOrElse(schemaWithOrderedUnion)
+  //
+  //    val field = new Schema.Field(name, schemaWithResolvedNamespace, doc, encodedDefault)
+  //    props.foreach { case (k, v) => field.addProp(k, v: AnyRef) }
+  //    aliases.foreach(field.addAlias)
+  //    field
+  //  }
+  //
+  //  /**
+  //    * Builds a new Avro Schema.
+  //    *
+  //    * @param name the encoded Avro record name, taking into account
+  //    *             annnotations and type parameters.
+  //    */
+  //  def buildSchema(name: String,
+  //                  namespace: String,
+  //                  fields: Seq[Schema.Field],
+  //                  annotations: Seq[Anno],
+  //                  valueType: Boolean): Schema = {
+  //
+  //    import scala.collection.JavaConverters._
+  //
+  //    val extractor = new AnnotationExtractors(annotations)
+  //    val doc = extractor.doc.orNull
+  //    val aliases = extractor.aliases
+  //    val props = extractor.props
+  //
+  //    // if the class is a value type, then we need to use the schema for the single field of the type
+  //    // if we have a value type AND @AvroFixed is present, then we return a schema of type fixed
+  //    if (valueType) {
+  //      val field = fields.head
+  //      extractor.fixed.fold(field.schema) { size =>
+  //        val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
+  //        props.foreach { case (k, v) => builder.prop(k, v) }
+  //        builder.size(size)
+  //      }
+  //    } else {
+  //      val record = Schema.createRecord(name, doc, namespace, false)
+  //      aliases.foreach(record.addAlias)
+  //      props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
+  //      record.setFields(fields.asJava)
+  //      record
+  //    }
+  //  }
 
   // accepts a built avro schema, and overrides the namespace with the given namespace
   // this method just just makes a copy of the existing schema, setting the new namespace
@@ -451,14 +567,95 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
       case _ => schema
     }
   }
+
+  // A coproduct is a union, or a generalised either.
+  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
+
+  // Shapeless's implementation builds up the type recursively,
+  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
+  // so here we define the schema for the base case of the recursion, C :+: CNil
+  implicit def coproductBaseSchema[S](implicit basefor: SchemaFor[S]): SchemaFor[S :+: CNil] = new SchemaFor[S :+: CNil] {
+
+    import scala.collection.JavaConverters._
+
+    val base = basefor.schema
+    val schemas = scala.util.Try(base.getTypes.asScala).getOrElse(Seq(base))
+    override def schema = Schema.createUnion(schemas.asJava)
+  }
+
+  // And here we continue the recursion up.
+  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: SchemaFor[S], coproductFor: SchemaFor[T]): SchemaFor[S :+: T] = new SchemaFor[S :+: T] {
+    val base = basefor.schema
+    val coproduct = coproductFor.schema
+    override def schema: Schema = SchemaHelper.createSafeUnion(base, coproduct)
+  }
+
+  //  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+  //                                               coproductFor: SchemaFor[C]): SchemaFor[T] = new SchemaFor[T] {
+  //    override def schema: Schema = coproductFor.schema
+  //  }
+
+  implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = new SchemaFor[(A, B)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .endRecord()
+  }
+
+  implicit def tuple3SchemaFor[A, B, C](implicit
+                                        a: SchemaFor[A],
+                                        b: SchemaFor[B],
+                                        c: SchemaFor[C]): SchemaFor[(A, B, C)] = new SchemaFor[(A, B, C)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .name("_3").`type`(c.schema).noDefault()
+        .endRecord()
+  }
+
+  implicit def tuple4SchemaFor[A, B, C, D](implicit
+                                           a: SchemaFor[A],
+                                           b: SchemaFor[B],
+                                           c: SchemaFor[C],
+                                           d: SchemaFor[D]): SchemaFor[(A, B, C, D)] = new SchemaFor[(A, B, C, D)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple4").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .name("_3").`type`(c.schema).noDefault()
+        .name("_4").`type`(d.schema).noDefault()
+        .endRecord()
+  }
+
+  implicit def tuple5SchemaFor[A, B, C, D, E](implicit
+                                              a: SchemaFor[A],
+                                              b: SchemaFor[B],
+                                              c: SchemaFor[C],
+                                              d: SchemaFor[D],
+                                              e: SchemaFor[E]): SchemaFor[(A, B, C, D, E)] = new SchemaFor[(A, B, C, D, E)] {
+    override def schema: Schema =
+      SchemaBuilder.record("Tuple5").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .name("_3").`type`(c.schema).noDefault()
+        .name("_4").`type`(d.schema).noDefault()
+        .name("_5").`type`(e.schema).noDefault()
+        .endRecord()
+  }
 }
 
-sealed trait Default
-
-object Default {
-  def apply(x: AnyRef): Default = if (x == null) NullDefault else MethodDefault(x)
-}
-
-case class MethodDefault(value: AnyRef) extends Default
-case object NullDefault extends Default
-case object NoDefault extends Default
+//sealed trait Default
+//
+//object Default {
+//  def apply(x: AnyRef): Default = if (x == null) NullDefault else MethodDefault(x)
+//}
+//
+//case class MethodDefault(value: AnyRef) extends Default
+//case object NullDefault extends Default
+//case object NoDefault extends Default

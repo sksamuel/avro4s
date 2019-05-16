@@ -25,7 +25,7 @@ class AvroDocSchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support doc on value types used as nested classes" in {
+    "support value type when placed at the class level should annotate the field in the final schema" ignore {
       case class Annotated(a: ValueTypeForDocAnnoTest)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_annotation_value_type.json"))
       val schema = AvroSchema[Annotated]
