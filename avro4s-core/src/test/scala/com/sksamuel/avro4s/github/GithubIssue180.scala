@@ -4,6 +4,8 @@ import com.sksamuel.avro4s.github.SampleProtocol.SubPart1.InnerEnum
 import com.sksamuel.avro4s.{AvroSchema, FromRecord, ToRecord}
 import org.scalatest.{FunSpec, Matchers}
 
+import scala.language.higherKinds
+
 object TopEnum extends Enumeration {
   type TopEnumVal = Value
   val v1, v2 = Value

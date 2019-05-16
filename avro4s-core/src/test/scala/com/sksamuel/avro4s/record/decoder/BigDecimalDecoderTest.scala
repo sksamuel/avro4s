@@ -1,10 +1,12 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, Encoder, SchemaFor}
 import com.sksamuel.avro4s.SchemaFor.StringSchemaFor
-import org.apache.avro.generic.{GenericData, GenericFixed}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, SchemaFor}
+import org.apache.avro.generic.GenericData
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import org.scalatest.{FlatSpec, Matchers}
+
+import scala.language.higherKinds
 
 case class WithBigDecimal(decimal: BigDecimal)
 case class OptionalBigDecimal(big: Option[BigDecimal])

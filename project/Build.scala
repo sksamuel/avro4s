@@ -35,6 +35,7 @@ object Build extends AutoPlugin {
       "utf8",
       "-Xfatal-warnings",
       "-feature",
+      "-language:higherKinds",
    //   "-Xlog-implicits",
       "-language:existentials"
     ),

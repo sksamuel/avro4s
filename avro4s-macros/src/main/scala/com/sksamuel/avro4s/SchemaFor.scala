@@ -201,6 +201,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     *                if such a default applies to this field
     */
   private def buildField[B](label: String,
+                            namespace: String,
                             annos: Seq[Any],
                             schemaFor: SchemaFor[B],
                             default: Option[B],
@@ -210,8 +211,6 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     val doc = extractor.doc.orNull
     val aliases = extractor.aliases
     val props = extractor.props
-
-    val namespace = "todo.namespace"
 
     // the name could have been overriden with @AvroName, and then must be encoded with the naming strategy
     val name = extractor.name.fold(namingStrategy.to(label))(namingStrategy.to)
@@ -227,7 +226,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
     // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
     val schema = extractor.fixed.fold(schemaFor.schema) { size =>
-      SchemaBuilder.fixed(name).doc(doc).namespace(namespace).size(size)
+      SchemaBuilder.fixed(name).doc(doc).namespace(extractor.namespace.getOrElse(namespace)).size(size)
     }
 
     // for a union the type that has a default must be first
@@ -257,9 +256,9 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     val aliases = extractor.aliases
     val props = extractor.props
 
-    val resolution = Namer(klass.typeName, klass.annotations)
-    val namespace = resolution.namespace
-    val name = resolution.name
+    val namer = Namer(klass.typeName, klass.annotations)
+    val namespace = namer.namespace
+    val name = namer.name
 
     // if the class is a value type, then we need to use the schema for the single field inside the type
     // in other words, if we have `case class Foo(str:String)` then this just acts like a string
@@ -283,7 +282,7 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
     } else {
 
       val fields = klass.parameters.map { param =>
-        buildField(param.label, param.annotations, param.typeclass, param.default)
+        buildField(param.label, namespace, param.annotations, param.typeclass, param.default)
       }
 
       val record = Schema.createRecord(name, doc, namespace, false)

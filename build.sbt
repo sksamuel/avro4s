@@ -8,7 +8,7 @@ publish := {}
 val `avro4s-macros` = project.in(file("avro4s-macros"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.propensive" %% "magnolia" % "0.10.0",
+      "com.softwaremill" %% "magnolia" % "0.11.0-sml",
       "com.chuusai" %% "shapeless" % ShapelessVersion
     )
   )

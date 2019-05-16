@@ -3,6 +3,8 @@ package com.sksamuel.avro4s.github
 import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.language.higherKinds
+
 sealed trait InnerTrait
 case class InnerTraitConcrete(v: Int) extends InnerTrait
 case class InnerTraitConcrete2(v: Int) extends InnerTrait

@@ -20,7 +20,10 @@ case class Namer(typeName: TypeName, annos: Seq[Any]) {
 
   // the name of the scala class with type parameters encoded,
   // Eg, List[Int] would be `List__Int`
-  private val genericName = typeName.short
+  private val genericName = {
+    val targs = typeName.typeArguments.map(_.short).mkString("_")
+    typeName + "__" + targs
+  }
 
   /**
     * Returns the full record name (namespace + name) for use in an Avro
