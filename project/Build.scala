@@ -35,7 +35,7 @@ object Build extends AutoPlugin {
       "utf8",
       "-Xfatal-warnings",
       "-feature",
-      "-Xlog-implicits",
+   //   "-Xlog-implicits",
       "-language:existentials"
     ),
     javacOptions := Seq("-source", "1.8", "-target", "1.8"),
