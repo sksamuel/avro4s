@@ -65,7 +65,7 @@ object Build extends AutoPlugin {
           "Sonatype Nexus Repository Manager",
           "oss.sonatype.org",
           sys.env("OSSRH_USERNAME"),
-          sys.env("OSSRH_PASSWORD"),
+          sys.env("OSSRH_PASSWORD")
         )
         Some("snapshots" at s"${nexus}content/repositories/snapshots")
       } else {
