@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{Decoder, Encoder, RecordFormat, SchemaFor}
+import com.sksamuel.avro4s.{Decoder, Encoder, SchemaFor}
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.Schema
 import org.scalatest.{FunSuite, Matchers}
@@ -14,12 +14,18 @@ class Github273 extends FunSuite with Matchers {
     implicitly[SchemaFor[Coproducts]].schema
     implicitly[SchemaFor[CoproductOfCoproductsField]].schema
     implicitly[SchemaFor[SealedTraitOfSealedTrait]].schema
+    implicitly[SchemaFor[DeeplyNested]].schema
+    implicitly[SchemaFor[MixedClassesAndObjects]].schema
     implicitly[Encoder[Coproducts]]
     implicitly[Encoder[CoproductOfCoproductsField]]
     implicitly[Encoder[SealedTraitOfSealedTrait]]
+    implicitly[Encoder[DeeplyNested]]
+    implicitly[Encoder[MixedClassesAndObjects]]
     implicitly[Decoder[Coproducts]]
     implicitly[Decoder[CoproductOfCoproductsField]]
     implicitly[Decoder[SealedTraitOfSealedTrait]]
+    implicitly[Decoder[MixedClassesAndObjects]]
+    implicitly[Decoder[DeeplyNested]]
   }
 
 }
@@ -42,4 +48,36 @@ object Github273 {
     }
   }
 
+  sealed trait MixedClassesAndObjects
+
+  object MixedClassesAndObjects {
+    final case object CaseObject
+      extends MixedClassesAndObjects
+
+    final case class CaseClass(x: Int)
+      extends MixedClassesAndObjects
+
+    final case class CaseClassEmptyParams()
+      extends MixedClassesAndObjects
+  }
+
+  sealed trait DeeplyNested
+
+  object DeeplyNested {
+    final case class One(x: Int, y: One.Nested)
+      extends DeeplyNested
+
+    object One {
+      sealed trait Nested
+
+      object Nested {
+        //final case class CaseObject()
+          //extends Nested
+        final case class CaseClass(x: Int)
+          extends Nested
+      }
+    }
+  }
+
 }
+

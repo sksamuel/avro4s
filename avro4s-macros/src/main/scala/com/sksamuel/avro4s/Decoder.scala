@@ -340,16 +340,9 @@ object Decoder extends CoproductDecoders with TupleDecoders {
       } else {
 
         // the companion object where the apply construction method is located
-        // without this we cannot instantiate the case class
+        // This equals NoSymbol if we are looking at case objects
         // we also need this to extract default values
         val companion = tpe.typeSymbol.companion
-
-        if (companion == NoSymbol) {
-          val error = s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a top level scope."
-          Console.err.println(error)
-          c.error(c.enclosingPosition.pos, error)
-          sys.error(error)
-        }
 
         val decoders = reflect.constructorParameters(tpe).map { case (_, fieldTpe) =>
           if (reflect.isMacroGenerated(fieldTpe)) {
@@ -392,21 +385,27 @@ object Decoder extends CoproductDecoders with TupleDecoders {
           }
         }
 
-        c.Expr[Decoder[T]](
-          q"""
-          new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
-            private[this] val decoders = Array(..$decoders)
+        def decoder(t: Tree) =
+          c.Expr[Decoder[T]](
+            q"""
+            new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
+              private[this] val decoders = Array(..$decoders)
 
-            override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
-              val fullName = $fullName
-              value match {
-                case record: _root_.org.apache.avro.generic.GenericRecord => $companion.apply(..$fields)
-                case _ => sys.error("This decoder decodes GenericRecord => " + fullName + " but has been invoked with " + value)
+              override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
+                val fullName = $fullName
+                value match {
+                  case record: _root_.org.apache.avro.generic.GenericRecord => $t
+                  case _ => sys.error("This decoder decodes GenericRecord => " + fullName + " but has been invoked with " + value)
+                }
               }
             }
-          }
-          """
-        )
+            """
+          )
+
+        if(fields.isEmpty && companion == NoSymbol)
+          decoder(q"${tpe.termSymbol}")
+        else
+          decoder(q"$companion.apply(..$fields)")
       }
     }
   }
