@@ -1,8 +1,6 @@
 import com.typesafe.sbt.SbtPgp
-import com.typesafe.sbt.pgp.PgpKeys
 import sbt.Keys._
 import sbt._
-import sbtrelease.ReleasePlugin
 
 /** Adds common settings automatically to all subprojects */
 object Build extends AutoPlugin {
@@ -24,7 +22,6 @@ object Build extends AutoPlugin {
   def isTravis = System.getenv("TRAVIS") == "true"
   def travisBuildNumber = System.getenv("TRAVIS_BUILD_NUMBER")
 
-  override def requires = ReleasePlugin
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
@@ -59,22 +56,26 @@ object Build extends AutoPlugin {
     publishArtifact in Test := false,
     SbtPgp.autoImport.useGpg := true,
     SbtPgp.autoImport.useGpgAgent := true,
-    sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-    sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
+    if (isTravis) {
+      credentials += Credentials(
+        "Sonatype Nexus Repository Manager",
+        "oss.sonatype.org",
+        sys.env("OSSRH_USERNAME"),
+        sys.env("OSSRH_PASSWORD")
+      )
+    } else {
+      credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+    },
+    if (isTravis) {
+      version := s"3.0.0.$travisBuildNumber-SNAPSHOT"
+    } else {
+      version := "3.0.0"
+    },
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
       if (isTravis) {
-        credentials += Credentials(
-          "Sonatype Nexus Repository Manager",
-          "oss.sonatype.org",
-          sys.env("OSSRH_USERNAME"),
-          sys.env("OSSRH_PASSWORD")
-        )
-        version := s"3.0.0.$travisBuildNumber-SNAPSHOT,"
         Some("snapshots" at s"${nexus}content/repositories/snapshots")
       } else {
-        credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
-        version := "3.0.0"
         Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
       }
     },
