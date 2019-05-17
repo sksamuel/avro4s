@@ -61,8 +61,15 @@ object Build extends AutoPlugin {
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
       if (isSnapshot.value) {
+        credentials += Credentials(
+          "Sonatype Nexus Repository Manager",
+          "oss.sonatype.org",
+          sys.env("OSSRH_USERNAME"),
+          sys.env("OSSRH_PASSWORD"),
+        )
         Some("snapshots" at s"${nexus}content/repositories/snapshots")
       } else {
+        credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
         Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
       }
     },

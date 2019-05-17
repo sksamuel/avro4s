@@ -11,3 +11,4 @@ script:
 jdk:
 - oraclejdk8
 
+after_success: "./snapshot_deploy.sh"
