@@ -24,15 +24,11 @@ class OptionDecoderTest extends WordSpec with Matchers {
       Decoder[OptionString].decode(record2, schema) shouldBe OptionString(None)
     }
     "support decoding required fields as Option" in {
-      val schema = AvroSchema[RequiredString]
+      val requiredStringSchema = AvroSchema[RequiredString]
 
-      val record1 = new GenericData.Record(schema)
-      record1.put("s", "hello")
-      Decoder[OptionString].decode(record1, schema) shouldBe OptionString(Some("hello"))
-
-      val record2 = new GenericData.Record(schema)
-      record2.put("s", null)
-      Decoder[OptionString].decode(record2, schema) shouldBe OptionString(None)
+      val requiredStringRecord = new GenericData.Record(requiredStringSchema)
+      requiredStringRecord.put("s", "hello")
+      Decoder[OptionString].decode(requiredStringRecord, requiredStringSchema) shouldBe OptionString(Some("hello"))
     }
     "support boolean options" in {
       val schema = AvroSchema[OptionBoolean]
