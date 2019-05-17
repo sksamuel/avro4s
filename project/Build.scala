@@ -21,6 +21,9 @@ object Build extends AutoPlugin {
 
   import autoImport._
 
+  def isTravis = System.getenv("TRAVIS") == "true"
+  def travisBuildNumber = System.getenv("TRAVIS_BUILD_NUMBER")
+
   override def requires = ReleasePlugin
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
@@ -60,16 +63,18 @@ object Build extends AutoPlugin {
     sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value) {
+      if (isSnapshot.value || isTravis) {
         credentials += Credentials(
           "Sonatype Nexus Repository Manager",
           "oss.sonatype.org",
           sys.env("OSSRH_USERNAME"),
           sys.env("OSSRH_PASSWORD")
         )
+        version := s"3.0.0.$travisBuildNumber-SNAPSHOT,"
         Some("snapshots" at s"${nexus}content/repositories/snapshots")
       } else {
         credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+        version := "3.0.0"
         Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
       }
     },
