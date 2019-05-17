@@ -26,7 +26,7 @@ object Build extends AutoPlugin {
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq(ScalaVersion, "2.11.12", "2.13.0-M5"),
+    crossScalaVersions := Seq(ScalaVersion, "2.11.12"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(
