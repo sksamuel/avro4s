@@ -63,7 +63,7 @@ object Build extends AutoPlugin {
     sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value || isTravis) {
+      if (isTravis) {
         credentials += Credentials(
           "Sonatype Nexus Repository Manager",
           "oss.sonatype.org",
