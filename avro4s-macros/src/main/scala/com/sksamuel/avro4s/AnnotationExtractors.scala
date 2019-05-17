@@ -15,11 +15,11 @@ class AnnotationExtractors(annos: Seq[Any]) {
 
   private def exists[T: Manifest]: Boolean = annos.exists { a => manifest.runtimeClass.isAssignableFrom(a.getClass) }
 
-  def namespace: Option[String] = findFirst[AvroNamespaceable].map(_.namespace)
+  def namespace: Option[String] = findFirst[AvroNamespaceable].map(_.namespace).filterNot(_.trim.isEmpty)
   def doc: Option[String] = findFirst[AvroDocumentable].map(_.doc)
-  def aliases: Seq[String] = findAll[AvroAliasable].map(_.alias)
+  def aliases: Seq[String] = findAll[AvroAliasable].map(_.alias).filterNot(_.trim.isEmpty)
   def fixed: Option[Int] = findFirst[AvroFixable].map(_.size)
-  def name: Option[String] = findFirst[AvroNameable].map(_.name)
+  def name: Option[String] = findFirst[AvroNameable].map(_.name).filterNot(_.trim.isEmpty)
 
   def props: Map[String, String] = findAll[AvroProperty].map { prop =>
     prop.key -> prop.value

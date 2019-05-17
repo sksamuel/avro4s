@@ -7,16 +7,14 @@ import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
-import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord, IndexedRecord}
+import org.apache.avro.generic.{GenericContainer, GenericData, GenericFixed, GenericRecord, IndexedRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, JsonProperties, Schema}
-import shapeless.ops.coproduct.Reify
-import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList}
 
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
+import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe._
 
 /**
@@ -241,10 +239,21 @@ object Decoder extends TupleDecoders {
   }
 
   implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
-    private[this] val safeFromA: SafeFrom[A] = makeSafeFrom[A]
-    private[this] val safeFromB: SafeFrom[B] = makeSafeFrom[B]
+
+    private[this] val safeFromA: SafeFrom[A] = SafeFrom.makeSafeFrom[A]
+    private[this] val safeFromB: SafeFrom[B] = SafeFrom.makeSafeFrom[B]
+
+    private val nameA = NameResolution(implicitly[WeakTypeTag[A]].tpe).fullName
+    private val nameB = NameResolution(implicitly[WeakTypeTag[B]].tpe).fullName
 
     override def decode(value: Any, schema: Schema): Either[A, B] = {
+
+      // do we have a type of A or a type of B?
+      //   value match {
+      //     case container: GenericContainer if container.getSchema.getFullName == nameA => Left(implicitly[Decoder[A]].decode(value, schema))
+      //     case container: GenericContainer if container.getSchema.getFullName == nameB => Right(implicitly[Decoder[B]].decode(value, schema))
+      //   }
+
       safeFromA.safeFrom(value, schema).map(Left[A, B])
         .orElse(safeFromB.safeFrom(value, schema).map(Right[A, B]))
         .getOrElse {
@@ -417,7 +426,7 @@ object Decoder extends TupleDecoders {
                 param.typeclass.decode(value, schema.getFields.get(param.index).schema())
               }
               klass.rawConstruct(values)
-            case _ => sys.error("This decoder can only handle types of IndexedRecord or it's subtypes such as GenericRecord")
+            case _ => sys.error(s"This decoder can only handle types of IndexedRecord or it's subtypes such as GenericRecord [was ${value.getClass}]")
           }
         }
       }
@@ -447,6 +456,47 @@ object Decoder extends TupleDecoders {
   }
 
   def dispatch[T](ctx: SealedTrait[Typeclass, T]): Decoder[T] = new Decoder[T] {
-    override def decode(value: Any, schema: Schema): T = ???
+    override def decode(container: Any, schema: Schema): T = {
+      schema.getType match {
+        // with a record we already have the schema for the container, we don't need to do anything
+        // this is how top level ADTs are encoded
+        case Schema.Type.RECORD =>
+          container match {
+            case container: GenericContainer =>
+              val subtype = ctx.subtypes.find { subtype => Namer(subtype.typeName, subtype.annotations).fullName == container.getSchema.getFullName }
+                .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
+              subtype.typeclass.decode(container, schema)
+            case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
+          }
+        // we have a union for nested ADTs and must extract the appropriate schema
+        case Schema.Type.UNION =>
+          container match {
+            case container: GenericContainer =>
+              val subschema = schema.getTypes.asScala.find(_.getFullName == container.getSchema.getFullName)
+                .getOrElse(sys.error(s"Could not find schema for ${container.getSchema.getFullName} in union schema $schema"))
+              val subtype = ctx.subtypes.find { subtype => Namer(subtype.typeName, subtype.annotations).fullName == container.getSchema.getFullName }
+                .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
+              subtype.typeclass.decode(container, subschema)
+            case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
+          }
+        // case objects are encoded as enums
+        // we need to take the string and create the object
+        case Schema.Type.ENUM =>
+          container match {
+            case enum: GenericData.EnumSymbol =>
+              ctx.subtypes.find { subtype => Namer(subtype).name == enum.getSchema.getFullName }
+                .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
+                .typeclass.decode(enum, enum.getSchema)
+            case str: String =>
+              val subtype = ctx.subtypes.find { subtype => Namer(subtype).name == str }
+                .getOrElse(sys.error(s"Could not find subtype for enum $str"))
+              val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
+              val module = runtimeMirror.staticModule(subtype.typeName.full)
+              val companion = runtimeMirror.reflectModule(module.asModule)
+              companion.instance.asInstanceOf[T]
+          }
+        case other => sys.error(s"Unsupported sealed trait schema type $other")
+      }
+    }
   }
 }

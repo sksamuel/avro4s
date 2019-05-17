@@ -10,8 +10,8 @@
         "name": "Tea",
         "namespace": "wobble",
         "symbols": [
-          "Assam",
           "EarlGrey",
+          "Assam",
           "EnglishBreakfast"
         ]
       }

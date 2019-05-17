@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import magnolia.TypeName
+import magnolia.{Subtype, TypeName}
 
 import scala.reflect.macros.whitebox
 
@@ -65,6 +65,10 @@ case class Namer(typeName: TypeName, annos: Seq[Any]) {
       extractor.name.getOrElse(genericName)
     }
   }
+}
+
+object Namer {
+  def apply[F[_], T](subtype: Subtype[F, T]): Namer = Namer(subtype.typeName, subtype.annotations)
 }
 
 /**
