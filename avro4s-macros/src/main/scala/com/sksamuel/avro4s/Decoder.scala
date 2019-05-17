@@ -420,20 +420,23 @@ object Decoder extends TupleDecoders {
         override def decode(value: Any, schema: Schema): T = {
           value match {
             case record: IndexedRecord =>
-              val values = klass.parameters.map { param =>
+              val values = klass.parameters.map { p =>
+
+                // take into account @AvroName
+                val name = new AnnotationExtractors(p.annotations).name.getOrElse(p.label)
 
                 // does the schema contain this parameter? If not, we will be relying on defaults or options
-                val field = record.getSchema.getField(param.label)
+                val field = record.getSchema.getField(name)
                 if (field == null) {
-                  param.default match {
+                  p.default match {
                     case Some(default) => default
-                    case None => param.typeclass.decode(null, schema)
+                    case None => p.typeclass.decode(null, schema)
                   }
               //    param.default.getOrElse(sys.error(s"Record does not have field ${param.label} and the class does not define a default"))
                 } else {
                   val k = record.getSchema.getFields.indexOf(field)
                   val value = record.get(k)
-                  param.typeclass.decode(value, schema.getFields.get(param.index).schema())
+                  p.typeclass.decode(value, schema.getFields.get(p.index).schema())
                 }
               }
 
