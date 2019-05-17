@@ -211,7 +211,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     override def decode(value: Any, schema: Schema): Seq[T] = value match {
       case array: Array[_] => array.toSeq.map(decoder.decode(_, schema.getElementType))
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType)).toSeq
-      case other => sys.error("Unsupported array " + other)
+      case other => sys.error("Unsupported array " + other.toString)
     }
   }
 
@@ -221,7 +221,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
 
     override def decode(value: Any, schema: Schema): Map[String, T] = value match {
       case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> valueDecoder.decode(v, schema.getValueType) }
-      case other => sys.error("Unsupported map " + other)
+      case other => sys.error("Unsupported map " + other.toString)
     }
   }
 
@@ -395,7 +395,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
                 val fullName = $fullName
                 value match {
                   case record: _root_.org.apache.avro.generic.GenericRecord => $t
-                  case _ => sys.error("This decoder decodes GenericRecord => " + fullName + " but has been invoked with " + value)
+                  case _ => sys.error("This decoder decodes GenericRecord => " + fullName + " but has been invoked with " + value.toString)
                 }
               }
             }
