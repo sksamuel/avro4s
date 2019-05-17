@@ -248,14 +248,13 @@ object Decoder extends TupleDecoders {
 
     override def decode(value: Any, schema: Schema): Either[A, B] = {
 
-      // do we have a type of A or a type of B?
-      //   value match {
-      //     case container: GenericContainer if container.getSchema.getFullName == nameA => Left(implicitly[Decoder[A]].decode(value, schema))
-      //     case container: GenericContainer if container.getSchema.getFullName == nameB => Right(implicitly[Decoder[B]].decode(value, schema))
-      //   }
+      // eithers must be a union
+      require(schema.getType == Schema.Type.UNION)
 
-      safeFromA.safeFrom(value, schema).map(Left[A, B])
-        .orElse(safeFromB.safeFrom(value, schema).map(Right[A, B]))
+      // do we have a type of A or a type of B?
+      // we need to extract the schema from the union
+      safeFromA.safeFrom(value, schema.getTypes.get(0)).map(Left[A, B])
+        .orElse(safeFromB.safeFrom(value, schema.getTypes.get(1)).map(Right[A, B]))
         .getOrElse {
           val aName = NameResolution(implicitly[WeakTypeTag[A]].tpe)
           val bName = NameResolution(implicitly[WeakTypeTag[B]].tpe)
@@ -422,10 +421,24 @@ object Decoder extends TupleDecoders {
           value match {
             case record: IndexedRecord =>
               val values = klass.parameters.map { param =>
-                val value = record.get(param.index)
-                param.typeclass.decode(value, schema.getFields.get(param.index).schema())
+
+                // does the schema contain this parameter? If not, we will be relying on defaults or options
+                val field = record.getSchema.getField(param.label)
+                if (field == null) {
+                  param.default match {
+                    case Some(default) => default
+                    case None => param.typeclass.decode(null, schema)
+                  }
+              //    param.default.getOrElse(sys.error(s"Record does not have field ${param.label} and the class does not define a default"))
+                } else {
+                  val k = record.getSchema.getFields.indexOf(field)
+                  val value = record.get(k)
+                  param.typeclass.decode(value, schema.getFields.get(param.index).schema())
+                }
               }
+
               klass.rawConstruct(values)
+
             case _ => sys.error(s"This decoder can only handle types of IndexedRecord or it's subtypes such as GenericRecord [was ${value.getClass}]")
           }
         }

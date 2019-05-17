@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchema, ScalePrecisionRoundingMode, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, NamingStrategy, ScalePrecisionRoundingMode, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{Matchers, WordSpec}
 
@@ -50,7 +50,7 @@ class BigDecimalSchemaTest extends WordSpec with Matchers {
     "allow big decimals to be encoded as strings when custom typeclasses are provided" in {
 
       implicit object BigDecimalAsString extends SchemaFor[BigDecimal] {
-        override def schema: Schema = SchemaBuilder.builder().stringType()
+        override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().stringType()
       }
 
       case class BigDecimalAsStringTest(decimal: BigDecimal)
@@ -61,7 +61,7 @@ class BigDecimalSchemaTest extends WordSpec with Matchers {
     "allow big decimals to be encoded as FIXED when custom typeclasses are provided" in {
 
       implicit object BigDecimalAsFixedSchemaFor extends SchemaFor[BigDecimal] {
-        override def schema: Schema = Schema.createFixed("bigdecimal", null, null, 55)
+        override def schema(implicit namingStrategy: NamingStrategy) = Schema.createFixed("bigdecimal", null, null, 55)
       }
 
       case class BigDecimalAsFixedTest(decimal: BigDecimal)

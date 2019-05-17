@@ -98,7 +98,9 @@ object SafeFrom {
       }
     } else {
       new SafeFrom[T] {
-        private[this] val typeName: String = NameResolution(tpe).fullName
+
+        private val namer = NameResolution(tpe)
+        private val typeName = namer.fullName
 
         override def safeFrom(value: Any, schema: Schema): Option[T] = {
           value match {

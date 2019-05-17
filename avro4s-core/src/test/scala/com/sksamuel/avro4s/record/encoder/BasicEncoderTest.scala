@@ -1,8 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord, NamingStrategy, SchemaFor}
 import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
-import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
@@ -20,7 +19,7 @@ class BasicEncoderTest extends WordSpec with Matchers {
     "encode strings as GenericData.Fixed when schema is fixed" in {
       case class Foo(s: String)
       implicit object StringFixedSchemaFor extends SchemaFor[String] {
-        override def schema: Schema = Schema.createFixed("FixedString", null, null, 123)
+        override def schema(implicit namingStrategy: NamingStrategy) = Schema.createFixed("FixedString", null, null, 123)
       }
       val schema = AvroSchema[Foo]
       val record = Encoder[Foo].encode(Foo("hello"), schema).asInstanceOf[GenericRecord]

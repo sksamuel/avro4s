@@ -17,6 +17,7 @@ class SchemaEvolutionTest extends FunSuite with Matchers {
   case class P2(name: String)
 
   case class OptionalStringTest(a: String, b: Option[String])
+  case class DefaultStringTest(a: String, b: String = "foo")
 
   ignore("@AvroAlias should be used when a reader schema has a field missing from the write schema") {
 
@@ -44,10 +45,18 @@ class SchemaEvolutionTest extends FunSuite with Matchers {
   }
 
   test("when decoding, if the record is missing a field that is present in the schema with a default, use the default from the schema") {
-    val writerSchema = SchemaBuilder.record("foo").fields().requiredString("a").endRecord()
-    val readerSchema = SchemaBuilder.record("foo").fields().requiredString("a").optionalString("b").endRecord()
-    val record = new GenericData.Record(writerSchema)
+    val schema1 = SchemaBuilder.record("foo").fields().requiredString("a").endRecord()
+    val schema2 = SchemaBuilder.record("foo").fields().requiredString("a").optionalString("b").endRecord()
+    val record = new GenericData.Record(schema1)
     record.put("a", new Utf8("hello"))
-    Decoder[OptionalStringTest].decode(record, readerSchema) shouldBe OptionalStringTest("hello", None)
+    Decoder[DefaultStringTest].decode(record, schema2) shouldBe DefaultStringTest("hello")
+  }
+
+  test("when decoding, if the record is missing a field that is present in the schema and the type is option, then set to None") {
+    val schema1 = SchemaBuilder.record("foo").fields().requiredString("a").endRecord()
+    val schema2 = SchemaBuilder.record("foo").fields().requiredString("a").optionalString("b").endRecord()
+    val record = new GenericData.Record(schema1)
+    record.put("a", new Utf8("hello"))
+    Decoder[OptionalStringTest].decode(record, schema2) shouldBe OptionalStringTest("hello", None)
   }
 }

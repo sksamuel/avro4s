@@ -86,7 +86,7 @@ case class NameResolution(erasedName: String,
                           defaultNamespace: String,
                           annos: Seq[Anno]) {
 
-  private val extractor = new AnnotationExtractors(annos)
+  private val extractor = new AnnotationExtractors2(annos)
 
   /**
     * Returns the full record name (namespace + name) for use in an Avro
