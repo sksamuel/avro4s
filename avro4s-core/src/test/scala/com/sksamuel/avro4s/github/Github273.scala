@@ -32,6 +32,7 @@ class Github273 extends FunSuite with Matchers {
 
 object Github273 {
   case class Coproducts(cp: Int :+: String :+: Boolean :+: CNil)
+  @SuppressWarnings(Array())
   case class CoproductOfCoproductsField(cp: Coproducts :+: Boolean :+: CNil)
 
   sealed trait SealedTraitOfSealedTrait
@@ -78,6 +79,4 @@ object Github273 {
       }
     }
   }
-
 }
-

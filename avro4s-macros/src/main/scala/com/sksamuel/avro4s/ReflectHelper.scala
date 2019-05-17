@@ -5,6 +5,7 @@ import scala.reflect.macros.whitebox
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe
 import scala.tools.reflect.ToolBox
+import scala.util.{Try => ScalaTry}
 
 class ReflectHelper[C <: whitebox.Context](val c: C) {
   import c.universe
@@ -141,27 +142,29 @@ class ReflectHelper[C <: whitebox.Context](val c: C) {
     * Returns all the annotations of the given symbol by encoding them
     * as instances of [Anno].
     */
-  def annotationsqq(sym: Symbol): List[c.universe.Tree] = sym.annotations.map { a =>
+  def annotationsqq(sym: Symbol): List[c.universe.Tree] =
+    annotationsHelper(sym).map {
+      case (name, args) =>
+      q"_root_.com.sksamuel.avro4s.Anno($name, $args)"
+    }
+
+  def annotations(sym: Symbol): List[Anno] =
+    annotationsHelper(sym).map(Anno.tupled)
+
+  //extract relevant annotation (name, args) tuples
+  private def annotationsHelper(sym: Symbol): List[(String, Map[String,String])] = sym.annotations.map { a =>
     val name = a.tree.tpe.typeSymbol.fullName
     val tb = currentMirror.mkToolBox()
 
-    val args = tb.compile(tb.parse(a.toString)).apply() match {
-      case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
-      case _ => Map.empty[String, String]
-    }
-    q"_root_.com.sksamuel.avro4s.Anno($name, $args)"
+    val args = ScalaTry(tb.compile(tb.parse(a.toString)).apply())
+      .toOption
+      .collect {
+        case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
+      }
+      .getOrElse(Map.empty[String, String])
+    (name, args)
   }
 
-  def annotations(sym: Symbol): List[Anno] = sym.annotations.map { a =>
-    val name = a.tree.tpe.typeSymbol.fullName
-    val tb = currentMirror.mkToolBox()
-
-    val args = tb.compile(tb.parse(a.toString)).apply() match {
-      case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
-      case _ => Map.empty[String, String]
-    }
-    Anno(name, args)
-  }
 
   def defaultNamespace(sym: c.universe.Symbol): String = sym.fullName.split('.').dropRight(1).mkString(".")
 }
