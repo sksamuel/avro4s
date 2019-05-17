@@ -2,8 +2,20 @@
 
 // The root project is implicit, so we don't have to define it.
 // We do need to prevent publishing for it, though:
-publishArtifact := false
-publish := {}
+
+lazy val root = Project("avro4s", file("."))
+  .settings(
+    publish := {},
+    publishArtifact := false,
+    name := "avro4s"
+  )
+  .aggregate(
+    `avro4s-macros`,
+    `avro4s-core`,
+    `avro4s-json`,
+    `avro4s-cats`,
+    `avro4s-kafka`
+  )
 
 val `avro4s-macros` = project.in(file("avro4s-macros"))
   .settings(
