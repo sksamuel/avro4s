@@ -184,14 +184,21 @@ object ReflectHelper {
     .head
     .fullName
 
-  def annotations(sym: Symbol): List[Anno] = sym.annotations.map { a =>
+  def annotations(sym: Symbol): List[Anno] =
+    annotationsHelper(sym).map(Anno.tupled)
+
+  //extract relevant annotation (name, args) tuples
+  private def annotationsHelper(sym: Symbol): List[(String, Map[String,String])] = sym.annotations.map { a =>
     val name = a.tree.tpe.typeSymbol.fullName
     val tb = currentMirror.mkToolBox()
-    val args = tb.compile(tb.parse(a.toString)).apply() match {
-      case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
-      case _ => Map.empty[String, String]
-    }
-    Anno(name, args)
+
+    val args = ScalaTry(tb.compile(tb.parse(a.toString)).apply())
+      .toOption
+      .collect {
+        case c: AvroFieldReflection => c.getAllFields.map{case (k,v) => (k,v.toString)}
+      }
+      .getOrElse(Map.empty[String, String])
+    (name, args)
   }
 
   def defaultNamespace(sym: universe.Symbol): String = sym.fullName.split('.').dropRight(1).mkString(".")
