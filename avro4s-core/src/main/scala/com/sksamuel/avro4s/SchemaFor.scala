@@ -8,7 +8,7 @@ import java.util.UUID
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import org.codehaus.jackson.node.TextNode
-import sun.jvm.hotspot.code.ObjectValue
+import shapeless.{:+:, CNil, Coproduct, Generic}
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
@@ -400,26 +400,26 @@ object SchemaFor {
   // Shapeless's implementation builds up the type recursively,
   // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
   // so here we define the schema for the base case of the recursion, C :+: CNil
-  //  implicit def coproductBaseSchema[S](implicit basefor: SchemaFor[S]): SchemaFor[S :+: CNil] = new SchemaFor[S :+: CNil] {
-  //
-  //    import scala.collection.JavaConverters._
-  //
-  //    val base = basefor.schema
-  //    val schemas = scala.util.Try(base.getTypes.asScala).getOrElse(Seq(base))
-  //    override def schema(implicit namingStrategy: NamingStrategy) = Schema.createUnion(schemas.asJava)
-  //  }
-  //
-  //  // And here we continue the recursion up.
-  //  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: SchemaFor[S], coproductFor: SchemaFor[T]): SchemaFor[S :+: T] = new SchemaFor[S :+: T] {
-  //    val base = basefor.schema
-  //    val coproduct = coproductFor.schema
-  //    override def schema(implicit namingStrategy: NamingStrategy) = SchemaHelper.createSafeUnion(base, coproduct)
-  //  }
+  implicit def coproductBaseSchema[S](implicit basefor: SchemaFor[S]): SchemaFor[S :+: CNil] = new SchemaFor[S :+: CNil] {
 
-  //  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-  //                                               coproductFor: SchemaFor[C]): SchemaFor[T] = new SchemaFor[T] {
-  //    override def schema: Schema = coproductFor.schema
-  //  }
+    import scala.collection.JavaConverters._
+
+    val base = basefor.schema
+    val schemas = scala.util.Try(base.getTypes.asScala).getOrElse(Seq(base))
+    override def schema(implicit namingStrategy: NamingStrategy) = Schema.createUnion(schemas.asJava)
+  }
+
+  // And here we continue the recursion up.
+  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: SchemaFor[S], coproductFor: SchemaFor[T]): SchemaFor[S :+: T] = new SchemaFor[S :+: T] {
+    val base = basefor.schema
+    val coproduct = coproductFor.schema
+    override def schema(implicit namingStrategy: NamingStrategy) = SchemaHelper.createSafeUnion(base, coproduct)
+  }
+
+  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+                                               coproductFor: SchemaFor[C]): SchemaFor[T] = new SchemaFor[T] {
+    override def schema(implicit namingStrategy: NamingStrategy) = coproductFor.schema
+  }
 
   implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = new SchemaFor[(A, B)] {
     override def schema(implicit namingStrategy: NamingStrategy): Schema =

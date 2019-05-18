@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, Encoder}
 import org.scalatest.{FunSuite, Matchers}
 
 case class B(b: Map[String, String])
