@@ -239,13 +239,16 @@ object Decoder {
     }
   }
 
-  implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
+  implicit def eitherDecoder[A: WeakTypeTag : Decoder : Manifest, B: WeakTypeTag : Decoder : Manifest]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
 
     private[this] val safeFromA: SafeFrom[A] = SafeFrom.makeSafeFrom[A]
     private[this] val safeFromB: SafeFrom[B] = SafeFrom.makeSafeFrom[B]
 
-    private val nameA = Namer(implicitly[WeakTypeTag[A]].tpe).fullName
-    private val nameB = Namer(implicitly[WeakTypeTag[B]].tpe).fullName
+//    private val nameA = Namer(implicitly[WeakTypeTag[A]].tpe).fullName
+//    private val nameB = Namer(implicitly[WeakTypeTag[B]].tpe).fullName
+
+    private val nameA = Namer(implicitly[Manifest[A]].runtimeClass).fullName
+    private val nameB = Namer(implicitly[Manifest[B]].runtimeClass).fullName
 
     override def decode(value: Any, schema: Schema): Either[A, B] = {
 
@@ -254,8 +257,8 @@ object Decoder {
 
       // do we have a type of A or a type of B?
       // we need to extract the schema from the union
-      safeFromA.safeFrom(value, schema.getTypes.get(0)).map(Left[A, B])
-        .orElse(safeFromB.safeFrom(value, schema.getTypes.get(1)).map(Right[A, B]))
+      safeFromA.safeFrom(value, schema).map(Left[A, B])
+        .orElse(safeFromB.safeFrom(value, schema).map(Right[A, B]))
         .getOrElse {
           sys.error(s"Could not decode $value into Either[$nameB, $nameB]")
         }
@@ -282,72 +285,6 @@ object Decoder {
       enum.withName(t.toString).asInstanceOf[E]
     }
   }
-
-  //  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit gen: Generic.Aux[T, C],
-  //                                                                     objs: Reify.Aux[C, L],
-  //                                                                     toList: ToList[L, T]): Decoder[T] = new Decoder[T] {
-  //    override def decode(value: Any, schema: Schema): T = {
-  //      val name = value.toString
-  //      val variants = toList(objs())
-  //      variants.find(v => {
-  //        getTypeName(v.getClass) == name
-  //      }).getOrElse(sys.error(s"Unknown type $name"))
-  //    }
-  //
-  //    private def getTypeName[G](clazz: Class[G]): String = {
-  //      val mirror = runtimeMirror(clazz.getClassLoader)
-  //      val tpe = mirror.classSymbol(clazz).toType
-  //      AvroNameResolver.forClass(tpe).toString
-  //    }
-  //
-  //  }
-
-
-  //
-  //      } else {
-  //
-  //        val decoders = reflect.constructorParameters(tpe).map { case (_, fieldTpe) =>
-  //          if (reflect.isMacroGenerated(fieldTpe)) {
-  //            q"""implicitly[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]"""
-  //          } else {
-  //            q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]]"""
-  //          }
-  //        }
-  //
-  //        val fields = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
-  //
-  //          // this is the simple name of the field
-  //          val name = fieldSym.name.decodedName.toString
-  //
-  //          // the name we use to pull the value out of the record should take into
-  //          // account any @AvroName annotations. If @AvroName is not defined then we
-  //          // use the name of the field in the case class
-  //          val resolvedFieldName = new AnnotationExtractors(reflect.annotations(fieldSym)).name.getOrElse(name)
-  //
-  //          val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-  //          val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
-  //          val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
-  //
-  //          val transient = reflect.isTransientOnField(tpe, fieldSym)
-  //
-  //          // if the default is defined, we will use that to populate, otherwise if the field is transient
-  //          // we will populate with none or null, otherwise an error will be raised
-  //          if (defaultGetterMethod.isMethod) {
-  //            if (reflect.isMacroGenerated(fieldTpe)) {
-  //              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
-  //            } else {
-  //              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
-  //            }
-  //          } else {
-  //            if (reflect.isMacroGenerated(fieldTpe)) {
-  //              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
-  //            } else {
-  //              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
-  //            }
-  //          }
-  //        }
-  //    }
-  //  }
 
   /**
     * For a field in the target type (the case class we are marshalling to), we must
@@ -601,7 +538,7 @@ object Decoder {
   // rest of the coproduct type T.
 
   // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
-  implicit def coproductDecoder[S: WeakTypeTag : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
+  implicit def coproductDecoder[S: WeakTypeTag : Manifest : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
     private[this] val safeFromS = SafeFrom.makeSafeFrom[S]
     override def decode(value: Any, schema: Schema): S :+: T = {
       safeFromS.safeFrom(value, schema) match {

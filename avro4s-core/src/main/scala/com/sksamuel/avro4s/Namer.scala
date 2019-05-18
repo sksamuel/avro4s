@@ -2,8 +2,6 @@ package com.sksamuel.avro4s
 
 import magnolia.{Subtype, TypeName}
 
-import scala.reflect.runtime.universe
-
 /**
   * Extracts name and namespace from a TypeName.
   * Takes into consideration provided annotations.
@@ -70,13 +68,40 @@ object Namer {
   }
 
   def apply[A](clazz: Class[A]): Namer = {
+
+    import scala.reflect.runtime.universe
+
     val mirror = universe.runtimeMirror(clazz.getClassLoader)
     val sym = mirror.classSymbol(clazz)
     val tpe = sym.toType
-    Namer(TypeName(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, Nil), sym.annotations)
+
+    val typeName = TypeName(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, Nil)
+
+    import scala.reflect.runtime.universe._
+
+    val nameAnnotation = sym.typeSignature.typeSymbol.annotations.collectFirst {
+      case a if a.tree.tpe =:= typeOf[AvroName] =>
+        val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
+        annoValue.toString
+    }
+
+    val namespaceAnnnotation = sym.typeSignature.typeSymbol.annotations.collectFirst {
+      case a if a.tree.tpe =:= typeOf[AvroNamespace] =>
+        val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
+        annoValue.toString
+    }
+
+    val erased = sym.typeSignature.typeSymbol.annotations.exists {
+      case a if a.tree.tpe =:= typeOf[AvroErasedName] => true
+      case _ => false
+    }
+
+    Namer(typeName, nameAnnotation, namespaceAnnnotation, erased)
   }
 
-  def apply(tpe: universe.Type): Namer = {
-    Namer(TypeName(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, Nil), tpe.typeSymbol.annotations)
-  }
+  //  def apply(tpe: universe.Type): Namer = {
+  //    val annos = tpe.r
+  //    val typeName = TypeName(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, Nil)
+  //    Namer(typeName, annos)
+  //  }
 }

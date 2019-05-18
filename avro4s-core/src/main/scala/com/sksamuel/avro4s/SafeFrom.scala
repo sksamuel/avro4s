@@ -13,7 +13,7 @@ object SafeFrom {
 
   import scala.reflect.runtime.universe._
 
-  def makeSafeFrom[T: Decoder : WeakTypeTag]: SafeFrom[T] = {
+  def makeSafeFrom[T: Decoder : WeakTypeTag : Manifest]: SafeFrom[T] = {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
@@ -99,7 +99,7 @@ object SafeFrom {
     } else {
       new SafeFrom[T] {
 
-        private val namer = Namer(tpe)
+        private val namer = Namer(manifest.runtimeClass)
         private val typeName = namer.fullName
 
         override def safeFrom(value: Any, schema: Schema): Option[T] = {
