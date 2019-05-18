@@ -2,7 +2,6 @@ package com.sksamuel.avro4s
 
 import magnolia.{Subtype, TypeName}
 
-import scala.reflect.macros.whitebox
 import scala.reflect.runtime.universe
 
 /**
@@ -136,13 +135,6 @@ object NameResolution {
 
   import scala.reflect.runtime.universe
 
-  def apply[C <: whitebox.Context](c: C)(tpe: c.Type): NameResolution = NameResolution(
-    tpe.typeSymbol.name.decodedName.toString,
-    GenericNameEncoder(c)(tpe),
-    ReflectHelper(c).defaultNamespace(tpe.typeSymbol),
-    ReflectHelper(c).annotations(tpe.typeSymbol)
-  )
-
   def apply(tpe: universe.Type): NameResolution = NameResolution(
     tpe.typeSymbol.name.decodedName.toString,
     GenericNameEncoder(tpe),
@@ -150,9 +142,4 @@ object NameResolution {
     ReflectHelper.annotations(tpe.typeSymbol)
   )
 
-  def apply[A](clazz: Class[A]): NameResolution = {
-    val mirror = universe.runtimeMirror(clazz.getClassLoader)
-    val tpe = mirror.classSymbol(clazz).toType
-    NameResolution(tpe)
-  }
 }
