@@ -106,7 +106,7 @@ object SafeFrom {
           value match {
             case container: GenericContainer if typeName == container.getSchema.getFullName =>
               val s = schema.getType match {
-                case Schema.Type.RECORD => SchemaHelper.extractTraitSubschema(namer.fullName, schema)
+                case Schema.Type.UNION => SchemaHelper.extractTraitSubschema(namer.fullName, schema)
                 case _ => schema
               }
               Some(decoder.decode(value, s))
