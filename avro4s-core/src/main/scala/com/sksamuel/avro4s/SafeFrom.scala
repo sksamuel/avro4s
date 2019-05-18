@@ -105,8 +105,10 @@ object SafeFrom {
         override def safeFrom(value: Any, schema: Schema): Option[T] = {
           value match {
             case container: GenericContainer if typeName == container.getSchema.getFullName =>
-              require(schema.getType == Schema.Type.UNION)
-              val s = SchemaHelper.extractTraitSubschema(namer.fullName, schema)
+              val s = schema.getType match {
+                case Schema.Type.RECORD => SchemaHelper.extractTraitSubschema(namer.fullName, schema)
+                case _ => schema
+              }
               Some(decoder.decode(value, s))
             case _ => None
           }
