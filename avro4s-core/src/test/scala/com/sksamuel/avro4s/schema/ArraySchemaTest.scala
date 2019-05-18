@@ -81,7 +81,7 @@ class ArraySchemaTest extends WordSpec with Matchers {
       case class TupleTest2(first: String, second: Seq[(TupleTestA, TupleTestB)])
       case class TupleTestA(parameter: Int)
       case class TupleTestB(parameter: Int)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple2.json"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq_tuple2.json"))
       val schema = AvroSchema[TupleTest2]
       schema.toString(true) shouldBe expected.toString(true)
     }
@@ -90,7 +90,7 @@ class ArraySchemaTest extends WordSpec with Matchers {
       case class TupleTestA(parameter: Int)
       case class TupleTestB(parameter: Int)
       case class TupleTestC(parameter: Int)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple3.json"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seq_tuple3.json"))
       val schema = AvroSchema[TupleTest3]
       schema.toString(true) shouldBe expected.toString(true)
     }
@@ -138,10 +138,10 @@ class ArraySchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support case class of list of maps" in {
+    "support case class of seq of case class with maps" in {
       case class Ship(map: scala.collection.immutable.Map[String, String])
       case class Test(ship: List[scala.collection.immutable.Map[String, String]])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/class_with_list_of_maps.json"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/class_of_list_of_maps.json"))
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }

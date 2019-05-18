@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchema, SchemaFor}
-import org.apache.avro.{Schema, SchemaBuilder}
+import com.sksamuel.avro4s.{AvroSchema, NamingStrategy, SchemaFor}
+import org.apache.avro.SchemaBuilder
 import org.scalatest.{FunSuite, Matchers}
 
 class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
@@ -9,7 +9,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in SchemaFor implicit for a basic type") {
 
     implicit val StringSchemaFor = new SchemaFor[String] {
-      override def schema: Schema = {
+      override def schema(implicit namingStrategy: NamingStrategy) = {
         val schema = SchemaBuilder.builder().bytesType()
         schema.addProp("foo", "bar": AnyRef)
         schema
@@ -26,7 +26,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in SchemaFor implicit for a complex type") {
 
     implicit val FooSchemaFor = new SchemaFor[Foo] {
-      override def schema: Schema = {
+      override def schema(implicit namingStrategy: NamingStrategy) = {
         val schema = SchemaBuilder.builder().doubleType()
         schema.addProp("foo", "bar": AnyRef)
         schema
@@ -44,7 +44,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in SchemaFor implicit for a value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema: Schema = {
+      override def schema(implicit namingStrategy: NamingStrategy) = {
         val schema = SchemaBuilder.builder().intType()
         schema.addProp("foo", "bar": AnyRef)
         schema
@@ -61,7 +61,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in SchemaFor implicit for a top level value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema: Schema = {
+      override def schema(implicit namingStrategy: NamingStrategy) = {
         val schema = SchemaBuilder.builder().intType()
         schema.addProp("foo", "bar": AnyRef)
         schema

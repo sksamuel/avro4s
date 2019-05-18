@@ -50,7 +50,7 @@ class EitherDecoderTest extends FunSuite with Matchers {
     Decoder[Test3].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Woo], Vector(java.lang.Boolean.valueOf(true))))), schema) shouldBe Test3(Right(Woo(true)))
   }
 
-  test("use @AvroName when choosing which Either to decode") {
+  test("use @AvroName defined on a class when choosing which Either to decode") {
 
     val wschema = SchemaBuilder.record("w").namespace("com.sksamuel.avro4s.record.decoder.EitherDecoderTest").fields().requiredBoolean("s").endRecord()
     val tschema = SchemaBuilder.record("t").namespace("com.sksamuel.avro4s.record.decoder.EitherDecoderTest").fields().requiredString("b").endRecord()

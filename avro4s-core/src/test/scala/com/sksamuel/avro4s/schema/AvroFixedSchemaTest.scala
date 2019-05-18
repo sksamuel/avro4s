@@ -13,13 +13,13 @@ class AvroFixedSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
 
-    "generated fixed field schema when an annotated value type is used in a field" in {
+    "generated fixed schema when an annotated value type is used as the type in a field" in {
       val schema = AvroSchema[FooWithValue]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/fixed_string_value_type_as_field.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
 
-    "generate fixed schema for an annoated top level value type" in {
+    "generate fixed schema for an annotated top level value type" in {
       val schema = AvroSchema[FixedValueClass]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/fixed_string_top_level_value_type.json"))
       schema.toString(true) shouldBe expected.toString(true)

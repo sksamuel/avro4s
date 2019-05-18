@@ -1,0 +1,60 @@
+[
+  {
+    "type": "record",
+    "name": "Foo",
+    "namespace": "com.sksamuel.avro4s.github",
+    "fields": [
+      {
+        "name": "value",
+        "type": "string"
+      },
+      {
+        "name": "payload",
+        "type": {
+          "type": "record",
+          "name": "Payload__String",
+          "fields": [
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "Bar",
+    "namespace": "com.sksamuel.avro4s.github",
+    "fields": [
+      {
+        "name": "value",
+        "type": "int"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "Invert",
+    "namespace": "com.sksamuel.avro4s.github",
+    "fields": [
+      {
+        "name": "i",
+        "type": {
+          "type": "record",
+          "name": "InvertibleComplexWrapper",
+          "fields": [
+            {
+              "name": "unwrap",
+              "type": [
+                "Foo",
+                "Bar"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

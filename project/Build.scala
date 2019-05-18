@@ -1,8 +1,6 @@
 import com.typesafe.sbt.SbtPgp
-import com.typesafe.sbt.pgp.PgpKeys
 import sbt.Keys._
 import sbt._
-import sbtrelease.ReleasePlugin
 
 /** Adds common settings automatically to all subprojects */
 object Build extends AutoPlugin {
@@ -12,7 +10,7 @@ object Build extends AutoPlugin {
     val AvroVersion = "1.8.2"
     val Log4jVersion = "1.2.17"
     val ScalatestVersion = "3.0.7"
-    val ScalaVersion = "2.12.7"
+    val ScalaVersion = "2.12.8"
     val Slf4jVersion = "1.7.26"
     val Json4sVersion = "3.6.5"
     val CatsVersion = "1.6.0"
@@ -21,12 +19,14 @@ object Build extends AutoPlugin {
 
   import autoImport._
 
-  override def requires = ReleasePlugin
+  def isTravis = System.getenv("TRAVIS") == "true"
+  def travisBuildNumber = System.getenv("TRAVIS_BUILD_NUMBER")
+
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.12.7", "2.11.12", "2.13.0-M5"),
+    crossScalaVersions := Seq(ScalaVersion, "2.11.12"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(
@@ -35,6 +35,7 @@ object Build extends AutoPlugin {
       "utf8",
       "-Xfatal-warnings",
       "-feature",
+      "-language:higherKinds",
    //   "-Xlog-implicits",
       "-language:existentials"
     ),
@@ -55,11 +56,24 @@ object Build extends AutoPlugin {
     publishArtifact in Test := false,
     SbtPgp.autoImport.useGpg := true,
     SbtPgp.autoImport.useGpgAgent := true,
-    sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-    sbtrelease.ReleasePlugin.autoImport.releaseCrossBuild := true,
+    if (isTravis) {
+      credentials += Credentials(
+        "Sonatype Nexus Repository Manager",
+        "oss.sonatype.org",
+        sys.env("OSSRH_USERNAME"),
+        sys.env("OSSRH_PASSWORD")
+      )
+    } else {
+      credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+    },
+    if (isTravis) {
+      version := s"3.0.0.$travisBuildNumber-SNAPSHOT"
+    } else {
+      version := "3.0.0"
+    },
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value) {
+      if (isTravis) {
         Some("snapshots" at s"${nexus}content/repositories/snapshots")
       } else {
         Some("releases" at s"${nexus}service/local/staging/deploy/maven2")

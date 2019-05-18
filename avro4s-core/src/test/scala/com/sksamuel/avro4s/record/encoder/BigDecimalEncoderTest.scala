@@ -55,7 +55,7 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
   test("allow custom typeclass overrides") {
 
     implicit object BigDecimalAsString extends SchemaFor[BigDecimal] {
-      override def schema: Schema = StringSchemaFor.schema
+      override def schema(implicit namingStrategy: NamingStrategy) = StringSchemaFor.schema
     }
 
     case class Test(decimal: BigDecimal)
@@ -66,7 +66,7 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
   test("allow bigdecimals to be encoded as generic fixed") {
     case class Test(s: BigDecimal)
     implicit object BigDecimalAsFixed extends SchemaFor[BigDecimal] {
-      override def schema: Schema = LogicalTypes.decimal(10, 8).addToSchema(
+      override def schema(implicit namingStrategy: NamingStrategy) = LogicalTypes.decimal(10, 8).addToSchema(
         Schema.createFixed("BigDecimal", null, null, 8))
     }
     val schema = AvroSchema[Test]

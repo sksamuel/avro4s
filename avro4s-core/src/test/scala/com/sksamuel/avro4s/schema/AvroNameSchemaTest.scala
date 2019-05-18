@@ -19,4 +19,17 @@ class AvroNameSchemaTest extends FunSuite with Matchers {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_class.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
+
+  test("@AvroName on top level java enum") {
+    val schema = AvroSchema[MyJavaEnum]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_java_enum.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("@AvroName on field level java enum") {
+    case class Wibble(e: MyJavaEnum)
+    val schema = AvroSchema[Wibble]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_nested_java_enum.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
 }

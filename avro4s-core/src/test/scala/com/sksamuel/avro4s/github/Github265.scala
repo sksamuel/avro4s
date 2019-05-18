@@ -4,6 +4,8 @@ import com.sksamuel.avro4s.{Decoder, Encoder, RecordFormat, SchemaFor}
 import org.apache.avro.generic.GenericRecord
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.language.higherKinds
+
 class Github265 extends FunSuite with Matchers {
 
   case class Ingredient(name: String, sugar: Double, fat: Double)

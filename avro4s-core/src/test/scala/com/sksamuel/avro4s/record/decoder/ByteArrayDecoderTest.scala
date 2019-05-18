@@ -7,6 +7,8 @@ import com.sksamuel.avro4s.Decoder
 import org.apache.avro.generic.GenericData
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.language.higherKinds
+
 class ByteArrayDecoderTest extends FunSuite with Matchers {
 
   case class ArrayTest(z: Array[Byte])

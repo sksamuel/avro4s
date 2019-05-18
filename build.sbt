@@ -2,18 +2,27 @@
 
 // The root project is implicit, so we don't have to define it.
 // We do need to prevent publishing for it, though:
-publishArtifact := false
-publish := {}
 
-val `avro4s-macros` = project.in(file("avro4s-macros"))
+lazy val root = Project("avro4s", file("."))
   .settings(
-    libraryDependencies ++= Seq(
-      "com.chuusai" %% "shapeless" % ShapelessVersion
-    )
+    publish := {},
+    publishArtifact := false,
+    name := "avro4s"
+  )
+  .aggregate(
+    `avro4s-core`,
+    `avro4s-json`,
+    `avro4s-cats`,
+    `avro4s-kafka`
   )
 
 val `avro4s-core` = project.in(file("avro4s-core"))
-  .dependsOn(`avro4s-macros`)
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.softwaremill" %% "magnolia" % "0.11.0-sml",
+      "com.chuusai" %% "shapeless" % ShapelessVersion
+    )
+  )
 
 val `avro4s-json` = project.in(file("avro4s-json"))
   .dependsOn(`avro4s-core`)

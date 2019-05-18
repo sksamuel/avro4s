@@ -5,6 +5,7 @@ import com.sksamuel.avro4s.{Decoder, Encoder, ImmutableRecord}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
+import scala.language.higherKinds
 
 case class TestVectorBooleans(booleans: Vector[Boolean])
 case class TestArrayBooleans(booleans: Array[Boolean])

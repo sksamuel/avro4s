@@ -5,19 +5,18 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
+import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
-import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
+import org.apache.avro.generic.{GenericContainer, GenericData, GenericFixed, GenericRecord, IndexedRecord}
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, JsonProperties, LogicalTypes, Schema}
-import shapeless.ops.coproduct.Reify
-import shapeless.ops.hlist.ToList
-import shapeless.{Coproduct, Generic, HList, Lazy}
+import org.apache.avro.{Conversions, JsonProperties, Schema}
+import shapeless.{:+:, CNil, Coproduct, Inr}
 
+import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
-import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
+import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe._
-import scala.collection.JavaConverters._
 
 /**
   * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,
@@ -50,9 +49,13 @@ trait Decoder[T] extends Serializable {
   }
 }
 
-object Decoder extends CoproductDecoders with TupleDecoders {
+object Decoder {
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
+
+  type Typeclass[T] = Decoder[T]
+
+  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
   /**
     * Create a decoder that always returns a single value.
@@ -241,17 +244,28 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     }
   }
 
-  implicit def eitherDecoder[A: WeakTypeTag : Decoder, B: WeakTypeTag : Decoder]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
-    private[this] val safeFromA: SafeFrom[A] = makeSafeFrom[A]
-    private[this] val safeFromB: SafeFrom[B] = makeSafeFrom[B]
+  implicit def eitherDecoder[A: WeakTypeTag : Decoder : Manifest, B: WeakTypeTag : Decoder : Manifest]: Decoder[Either[A, B]] = new Decoder[Either[A, B]] {
+
+    private[this] val safeFromA: SafeFrom[A] = SafeFrom.makeSafeFrom[A]
+    private[this] val safeFromB: SafeFrom[B] = SafeFrom.makeSafeFrom[B]
+
+//    private val nameA = Namer(implicitly[WeakTypeTag[A]].tpe).fullName
+//    private val nameB = Namer(implicitly[WeakTypeTag[B]].tpe).fullName
+
+    private val nameA = Namer(implicitly[Manifest[A]].runtimeClass).fullName
+    private val nameB = Namer(implicitly[Manifest[B]].runtimeClass).fullName
 
     override def decode(value: Any, schema: Schema): Either[A, B] = {
+
+      // eithers must be a union
+      require(schema.getType == Schema.Type.UNION)
+
+      // do we have a type of A or a type of B?
+      // we need to extract the schema from the union
       safeFromA.safeFrom(value, schema).map(Left[A, B])
         .orElse(safeFromB.safeFrom(value, schema).map(Right[A, B]))
         .getOrElse {
-          val aName = NameResolution(implicitly[WeakTypeTag[A]].tpe)
-          val bName = NameResolution(implicitly[WeakTypeTag[B]].tpe)
-          sys.error(s"Could not decode $value into Either[$aName, $bName]")
+          sys.error(s"Could not decode $value into Either[$nameB, $nameB]")
         }
     }
   }
@@ -277,163 +291,6 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     }
   }
 
-  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit gen: Generic.Aux[T, C],
-                                                                     objs: Reify.Aux[C, L],
-                                                                     toList: ToList[L, T]): Decoder[T] = new Decoder[T] {
-    override def decode(value: Any, schema: Schema): T = {
-      val name = value.toString
-      val variants = toList(objs())
-      variants.find(v => {
-        getTypeName(v.getClass) == name
-      }).getOrElse(sys.error(s"Unknown type $name"))
-    }
-
-    private def getTypeName[G](clazz: Class[G]): String = {
-      val mirror = runtimeMirror(clazz.getClassLoader)
-      val tpe = mirror.classSymbol(clazz).toType
-      AvroNameResolver.forClass(tpe).toString
-    }
-
-  }
-
-  implicit def applyMacro[T <: Product]: Decoder[T] = macro applyMacroImpl[T]
-
-  def applyMacroImpl[T <: Product : c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Decoder[T]] = {
-
-    import c.universe
-    import c.universe._
-
-    val reflect = ReflectHelper(c)
-    val tpe = weakTypeTag[T].tpe
-    val fullName = tpe.typeSymbol.fullName
-    val packageName = reflect.packageName(tpe)
-
-    if (!reflect.isCaseClass(tpe)) {
-      c.abort(c.enclosingPosition.pos, s"This macro can only encode case classes, not instance of $tpe")
-    } else if (reflect.isSealed(tpe)) {
-      c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
-    } else if (packageName.startsWith("scala")) {
-      c.abort(c.prefix.tree.pos, s"$fullName is a scala type: Built in types should be handled by explicit typeclasses of SchemaFor and not this macro")
-    } else {
-
-      val valueType = reflect.isValueClass(tpe)
-
-      // In Scala, value types are erased at compile time. So in avro4s we assume that value types do not exist
-      // in the avro side, neither in the schema, nor in the input values. Therefore, when creating a decoder
-      // for a value type, the input will be a value of the underlying type. In other words, given a value type
-      // `Foo(s: String) extends AnyVal` - the input will be a String, not a record containing a String
-      // as it would be for a non-value type.
-
-      // So the generated decoder for a value type should simply pass through to a generated decoder for
-      // the underlying type without worrying about fields etc.
-      if (valueType) {
-
-        val valueCstr = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.flatten.head
-        val backingFieldTpe = valueCstr.typeSignature
-
-        c.Expr[Decoder[T]](
-          q"""
-          new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
-            override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
-              val decoded = _root_.com.sksamuel.avro4s.Decoder.decodeT[$backingFieldTpe](value, schema)
-              new $tpe(decoded)
-            }
-          }
-          """
-        )
-
-      } else {
-
-        // the companion object where the apply construction method is located
-        // without this we cannot instantiate the case class
-        // we also need this to extract default values
-        val companion = tpe.typeSymbol.companion
-
-        if (companion == NoSymbol) {
-          val error = s"Cannot find companion object for $fullName; If you have defined a local case class, move the definition to a top level scope."
-          Console.err.println(error)
-          c.error(c.enclosingPosition.pos, error)
-          sys.error(error)
-        }
-
-        val decoders = reflect.constructorParameters(tpe).map { case (_, fieldTpe) =>
-          if (reflect.isMacroGenerated(fieldTpe)) {
-            q"""implicitly[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]"""
-          } else {
-            q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]]"""
-          }
-        }
-
-        val fields = reflect.constructorParameters(tpe).zipWithIndex.map { case ((fieldSym, fieldTpe), index) =>
-
-          // this is the simple name of the field
-          val name = fieldSym.name.decodedName.toString
-
-          // the name we use to pull the value out of the record should take into
-          // account any @AvroName annotations. If @AvroName is not defined then we
-          // use the name of the field in the case class
-          val resolvedFieldName = new AnnotationExtractors(reflect.annotations(fieldSym)).name.getOrElse(name)
-
-          val defswithsymbols = universe.asInstanceOf[Definitions with SymbolTable with StdNames]
-          val defaultGetterName = defswithsymbols.nme.defaultGetterName(defswithsymbols.nme.CONSTRUCTOR, index + 1)
-          val defaultGetterMethod = tpe.companion.member(TermName(defaultGetterName.toString))
-
-          val transient = reflect.isTransientOnField(tpe, fieldSym)
-
-          // if the default is defined, we will use that to populate, otherwise if the field is transient
-          // we will populate with none or null, otherwise an error will be raised
-          if (defaultGetterMethod.isMethod) {
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
-            } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, $companion.$defaultGetterMethod: $fieldTpe, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
-            }
-          } else {
-            if (reflect.isMacroGenerated(fieldTpe)) {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultNotLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]])"""
-            } else {
-              q"""_root_.com.sksamuel.avro4s.Decoder.decodeFieldOrApplyDefaultLazy[$fieldTpe]($resolvedFieldName, record, schema, null, $transient)(decoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Decoder[$fieldTpe]]])"""
-            }
-          }
-        }
-
-        c.Expr[Decoder[T]](
-          q"""
-          new _root_.com.sksamuel.avro4s.Decoder[$tpe] {
-            private[this] val decoders = Array(..$decoders)
-
-            override def decode(value: Any, schema: _root_.org.apache.avro.Schema): $tpe = {
-              val fullName = $fullName
-              value match {
-                case record: _root_.org.apache.avro.generic.GenericRecord => $companion.apply(..$fields)
-                case _ => sys.error("This decoder decodes GenericRecord => " + fullName + " but has been invoked with " + value)
-              }
-            }
-          }
-          """
-        )
-      }
-    }
-  }
-
-  def decodeFieldOrApplyDefaultNotLazy[T](fieldName: String,
-                                       record: GenericRecord,
-                                       readerSchema: Schema,
-                                       scalaDefault: Any,
-                                       transient: Boolean)
-                                      (implicit decoder: Decoder[T]): T = {
-    decodeFieldOrApplyDefault(fieldName, record, readerSchema, scalaDefault, transient, decoder)
-  }
-
-  def decodeFieldOrApplyDefaultLazy[T](fieldName: String,
-                                          record: GenericRecord,
-                                          readerSchema: Schema,
-                                          scalaDefault: Any,
-                                          transient: Boolean)
-                                         (implicit decoder: Lazy[Decoder[T]]): T = {
-    decodeFieldOrApplyDefault(fieldName, record, readerSchema, scalaDefault, transient, decoder.value)
-  }
-
   /**
     * For a field in the target type (the case class we are marshalling to), we must
     * try to pull a value from the Avro GenericRecord. After the value has been retrieved,
@@ -448,7 +305,6 @@ object Decoder extends CoproductDecoders with TupleDecoders {
     *
     * If none of these rules can be satisfied then an exception will be thrown.
     */
-  //noinspection TypeCheckCanBeMatch
   def decodeFieldOrApplyDefault[T](fieldName: String,
                                    record: GenericRecord,
                                    readerSchema: Schema,
@@ -481,4 +337,219 @@ object Decoder extends CoproductDecoders with TupleDecoders {
   }
 
   def decodeT[T](value: Any, schema: Schema)(implicit decoder: Decoder[T]): T = decoder.decode(value, schema)
+
+
+  def combine[T](klass: CaseClass[Typeclass, T]): Decoder[T] = {
+
+    // In Scala, value types are erased at compile time. So in avro4s we assume that value types do not exist
+    // in the avro side, neither in the schema, nor in the input values. Therefore, when creating a decoder
+    // for a value type, the input will be a value of the underlying type. In other words, given a value type
+    // `Foo(s: String) extends AnyVal` - the input will be a String, not a record containing a String
+    // as it would be for a non-value type.
+
+    // So the generated decoder for a value type should simply pass through to a generated decoder for
+    // the underlying type without worrying about fields etc.
+    if (klass.isValueClass) {
+      new Decoder[T] {
+        override def decode(value: Any, schema: Schema): T = {
+          val decoded = klass.parameters.head.typeclass.decode(value, schema)
+          klass.rawConstruct(List(decoded))
+        }
+      }
+    } else {
+      new Decoder[T] {
+        override def decode(value: Any, schema: Schema): T = {
+          value match {
+            case record: IndexedRecord =>
+              // if we are in here then we are decoding a case class so we need a record schema
+              require(schema.getType == Schema.Type.RECORD)
+              val values = klass.parameters.map { p =>
+
+                // take into account @AvroName
+                val name = new AnnotationExtractors(p.annotations).name.getOrElse(p.label)
+
+                // does the schema contain this parameter? If not, we will be relying on defaults or options
+                val field = record.getSchema.getField(name)
+                if (field == null) {
+                  p.default match {
+                    case Some(default) => default
+                    case None => p.typeclass.decode(null, schema)
+                  }
+              //    param.default.getOrElse(sys.error(s"Record does not have field ${param.label} and the class does not define a default"))
+                } else {
+                  val k = record.getSchema.getFields.indexOf(field)
+                  val value = record.get(k)
+                  p.typeclass.decode(value, schema.getFields.get(p.index).schema())
+                }
+              }
+
+              klass.rawConstruct(values)
+
+            case _ => sys.error(s"This decoder can only handle types of IndexedRecord or it's subtypes such as GenericRecord [was ${value.getClass}]")
+          }
+        }
+      }
+    }
+  }
+
+  def decodeField[T](fieldName: String,
+                     record: GenericRecord,
+                     readerSchema: Schema,
+                     scalaDefault: Any,
+                     transient: Boolean,
+                     decoder: Decoder[T]): T = {
+    record.getSchema.getField(fieldName) match {
+      case field: Schema.Field =>
+        val value = record.get(fieldName)
+        decoder.decode(value, field.schema)
+      //      case null if readerSchema.hasDefault(fieldName) =>
+      //        val default = readerSchema.getField(fieldName).defaultVal() match {
+      //          case JsonProperties.NULL_VALUE => null
+      //          case other => other
+      //        }
+      //        decoder.decode(default, readerSchema.getField(fieldName).schema)
+      case null if scalaDefault != null => scalaDefault.asInstanceOf[T]
+      case null if transient => None.asInstanceOf[T]
+      case _ => sys.error(s"Record $record does not have a value for $fieldName, no default was defined, and the field is not transient")
+    }
+  }
+
+  def dispatch[T](ctx: SealedTrait[Typeclass, T]): Decoder[T] = new Decoder[T] {
+    override def decode(container: Any, schema: Schema): T = {
+      schema.getType match {
+        // with a record we already have the schema for the container, we don't need to do anything
+        // this is how top level ADTs are encoded
+        case Schema.Type.RECORD =>
+          container match {
+            case container: GenericContainer =>
+              val subtype = ctx.subtypes.find { subtype => Namer(subtype.typeName, subtype.annotations).fullName == container.getSchema.getFullName }
+                .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
+              subtype.typeclass.decode(container, schema)
+            case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
+          }
+        // we have a union for nested ADTs and must extract the appropriate schema
+        case Schema.Type.UNION =>
+          container match {
+            case container: GenericContainer =>
+              val subschema = schema.getTypes.asScala.find(_.getFullName == container.getSchema.getFullName)
+                .getOrElse(sys.error(s"Could not find schema for ${container.getSchema.getFullName} in union schema $schema"))
+              val subtype = ctx.subtypes.find { subtype => Namer(subtype.typeName, subtype.annotations).fullName == container.getSchema.getFullName }
+                .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
+              subtype.typeclass.decode(container, subschema)
+            case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
+          }
+        // case objects are encoded as enums
+        // we need to take the string and create the object
+        case Schema.Type.ENUM =>
+          container match {
+            case enum: GenericData.EnumSymbol =>
+              ctx.subtypes.find { subtype => Namer(subtype).name == enum.getSchema.getFullName }
+                .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
+                .typeclass.decode(enum, enum.getSchema)
+            case str: String =>
+              val subtype = ctx.subtypes.find { subtype => Namer(subtype).name == str }
+                .getOrElse(sys.error(s"Could not find subtype for enum $str"))
+              val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
+              val module = runtimeMirror.staticModule(subtype.typeName.full)
+              val companion = runtimeMirror.reflectModule(module.asModule)
+              companion.instance.asInstanceOf[T]
+          }
+        case other => sys.error(s"Unsupported sealed trait schema type $other")
+      }
+    }
+  }
+
+  implicit def tuple2Decoder[A, B](implicit
+                                   decoderA: Decoder[A],
+                                   decoderB: Decoder[B]
+                                  ) = new Decoder[(A, B)] {
+    override def decode(t: Any, schema: Schema): (A, B) = {
+      val record = t.asInstanceOf[GenericRecord]
+      (
+        decoderA.decode(record.get("_1"), schema),
+        decoderB.decode(record.get("_2"), schema)
+      )
+    }
+  }
+
+  implicit def tuple3Decoder[A, B, C, D, E](implicit
+                                            decoderA: Decoder[A],
+                                            decoderB: Decoder[B],
+                                            decoderC: Decoder[C]
+                                           ) = new Decoder[(A, B, C)] {
+    override def decode(t: Any, schema: Schema): (A, B, C) = {
+      val record = t.asInstanceOf[GenericRecord]
+      (
+        decoderA.decode(record.get("_1"), schema),
+        decoderB.decode(record.get("_2"), schema),
+        decoderC.decode(record.get("_3"), schema)
+      )
+    }
+  }
+
+  implicit def tuple4Decoder[A, B, C, D, E](implicit
+                                            decoderA: Decoder[A],
+                                            decoderB: Decoder[B],
+                                            decoderC: Decoder[C],
+                                            decoderD: Decoder[D]
+                                           ) = new Decoder[(A, B, C, D)] {
+    override def decode(t: Any, schema: Schema): (A, B, C, D) = {
+      val record = t.asInstanceOf[GenericRecord]
+      (
+        decoderA.decode(record.get("_1"), schema),
+        decoderB.decode(record.get("_2"), schema),
+        decoderC.decode(record.get("_3"), schema),
+        decoderD.decode(record.get("_4"), schema)
+      )
+    }
+  }
+
+  implicit def tuple5Decoder[A, B, C, D, E](implicit
+                                            decoderA: Decoder[A],
+                                            decoderB: Decoder[B],
+                                            decoderC: Decoder[C],
+                                            decoderD: Decoder[D],
+                                            decoderE: Decoder[E]
+                                           ) = new Decoder[(A, B, C, D, E)] {
+    override def decode(t: Any, schema: Schema): (A, B, C, D, E) = {
+      val record = t.asInstanceOf[GenericRecord]
+      (
+        decoderA.decode(record.get("_1"), schema),
+        decoderB.decode(record.get("_2"), schema),
+        decoderC.decode(record.get("_3"), schema),
+        decoderD.decode(record.get("_4"), schema),
+        decoderE.decode(record.get("_5"), schema)
+      )
+    }
+  }
+
+  // A coproduct is a union, or a generalised either.
+  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
+
+  // Shapeless's implementation builds up the type recursively,
+  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
+
+  // `decode` here should never be invoked under normal operation; if
+  // we're trying to read a value of type CNil it's because we've
+  // tried all the other cases and failed. But the Decoder[CNil]
+  // needs to exist to supply a base case for the recursion.
+  implicit object CNilDecoderValue extends Decoder[CNil] {
+    override def decode(value: Any, schema: Schema): CNil = sys.error("This should never happen: CNil has no inhabitants")
+  }
+
+  // We're expecting to read a value of type S :+: T from avro.  Avro
+  // unions are untyped, so we have to attempt to read a value of type
+  // S (the concrete type), and if that fails, attempt to read the
+  // rest of the coproduct type T.
+
+  // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
+  implicit def coproductDecoder[S: WeakTypeTag : Manifest : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
+    private[this] val safeFromS = SafeFrom.makeSafeFrom[S]
+    override def decode(value: Any, schema: Schema): S :+: T = {
+      safeFromS.safeFrom(value, schema) match {
+        case Some(s) => Coproduct[S :+: T](s)
+        case None => Inr(decoder.decode(value, schema))
+      }
+    }
+  }
 }
