@@ -36,7 +36,8 @@ class JsonToAvroConverter(namespace: String,
   }
 
   def convert(name: String, value: JValue): Schema = value match {
-    case JArray(value) => Schema.createArray(convert(name, value.head))
+    case JArray(list) if list.isEmpty => Schema.create(Schema.Type.NULL)
+    case JArray(list) => Schema.createArray(convert(name, list.head))
     case JBool(_) => Schema.create(Schema.Type.BOOLEAN)
     case JDecimal(_) => Schema.create(Schema.Type.DOUBLE)
     case JDouble(_) => Schema.create(Schema.Type.DOUBLE)

@@ -60,5 +60,12 @@ class JsonToAvroConverterTest extends WordSpec with Matchers {
         schema.toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream(s"/avro${k}.avsc")).toString(true)
       }
     }
+
+    "should support empty arrays" in {
+      new JsonToAvroConverter("test").convert("Name",
+        """
+          |{"EmptyArray": []}
+        """.stripMargin)
+    }
   }
 }
