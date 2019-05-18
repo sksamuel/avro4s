@@ -7,6 +7,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 case class OptionBoolean(b: Option[Boolean])
 case class OptionString(s: Option[String])
+case class RequiredString(s: String)
 
 class OptionDecoderTest extends WordSpec with Matchers {
 
@@ -21,6 +22,13 @@ class OptionDecoderTest extends WordSpec with Matchers {
       val record2 = new GenericData.Record(schema)
       record2.put("s", null)
       Decoder[OptionString].decode(record2, schema) shouldBe OptionString(None)
+    }
+    "support decoding required fields as Option" in {
+      val requiredStringSchema = AvroSchema[RequiredString]
+
+      val requiredStringRecord = new GenericData.Record(requiredStringSchema)
+      requiredStringRecord.put("s", "hello")
+      Decoder[OptionString].decode(requiredStringRecord, requiredStringSchema) shouldBe OptionString(Some("hello"))
     }
     "support boolean options" in {
       val schema = AvroSchema[OptionBoolean]

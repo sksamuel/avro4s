@@ -188,7 +188,12 @@ object Decoder extends CoproductDecoders with TupleDecoders {
   implicit def optionDecoder[T](implicit decoder: Decoder[T]) = new Decoder[Option[T]] {
     override def decode(value: Any, schema: Schema): Option[T] = if (value == null) None else {
       // Options are Union schemas of ["null", other], the decoder may require the other schema
-      val nonNullSchema = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL).toList match {
+      val schemas = if (schema.getType == Schema.Type.UNION) {
+        schema.getTypes.asScala.toList
+      } else {
+        List(schema)
+      }
+      val nonNullSchema = schemas.filter(_.getType != Schema.Type.NULL) match {
         case s :: Nil => s
         case multipleSchemas => Schema.createUnion(multipleSchemas.asJava)
       }
