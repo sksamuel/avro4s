@@ -1,6 +1,8 @@
 //package com.sksamuel.avro4s
 //
-//import com.sksamuel.avro4s.AvroSchema
+//import java.io.FileOutputStream
+//import java.nio.file.Paths
+//
 //import org.scalatest.{Matchers, WordSpec}
 //
 ///**
@@ -28,36 +30,37 @@
 //  */
 //class UniverseTest extends WordSpec with Matchers {
 //
-////  val clipper = Ship(name = "Imperial Clipper", role = "fighter escort", maxSpeed = 430, jumpRange = 8.67, hardpoints = Map.empty, defaultWeapon = Some("pulse laser"))
-////  val eagle = Ship(name = "Eagle", role = "fighter", maxSpeed = 350, jumpRange = 15.4, hardpoints = Map.empty, defaultWeapon = None)
-////  val earth = Planet("Earth", "Sol", Some(PlanetClass.M))
-////  val mars = Planet("Mars", "Sol", Some(PlanetClass.H))
-////
-////  val g = Universe(
-////    manufacturers = List(
-////      Manufacturer(
-////        name = "Gutamaya",
-////        ships = Seq(clipper)
-////      ),
-////      Manufacturer(
-////        name = "Core Dynamics",
-////        ships = Seq(eagle)
-////      )
-////    )
-////  )
+//  val clipper = Ship(name = "Imperial Clipper", role = "fighter escort", maxSpeed = 430, jumpRange = 8.67, hardpoints = Map.empty, defaultWeapon = Some("pulse laser"))
+//  val eagle = Ship(name = "Eagle", role = "fighter", maxSpeed = 350, jumpRange = 15.4, hardpoints = Map.empty, defaultWeapon = None)
+//  val earth = Planet("Earth", "Sol", Some(PlanetClass.M))
+//  val mars = Planet("Mars", "Sol", Some(PlanetClass.H))
+//
+//  val g = Universe(
+//    manufacturers = List(
+//      Manufacturer(
+//        name = "Gutamaya",
+//        ships = Seq(clipper)
+//      ),
+//      Manufacturer(
+//        name = "Core Dynamics",
+//        ships = Seq(eagle)
+//      )
+//    )
+//  )
 //
 //  "Avro4s" should {
 //    "support complex schema" in {
-//      val schema = AvroSchema[Ship]
+//      val schema = AvroSchema[Universe]
 //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/universe.json"))
 //      schema.toString(true) shouldBe expected.toString(true)
 //    }
-////    "support complex write" in {
-////      val output = new FileOutputStream("universe.avro")
-////      val avro = AvroOutputStream.data[Universe](output, AvroSchema[Universe])
-////      avro.write(g)
-////      avro.close()
-////    }
+//    "support complex write" in {
+//      val output = new FileOutputStream("universe.avro")
+//      val schema = AvroSchema[Universe]
+//      val avro = AvroOutputStream.data[Universe].to(output).build(schema)
+//      avro.write(g)
+//      avro.close()
+//    }
 ////    "support complex read" in {
 ////      val avro = AvroInputStream.data[Universe](Paths.get("universe.avro"), AvroSchema[Universe])
 ////      val universe = avro.iterator.next()
