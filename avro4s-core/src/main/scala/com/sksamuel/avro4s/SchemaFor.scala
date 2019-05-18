@@ -292,7 +292,7 @@ object SchemaFor {
           }
         }
 
-        val record = Schema.createRecord(name, doc, namespace, false)
+        val record = Schema.createRecord(name.replaceAll("[^a-zA-Z0-9_]", ""), doc, namespace.replaceAll("[^a-zA-Z0-9_.]", ""), false)
         aliases.foreach(record.addAlias)
         props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
         record.setFields(fields.asJava)
