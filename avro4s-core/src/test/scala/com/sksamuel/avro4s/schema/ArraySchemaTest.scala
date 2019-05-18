@@ -138,7 +138,7 @@ class ArraySchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support case class of seq of case class with maps" ignore {
+    "support case class of seq of case class with maps" in {
       case class Ship(map: scala.collection.immutable.Map[String, String])
       case class Test(ship: List[scala.collection.immutable.Map[String, String]])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/class_of_list_of_maps.json"))

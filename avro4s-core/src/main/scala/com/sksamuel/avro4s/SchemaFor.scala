@@ -8,6 +8,7 @@ import java.util.UUID
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import org.codehaus.jackson.node.TextNode
+import sun.jvm.hotspot.code.ObjectValue
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
@@ -188,14 +189,15 @@ object SchemaFor {
     *                if such a default applies to this field
     */
   private def buildField[B](label: String,
-                            namespace: String,
+                            containingNamespace: String,
                             annos: Seq[Any],
                             fieldSchema: Schema,
                             default: Option[B],
-                            namingStrategy: NamingStrategy): Schema.Field = {
+                            namingStrategy: NamingStrategy,
+                            valueTypeDoc: Option[String]): Schema.Field = {
 
     val extractor = new AnnotationExtractors(annos)
-    val doc = extractor.doc.orNull
+    val doc = extractor.doc.orElse(valueTypeDoc).orNull
     val aliases = extractor.aliases
     val props = extractor.props
 
@@ -213,7 +215,7 @@ object SchemaFor {
     // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
     // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
     val schema = extractor.fixed.fold(fieldSchema) { size =>
-      SchemaBuilder.fixed(name).doc(doc).namespace(extractor.namespace.getOrElse(namespace)).size(size)
+      SchemaBuilder.fixed(name).doc(doc).namespace(extractor.namespace.getOrElse(containingNamespace)).size(size)
     }
 
     // if our default value is null, then we should change the type to be nullable even if we didn't use option
@@ -230,8 +232,8 @@ object SchemaFor {
       case _ => schemaWithPossibleNull
     }
 
-    // the field can override the namespace if the Namespace annotation is present on the field
-    // we may have annotated our field with @AvroNamespace so this namespace should be applied
+    // the field can override the containingNamespace if the Namespace annotation is present on the field
+    // we may have annotated our field with @AvroNamespace so this containingNamespace should be applied
     // to any schemas we have generated for this field
     val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schemaWithOrderedUnion, _)).getOrElse(schemaWithOrderedUnion)
 
@@ -263,14 +265,32 @@ object SchemaFor {
             val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
             props.foreach { case (k, v) => builder.prop(k, v) }
             builder.size(size)
-          case None => param.typeclass.schema
+          case None =>
+            // we can annotate the value class with @AvroDoc, to save us putting it on every field that uses this value class.
+            // However the only place that would be is visible is here - inside the derivation for the value type.
+            // We can't attach that "doc" to the schema because the schema may be a primitive
+            // so a hacky solution is to wrap the schema in a record, which has a name set to a placeholder value to let
+            // us know we've wrapped it, and extract it all when we come out of this derivation and back to the parent, ouch!
+            // if you have a better idea, then feel free to let me know!
+            val s = Schema.createRecord("placeholder", doc, "avro4s", false)
+            s.setFields(List(new Schema.Field("a", param.typeclass.schema, null, null: Object)).asJava)
+            s
         }
 
       } else {
 
         val fields = ctx.parameters.flatMap { param =>
           if (new AnnotationExtractors(param.annotations).transient) None else {
-            Some(buildField(param.label, namespace, param.annotations, param.typeclass.schema, param.default, namingStrategy))
+            val s = param.typeclass.schema
+            // extract the schema if we wrapped in order to pass value annotations back
+            val (doc, s2) = if (s.getFullName == "avro4s.placeholder") {
+              val extracted = s.getField("a").schema()
+              val doc = s.getDoc
+              (Option(doc), extracted)
+            } else {
+              (None, s)
+            }
+            Some(buildField(param.label, namespace, param.annotations, s2, param.default, namingStrategy, doc))
           }
         }
 
@@ -353,8 +373,8 @@ object SchemaFor {
     override def schema(implicit namingStrategy: NamingStrategy) = s
   }
 
-  // accepts a built avro schema, and overrides the namespace with the given namespace
-  // this method just just makes a copy of the existing schema, setting the new namespace
+  // accepts a built avro schema, and overrides the containingNamespace with the given containingNamespace
+  // this method just just makes a copy of the existing schema, setting the new containingNamespace
   private def overrideNamespace(schema: Schema, namespace: String): Schema = {
     schema.getType match {
       case Schema.Type.RECORD =>
