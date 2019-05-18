@@ -7,7 +7,7 @@
       "name": "z",
       "type": {
         "type": "fixed",
-        "name": "z",
+        "name": "FixedValueClass",
         "size": 8
       }
     }

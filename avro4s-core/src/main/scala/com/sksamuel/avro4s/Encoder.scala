@@ -333,13 +333,15 @@ object Encoder extends CoproductEncoders {
         override def encode(t: T, schema: Schema): AnyRef = {
           // the schema passed here must be a record since we are encoding a non-value case class
           require(schema.getType == Schema.Type.RECORD)
-          val values = klass.parameters.map { p =>
+          val values = klass.parameters.flatMap { p =>
             val extractor = new AnnotationExtractors(p.annotations)
-            // the name may have been overriden with @AvroName
-            val name = extractor.name.getOrElse(p.label)
-            val field = schema.getField(name)
-            if (field == null) throw new RuntimeException(s"Expected field $name did not exist in the schema")
-            p.typeclass.encode(p.dereference(t), field.schema())
+            if (extractor.transient) None else {
+              // the name may have been overriden with @AvroName
+              val name = extractor.name.getOrElse(p.label)
+              val field = schema.getField(name)
+              if (field == null) throw new RuntimeException(s"Expected field $name did not exist in the schema")
+              Some(p.typeclass.encode(p.dereference(t), field.schema))
+            }
           }
           buildRecord(schema, values.asInstanceOf[Seq[AnyRef]], name)
         }

@@ -66,6 +66,8 @@ trait AvroFixable extends AvroFieldReflection {
   */
 case class AvroName(override val name: String) extends AvroNameable
 
+case class AvroTransient() extends StaticAnnotation
+
 trait AvroNameable extends AvroFieldReflection {
   val name: String
 }
