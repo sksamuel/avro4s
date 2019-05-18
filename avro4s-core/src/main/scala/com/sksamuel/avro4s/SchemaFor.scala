@@ -167,7 +167,7 @@ object SchemaFor {
       val as = tag.runtimeClass.getAnnotations
       val nameAnnotation = as.find(_.annotationType == classOf[AvroName]).map(_.asInstanceOf[AvroName]).map(_.name)
       val namespaceAnnotation = as.find(_.annotationType == classOf[AvroNamespace]).map(_.asInstanceOf[AvroNamespace]).map(_.namespace)
-      val namer = Namer(magnolia.TypeName(tag.runtimeClass.getPackageName, tag.runtimeClass.getSimpleName, Nil), nameAnnotation, namespaceAnnotation, false)
+      val namer = Namer(magnolia.TypeName(tag.runtimeClass.getPackage.getName, tag.runtimeClass.getSimpleName, Nil), nameAnnotation, namespaceAnnotation, false)
       val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
 
       SchemaBuilder.enumeration(namer.name).namespace(namer.namespace).symbols(symbols: _*)
