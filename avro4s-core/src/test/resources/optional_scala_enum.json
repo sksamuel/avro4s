@@ -12,9 +12,9 @@
           "namespace": "com.sksamuel.avro4s.schema",
           "name": "Colours",
           "symbols": [
+            "Red",
             "Amber",
-            "Green",
-            "Red"
+            "Green"
           ]
         }
       ]

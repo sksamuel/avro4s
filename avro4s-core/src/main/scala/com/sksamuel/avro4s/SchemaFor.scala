@@ -325,7 +325,7 @@ object SchemaFor {
         sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
     }.map { sym =>
       sym.name.decodedName.toString.trim
-    }.toList.sorted
+    }.toList.reverse
 
     val annos = typeRef.pre.typeSymbol.annotations.map { a =>
       val name = a.tree.tpe.typeSymbol.fullName
