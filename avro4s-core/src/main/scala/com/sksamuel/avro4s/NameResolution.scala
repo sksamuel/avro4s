@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import magnolia.{Subtype, TypeName}
 
 import scala.reflect.macros.whitebox
+import scala.reflect.runtime.universe
 
 /**
   * Extracts name and namespace from a TypeName.
@@ -67,6 +68,13 @@ object Namer {
   def apply(typeName: TypeName, annos: Seq[Any]): Namer = {
     val extractor = new AnnotationExtractors(annos)
     Namer(typeName, extractor.name, extractor.namespace, extractor.erased)
+  }
+
+  def apply[A](clazz: Class[A]): Namer = {
+    val mirror = universe.runtimeMirror(clazz.getClassLoader)
+    val sym = mirror.classSymbol(clazz)
+    val tpe = sym.toType
+    Namer(TypeName(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, Nil), sym.annotations)
   }
 }
 

@@ -8,13 +8,31 @@ object SchemaHelper {
 
   import scala.collection.JavaConverters._
 
-  def extractTraitSubschema(fullName: String, schema: Schema): Schema = {
+  def matchPrimitiveName(fullName: String): Option[Schema] = fullName match {
+    case "java.lang.Integer" => Some(Schema.create(Schema.Type.INT))
+    case "java.lang.String" => Some(Schema.create(Schema.Type.STRING))
+    case "java.lang.Long" => Some(Schema.create(Schema.Type.LONG))
+    case "java.lang.Boolean" => Some(Schema.create(Schema.Type.BOOLEAN))
+    case "java.lang.Double" => Some(Schema.create(Schema.Type.DOUBLE))
+    case "java.lang.Float" => Some(Schema.create(Schema.Type.FLOAT))
+    case _ => None
+  }
+
+  def extractTraitSubschema(fullName: String, schema: Schema): Schema = matchPrimitiveName(fullName) getOrElse {
     require(schema.getType == Schema.Type.UNION, s"Can only extract subschemas from a UNION but was given $schema")
 
     val types = schema.getTypes
     val size = types.size
 
     require(size > 0, s"Cannot extract subschema from empty UNION $schema")
+
+    // if we are looking for an array type then find "array" first
+    // this is totally not FP but what the heck it's late and it's perfectly valid
+    fullName match {
+      case "scala.collection.immutable.::" =>
+        return types.asScala.find(_.getType == Schema.Type.ARRAY).getOrElse(sys.error(s"Could not find array type to match $fullName"))
+      case _ =>
+    }
 
     // Finds the matching schema and keeps track a null type if any.
     // If no matching schema is found in a union of size 2 the other type is returned, regardless of its name.

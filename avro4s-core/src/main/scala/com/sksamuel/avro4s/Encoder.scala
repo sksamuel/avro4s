@@ -11,6 +11,7 @@ import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
+import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.language.experimental.macros
 
@@ -39,28 +40,9 @@ trait Encoder[T] extends Serializable {
 
 case class Exported[A](instance: A) extends AnyVal
 
-object Encoder extends CoproductEncoders {
+object Encoder {
 
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
-
-  //  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T], gen: Generic.Aux[T, C],
-  //                                                                     objs: Reify.Aux[C, L], toList: ToList[L, T]): Encoder[T] = new Encoder[T] {
-  //
-  //    import scala.collection.JavaConverters._
-  //    import scala.reflect.runtime.universe._
-  //
-  //    protected val schema: Schema = {
-  //      val tpe = weakTypeTag[T]
-  //      val nr = NameResolution(tpe.tpe)
-  //      val symbols = toList(objs()).map(v => NameResolution(v.getClass).name).asJava
-  //      Schema.createEnum(nr.name, null, nr.namespace, symbols)
-  //    }
-  //
-  //    override def encode(value: T, schema: Schema): EnumSymbol = new EnumSymbol(
-  //      schema,
-  //      NameResolution(value.getClass).name
-  //    )
-  //  }
 
   implicit object StringEncoder extends Encoder[String] {
     override def encode(value: String, schema: Schema): AnyRef = {
@@ -254,7 +236,7 @@ object Encoder extends CoproductEncoders {
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
   /**
-    * Encodes a field in a case class by bringing in an implicit encoder for the field's type.
+    * Encodes a field in a case class by using a schema for the fields type.
     * The schema passed in here is the schema for the container type, and the fieldName
     * is the name of the field in the avro schema.
     *
@@ -372,95 +354,6 @@ object Encoder extends CoproductEncoders {
     }
   }
 
-  // implicit def applyMacro[T]: Encoder[T] = macro applyMacroImpl[T]
-
-  //  def applyMacroImpl[T: c.WeakTypeTag](c: scala.reflect.macros.whitebox.Context): c.Expr[Encoder[T]] = {
-  //
-  //    import c.universe._
-  //
-  //    val reflect = ReflectHelper(c)
-  //    val tpe = weakTypeTag[T].tpe
-  //    val fullName = tpe.typeSymbol.fullName
-  //
-  //    if (!reflect.isCaseClass(tpe)) {
-  //      c.abort(c.prefix.tree.pos, s"$fullName is not a case class: This macro is only designed to handle case classes")
-  //    } else if (reflect.isSealed(tpe)) {
-  //      c.abort(c.prefix.tree.pos, s"$fullName is sealed: Sealed traits/classes should be handled by coproduct generic")
-  //    } else if (fullName.startsWith("scala") || fullName.startsWith("java")) {
-  //      c.abort(c.prefix.tree.pos, s"$fullName is a library type: Built in types should be handled by explicit typeclasses of SchemaFor and not this macro")
-  //    } else if (reflect.isScalaEnum(tpe)) {
-  //      c.abort(c.prefix.tree.pos, s"$fullName is a scala enum: Scala enum types should be handled by `scalaEnumSchemaFor`")
-  //    } else {
-  //
-  //      val nameResolution = NameResolution(c)(tpe)
-  //      val isValueClass = reflect.isValueClass(tpe)
-  //
-  //      val nonTransientConstructorFields = reflect
-  //        .constructorParameters(tpe)
-  //        .filterNot { case (fieldSym, _) => reflect.isTransientOnField(tpe, fieldSym) }
-  //
-  //      val encoders = nonTransientConstructorFields.map { case (_, fieldTpe) =>
-  //        if (reflect.isMacroGenerated(fieldTpe)) {
-  //          q"""implicitly[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]"""
-  //        } else {
-  //          q"""implicitly[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]]"""
-  //        }
-  //      }
-  //
-  //      // each field needs to be converted into an avro compatible value
-  //      // so scala primitives need to be converted to java boxed values, and
-  //      // annotations and logical types need to be taken into account
-  //
-  //      // We get the value for the field from the class by invoking the
-  //      // getter through t.$name, and then pass that value, and the schema for
-  //      // the record to an Encoder[<Type For Field>] which will then "encode"
-  //      // the value in an avro friendly way.
-  //
-  //      // Note: If the field is a value class, then this macro will be summoned again
-  //      // and the value type will be the type argument to the macro.
-  //      val fields = nonTransientConstructorFields.zipWithIndex
-  //        .map { case ((fieldSym, fieldTpe), index) =>
-  //          val termName = fieldSym.asTerm.name
-  //
-  //          // we need to check @AvroName annotation on the field, because that will determine the name
-  //          // that we use when looking inside the schema to pull out the field
-  //          val annos = reflect.annotations(fieldSym)
-  //          val fieldName = new AnnotationExtractors(annos).name.getOrElse(fieldSym.name.decodedName.toString)
-  //
-  //          if (reflect.isMacroGenerated(fieldTpe)) {
-  //            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldNotLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})(encoders($index).asInstanceOf[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]])"""
-  //          } else {
-  //            q"""_root_.com.sksamuel.avro4s.Encoder.encodeFieldLazy[$fieldTpe](t.$termName, $fieldName, schema, ${nameResolution.fullName})(encoders($index).asInstanceOf[_root_.shapeless.Lazy[_root_.com.sksamuel.avro4s.Encoder[$fieldTpe]]])"""
-  //          }
-  //        }
-  //
-  //
-  //      if (isValueClass) {
-  //        c.Expr[Encoder[T]](
-  //          q"""
-  //            new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
-  //              private[this] val encoders = Array(..$encoders)
-  //
-  //              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = Seq(..$fields).head
-  //            }
-  //        """
-  //        )
-  //      } else {
-  //        c.Expr[Encoder[T]](
-  //          q"""
-  //            new _root_.com.sksamuel.avro4s.Encoder[$tpe] {
-  //              private[this] val encoders = Array(..$encoders)
-  //
-  //              override def encode(t: $tpe, schema: org.apache.avro.Schema): AnyRef = {
-  //                _root_.com.sksamuel.avro4s.Encoder.buildRecord(schema, Vector(..$fields), ${nameResolution.fullName})
-  //              }
-  //            }
-  //        """
-  //        )
-  //      }
-  //    }
-  //  }
-
   implicit def tuple2Encoder[A, B](implicit encA: Encoder[A], encB: Encoder[B]) = new Encoder[(A, B)] {
     override def encode(t: (A, B), schema: Schema): AnyRef = {
       ImmutableRecord(
@@ -508,6 +401,35 @@ object Encoder extends CoproductEncoders {
           encD.encode(t._4, schema.getField("_4").schema()),
           encE.encode(t._5, schema.getField("_5").schema()))
       )
+    }
+  }
+
+  // A coproduct is a union, or a generalised either.
+  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
+
+  // Shapeless's implementation builds up the type recursively,
+  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
+
+  // `encode` here should never actually be invoked, because you can't
+  // actually construct a value of type a: CNil, but the Encoder[CNil]
+  // needs to exist to supply a base case for the recursion.
+  implicit def cnilEncoder: Encoder[CNil] = new Encoder[CNil] {
+    override def encode(t: CNil, schema: Schema): AnyRef = sys.error("This should never happen: CNil has no inhabitants")
+  }
+
+  // A :+: B is either Inl(value: A) or Inr(value: B), continuing the recursion
+  implicit def coproductEncoder[H, T <: Coproduct](implicit encoderS: Encoder[H], encoderT: Encoder[T]): Encoder[H :+: T] = new Encoder[H :+: T] {
+    override def encode(value: H :+: T, schema: Schema): AnyRef = {
+      // the schema passed in here will be a union
+      require(schema.getType == Schema.Type.UNION)
+      value match {
+        // we must extract the appropriate schema from the union when we hit the base left case
+        case Inl(h) =>
+          val namer = Namer(h.getClass)
+          val s = SchemaHelper.extractTraitSubschema(namer.fullName, schema)
+          encoderS.encode(h, s)
+        case Inr(t) => encoderT.encode(t, schema)
+      }
     }
   }
 }
