@@ -99,12 +99,15 @@ object SafeFrom {
     } else {
       new SafeFrom[T] {
 
-        private val namer = NameResolution(tpe)
+        private val namer = Namer(tpe)
         private val typeName = namer.fullName
 
         override def safeFrom(value: Any, schema: Schema): Option[T] = {
           value match {
-            case container: GenericContainer if typeName == container.getSchema.getFullName => Some(decoder.decode(value, schema))
+            case container: GenericContainer if typeName == container.getSchema.getFullName =>
+              require(schema.getType == Schema.Type.UNION)
+              val s = SchemaHelper.extractTraitSubschema(namer.fullName, schema)
+              Some(decoder.decode(value, s))
             case _ => None
           }
         }

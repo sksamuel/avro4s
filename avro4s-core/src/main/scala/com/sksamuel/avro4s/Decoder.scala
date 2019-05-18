@@ -10,6 +10,7 @@ import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
 import org.apache.avro.generic.{GenericContainer, GenericData, GenericFixed, GenericRecord, IndexedRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, JsonProperties, Schema}
+import shapeless.{:+:, CNil, Coproduct, Inr}
 
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
@@ -243,8 +244,8 @@ object Decoder {
     private[this] val safeFromA: SafeFrom[A] = SafeFrom.makeSafeFrom[A]
     private[this] val safeFromB: SafeFrom[B] = SafeFrom.makeSafeFrom[B]
 
-    private val nameA = NameResolution(implicitly[WeakTypeTag[A]].tpe).fullName
-    private val nameB = NameResolution(implicitly[WeakTypeTag[B]].tpe).fullName
+    private val nameA = Namer(implicitly[WeakTypeTag[A]].tpe).fullName
+    private val nameB = Namer(implicitly[WeakTypeTag[B]].tpe).fullName
 
     override def decode(value: Any, schema: Schema): Either[A, B] = {
 
@@ -256,9 +257,7 @@ object Decoder {
       safeFromA.safeFrom(value, schema.getTypes.get(0)).map(Left[A, B])
         .orElse(safeFromB.safeFrom(value, schema.getTypes.get(1)).map(Right[A, B]))
         .getOrElse {
-          val aName = NameResolution(implicitly[WeakTypeTag[A]].tpe)
-          val bName = NameResolution(implicitly[WeakTypeTag[B]].tpe)
-          sys.error(s"Could not decode $value into Either[$aName, $bName]")
+          sys.error(s"Could not decode $value into Either[$nameB, $nameB]")
         }
     }
   }
@@ -420,6 +419,8 @@ object Decoder {
         override def decode(value: Any, schema: Schema): T = {
           value match {
             case record: IndexedRecord =>
+              // if we are in here then we are decoding a case class so we need a record schema
+              require(schema.getType == Schema.Type.RECORD)
               val values = klass.parameters.map { p =>
 
                 // take into account @AvroName
@@ -577,6 +578,36 @@ object Decoder {
         decoderD.decode(record.get("_4"), schema),
         decoderE.decode(record.get("_5"), schema)
       )
+    }
+  }
+
+  // A coproduct is a union, or a generalised either.
+  // A :+: B :+: C :+: CNil is a type that is either an A, or a B, or a C.
+
+  // Shapeless's implementation builds up the type recursively,
+  // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
+
+  // `decode` here should never be invoked under normal operation; if
+  // we're trying to read a value of type CNil it's because we've
+  // tried all the other cases and failed. But the Decoder[CNil]
+  // needs to exist to supply a base case for the recursion.
+  implicit object CNilDecoderValue extends Decoder[CNil] {
+    override def decode(value: Any, schema: Schema): CNil = sys.error("This should never happen: CNil has no inhabitants")
+  }
+
+  // We're expecting to read a value of type S :+: T from avro.  Avro
+  // unions are untyped, so we have to attempt to read a value of type
+  // S (the concrete type), and if that fails, attempt to read the
+  // rest of the coproduct type T.
+
+  // thus, the bulk of the logic here is shared with reading Eithers, in `safeFrom`.
+  implicit def coproductDecoder[S: WeakTypeTag : Decoder, T <: Coproduct](implicit decoder: Decoder[T]): Decoder[S :+: T] = new Decoder[S :+: T] {
+    private[this] val safeFromS = SafeFrom.makeSafeFrom[S]
+    override def decode(value: Any, schema: Schema): S :+: T = {
+      safeFromS.safeFrom(value, schema) match {
+        case Some(s) => Coproduct[S :+: T](s)
+        case None => Inr(decoder.decode(value, schema))
+      }
     }
   }
 }
