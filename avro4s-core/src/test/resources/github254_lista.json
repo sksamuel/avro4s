@@ -1,0 +1,25 @@
+{
+  "type": "array",
+  "items": {
+    "type": "record",
+    "name": "A",
+    "namespace": "com.sksamuel.avro4s.github.Github254",
+    "fields": [
+      {
+        "name": "c",
+        "type": [
+          {
+            "type": "record",
+            "name": "c1",
+            "fields": []
+          },
+          {
+            "type": "record",
+            "name": "c2",
+            "fields": []
+          }
+        ]
+      }
+    ]
+  }
+}
