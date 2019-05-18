@@ -7,7 +7,6 @@ import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
-import org.codehaus.jackson.JsonNode
 import org.codehaus.jackson.node.TextNode
 
 import scala.language.experimental.macros
