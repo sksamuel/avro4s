@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "Annotated123",
-  "namespace": "com.sksamuel.avro4s.schema.AvroDocSchemaTest",
+  "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "a",

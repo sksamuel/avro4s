@@ -8,7 +8,7 @@ import java.util.UUID
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import org.codehaus.jackson.node.TextNode
-import shapeless.{:+:, CNil, Coproduct, Generic}
+import shapeless.{:+:, CNil, Coproduct}
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
@@ -265,16 +265,7 @@ object SchemaFor {
             val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
             props.foreach { case (k, v) => builder.prop(k, v) }
             builder.size(size)
-          case None =>
-            // we can annotate the value class with @AvroDoc, to save us putting it on every field that uses this value class.
-            // However the only place that would be is visible is here - inside the derivation for the value type.
-            // We can't attach that "doc" to the schema because the schema may be a primitive
-            // so a hacky solution is to wrap the schema in a record, which has a name set to a placeholder value to let
-            // us know we've wrapped it, and extract it all when we come out of this derivation and back to the parent, ouch!
-            // if you have a better idea, then feel free to let me know!
-            val s = Schema.createRecord("placeholder", doc, "avro4s", false)
-            s.setFields(List(new Schema.Field("a", param.typeclass.schema, null, null: Object)).asJava)
-            s
+          case None => param.typeclass.schema
         }
 
       } else {
@@ -282,15 +273,22 @@ object SchemaFor {
         val fields = ctx.parameters.flatMap { param =>
           if (new AnnotationExtractors(param.annotations).transient) None else {
             val s = param.typeclass.schema
-            // extract the schema if we wrapped in order to pass value annotations back
-            val (doc, s2) = if (s.getFullName == "avro4s.placeholder") {
-              val extracted = s.getField("a").schema()
-              val doc = s.getDoc
-              (Option(doc), extracted)
-            } else {
-              (None, s)
+            // if the field is a value type then we may have annotated it with @AvroDoc, and that doc should be
+            // placed onto the field, not onto the record type, because there won't be a record type for a value type!
+            // magnolia won't give us the type of the parameter, so we must find it in the class type
+            val doc = try {
+              import scala.reflect.runtime.universe
+              val mirror = universe.runtimeMirror(getClass.getClassLoader)
+              val sym = mirror.staticClass(ctx.typeName.full).primaryConstructor.asMethod.paramLists.head(param.index)
+              sym.typeSignature.typeSymbol.annotations.collectFirst {
+                case a if a.tree.tpe =:= typeOf[AvroDoc] =>
+                  val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
+                  annoValue.toString
+              }
+            } catch {
+              case NonFatal(_) => None
             }
-            Some(buildField(param.label, namespace, param.annotations, s2, param.default, namingStrategy, doc))
+            Some(buildField(param.label, namespace, param.annotations, s, param.default, namingStrategy, doc))
           }
         }
 
@@ -416,10 +414,10 @@ object SchemaFor {
     override def schema(implicit namingStrategy: NamingStrategy) = SchemaHelper.createSafeUnion(base, coproduct)
   }
 
-  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-                                               coproductFor: SchemaFor[C]): SchemaFor[T] = new SchemaFor[T] {
-    override def schema(implicit namingStrategy: NamingStrategy) = coproductFor.schema
-  }
+  //  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
+  //                                               coproductFor: SchemaFor[C]): SchemaFor[T] = new SchemaFor[T] {
+  //    override def schema(implicit namingStrategy: NamingStrategy) = coproductFor.schema
+  //  }
 
   implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = new SchemaFor[(A, B)] {
     override def schema(implicit namingStrategy: NamingStrategy): Schema =
