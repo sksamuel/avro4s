@@ -7,14 +7,14 @@ import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
+import org.codehaus.jackson.JsonNode
+import org.codehaus.jackson.node.TextNode
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
 import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
 import scala.reflect.ClassTag
-import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe._
-import scala.tools.reflect.ToolBox
 import scala.util.control.NonFatal
 
 
@@ -327,22 +327,24 @@ object SchemaFor {
       sym.name.decodedName.toString.trim
     }.toList.reverse
 
-    val annos = typeRef.pre.typeSymbol.annotations.map { a =>
-      val name = a.tree.tpe.typeSymbol.fullName
-      val tb = currentMirror.mkToolBox()
-      val args = tb.compile(tb.parse(a.toString)).apply() match {
-        case c: AvroFieldReflection => c.getAllFields.map { case (k, v) => (k, v.toString) }
-        case _ => Map.empty[String, String]
-      }
-      Anno(name, args)
+    val as = typeRef.pre.typeSymbol.annotations
+    val nameAnnotation = as.collectFirst {
+      case a: AvroName => a.name
+    }
+    val namespaceAnnotation = as.collectFirst {
+      case a: AvroNamespace => a.namespace
+    }
+    val props = as.collect {
+      case prop: AvroProp => prop.key -> prop.value
+    }
+    val namer = Namer(magnolia.TypeName(typeRef.pre.typeSymbol.owner.fullName, typeRef.pre.typeSymbol.name.decodedName.toString, Nil), nameAnnotation, namespaceAnnotation, false)
+
+    val s = SchemaBuilder.enumeration(namer.name).namespace(namer.namespace).symbols(syms: _*)
+    props.foreach { case (key, value) =>
+      s.addProp(key, TextNode.valueOf(value))
     }
 
-    val extractor = new AnnotationExtractors(annos)
-
-    val namespace = extractor.namespace.getOrElse(typeRef.pre.typeSymbol.owner.fullName)
-    val name = extractor.name.getOrElse(typeRef.pre.typeSymbol.name.decodedName.toString)
-
-    override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
+    override def schema(implicit namingStrategy: NamingStrategy) = s
   }
 
   //  implicit def genCoproductSingletons[T, C <: Coproduct, L <: HList](implicit ct: ClassTag[T],
