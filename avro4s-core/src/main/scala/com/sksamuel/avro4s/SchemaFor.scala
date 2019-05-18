@@ -164,23 +164,13 @@ object SchemaFor {
   implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = new SchemaFor[E] {
     override def schema(implicit namingStrategy: NamingStrategy): Schema = {
 
-      val annos = tag.runtimeClass.getAnnotations.toList.map { a =>
-        val tb = currentMirror.mkToolBox()
-
-        val args = tb.compile(tb.parse(a.toString)).apply() match {
-          case c: AvroFieldReflection => c.getAllFields.map { case (k, v) => (k, v.toString) }
-          case _ => Map.empty[String, String]
-        }
-        Anno(a.annotationType.getClass.getName, args)
-      }
-
-      val extractor = new AnnotationExtractors(annos)
-
-      val name = tag.runtimeClass.getSimpleName
-      val namespace = extractor.namespace.getOrElse(tag.runtimeClass.getPackage.getName)
+      val as = tag.runtimeClass.getAnnotations
+      val nameAnnotation = as.find(_.annotationType == classOf[AvroName]).map(_.asInstanceOf[AvroName]).map(_.name)
+      val namespaceAnnotation = as.find(_.annotationType == classOf[AvroNamespace]).map(_.asInstanceOf[AvroNamespace]).map(_.namespace)
+      val namer = Namer(magnolia.TypeName(tag.runtimeClass.getPackageName, tag.runtimeClass.getSimpleName, Nil), nameAnnotation, namespaceAnnotation, false)
       val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
 
-      SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
+      SchemaBuilder.enumeration(namer.name).namespace(namer.namespace).symbols(symbols: _*)
     }
   }
 

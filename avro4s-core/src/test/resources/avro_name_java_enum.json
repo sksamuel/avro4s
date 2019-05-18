@@ -1,0 +1,10 @@
+{
+  "type": "enum",
+  "name": "MyJavaEnum",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "symbols": [
+    "A",
+    "B",
+    "C"
+  ]
+}

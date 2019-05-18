@@ -8,9 +8,7 @@ import scala.reflect.macros.whitebox
   * Extracts name and namespace from a [[TypeName]].
   * Takes into consideration provided annotations.
   */
-case class Namer(typeName: TypeName, annos: Seq[Any]) {
-
-  private val extractor = new AnnotationExtractors(annos)
+case class Namer(typeName: TypeName, nameAnnotation: Option[String], namespaceAnnotation: Option[String], erased: Boolean) {
 
   private val defaultNamespace = typeName.owner.replaceAll("\\.<local .*?>", "").stripSuffix(".package")
 
@@ -43,7 +41,7 @@ case class Namer(typeName: TypeName, annos: Seq[Any]) {
     * Returns the namespace for this type to be used when creating
     * an avro record. This method takes into account @AvroNamespace.
     */
-  def namespace: String = extractor.namespace.getOrElse(defaultNamespace)
+  def namespace: String = namespaceAnnotation.getOrElse(defaultNamespace)
 
   /**
     * Returns the record name for this type to be used when creating
@@ -58,17 +56,18 @@ case class Namer(typeName: TypeName, annos: Seq[Any]) {
     * as @AvroName or @AvroNamespace, or @AvroErasedName, which, if present,
     * means the type parameters will not be included in the final name.
     */
-  def name: String = {
-    if (extractor.erased) {
-      extractor.name.getOrElse(erasedName)
-    } else {
-      extractor.name.getOrElse(genericName)
-    }
+  def name: String = nameAnnotation.getOrElse {
+    if (erased) erasedName else genericName
   }
 }
 
 object Namer {
   def apply[F[_], T](subtype: Subtype[F, T]): Namer = Namer(subtype.typeName, subtype.annotations)
+
+  def apply(typeName: TypeName, annos: Seq[Any]): Namer = {
+    val extractor = new AnnotationExtractors(annos)
+    Namer(typeName, extractor.name, extractor.namespace, extractor.erased)
+  }
 }
 
 /**

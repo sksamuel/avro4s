@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "Wibble",
+  "namespace": "com.sksamuel.avro4s.schema.AvroNameSchemaTest",
+  "fields": [
+    {
+      "name": "e",
+      "type": {
+        "type": "enum",
+        "name": "MyJavaEnum",
+        "namespace": "com.sksamuel.avro4s.schema",
+        "symbols": [
+          "A",
+          "B",
+          "C"
+        ]
+      }
+    }
+  ]
+}
