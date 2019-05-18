@@ -75,7 +75,9 @@ object Namer {
     val sym = mirror.classSymbol(clazz)
     val tpe = sym.toType
 
-    val typeName = TypeName(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, Nil)
+    def tpe2name(tpe: universe.Type): TypeName = {
+      TypeName(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, tpe.typeArgs.map(tpe2name))
+    }
 
     import scala.reflect.runtime.universe._
 
@@ -96,6 +98,7 @@ object Namer {
       case _ => false
     }
 
+    val typeName = tpe2name(tpe)
     Namer(typeName, nameAnnotation, namespaceAnnnotation, erased)
   }
 
