@@ -1,51 +1,24 @@
 {
   "type": "record",
-  "name": "TupleTest2",
-  "namespace": "com.sksamuel.avro4s.schema.ArraySchemaTest",
+  "name": "Test2",
+  "namespace": "com.sksamuel.avro4s.schema.TupleSchemaTest",
   "fields": [
     {
-      "name": "first",
-      "type": "string"
-    },
-    {
-      "name": "second",
+      "name": "z",
       "type": {
-        "type": "array",
-        "items": {
-          "type": "record",
-          "name": "Tuple2",
-          "namespace": "scala",
-          "fields": [
-            {
-              "name": "_1",
-              "type": {
-                "type": "record",
-                "name": "TupleTestA",
-                "namespace": "com.sksamuel.avro4s.schema.ArraySchemaTest",
-                "fields": [
-                  {
-                    "name": "parameter",
-                    "type": "int"
-                  }
-                ]
-              }
-            },
-            {
-              "name": "_2",
-              "type": {
-                "type": "record",
-                "name": "TupleTestB",
-                "namespace": "com.sksamuel.avro4s.schema.ArraySchemaTest",
-                "fields": [
-                  {
-                    "name": "parameter",
-                    "type": "int"
-                  }
-                ]
-              }
-            }
-          ]
-        }
+        "type": "record",
+        "name": "Tuple2",
+        "namespace": "scala",
+        "fields": [
+          {
+            "name": "_1",
+            "type": "string"
+          },
+          {
+            "name": "_2",
+            "type": "int"
+          }
+        ]
       }
     }
   ]

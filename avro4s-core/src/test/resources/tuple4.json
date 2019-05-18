@@ -1,13 +1,13 @@
 {
   "type": "record",
-  "name": "Test3",
+  "name": "Test4",
   "namespace": "com.sksamuel.avro4s.schema.TupleSchemaTest",
   "fields": [
     {
       "name": "z",
       "type": {
         "type": "record",
-        "name": "Tuple3",
+        "name": "Tuple4",
         "namespace": "scala",
         "fields": [
           {
@@ -21,6 +21,10 @@
           {
             "name": "_3",
             "type": "boolean"
+          },
+          {
+            "name": "_4",
+            "type": "double"
           }
         ]
       }
