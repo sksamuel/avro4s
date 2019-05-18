@@ -5,7 +5,7 @@ import magnolia.{Subtype, TypeName}
 import scala.reflect.macros.whitebox
 
 /**
-  * Extracts name and namespace from a [[TypeName]].
+  * Extracts name and namespace from a TypeName.
   * Takes into consideration provided annotations.
   */
 case class Namer(typeName: TypeName, nameAnnotation: Option[String], namespaceAnnotation: Option[String], erased: Boolean) {
