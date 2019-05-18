@@ -9,6 +9,7 @@ import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 
 import scala.language.experimental.macros
+import scala.language.implicitConversions
 import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.currentMirror
@@ -48,8 +49,6 @@ object SchemaFor {
   import scala.collection.JavaConverters._
 
   type Typeclass[T] = SchemaFor[T]
-
-  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
   def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
 
@@ -202,7 +201,7 @@ object SchemaFor {
   private def buildField[B](label: String,
                             namespace: String,
                             annos: Seq[Any],
-                            schemaFor: SchemaFor[B],
+                            fieldSchema: Schema,
                             default: Option[B],
                             namingStrategy: NamingStrategy): Schema.Field = {
 
@@ -219,12 +218,12 @@ object SchemaFor {
     val encodedDefault: AnyRef = default match {
       case None => null
       case Some(null) => JsonProperties.NULL_VALUE
-      case Some(other) => DefaultResolver(other, schemaFor.schema(namingStrategy))
+      case Some(other) => DefaultResolver(other, fieldSchema)
     }
 
     // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
     // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
-    val schema = extractor.fixed.fold(schemaFor.schema(namingStrategy)) { size =>
+    val schema = extractor.fixed.fold(fieldSchema) { size =>
       SchemaBuilder.fixed(name).doc(doc).namespace(extractor.namespace.getOrElse(namespace)).size(size)
     }
 
@@ -248,49 +247,43 @@ object SchemaFor {
     field
   }
 
-  def combine[T](klass: CaseClass[Typeclass, T]): SchemaFor[T] = {
+  def combine[T](ctx: CaseClass[Typeclass, T]): SchemaFor[T] = new SchemaFor[T] {
+    override def schema(implicit namingStrategy: NamingStrategy) = {
 
-    val extractor = new AnnotationExtractors(klass.annotations)
-    val doc = extractor.doc.orNull
-    val aliases = extractor.aliases
-    val props = extractor.props
+      val extractor = new AnnotationExtractors(ctx.annotations)
+      val doc = extractor.doc.orNull
+      val aliases = extractor.aliases
+      val props = extractor.props
 
-    val namer = Namer(klass.typeName, klass.annotations)
-    val namespace = namer.namespace
-    val name = namer.name
+      val namer = Namer(ctx.typeName, ctx.annotations)
+      val namespace = namer.namespace
+      val name = namer.name
 
-    // if the class is a value type, then we need to use the schema for the single field inside the type
-    // in other words, if we have `case class Foo(str:String)` then this just acts like a string
-    // if we have a value type AND @AvroFixed is present on the class, then we simply return a schema of type fixed
-    if (klass.isValueClass) {
-      new SchemaFor[T] {
-        val param = klass.parameters.head
-        override def schema(implicit namingStrategy: NamingStrategy): Schema = {
-          extractor.fixed match {
-            case Some(size) =>
-              val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
-              props.foreach { case (k, v) => builder.prop(k, v) }
-              builder.size(size)
-            case None => param.typeclass.schema
-          }
+      // if the class is a value type, then we need to use the schema for the single field inside the type
+      // in other words, if we have `case class Foo(str:String)` then this just acts like a string
+      // if we have a value type AND @AvroFixed is present on the class, then we simply return a schema of type fixed
+      if (ctx.isValueClass) {
+        val param = ctx.parameters.head
+        extractor.fixed match {
+          case Some(size) =>
+            val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
+            props.foreach { case (k, v) => builder.prop(k, v) }
+            builder.size(size)
+          case None => param.typeclass.schema
         }
-      }
 
-    } else {
-      new SchemaFor[T] {
-        override def schema(implicit namingStrategy: NamingStrategy) = {
+      } else {
 
-          val fields = klass.parameters.map { param =>
-            buildField(param.label, namespace, param.annotations, param.typeclass, param.default, namingStrategy)
-          }
-
-          val record = Schema.createRecord(name, doc, namespace, false)
-          aliases.foreach(record.addAlias)
-          props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
-          record.setFields(fields.asJava)
-
-          record
+        val fields = ctx.parameters.map { param =>
+          buildField(param.label, namespace, param.annotations, param.typeclass.schema, param.default, namingStrategy)
         }
+
+        val record = Schema.createRecord(name, doc, namespace, false)
+        aliases.foreach(record.addAlias)
+        props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
+        record.setFields(fields.asJava)
+
+        record
       }
     }
   }
@@ -674,14 +667,6 @@ object SchemaFor {
         .name("_5").`type`(e.schema).noDefault()
         .endRecord()
   }
-}
 
-//sealed trait Default
-//
-//object Default {
-//  def apply(x: AnyRef): Default = if (x == null) NullDefault else MethodDefault(x)
-//}
-//
-//case class MethodDefault(value: AnyRef) extends Default
-//case object NullDefault extends Default
-//case object NoDefault extends Default
+  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
+}

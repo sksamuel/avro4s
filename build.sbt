@@ -10,23 +10,19 @@ lazy val root = Project("avro4s", file("."))
     name := "avro4s"
   )
   .aggregate(
-    `avro4s-macros`,
     `avro4s-core`,
     `avro4s-json`,
     `avro4s-cats`,
     `avro4s-kafka`
   )
 
-val `avro4s-macros` = project.in(file("avro4s-macros"))
+val `avro4s-core` = project.in(file("avro4s-core"))
   .settings(
     libraryDependencies ++= Seq(
       "com.softwaremill" %% "magnolia" % "0.11.0-sml",
       "com.chuusai" %% "shapeless" % ShapelessVersion
     )
   )
-
-val `avro4s-core` = project.in(file("avro4s-core"))
-  .dependsOn(`avro4s-macros`)
 
 val `avro4s-json` = project.in(file("avro4s-json"))
   .dependsOn(`avro4s-core`)

@@ -1,17 +1,14 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.schema.Recursive
 import org.scalatest.{FunSuite, Matchers}
 
 class RecursiveEncoderTest extends FunSuite with Matchers {
 
   ignore("recursive encoding") {
-    Recursive(4, Some(Recursive(2, Some(Recursive(9, None)))))
-
-    // at the moment you need to store the recursive schema in a variable
-    // so that the compiler doesn't try to expand it forever
-    // implicit val schema = SchemaFor[Recursive]
+    Branch(Branch(Leaf(1), Leaf(2)), Leaf(3))
   }
 }
 
-
+sealed trait Tree[+T]
+case class Branch[+T](left: Tree[T], right: Tree[T]) extends Tree[T]
+case class Leaf[+T](value: T) extends Tree[T]

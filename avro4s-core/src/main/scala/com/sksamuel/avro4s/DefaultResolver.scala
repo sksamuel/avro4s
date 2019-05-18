@@ -4,9 +4,9 @@ import java.nio.ByteBuffer
 import java.util.UUID
 
 import org.apache.avro.LogicalTypes.Decimal
+import org.apache.avro.{Conversions, Schema}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, Schema}
 
 /**
   * When we set a default on an avro field, the type must match
