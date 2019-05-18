@@ -217,13 +217,18 @@ object SchemaFor {
       SchemaBuilder.fixed(name).doc(doc).namespace(extractor.namespace.getOrElse(namespace)).size(size)
     }
 
+    // if our default value is null, then we should change the type to be nullable even if we didn't use option
+    val schemaWithPossibleNull = if (encodedDefault == JsonProperties.NULL_VALUE) {
+      SchemaBuilder.unionOf().`type`(schema).and().`type`(Schema.create(Schema.Type.NULL)).endUnion()
+    } else schema
+
     // for a union the type that has a default must be first
     // if there is no default then we'll move null to head (if present)
-    val schemaWithOrderedUnion = (schema.getType, encodedDefault) match {
-      case (Schema.Type.UNION, null) => SchemaHelper.moveDefaultToHead(schema, null)
-      case (Schema.Type.UNION, JsonProperties.NULL_VALUE) => SchemaHelper.moveDefaultToHead(schema, null)
-      case (Schema.Type.UNION, defaultValue) => SchemaHelper.moveDefaultToHead(schema, defaultValue)
-      case _ => schema
+    val schemaWithOrderedUnion = (schemaWithPossibleNull.getType, encodedDefault) match {
+      case (Schema.Type.UNION, null) => SchemaHelper.moveDefaultToHead(schemaWithPossibleNull, null)
+      case (Schema.Type.UNION, JsonProperties.NULL_VALUE) => SchemaHelper.moveDefaultToHead(schemaWithPossibleNull, null)
+      case (Schema.Type.UNION, defaultValue) => SchemaHelper.moveDefaultToHead(schemaWithPossibleNull, defaultValue)
+      case _ => schemaWithPossibleNull
     }
 
     // the field can override the namespace if the Namespace annotation is present on the field

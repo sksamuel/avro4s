@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "FieldWithNull",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "name",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  ]
+}

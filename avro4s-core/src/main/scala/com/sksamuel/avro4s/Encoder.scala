@@ -355,8 +355,12 @@ object Encoder extends CoproductEncoders {
         schema.getType match {
           // we support two types of schema here - a union when subtypes are classes and a enum when the subtypes are all case objects
           case Schema.Type.UNION =>
-            // with the subtype we need to find the matching schema in the parent union
-            val subschema = SchemaHelper.extractTraitSubschema(fullname, schema)
+            // we need to extract the subschema matching the input type
+            // note: that the schema may have a custom name and a custom namespace!
+            // note2: the field for the ADT itself may be annotated!
+            val a = ctx.annotations
+            val namer = Namer(subtype.typeName, subtype.annotations)
+            val subschema = SchemaHelper.extractTraitSubschema(namer.fullName, schema)
             subtype.typeclass.encode(t.asInstanceOf[subtype.SType], subschema)
           // for enums we just encode the type name in an enum symbol wrapper. simples!
           case Schema.Type.ENUM => new GenericData.EnumSymbol(schema, namer.name)
