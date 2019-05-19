@@ -6,8 +6,8 @@
     {
       "name": "name",
       "type": [
-        "string",
-        "null"
+        "null",
+        "string"
       ],
       "default": null
     }

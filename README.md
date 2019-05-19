@@ -13,6 +13,8 @@ The features of the library are:
 * Boilerplate free serialization of Scala types into Avro types
 * Boilerplate free deserialization of Avro types to Scala types
 
+Note: This document refers to the 3.0 release train.
+
 ## Schemas
 
 Unlike Json, Avro is a schema based format. You'll find yourself wanting to generate schemas frequently, and writing these by hand or through the Java based `SchemaBuilder` classes can be tedious for complex domain models. Avro4s allows us to generate schemas directly from case classes at compile time via macros. This gives you both the convenience of generated code, without the annoyance of having to run a code generation step, as well as avoiding the peformance penalty of runtime reflection based code.

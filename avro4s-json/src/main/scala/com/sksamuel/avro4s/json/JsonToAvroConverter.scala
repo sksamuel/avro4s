@@ -4,7 +4,6 @@ import java.util
 
 import com.sksamuel.avro4s._
 import org.apache.avro.Schema
-import org.codehaus.jackson.node.TextNode
 
 /**
   * Accepts a json string, and returns an Avro Schema that best matches the json string.
@@ -51,14 +50,14 @@ class JsonToAvroConverter(namespace: String,
       val record = Schema.createRecord(name, null, namespace, false)
       val doc: String = null
       val default: AnyRef = null
-      val fields = values.map { case (name, value) => new Schema.Field(name, convert(name, value), doc, default) }
+      val fields = values.map { case (k, v) => new Schema.Field(k, convert(k, v), doc, default) }
       record.setFields(fields.asJava)
       record
   }
 
   private def createStringSchema = {
     val schema = Schema.create(Schema.Type.STRING)
-    if (avroStringTypeIsString) schema.addProp("avro.java.string", new TextNode("String"))
+    if (avroStringTypeIsString) schema.addProp("avro.java.string", "String")
     schema
   }
 

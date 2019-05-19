@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.Schema
+import org.apache.avro.{JsonProperties, Schema}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 
@@ -85,6 +85,7 @@ object SchemaHelper {
     require(schema.getType == Schema.Type.UNION)
     val defaultType = default match {
       case _: String => Schema.Type.STRING
+      case x if x.getClass.isEnum => Schema.Type.ENUM
       case _: Utf8 => Schema.Type.STRING
       case _: Long => Schema.Type.LONG
       case _: Int => Schema.Type.INT
@@ -93,6 +94,7 @@ object SchemaHelper {
       case _: Double => Schema.Type.DOUBLE
       case _: Array[Byte] => Schema.Type.BYTES
       case _: GenericData.EnumSymbol => Schema.Type.ENUM
+      case JsonProperties.NULL_VALUE => Schema.Type.NULL
       case other => other
     }
     val (first, rest) = schema.getTypes.asScala.partition(_.getType == defaultType)
@@ -107,11 +109,12 @@ object SchemaHelper {
     */
   def moveNullToHead(schema: Schema): Schema = {
     require(schema.getType == Schema.Type.UNION, "Cannot order types in non union")
-    val (nulls, rest) = schema.getTypes.asScala.partition(_.getType == Schema.Type.NULL)
-    val result = Schema.createUnion(nulls.headOption.toSeq ++ rest: _*)
-    schema.getAliases.asScala.foreach(result.addAlias)
-    schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
-    result
+    if (schema.getTypes.asScala.exists(_.getType == Schema.Type.NULL)) {
+      val (nulls, rest) = schema.getTypes.asScala.partition(_.getType == Schema.Type.NULL)
+      val result = Schema.createUnion(nulls.headOption.toSeq ++ rest: _*)
+      schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
+      result
+    } else schema
   }
 
   // creates a union schema type, with nested unions extracted, and duplicate nulls stripped

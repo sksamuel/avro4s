@@ -22,12 +22,12 @@ class AvroDataOutputStreamCodecTest extends WordSpec with Matchers {
       new String(baos.toByteArray) should include("compositions")
     }
 
-    "include snappy coded in metadata when serialized with snappy" in {
+    "include zstandard coded in metadata when serialized with zstandard" ignore {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.snappyCodec).build(schema)
+      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.zstandardCodec(CodecFactory.DEFAULT_ZSTANDARD_LEVEL)).build(schema)
       output.write(ennio)
       output.close()
-      new String(baos.toByteArray) should include("snappy")
+      new String(baos.toByteArray) should include("zstandard")
     }
 
     "include deflate coded in metadata when serialized with deflate" in {

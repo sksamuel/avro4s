@@ -6,7 +6,6 @@
     {
       "name": "maybewine",
       "type": [
-        "null",
         {
           "type": "enum",
           "name": "Wine",
@@ -17,7 +16,8 @@
             "CabSav",
             "Merlot"
           ]
-        }
+        },
+        "null"
       ],
       "default": "CabSav"
     }

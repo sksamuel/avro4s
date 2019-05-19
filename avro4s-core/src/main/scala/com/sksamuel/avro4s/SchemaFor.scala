@@ -7,12 +7,10 @@ import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
-import org.codehaus.jackson.node.TextNode
 import shapeless.{:+:, CNil, Coproduct}
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
-import scala.math.BigDecimal.RoundingMode.{RoundingMode, UNNECESSARY}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
@@ -223,11 +221,12 @@ object SchemaFor {
       SchemaBuilder.unionOf().`type`(schema).and().`type`(Schema.create(Schema.Type.NULL)).endUnion()
     } else schema
 
-    // for a union the type that has a default must be first
+    // for a union the type that has a default must be first (including null as an explicit default)
     // if there is no default then we'll move null to head (if present)
+    // otherwise left as is
     val schemaWithOrderedUnion = (schemaWithPossibleNull.getType, encodedDefault) match {
-      case (Schema.Type.UNION, null) => SchemaHelper.moveDefaultToHead(schemaWithPossibleNull, null)
-      case (Schema.Type.UNION, JsonProperties.NULL_VALUE) => SchemaHelper.moveDefaultToHead(schemaWithPossibleNull, null)
+      case (Schema.Type.UNION, null) => SchemaHelper.moveNullToHead(schemaWithPossibleNull)
+      case (Schema.Type.UNION, JsonProperties.NULL_VALUE) => SchemaHelper.moveNullToHead(schemaWithPossibleNull)
       case (Schema.Type.UNION, defaultValue) => SchemaHelper.moveDefaultToHead(schemaWithPossibleNull, defaultValue)
       case _ => schemaWithPossibleNull
     }
@@ -237,7 +236,11 @@ object SchemaFor {
     // to any schemas we have generated for this field
     val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schemaWithOrderedUnion, _)).getOrElse(schemaWithOrderedUnion)
 
-    val field = new Schema.Field(name, schemaWithResolvedNamespace, doc, encodedDefault)
+    val field = if (encodedDefault == null)
+      new Schema.Field(name, schemaWithResolvedNamespace, doc)
+    else
+      new Schema.Field(name, schemaWithResolvedNamespace, doc, encodedDefault)
+
     props.foreach { case (k, v) => field.addProp(k, v: AnyRef) }
     aliases.foreach(field.addAlias)
     field
@@ -365,7 +368,7 @@ object SchemaFor {
 
     val s = SchemaBuilder.enumeration(namer.name).namespace(namer.namespace).symbols(syms: _*)
     props.foreach { case (key, value) =>
-      s.addProp(key, TextNode.valueOf(value))
+      s.addProp(key, value)
     }
 
     override def schema(implicit namingStrategy: NamingStrategy) = s
