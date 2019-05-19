@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord, NamingStrategy, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, DefaultNamingStrategy, Encoder, ImmutableRecord, NamingStrategy, SchemaFor}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{FunSuite, Matchers}
@@ -14,7 +14,7 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit val StringAsBooleanEncoder = new Encoder[String] {
-      override def encode(t: String, schema: Schema): AnyRef = java.lang.Boolean.valueOf(true)
+      override def encode(t: String, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = java.lang.Boolean.valueOf(true)
     }
 
     case class OverrideTest(s: String, i: Int)
@@ -32,7 +32,7 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit val FooOverrideEncoder = new Encoder[Foo] {
-      override def encode(t: Foo, schema: Schema): AnyRef = t.b.toString + ":" + t.i
+      override def encode(t: Foo, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = t.b.toString + ":" + t.i
     }
 
     case class Foo(b: Boolean, i: Int)
@@ -51,7 +51,7 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit object FooValueTypeEncoder extends Encoder[FooValueType] {
-      override def encode(t: FooValueType, schema: Schema): AnyRef = java.lang.Integer.valueOf(t.s.toInt)
+      override def encode(t: FooValueType, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = java.lang.Integer.valueOf(t.s.toInt)
     }
 
     case class OverrideTest(s: String, foo: FooValueType)
@@ -69,7 +69,7 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit object FooValueTypeEncoder extends Encoder[FooValueType] {
-      override def encode(t: FooValueType, schema: Schema): AnyRef = java.lang.Integer.valueOf(t.s.toInt)
+      override def encode(t: FooValueType, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = java.lang.Integer.valueOf(t.s.toInt)
     }
 
     val schema = AvroSchema[FooValueType]
