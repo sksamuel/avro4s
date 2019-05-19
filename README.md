@@ -260,7 +260,7 @@ To do this, we just introduce a new instance of `SchemaFor` and put it in scope 
 
 ```scala
 implicit object IntOverride extends SchemaFor[Int] {
-  override def schema: Schema = SchemaBuilder.builder.stringType
+  override def schema(implicit naming: NamingStrategy = DefaultNamingStrategy): Schema = SchemaBuilder.builder.stringType
 }
 
 case class Foo(a: String)
@@ -518,7 +518,7 @@ the contents in lower case, we can do the following:
 case class Foo(a: String, b: String)
 
 implicit object FooEncoder extends Encoder[Foo] {
-  override def encode(foo: Foo, schema: Schema): AnyRef = {
+  override def encode(foo: Foo, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = {
     val record = new GenericData.Record(schema)
     record.put("a", foo.a.toUpperCase)
     record.put("b", foo.b.toUpperCase)
@@ -527,7 +527,7 @@ implicit object FooEncoder extends Encoder[Foo] {
 }
 
 implicit object FooDecoder extends Decoder[Foo] {
-  override def decode(value: Any, schema: Schema): Foo = {
+  override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): Foo = {
     val record = value.asInstanceOf[GenericRecord]
     Foo(record.get("a").toString.toLowerCase, record.get("b").toString.toLowerCase)
   }
@@ -618,12 +618,12 @@ And you want to selectively use different scale/precision for the `price` and `l
 
 ``` scala
 object Price {
-  implicit val sp = ScalePrecisionRoundingMode(10, 2, scala.math.BigDecimal.RoundingMode.UNNECESSARY)
+  implicit val sp = ScalePrecisionRoundingMode(10, 2)
   implicit val schema = SchemaFor[Price]
 }
 
 object Product {
-  implicit val sp = ScalePrecisionRoundingMode(8, 4, scala.math.BigDecimal.RoundingMode.UNNECESSARY)
+  implicit val sp = ScalePrecisionRoundingMode(8, 4)
   implicit val schema = SchemaFor[Product]
 }
 ```
