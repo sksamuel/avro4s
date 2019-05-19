@@ -51,8 +51,14 @@ class BasicSchemasTest extends WordSpec with Matchers {
     }
     // todo fix
     "support simple recursive types" ignore {
-      val schema = AvroSchema[Tree[String]]
+      val schema = AvroSchema[RecursiveFoo]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    // todo fix
+    "support recursive ADTs" ignore {
+      val schema = AvroSchema[Tree[String]]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive_adt.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     // todo fix
@@ -93,6 +99,8 @@ case class Level4(str: Map[String, String])
 case class Level3(level4: Level4)
 case class Level2(level3: Level3)
 case class Level1(level2: Level2)
+
+case class RecursiveFoo(list: Seq[RecursiveFoo])
 
 case class MutRec1(payload: Int, children: List[MutRec2])
 case class MutRec2(payload: String, children: List[MutRec1])

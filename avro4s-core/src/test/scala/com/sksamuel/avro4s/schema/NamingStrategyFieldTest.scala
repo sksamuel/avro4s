@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.schema
 import com.sksamuel.avro4s.{AvroSchema, NamingStrategy, PascalCase, SnakeCase}
 import org.scalatest.{Matchers, WordSpec}
 
-class NamespaceStrategyFieldTest extends WordSpec with Matchers {
+class NamingStrategyFieldTest extends WordSpec with Matchers {
 
   "NamingStrategy" should {
     "defaultNoChange" in {
