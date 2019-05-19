@@ -304,6 +304,41 @@ Would result in the following schema:
 }
 ```
 
+### Naming Strategy
+
+If you are dealing with Avro data generated in other languages then it's quite likely the field names will reflect the style of that language. For example, Java may prefer `camelCaseFieldNames` but other languages may use `snake_case_field_names` or `PascalStyleFieldNames`. By default the name of the field in the case class is what will be used, and you've seen earlier that you can override a specific field with @AvroName, but doing this for every single field would be insane.
+
+So, avro4s provides `NamingStrategy` for this. You simply bring into scope an instance of NamingStrategy that will convert the scala field names into a target type field names.
+
+For example, lets take a scala case and generate a schema using snake case.
+
+```scala
+package com.sksamuel
+case class Foo(userName: String, emailAddress: String)
+implicit val snake: NamingStrategy = SnakeCase
+val schema = AvroSchema[Foo]
+```
+
+Would generate the following schema:
+
+```json
+{
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel",
+  "fields": [
+    {
+      "name": "user_name",
+      "type": "string"
+    },
+    {
+      "name": "email_address",
+      "type": "string"
+    }
+  ]
+}
+```
+
 ## Input / Output
 
 ### Serializing
