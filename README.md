@@ -571,14 +571,14 @@ When all descendants of sealed trait/class are singleton objects, optimized, enu
 
 ## Decimal scale, precision and rounding mode
 
-Bring an implicit `ScalePrecisionRoundingMode` into scope before using `AvroSchema`.
+In order to customize the scale and precision used by `BigDecimal` schema generators, bring an implicit `ScalePrecision` instance into scope.before using `AvroSchema`.
 
 ```scala
-import com.sksamuel.avro4s.ScalePrecisionRoundingMode
+import com.sksamuel.avro4s.ScalePrecision
 
 case class MyDecimal(d: BigDecimal)
 
-implicit val sp = ScalePrecisionRoundingMode(8, 20, RoundingMode.HALF_UP)
+implicit val sp = ScalePrecision(4, 20)
 val schema = AvroSchema[MyDecimal]
 ```
 
@@ -592,12 +592,25 @@ val schema = AvroSchema[MyDecimal]
     "type":{
       "type":"bytes",
       "logicalType":"decimal",
-      "scale":"8",
+      "scale":"4",
       "precision":"20"
     }
   }]
 }
 ```
+
+When encoding values, it may be necessary to round values if they need to be converted to the scale used by the schema. By default this is `RoundingMode.UNNECESSARY` which will throw an exception if rounding is required.
+In order to change this, add an implicit `RoundingMode` value before the `Encoder` is generated.
+
+```scala
+case class MyDecimal(d: BigDecimal)
+
+implicit val sp = ScalePrecision(4, 20)
+val schema = AvroSchema[MyDecimal]
+
+implicit val roundingMode = RoundingMode.HALF_UP
+val encoder = Encoder[MyDecimal]
+``` 
 
 ### Type Parameters
 
