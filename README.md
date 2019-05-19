@@ -384,15 +384,14 @@ val ennio = format.from(record)
 ## Type Mappings
 
 Avro4s defines two typeclasses, `Encoder` and `Decoder` which do the work
-of mapping between scala values and Avro compatible values. There are built in encoders and decoders for all the common types.
+of mapping between scala values and Avro compatible values. Avro has no understanding of Scala types, or anything outside of it's built in set of supported types, so all values must be converted to something that is compatible with Avro. There are built in encoders and decoders for all the common JDK and Scala SDK types, including macro generated instances for case classes.
 
-For example, given a string, and a schema of type `Schema.Type.STRING` then the default encoder would return an instance of `Utf8`, whereas
-the same string and a `Schema.Type.FIXED` schema would be encoded as an instance of `GenericData.Fixed`.
-
-Another example is given an `Option[T]` then an instance of `None` would be encoded as null, and an instance of `Some` would be
-encoded as the underlying value.
+For example a `java.sql.Timestamp` is usually encoded as a Long, and a `java.util.UUID` is encoded as a String.
 
 Decoders do the same work, but in reverse. They take an Avro value, such as null and return a scala value, such as `Option`.
+
+Some values can be mapped in multiple ways depending on how the schema was generated. For example a String, which is usually encoded as 
+`org.apache.avro.util.Utf8` could also be encoded as an array of byte if the generated schema for that field was `Schema.Type.BYTES`. Therefore some encoders will take into account the schema passed to them when choosing the avro compatible type. In the schemas section you saw how you could influence which schema is generated for types.
 
 ### Built in Type Mappings
 
@@ -401,43 +400,50 @@ import scala.collection.{Array, List, Seq, Iterable, Set, Map, Option, Either}
 import shapeless.{:+:, CNil}
 ```
 
-| Scala Type                   	| Schema Type   	| Logical Type     	|
-|------------------------------	|---------------	|------------------	|
-| String                       	| STRING        	|                  	|
-| Boolean                      	| BOOLEAN       	|                  	|
-| Long                         	| LONG          	|                  	|
-| Int                          	| INT           	|                  	|
-| Short                        	| INT           	|                  	|
-| Byte                         	| INT           	|                  	|
-| Double                       	| DOUBLE        	|                  	|
-| Float                        	| FLOAT         	|                  	|
-| UUID                         	| STRING        	| UUID             	|
-| LocalDate                    	| INT           	| Date             	|
-| LocalTime                    	| INT           	| Time-Millis      	|
-| LocalDateTime                	| LONG          	| Timestamp-Millis 	|
-| java.sql.Date                	| INT           	| Date             	|
-| Instant                      	| LONG          	| Timestamp-Millis 	|
-| Timestamp                    	| LONG          	| Timestamp-Millis 	|
-| BigDecimal                   	| BYTES         	| Decimal<8,2>     	|
-| Option[T]                    	| UNION<null,T> 	|                  	|
-| Array[Byte]                  	| BYTES         	|                  	|
-| ByteBuffer                   	| BYTES         	|                  	|
-| Seq[Byte]                    	| BYTES         	|                  	|
-| List[Byte]                   	| BYTES         	|                  	|
-| Vector[Byte]                 	| BYTES         	|                  	|
-| Array[T]                     	| ARRAY<T>      	|                  	|
-| Vector[T]                    	| ARRAY<T>      	|                  	|
-| Seq[T]                       	| ARRAY<T>      	|                  	|
-| List[T]                      	| ARRAY<T>      	|                  	|
-| Set[T]                       	| ARRAY<T>      	|                  	|
-| sealed trait of case classes 	| UNION<A,B>    	|                  	|
-| sealed trait of case objects 	| ENUM<A,B>     	|                  	|
-| Map[String, V]              	| MAP<V>        	|                  	|
-| Either[A,B]                  	| UNION<A,B>    	|                  	|
-| A :+: B :+: C :+: CNil       	| UNION<A,B,C>  	|                  	|
-| case class T                 	| RECORD        	|                  	|
-| Scala enumeration            	| ENUM          	|                  	|
-| Java enumeration             	| ENUM          	|                  	|
+The following table shows how types used in your code will be mapped / encoded in the generated Avro schemas and files.
+If a type can be mapped in multiple ways, it is listed more than once.
+
+| Scala Type                   	| Schema Type   	| Logical Type     	| Encoded Type |
+|------------------------------	|---------------	|------------------	| ------------ |
+| String                       	| STRING        	|                  	| Utf8                      |
+| String                       	| FIXED        	|                  	| GenericData.Fixed         |
+| String                       	| BYTES        	|                  	| ByteBuffer         |
+| Boolean                      	| BOOLEAN       	|                  	| java.lang.Boolean |
+| Long                         	| LONG          	|                  	| java.lang.Long |
+| Int                          	| INT           	|                  	| java.lang.Long |
+| Short                        	| INT           	|                  	| java.lang.Long |
+| Byte                         	| INT           	|                  	| java.lang.Long |
+| Double                       	| DOUBLE        	|                  	| java.lang.Long |
+| Float                        	| FLOAT         	|                  	| java.lang.Long |
+| UUID                         	| STRING        	| UUID             	| Utf8 |
+| LocalDate                    	| INT           	| Date             	| java.lang.Int |
+| LocalTime                    	| INT           	| Time-Millis      	| java.lang.Int |
+| LocalDateTime                	| LONG          	| Timestamp-Millis 	| java.lang.Long |
+| java.sql.Date                	| INT           	| Date             	| java.lang.Int |
+| Instant                      	| LONG          	| Timestamp-Millis 	| java.lang.Long |
+| Timestamp                    	| LONG          	| Timestamp-Millis 	| java.lang.Long |
+| BigDecimal                   	| BYTES         	| Decimal<8,2>     	| ByteBuffer |
+| BigDecimal                   	| FIXED         	| Decimal<8,2>     	| GenericData.Fixed |
+| BigDecimal                   	| STRING         	| Decimal<8,2>     	| String |
+| Option[T]                    	| UNION<null,T> 	|                  	| null, T |
+| Array[Byte]                  	| BYTES         	|                  	| ByteBuffer |
+| ByteBuffer                   	| BYTES         	|                  	| ByteBuffer |
+| Seq[Byte]                    	| BYTES         	|                  	| Array<Byte> |
+| List[Byte]                   	| BYTES         	|                  	| Array<Byte> |
+| Vector[Byte]                 	| BYTES         	|                  	| Array<Byte> |
+| Array[T]                     	| ARRAY<T>      	|                  	| Array<T> |
+| Vector[T]                    	| ARRAY<T>      	|                  	| Array<T> |
+| Seq[T]                       	| ARRAY<T>      	|                  	| Array<T> |
+| List[T]                      	| ARRAY<T>      	|                  	| Array<T> |
+| Set[T]                       	| ARRAY<T>      	|                  	| Array<T> |
+| sealed trait of case classes 	| UNION<A,B,..>  	|                  	| A, B, ... |
+| sealed trait of case objects 	| ENUM<A,B,..>  	|                  	| GenericData.EnumSymbol |
+| Map[String, V]              	| MAP<V>        	|                  	| java.util.Map<String, V> |
+| Either[A,B]                  	| UNION<A,B>    	|                  	| A, B |
+| A :+: B :+: C :+: CNil       	| UNION<A,B,C>  	|                  	| A, B, ... |
+| case class T                 	| RECORD        	|                  	| GenericRecord with SpecificRecord |
+| Scala enumeration            	| ENUM          	|                  	| GenericData.EnumSymbol |
+| Java enumeration             	| ENUM          	|                  	| GenericData.EnumSymbol |
 
 ### Custom Type Mappings
 
