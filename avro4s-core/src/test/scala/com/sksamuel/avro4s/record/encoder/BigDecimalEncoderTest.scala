@@ -7,6 +7,8 @@ import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.math.BigDecimal.RoundingMode
+
 class BigDecimalEncoderTest extends FunSuite with Matchers {
 
   import scala.collection.JavaConverters._
@@ -31,15 +33,19 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
     case class Test(decimal: BigDecimal)
 
     val schema = AvroSchema[Test]
-    Encoder[Test].encode(Test(123.456), schema) shouldBe ImmutableRecord(schema, Vector("123.456"))
+    val record = Encoder[Test].encode(Test(123.456), schema)
+    record shouldBe ImmutableRecord(schema, Vector(new Utf8("123.456")))
   }
 
   test("Allow Override of roundingMode") {
+
     case class Test(decimal: BigDecimal)
 
     implicit val sp = ScalePrecision(2, 10)
     val schema = AvroSchema[Test]
     val s = schema.getField("decimal").schema()
+
+    implicit val roundingMode = RoundingMode.HALF_UP
 
     val bytesRoundedDown = new Conversions.DecimalConversion().toBytes(BigDecimal(12.34).bigDecimal, s, s.getLogicalType)
     Encoder[Test].encode(Test(12.3449), schema) shouldBe ImmutableRecord(schema, Vector(bytesRoundedDown))

@@ -210,6 +210,7 @@ object Encoder {
     import org.apache.avro.Conversions
 
     private val converter = new Conversions.DecimalConversion
+    private val rm = java.math.RoundingMode.valueOf(roundingMode.id)
 
     override def encode(decimal: BigDecimal, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy) = {
 
@@ -219,11 +220,11 @@ object Encoder {
         case Schema.Type.STRING => StringEncoder.encode(decimal.toString, schema)
         case Schema.Type.BYTES => ByteBufferEncoder.comap[BigDecimal] { value =>
           val logical = schema.getLogicalType.asInstanceOf[Decimal]
-          converter.toBytes(decimal.underlying, schema, logical)
+          converter.toBytes(decimal.underlying.setScale(logical.getScale, rm), schema, logical)
         }.encode(decimal, schema)
         case Schema.Type.FIXED =>
           val logical = schema.getLogicalType.asInstanceOf[Decimal]
-          converter.toFixed(decimal.underlying, schema, logical)
+          converter.toFixed(decimal.underlying.setScale(logical.getScale, rm), schema, logical)
         case _ => sys.error(s"Cannot serialize BigDecimal as ${schema.getType}")
       }
     }
