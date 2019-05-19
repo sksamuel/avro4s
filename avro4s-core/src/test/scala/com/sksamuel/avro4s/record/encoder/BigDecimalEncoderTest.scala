@@ -7,8 +7,6 @@ import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import org.scalatest.{FunSuite, Matchers}
 
-import scala.math.BigDecimal.RoundingMode
-
 class BigDecimalEncoderTest extends FunSuite with Matchers {
 
   import scala.collection.JavaConverters._
@@ -26,10 +24,20 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
     Encoder[Test].encode(obj, schema) shouldBe ImmutableRecord(schema, Vector(bytes))
   }
 
+  test("allow decimals to be encoded as strings") {
+
+    implicit val bigDecimalSchemaFor = com.sksamuel.avro4s.BigDecimals.AsString
+
+    case class Test(decimal: BigDecimal)
+
+    val schema = AvroSchema[Test]
+    Encoder[Test].encode(Test(123.456), schema) shouldBe ImmutableRecord(schema, Vector("123.456"))
+  }
+
   test("Allow Override of roundingMode") {
     case class Test(decimal: BigDecimal)
 
-    implicit val sp = ScalePrecisionRoundingMode(2, 10, RoundingMode.HALF_UP)
+    implicit val sp = ScalePrecision(2, 10)
     val schema = AvroSchema[Test]
     val s = schema.getField("decimal").schema()
 
@@ -63,6 +71,7 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
     val schema = AvroSchema[Test]
     Encoder[Test].encode(Test(123.66), schema) shouldBe ImmutableRecord(schema, Vector(new Utf8("123.66")))
   }
+
   test("allow bigdecimals to be encoded as generic fixed") {
     case class Test(s: BigDecimal)
     implicit object BigDecimalAsFixed extends SchemaFor[BigDecimal] {

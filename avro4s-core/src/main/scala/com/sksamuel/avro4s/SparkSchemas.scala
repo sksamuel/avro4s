@@ -5,8 +5,9 @@ import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 import scala.language.implicitConversions
 
 object SparkSchemas {
+
   // see https://github.com/sksamuel/avro4s/issues/271
-  implicit def BigDecimalSchemaFor(sp: ScalePrecisionRoundingMode) = new SchemaFor[BigDecimal] {
+  implicit def BigDecimalSchemaFor(sp: ScalePrecision) = new SchemaFor[BigDecimal] {
     /**
       * To be precise Spark expect the following mapping type -> precision:
       *
@@ -29,4 +30,5 @@ object SparkSchemas {
       }
     }
   }
+
 }

@@ -234,12 +234,12 @@ object Decoder {
   }
 
   implicit object BigDecimalDecoder extends Decoder[BigDecimal] {
-    private val decimalConversion = new Conversions.DecimalConversion
-    private val asString = StringDecoder.map(BigDecimal(_))
+    private val converter = new Conversions.DecimalConversion
+    private val fromString = StringDecoder.map(BigDecimal(_))
     override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): BigDecimal = schema.getType match {
-      case Schema.Type.STRING => asString.decode(value, schema)
-      case Schema.Type.BYTES => ByteBufferDecoder.map(decimalConversion.fromBytes(_, schema, schema.getLogicalType)).decode(value, schema)
-      case Schema.Type.FIXED => decimalConversion.fromFixed(value.asInstanceOf[GenericFixed], schema, schema.getLogicalType)
+      case Schema.Type.STRING => fromString.decode(value, schema)
+      case Schema.Type.BYTES => ByteBufferDecoder.map(converter.fromBytes(_, schema, schema.getLogicalType)).decode(value, schema)
+      case Schema.Type.FIXED => converter.fromFixed(value.asInstanceOf[GenericFixed], schema, schema.getLogicalType)
       case other => sys.error(s"Unsupported type for BigDecimals: $other, $schema")
     }
   }

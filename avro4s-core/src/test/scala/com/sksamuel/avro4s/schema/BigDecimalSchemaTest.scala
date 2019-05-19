@@ -1,10 +1,8 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchema, NamingStrategy, ScalePrecisionRoundingMode, SchemaFor}
-import org.apache.avro.{Schema, SchemaBuilder}
+import com.sksamuel.avro4s.{AvroSchema, NamingStrategy, ScalePrecision, SchemaFor}
+import org.apache.avro.Schema
 import org.scalatest.{Matchers, WordSpec}
-
-import scala.math.BigDecimal.RoundingMode
 
 case class BigDecimalSeqOption(biggies: Seq[Option[BigDecimal]])
 case class BigDecimalSeq(biggies: Seq[BigDecimal])
@@ -20,7 +18,7 @@ class BigDecimalSchemaTest extends WordSpec with Matchers {
       schema shouldBe expected
     }
     "accept big decimal as logical type on bytes with custom scale and precision" in {
-      implicit val sp = ScalePrecisionRoundingMode(8, 20 , RoundingMode.HALF_UP)
+      implicit val sp = ScalePrecision(8, 20)
       case class Test(decimal: BigDecimal)
       val schema = AvroSchema[Test]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal-scale-and-precision.json"))
@@ -49,9 +47,7 @@ class BigDecimalSchemaTest extends WordSpec with Matchers {
     }
     "allow big decimals to be encoded as strings when custom typeclasses are provided" in {
 
-      implicit object BigDecimalAsString extends SchemaFor[BigDecimal] {
-        override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().stringType()
-      }
+      implicit val bigDecimalSchemaFor = com.sksamuel.avro4s.BigDecimals.AsString
 
       case class BigDecimalAsStringTest(decimal: BigDecimal)
       val schema = AvroSchema[BigDecimalAsStringTest]

@@ -38,10 +38,10 @@ trait SchemaFor[T] extends Serializable {
   }
 }
 
-case class ScalePrecisionRoundingMode(scale: Int, precision: Int, roundingMode: RoundingMode)
+case class ScalePrecision(scale: Int, precision: Int)
 
-object ScalePrecisionRoundingMode {
-  implicit val default = ScalePrecisionRoundingMode(2, 8, UNNECESSARY)
+object ScalePrecision {
+  implicit val default = ScalePrecision(2, 8)
 }
 
 object SchemaFor {
@@ -83,7 +83,7 @@ object SchemaFor {
     }
   }
 
-  implicit def bigDecimalFor(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): SchemaFor[BigDecimal] = new SchemaFor[BigDecimal] {
+  implicit def bigDecimalFor(implicit sp: ScalePrecision = ScalePrecision.default): SchemaFor[BigDecimal] = new SchemaFor[BigDecimal] {
     override def schema(implicit namingStrategy: NamingStrategy) = LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.bytesType)
   }
 

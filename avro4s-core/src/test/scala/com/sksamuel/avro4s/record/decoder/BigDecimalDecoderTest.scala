@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.SchemaFor.StringSchemaFor
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultNamingStrategy, NamingStrategy, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, BigDecimals, Decoder, DefaultNamingStrategy, NamingStrategy, SchemaFor}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import org.scalatest.{FlatSpec, Matchers}
@@ -34,10 +33,7 @@ class BigDecimalDecoderTest extends FlatSpec with Matchers {
   }
 
   it should "be able to decode strings as bigdecimals" in {
-    implicit object BigDecimalAsString extends SchemaFor[BigDecimal] {
-      override def schema(implicit namingStrategy: NamingStrategy = DefaultNamingStrategy) = StringSchemaFor.schema
-    }
-    Decoder[BigDecimal].decode("123.45", BigDecimalAsString.schema) shouldBe BigDecimal(123.45)
+    Decoder[BigDecimal].decode("123.45", BigDecimals.AsString.schema) shouldBe BigDecimal(123.45)
   }
 
   it should "be able to decode generic fixed as bigdecimals" in {

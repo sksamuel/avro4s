@@ -14,6 +14,8 @@ import org.apache.avro.{Conversions, Schema}
 import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.language.experimental.macros
+import scala.math.BigDecimal.RoundingMode
+import scala.math.BigDecimal.RoundingMode.RoundingMode
 
 /**
   * An [[Encoder]] encodes a Scala value of type T into a compatible
@@ -203,21 +205,25 @@ object Encoder {
 
   private val decimalConversion = new Conversions.DecimalConversion
 
-  implicit def bigDecimalEncoder(implicit sp: ScalePrecisionRoundingMode = ScalePrecisionRoundingMode.default): Encoder[BigDecimal] = new Encoder[BigDecimal] {
-    override def encode(t: BigDecimal, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy) = {
+  implicit def bigDecimalEncoder(implicit roundingMode: RoundingMode = RoundingMode.UNNECESSARY): Encoder[BigDecimal] = new Encoder[BigDecimal] {
 
-      // we support encoding big decimals in three ways - fixed, bytes or as a String
+    import org.apache.avro.Conversions
+
+    private val converter = new Conversions.DecimalConversion
+
+    override def encode(decimal: BigDecimal, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy) = {
+
+      // we support encoding big decimals in three ways - fixed, bytes or as a String, depending on the schema passed in
+      // the scale and precision should come from the schema and the rounding mode from the implicit
       schema.getType match {
-        case Schema.Type.STRING => StringEncoder.encode(t.toString, schema)
+        case Schema.Type.STRING => StringEncoder.encode(decimal.toString, schema)
         case Schema.Type.BYTES => ByteBufferEncoder.comap[BigDecimal] { value =>
-          val decimal = schema.getLogicalType.asInstanceOf[Decimal]
-          val scaledValue = value.setScale(decimal.getScale, sp.roundingMode)
-          decimalConversion.toBytes(scaledValue.bigDecimal, schema, decimal)
-        }.encode(t, schema)
+          val logical = schema.getLogicalType.asInstanceOf[Decimal]
+          converter.toBytes(decimal.underlying, schema, logical)
+        }.encode(decimal, schema)
         case Schema.Type.FIXED =>
-          val decimal = schema.getLogicalType.asInstanceOf[Decimal]
-          val scaledValue = t.setScale(decimal.getScale, sp.roundingMode)
-          decimalConversion.toFixed(scaledValue.bigDecimal, schema, schema.getLogicalType)
+          val logical = schema.getLogicalType.asInstanceOf[Decimal]
+          converter.toFixed(decimal.underlying, schema, logical)
         case _ => sys.error(s"Cannot serialize BigDecimal as ${schema.getType}")
       }
     }
