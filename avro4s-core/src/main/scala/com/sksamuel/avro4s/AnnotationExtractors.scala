@@ -15,7 +15,7 @@ class AnnotationExtractors(annos: Seq[Any]) {
 
   private def exists[T: Manifest]: Boolean = annos.exists { a => manifest.runtimeClass.isAssignableFrom(a.getClass) }
 
-  def namespace: Option[String] = findFirst[AvroNamespaceable].map(_.namespace).filterNot(_.trim.isEmpty)
+  def namespace: Option[String] = findFirst[AvroNamespaceable].map(_.namespace)
   def doc: Option[String] = findFirst[AvroDocumentable].map(_.doc)
   def aliases: Seq[String] = findAll[AvroAliasable].map(_.alias).filterNot(_.trim.isEmpty)
   def fixed: Option[Int] = findFirst[AvroFixable].map(_.size)

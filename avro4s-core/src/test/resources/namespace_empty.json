@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "Foo",
+  "fields": [
+    {
+      "name": "s",
+      "type": "string"
+    }
+  ]
+}

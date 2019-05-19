@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroName, AvroSchema, Encoder, AvroNamespace}
+import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, Encoder, SchemaFor}
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
@@ -32,6 +32,13 @@ class AvroNameEncoderTest extends FunSuite with Matchers {
     val contents = abox.get("contents").asInstanceOf[GenericRecord]
     contents.get("length") shouldBe 1.23
   }
+
+  test("support encoding and decoding with empty namespaces") {
+    val spaceship = Spaceship(MiserableCosmos(true))
+    val encoded = Encoder[Spaceship].encode(spaceship, SchemaFor[Spaceship].schema)
+    val decoded = Decoder[Spaceship].decode(encoded, SchemaFor[Spaceship].schema)
+    spaceship shouldBe decoded
+  }
 }
 
 @AvroNamespace("storage.boxes")
@@ -59,4 +66,11 @@ case object Atlantic extends Ocean
 case object Pacific extends Ocean
 case class Ship(location: Ocean)
 
-
+@AvroNamespace("")
+case class Spaceship(cosmos: Cosmos)
+@AvroNamespace("")
+sealed trait Cosmos
+@AvroNamespace("")
+case class FunCosmos(amountOfFun: Float) extends Cosmos
+@AvroNamespace("")
+case class MiserableCosmos(isTrulyAwful: Boolean) extends Cosmos
