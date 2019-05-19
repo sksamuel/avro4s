@@ -64,12 +64,12 @@ object Build extends AutoPlugin {
         sys.env("OSSRH_PASSWORD")
       )
     } else {
-      credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+      credentials += Credentials(Path.userHome / ".sbt" / "credentials.sbt")
     },
     if (isTravis) {
       version := s"3.0.0.$travisBuildNumber-SNAPSHOT"
     } else {
-      version := "3.0.0"
+      version := "3.0.0-RC1"
     },
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
