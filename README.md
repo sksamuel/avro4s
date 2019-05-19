@@ -699,13 +699,13 @@ implicit val roundingMode = RoundingMode.HALF_UP
 val encoder = Encoder[MyDecimal]
 ``` 
 
-### Type Parameters
+## Type Parameters
 
 When serializing a class with one or more type parameters, the avro name used in a schema is the name of the raw type, plus the actual type parameters. In other words, it would be of the form `rawtype__typeparam1_typeparam2_..._typeparamN`. So for example, the schema for a type `Event[Foo]` would have the avro name `event__foo`.
 
 You can disable this by annotating the class with `@AvroErasedName` which uses the JVM erased name - in other words, it drops type parameter information. So the aforementioned `Event[Foo]` would be simply `event`.
 
-### Selective Customisation
+## Selective Customisation
 
 You can selectively customise the way Avro4s generates certain parts of your hierarchy, thanks to implicit precedence. Suppose you have the following classes:
 
@@ -729,6 +729,16 @@ object Product {
 ```
 
 This will result in a schema where both `BigDecimal` quantities have their own separate scale and precision.
+
+## Cats Support
+
+If you use cats in your domain objects, then Avro4s provides a cats module with schemas, encoders and decoders for some cats typs.
+Just import `import com.sksamuel.avro4s.cats._` before calling into the macros.
+
+```scala
+case class Foo(list: NonEmptyList[String], vector: NonEmptyVector[Boolean])
+val schema = AvroSchema[Foo]
+```
 
 
 ## Using avro4s in your project
