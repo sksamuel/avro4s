@@ -279,6 +279,31 @@ implicit val schemaFor = SchemaFor[Recursive]
 val schema = AvroSchema[Recursive]
 ```
 
+### Transient Fields
+
+Avro4s does not support the @transient anotation to mark a field as ignored, but instead supports its own @AvroTransient annotation to do the same job. Any field marked with this will be included in the generated schema.
+
+```scala
+package com.sksamuel
+case class Foo(a: String, @AvroTransient b: String)
+```
+
+Would result in the following schema:
+
+```json
+{  
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel",
+  "fields": [  
+    {  
+      "name": "a",
+      "type": "string"
+    }
+  ]
+}
+```
+
 ## Input / Output
 
 ### Serializing
