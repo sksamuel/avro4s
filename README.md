@@ -410,11 +410,11 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | String                       	| BYTES        	|                  	| ByteBuffer         |
 | Boolean                      	| BOOLEAN       	|                  	| java.lang.Boolean |
 | Long                         	| LONG          	|                  	| java.lang.Long |
-| Int                          	| INT           	|                  	| java.lang.Long |
-| Short                        	| INT           	|                  	| java.lang.Long |
-| Byte                         	| INT           	|                  	| java.lang.Long |
-| Double                       	| DOUBLE        	|                  	| java.lang.Long |
-| Float                        	| FLOAT         	|                  	| java.lang.Long |
+| Int                          	| INT           	|                  	| java.lang.Integer |
+| Short                        	| INT           	|                  	| java.lang.Integer |
+| Byte                         	| INT           	|                  	| java.lang.Integer |
+| Double                       	| DOUBLE        	|                  	| java.lang.Double |
+| Float                        	| FLOAT         	|                  	| java.lang.Float |
 | UUID                         	| STRING        	| UUID             	| Utf8 |
 | LocalDate                    	| INT           	| Date             	| java.lang.Int |
 | LocalTime                    	| INT           	| Time-Millis      	| java.lang.Int |
@@ -427,10 +427,11 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | BigDecimal                   	| STRING         	| Decimal<8,2>     	| String |
 | Option[T]                    	| UNION<null,T> 	|                  	| null, T |
 | Array[Byte]                  	| BYTES         	|                  	| ByteBuffer |
+| Array[Byte]                  	| FIXED         	|                  	| GenericData.Fixed |
 | ByteBuffer                   	| BYTES         	|                  	| ByteBuffer |
-| Seq[Byte]                    	| BYTES         	|                  	| Array<Byte> |
-| List[Byte]                   	| BYTES         	|                  	| Array<Byte> |
-| Vector[Byte]                 	| BYTES         	|                  	| Array<Byte> |
+| Seq[Byte]                    	| BYTES         	|                  	| ByteBuffer |
+| List[Byte]                   	| BYTES         	|                  	| ByteBuffer |
+| Vector[Byte]                 	| BYTES         	|                  	| ByteBuffer |
 | Array[T]                     	| ARRAY<T>      	|                  	| Array<T> |
 | Vector[T]                    	| ARRAY<T>      	|                  	| Array<T> |
 | Seq[T]                       	| ARRAY<T>      	|                  	| Array<T> |
@@ -444,6 +445,7 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | case class T                 	| RECORD        	|                  	| GenericRecord with SpecificRecord |
 | Scala enumeration            	| ENUM          	|                  	| GenericData.EnumSymbol |
 | Java enumeration             	| ENUM          	|                  	| GenericData.EnumSymbol |
+| Scala tuples                   | RECORD          |                    | GenericRecord with SpecificRecord |
 
 ### Custom Type Mappings
 
