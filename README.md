@@ -30,7 +30,7 @@ To generate an Avro Schema, we need to use the `AvroSchema` object passing in th
 This will return an `org.apache.avro.Schema` instance.
 
 ```scala
-import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel
 val schema = AvroSchema[Pizza]
 ```
 
@@ -40,7 +40,7 @@ Where the generated schema is as follows:
 {
    "type":"record",
    "name":"Pizza",
-   "namespace":"com.sksamuel.avro4s.json",
+   "namespace":"com.sksamuel",
    "fields":[
       {
          "name":"name",
@@ -231,7 +231,7 @@ Would generate this schema:
 {
   "type": "record",
   "name": "Annotated",
-  "namespace": "com.sksamuel.avro4s.schema",
+  "namespace": "com.sksamuel",
   "fields": [
     {
       "name": "str",
@@ -338,6 +338,88 @@ Would generate the following schema:
       "type": "string"
     }
   ]
+}
+```
+
+### Avro Fixed
+
+Avro supports the idea of fixed length byte arrays. To use these we can either override the schema generated for a type to return `Schema.Type.Fixed`. This will work for types like String or UUID. You can also annotate a field with @AvroFixed(size).
+For example:
+
+```scala
+package com.sksamuel
+case class Foo(@AvroFixed(7) mystring: String)
+val schema = AvroSchema[Foo]
+```
+
+Will generate the following schema:
+
+```json
+{
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel",
+  "fields": [
+    {
+      "name": "mystring",
+      "type": {
+        "type": "fixed",
+        "name": "mystring",
+        "size": 7
+      }
+    }
+  ]
+}
+```
+
+If you have a value type that you always want to be represented as fixed, then rather than annotate every single location it is used, you can annotate the value type itself.
+
+```scala
+package com.sksamuel
+
+@AvroFixed(4)
+case class FixedA(bytes: Array[Byte]) extends AnyVal
+
+case class Foo(a: FixedA)
+val schema = AvroSchema[Foo]
+```
+
+And this would generate:
+
+```json
+{
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel",
+  "fields": [
+    {
+      "name": "a",
+      "type": {
+        "type": "fixed",
+        "name": "FixedA",
+        "size": 4
+      }
+    }
+  ]
+}
+```
+
+Finally, these annotated value types can be used as top level schemas too:
+
+```scala
+package com.sksamuel
+
+@AvroFixed(6)
+case class FixedA(bytes: Array[Byte]) extends AnyVal
+val schema = AvroSchema[FixedA]
+```
+
+```json
+{
+  "type": "fixed",
+  "name": "FixedA",
+  "namespace": "com.sksamuel",
+  "size": 6
 }
 ```
 
@@ -453,7 +535,7 @@ For example a `java.sql.Timestamp` is usually encoded as a Long, and a `java.uti
 Decoders do the same work, but in reverse. They take an Avro value, such as null and return a scala value, such as `Option`.
 
 Some values can be mapped in multiple ways depending on how the schema was generated. For example a String, which is usually encoded as 
-`org.apache.avro.util.Utf8` could also be encoded as an array of byte if the generated schema for that field was `Schema.Type.BYTES`. Therefore some encoders will take into account the schema passed to them when choosing the avro compatible type. In the schemas section you saw how you could influence which schema is generated for types.
+`org.apache.avro.util.Utf8` could also be encoded as an array of bytes if the generated schema for that field was `Schema.Type.BYTES`. Therefore some encoders will take into account the schema passed to them when choosing the avro compatible type. In the schemas section you saw how you could influence which schema is generated for types.
 
 ### Built in Type Mappings
 
@@ -468,8 +550,8 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | Scala Type                   	| Schema Type   	| Logical Type     	| Encoded Type |
 |------------------------------	|---------------	|------------------	| ------------ |
 | String                       	| STRING        	|                  	| Utf8                      |
-| String                       	| FIXED        	|                  	| GenericData.Fixed         |
-| String                       	| BYTES        	|                  	| ByteBuffer         |
+| String                       	| FIXED        	    |                  	| GenericData.Fixed         |
+| String                       	| BYTES        	    |                  	| ByteBuffer         |
 | Boolean                      	| BOOLEAN       	|                  	| java.lang.Boolean |
 | Long                         	| LONG          	|                  	| java.lang.Long |
 | Int                          	| INT           	|                  	| java.lang.Integer |
@@ -507,7 +589,7 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | case class T                 	| RECORD        	|                  	| GenericRecord with SpecificRecord |
 | Scala enumeration            	| ENUM          	|                  	| GenericData.EnumSymbol |
 | Java enumeration             	| ENUM          	|                  	| GenericData.EnumSymbol |
-| Scala tuples                   | RECORD          |                    | GenericRecord with SpecificRecord |
+| Scala tuples                  | RECORD            |                   | GenericRecord with SpecificRecord |
 
 ### Custom Type Mappings
 
@@ -520,7 +602,7 @@ the contents in lower case, we can do the following:
 case class Foo(a: String, b: String)
 
 implicit object FooEncoder extends Encoder[Foo] {
-  override def encode(foo: Foo, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = {
+  override def encode(foo: Foo, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy) = {
     val record = new GenericData.Record(schema)
     record.put("a", foo.a.toUpperCase)
     record.put("b", foo.b.toUpperCase)
@@ -529,7 +611,7 @@ implicit object FooEncoder extends Encoder[Foo] {
 }
 
 implicit object FooDecoder extends Decoder[Foo] {
-  override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): Foo = {
+  override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy) = {
     val record = value.asInstanceOf[GenericRecord]
     Foo(record.get("a").toString.toLowerCase, record.get("b").toString.toLowerCase)
   }
@@ -537,20 +619,23 @@ implicit object FooDecoder extends Decoder[Foo] {
 ```
 
 Another example is changing the way we serialize `LocalDateTime` to store these dates as ISO strings. In this case, we are
-also changing the schema type from the default LONG to STRING, so we must add an implicit `SchemaFor` as well as the encoders
+writing out a String rather than the default Long so we must also change the schema type. Therefore, we must add an implicit `SchemaFor` as well as the encoders
 and decoders.
 
 ```scala
-implicit object DateTimeSchemaFor extends SchemaFor[LocalDateTime] {
-  override val schema: Schema = Schema.create(Schema.Type.STRING)
+implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
+  override val schema(implicit naming: NamingStrategy = DefaultNamingStrategy) = 
+    Schema.create(Schema.Type.STRING)
 }
 
 implicit object DateTimeEncoder extends Encoder[LocalDateTime] {
-  override def apply(value: LocalDateTime, schema: Schema): AnyRef = ISODateTimeFormat.dateTime().print(value)
+  override def apply(value: LocalDateTime, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy) = 
+    ISODateTimeFormat.dateTime().print(value)
 }
 
 implicit object DateTimeDecoder extends Decoder[LocalDateTime] {
-  override def apply(value: Any, field: Field): LocalDateTime = ISODateTimeFormat.dateTime().parseDateTime(value.toString)
+  override def apply(value: Any, field: Field)(implicit naming: NamingStrategy = DefaultNamingStrategy) = 
+    ISODateTimeFormat.dateTime().parseDateTime(value.toString)
 }
 ```
 
