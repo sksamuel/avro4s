@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, ImmutableRecord, NamingStrategy, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultNamingStrategy, ImmutableRecord, NamingStrategy, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -20,7 +20,7 @@ class DecoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit val StringAsBooleanDecoder = new Decoder[String] {
-      override def decode(value: Any, schema: Schema): String = value match {
+      override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): String = value match {
         case true => "a"
         case false => "b"
         case _ => sys.error("Only supporting booleans")
@@ -43,7 +43,7 @@ class DecoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit val FooOverrideEncoder = new Decoder[Foo] {
-      override def decode(value: Any, schema: Schema): Foo = value match {
+      override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): Foo = value match {
         case string: String =>
           val tokens = string.split(':')
           Foo(tokens(0).toBoolean, tokens(1).toInt)
@@ -66,7 +66,7 @@ class DecoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {
-      override def decode(value: Any, schema: Schema): FooValueType = value match {
+      override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): FooValueType = value match {
         case i: Int => FooValueType(i.toString)
         case i: java.lang.Integer => FooValueType(i.toString)
       }
@@ -88,7 +88,7 @@ class DecoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {
-      override def decode(value: Any, schema: Schema): FooValueType = value match {
+      override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): FooValueType = value match {
         case i: Int => FooValueType(i.toString)
         case i: java.lang.Integer => FooValueType(i.toString)
       }
