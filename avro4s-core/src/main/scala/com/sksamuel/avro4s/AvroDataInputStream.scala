@@ -4,7 +4,8 @@ import java.io.InputStream
 
 import org.apache.avro.Schema
 import org.apache.avro.file.DataFileStream
-import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.io.{DatumReader, DecoderFactory}
 
 import scala.util.Try
 
@@ -14,13 +15,14 @@ class AvroDataInputStream[T](in: InputStream,
                             (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
   // if no reader or writer schema is specified, then we create a reader that uses what's present in the files
-  private val datumReader =
-    if (writerSchema.isEmpty && readerSchema.isEmpty) new GenericDatumReader[GenericRecord]()
-    else if (writerSchema.isDefined && readerSchema.isDefined) new DefaultAwareDatumReader[GenericRecord](writerSchema.get, readerSchema.get)
-    else if (writerSchema.isDefined) DefaultAwareDatumReader[GenericRecord](writerSchema.get)
-    else DefaultAwareDatumReader[GenericRecord](readerSchema.get)
+  private val datumReader = (writerSchema, readerSchema) match {
+    case (None, None) => GenericData.get.createDatumReader(null)
+    case (Some(writer), None) => GenericData.get.createDatumReader(writer)
+    case (None, Some(reader)) => GenericData.get.createDatumReader(reader)
+    case (Some(writer), Some(reader)) => GenericData.get.createDatumReader(writer, reader)
+  }
 
-  private val dataFileReader = new DataFileStream[GenericRecord](in, datumReader)
+  private val dataFileReader = new DataFileStream[GenericRecord](in, datumReader.asInstanceOf[DatumReader[GenericRecord]])
 
   override def iterator: Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = dataFileReader.hasNext

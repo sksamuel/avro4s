@@ -1,8 +1,9 @@
 package com.sksamuel.avro4s.record.decoder
 
+import com.sksamuel.avro4s.Decoder.BigDecimalDecoder
 import com.sksamuel.avro4s.{AvroSchema, BigDecimals, Decoder, DefaultNamingStrategy, NamingStrategy, SchemaFor}
 import org.apache.avro.generic.GenericData
-import org.apache.avro.{Conversions, LogicalTypes, Schema}
+import org.apache.avro.{Conversions, LogicalTypes, Schema, SchemaBuilder}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.language.higherKinds
@@ -45,4 +46,12 @@ class BigDecimalDecoderTest extends FlatSpec with Matchers {
     val fixed = GenericData.get().createFixed(null, Array[Byte](0, 4, 98, -43, 55, 43, -114, 0), BigDecimalAsFixed.schema)
     Decoder[BigDecimal].decode(fixed, BigDecimalAsFixed.schema) shouldBe BigDecimal(12345678)
   }
+
+//  it should "be able to decode longs as bigdecimals" in {
+//    val schema = LogicalTypes.decimal(5, 2).addToSchema(SchemaBuilder.builder().longType())
+//    BigDecimalDecoder.decode(12345, schema) shouldBe ""
+//    BigDecimalDecoder.decode(9999, schema) shouldBe ""
+//    BigDecimalDecoder.decode(java.lang.Long.valueOf(99887766), schema) shouldBe ""
+//    BigDecimalDecoder.decode(java.lang.Integer.valueOf(654), schema) shouldBe ""
+//  }
 }

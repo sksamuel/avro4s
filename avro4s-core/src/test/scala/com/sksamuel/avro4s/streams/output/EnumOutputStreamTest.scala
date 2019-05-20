@@ -11,7 +11,7 @@ class EnumOutputStreamTest extends FunSuite with Matchers with OutputStreamTest 
     case class Test(z: Wine)
     val schema = AvroSchema[Wine]
     writeRead(Test(Wine.Malbec)) { record =>
-      record.get("z") shouldBe new GenericData.EnumSymbol(schema, Wine.Malbec)
+      record.get("z") shouldBe GenericData.get.createEnum(Wine.Malbec.name, schema)
     }
   }
 
@@ -19,7 +19,7 @@ class EnumOutputStreamTest extends FunSuite with Matchers with OutputStreamTest 
     case class Test(z: Option[Wine])
     val schema = AvroSchema[Wine]
     writeRead(Test(Some(Wine.Malbec))) { record =>
-      record.get("z") shouldBe new GenericData.EnumSymbol(schema, Wine.Malbec)
+      record.get("z") shouldBe GenericData.get.createEnum(Wine.Malbec.name, schema)
     }
     writeRead(Test(None)) { record =>
       record.get("z") shouldBe null
@@ -30,7 +30,7 @@ class EnumOutputStreamTest extends FunSuite with Matchers with OutputStreamTest 
     case class Test(z: Colours.Value)
     val schema = AvroSchema[Wine]
     writeRead(Test(Colours.Green)) { record =>
-      record.get("z") shouldBe new GenericData.EnumSymbol(schema, Colours.Green)
+      record.get("z") shouldBe GenericData.get.createEnum(Colours.Green.toString, schema)
     }
   }
 
@@ -38,7 +38,7 @@ class EnumOutputStreamTest extends FunSuite with Matchers with OutputStreamTest 
     case class Test(z: Option[Colours.Value])
     val schema = AvroSchema[Wine]
     writeRead(Test(Some(Colours.Green))) { record =>
-      record.get("z") shouldBe new GenericData.EnumSymbol(schema, Colours.Green)
+      record.get("z") shouldBe GenericData.get.createEnum(Colours.Green.toString, schema)
     }
     writeRead(Test(None)) { record =>
       record.get("z") shouldBe null

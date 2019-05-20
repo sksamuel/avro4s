@@ -65,10 +65,6 @@ class BigDecimalSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(this.getClass.getResourceAsStream("/bigdecimal_as_fixed.json"))
       schema shouldBe expected
     }
-    //    "convert a BigDecimal into ByteBuffer without specifying the scale and precision and rounding mode and rounding is not required" in {
-    //      val n = BigDecimal(7.8)
-    //      BigDecimalFromValue.apply(BigDecimalToValue.apply(n)) shouldBe BigDecimal(7.80)
-    //    }
     //
     //    "fail when trying to convert a BigDecimal into ByteBuffer without specifying the scale and precision and rounding mode and rounding is required" in {
     //      val n = BigDecimal(7.851)
