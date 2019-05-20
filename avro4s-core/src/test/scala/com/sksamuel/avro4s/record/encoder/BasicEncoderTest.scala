@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.record.encoder
 import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord, NamingStrategy, SchemaFor}
 import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
 import org.apache.avro.Schema
-import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
 
@@ -16,14 +16,16 @@ class BasicEncoderTest extends WordSpec with Matchers {
       val record = Encoder[Foo].encode(Foo("hello"), schema)
       record shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
     }
-    "encode strings as GenericData.Fixed when schema is fixed" in {
+    "encode strings as GenericFixed and pad bytes when schema is fixed" in {
       case class Foo(s: String)
       implicit object StringFixedSchemaFor extends SchemaFor[String] {
-        override def schema(implicit namingStrategy: NamingStrategy) = Schema.createFixed("FixedString", null, null, 123)
+        override def schema(implicit namingStrategy: NamingStrategy) = Schema.createFixed("FixedString", null, null, 7)
       }
       val schema = AvroSchema[Foo]
       val record = Encoder[Foo].encode(Foo("hello"), schema).asInstanceOf[GenericRecord]
-      record.get("s").asInstanceOf[GenericData.Fixed].bytes().toList shouldBe Seq(104, 101, 108, 108, 111)
+      record.get("s").asInstanceOf[GenericFixed].bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
+      // the fixed should have the right size
+      record.get("s").asInstanceOf[GenericFixed].bytes().length shouldBe 7
     }
     "encode longs" in {
       case class Foo(l: Long)

@@ -49,7 +49,10 @@ object Encoder {
   implicit object StringEncoder extends Encoder[String] {
     override def encode(value: String, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = {
       schema.getType match {
-        case Schema.Type.FIXED => GenericData.get.createFixed(null, value.getBytes, schema)
+        case Schema.Type.FIXED =>
+          if (value.getBytes.length > schema.getFixedSize)
+            sys.error(s"Cannot write string with ${value.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
+          GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(value.getBytes).array, schema)
         case Schema.Type.BYTES => ByteBuffer.wrap(value.getBytes)
         case _ => new Utf8(value)
       }
@@ -155,7 +158,11 @@ object Encoder {
   implicit object ByteArrayEncoder extends Encoder[Array[Byte]] {
     override def encode(bytes: Array[Byte], schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = {
       schema.getType match {
-        case Schema.Type.FIXED => GenericData.get.createFixed(null, bytes, schema)
+        case Schema.Type.FIXED =>
+          if (bytes.length > schema.getFixedSize)
+            sys.error(s"Cannot write byte array with ${bytes.length} bytes to fixed type of size ${schema.getFixedSize}")
+          val bb = ByteBuffer.allocate(schema.getFixedSize).put(bytes)
+          GenericData.get.createFixed(null, bb.array(), schema)
         case Schema.Type.BYTES => ByteBuffer.wrap(bytes)
         case _ => sys.error(s"Unable to encode $bytes for schema $schema")
       }
