@@ -7,7 +7,7 @@ import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.LogicalTypes.{Decimal, TimeMicros, TimeMillis}
-import org.apache.avro.generic.{GenericContainer, GenericData, GenericFixed, GenericRecord, IndexedRecord}
+import org.apache.avro.generic.{GenericContainer, GenericEnumSymbol, GenericFixed, GenericRecord, IndexedRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
 import shapeless.{:+:, CNil, Coproduct, Inr}
@@ -399,7 +399,7 @@ object Decoder {
         // we need to take the string and create the object
         case Schema.Type.ENUM =>
           container match {
-            case enum: GenericData.EnumSymbol =>
+            case enum: GenericEnumSymbol[_] =>
               ctx.subtypes.find { subtype => Namer(subtype).name == enum.getSchema.getFullName }
                 .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
                 .typeclass.decode(enum, enum.getSchema)
