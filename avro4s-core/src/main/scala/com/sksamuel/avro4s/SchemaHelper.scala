@@ -126,4 +126,26 @@ object SchemaHelper {
     val (nulls, rest) = flattened.partition(_.getType == Schema.Type.NULL)
     Schema.createUnion(nulls.headOption.toSeq ++ rest: _*)
   }
+
+  /**
+    * Takes an Avro schema, and overrides the namespace of that schema with the given namespace.
+    */
+  def overrideNamespace(schema: Schema, namespace: String): Schema = {
+    schema.getType match {
+      case Schema.Type.RECORD =>
+        val fields = schema.getFields.asScala.map { field =>
+          new Schema.Field(field.name(), overrideNamespace(field.schema(), namespace), field.doc, field.defaultVal, field.order)
+        }
+        val copy = Schema.createRecord(schema.getName, schema.getDoc, namespace, schema.isError, fields.asJava)
+        schema.getAliases.asScala.foreach(copy.addAlias)
+        schema.getObjectProps.asScala.foreach { case (k, v) => copy.addProp(k, v) }
+        copy
+      case Schema.Type.UNION => Schema.createUnion(schema.getTypes.asScala.map(overrideNamespace(_, namespace)).asJava)
+      case Schema.Type.ENUM => Schema.createEnum(schema.getName, schema.getDoc, namespace, schema.getEnumSymbols)
+      case Schema.Type.FIXED => Schema.createFixed(schema.getName, schema.getDoc, namespace, schema.getFixedSize)
+      case Schema.Type.MAP => Schema.createMap(overrideNamespace(schema.getValueType, namespace))
+      case Schema.Type.ARRAY => Schema.createArray(overrideNamespace(schema.getElementType, namespace))
+      case _ => schema
+    }
+  }
 }

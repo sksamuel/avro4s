@@ -234,7 +234,9 @@ object SchemaFor {
     // the field can override the containingNamespace if the Namespace annotation is present on the field
     // we may have annotated our field with @AvroNamespace so this containingNamespace should be applied
     // to any schemas we have generated for this field
-    val schemaWithResolvedNamespace = extractor.namespace.map(overrideNamespace(schemaWithOrderedUnion, _)).getOrElse(schemaWithOrderedUnion)
+    val schemaWithResolvedNamespace = extractor.namespace
+      .map(SchemaHelper.overrideNamespace(schemaWithOrderedUnion, _))
+      .getOrElse(schemaWithOrderedUnion)
 
     val field = if (encodedDefault == null)
       new Schema.Field(name, schemaWithResolvedNamespace, doc)
@@ -372,27 +374,6 @@ object SchemaFor {
     }
 
     override def schema(implicit namingStrategy: NamingStrategy) = s
-  }
-
-  // accepts a built avro schema, and overrides the containingNamespace with the given containingNamespace
-  // this method just just makes a copy of the existing schema, setting the new containingNamespace
-  private def overrideNamespace(schema: Schema, namespace: String): Schema = {
-    schema.getType match {
-      case Schema.Type.RECORD =>
-        val fields = schema.getFields.asScala.map { field =>
-          new Schema.Field(field.name(), overrideNamespace(field.schema(), namespace), field.doc, field.defaultVal, field.order)
-        }
-        val copy = Schema.createRecord(schema.getName, schema.getDoc, namespace, schema.isError, fields.asJava)
-        schema.getAliases.asScala.foreach(copy.addAlias)
-        schema.getObjectProps.asScala.foreach { case (k, v) => copy.addProp(k, v) }
-        copy
-      case Schema.Type.UNION => Schema.createUnion(schema.getTypes.asScala.map(overrideNamespace(_, namespace)).asJava)
-      case Schema.Type.ENUM => Schema.createEnum(schema.getName, schema.getDoc, namespace, schema.getEnumSymbols)
-      case Schema.Type.FIXED => Schema.createFixed(schema.getName, schema.getDoc, namespace, schema.getFixedSize)
-      case Schema.Type.MAP => Schema.createMap(overrideNamespace(schema.getValueType, namespace))
-      case Schema.Type.ARRAY => Schema.createArray(overrideNamespace(schema.getElementType, namespace))
-      case _ => schema
-    }
   }
 
   // A coproduct is a union, or a generalised either.

@@ -10,7 +10,7 @@ import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, Schema}
+import org.apache.avro.{Conversions, Schema, SchemaBuilder}
 import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.language.experimental.macros
@@ -331,12 +331,36 @@ object Encoder {
           // the schema passed here must be a record since we are encoding a non-value case class
           require(schema.getType == Schema.Type.RECORD)
           val values = schema.getFields.asScala.map { field =>
+
             // find the matching parameter
             val p = klass.parameters.find { p =>
               val extractor = new AnnotationExtractors(p.annotations)
               naming.to(extractor.name.getOrElse(p.label)) == field.name
             }.getOrElse(sys.error(s"Could not find case class parameter for field ${field.name}"))
-            p.typeclass.encode(p.dereference(t), field.schema)
+
+            // if we have a trait, and we call encode here, then the dispatch method will try to find the correct
+            // schema using the namespace of the trait. If the field is annotated, the dispatch method won't know
+            // that, and it will fail to find the correct subschema.
+            // Therefore the schema, if a union, should be updated to have the namespace set here, and then
+            // changed back on it's return
+            field.schema.getType match {
+              case Schema.Type.UNION =>
+
+                val extractor = new AnnotationExtractors(p.annotations)
+                extractor.namespace.fold( p.typeclass.encode(p.dereference(t), field.schema)) { namespace =>
+                  val fieldschemas = field.schema().getTypes.asScala.map(SchemaHelper.overrideNamespace(_, klass.typeName.owner))
+                  val union = SchemaBuilder.unionOf().`type`(fieldschemas.head)
+                  fieldschemas.tail.foreach { s => union.and().`type`(s) }
+                  // if the encoded value is a record, then set it back to the original namespace
+                  p.typeclass.encode(p.dereference(t), union.endUnion) match {
+                    case record: ImmutableRecord => record.copy(schema = SchemaHelper.overrideNamespace(record.schema, namespace))
+                    case other => other
+                  }
+                }
+
+              case _ =>
+                p.typeclass.encode(p.dereference(t), field.schema)
+            }
           }
           buildRecord(schema, values.asInstanceOf[Seq[AnyRef]], name)
         }
