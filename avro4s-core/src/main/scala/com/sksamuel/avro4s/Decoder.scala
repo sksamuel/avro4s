@@ -6,10 +6,10 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
-import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis}
+import org.apache.avro.LogicalTypes.{Decimal, TimeMicros, TimeMillis}
 import org.apache.avro.generic.{GenericContainer, GenericData, GenericFixed, GenericRecord, IndexedRecord}
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, JsonProperties, Schema}
+import org.apache.avro.{Conversions, Schema}
 import shapeless.{:+:, CNil, Coproduct, Inr}
 
 import scala.collection.JavaConverters._
@@ -27,8 +27,8 @@ import scala.reflect.runtime.universe._
   * which is one of the ways Avro can encode strings - into a plain Java String.
   *
   * Another example, a decoder for Option[String] would handle inputs of null
-  * by emitting a None, and a non-null input by wrapping the decoded value
-  * in a Some.
+  * by emitting a None, and a non-null input by emitting the decoded value
+  * wrapped in a Some.
   *
   * A final example is converting a GenericData.Array or a Java collection type
   * into a Scala collection type.
@@ -92,7 +92,7 @@ object Decoder {
     override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): Array[Byte] = value match {
       case buffer: ByteBuffer => buffer.array
       case array: Array[Byte] => array
-      case fixed: GenericData.Fixed => fixed.bytes()
+      case fixed: GenericFixed => fixed.bytes()
     }
   }
 
@@ -169,7 +169,7 @@ object Decoder {
         case charseq: CharSequence => charseq.toString
         case bytebuf: ByteBuffer => new String(bytebuf.array)
         case a: Array[Byte] => new String(a)
-        case fixed: GenericData.Fixed => new String(fixed.bytes())
+        case fixed: GenericFixed => new String(fixed.bytes())
         case null => sys.error("Cannot decode <null> as a string")
         case other => sys.error(s"Cannot decode $other of type ${other.getClass} into a string")
       }
@@ -234,13 +234,26 @@ object Decoder {
   }
 
   implicit object BigDecimalDecoder extends Decoder[BigDecimal] {
+
     private val converter = new Conversions.DecimalConversion
+
     private val fromString = StringDecoder.map(BigDecimal(_))
-    override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): BigDecimal = schema.getType match {
-      case Schema.Type.STRING => fromString.decode(value, schema)
-      case Schema.Type.BYTES => ByteBufferDecoder.map(converter.fromBytes(_, schema, schema.getLogicalType)).decode(value, schema)
-      case Schema.Type.FIXED => converter.fromFixed(value.asInstanceOf[GenericFixed], schema, schema.getLogicalType)
-      case other => sys.error(s"Unsupported type for BigDecimals: $other, $schema")
+    override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): BigDecimal = {
+
+      val decimal = schema.getLogicalType.asInstanceOf[Decimal]
+
+      schema.getType match {
+        case Schema.Type.STRING => fromString.decode(value, schema)
+        case Schema.Type.BYTES => ByteBufferDecoder.map(converter.fromBytes(_, schema, decimal)).decode(value, schema)
+        case Schema.Type.FIXED => converter.fromFixed(value.asInstanceOf[GenericFixed], schema, decimal)
+        case Schema.Type.LONG | Schema.Type.INT => value match {
+          case long: Long => BigDecimal(BigInt(long), decimal.getScale)
+          case long: java.lang.Long => BigDecimal(BigInt(long), decimal.getScale)
+          case int: Int => BigDecimal(BigInt(int), decimal.getScale)
+          case int: java.lang.Integer => BigDecimal(BigInt(int), decimal.getScale)
+        }
+        case other => sys.error(s"Unsupported type for BigDecimals: $other, $schema")
+      }
     }
   }
 
@@ -291,53 +304,6 @@ object Decoder {
     }
   }
 
-  /**
-    * For a field in the target type (the case class we are marshalling to), we must
-    * try to pull a value from the Avro GenericRecord. After the value has been retrieved,
-    * it needs to be decoded into the appropriate Scala type.
-    *
-    * If the writer schema does not have an entry for the field then we can consider schema
-    * evolution using the following rules in the given order.
-    *
-    * 1. If the reader schema contains a default for this field, we will use that default.
-    * 2. If the parameter is defined with a scala default method then we will use that default value.
-    * 3. If the field is marked as @transient
-    *
-    * If none of these rules can be satisfied then an exception will be thrown.
-    */
-  def decodeFieldOrApplyDefault[T](fieldName: String,
-                                   record: GenericRecord,
-                                   readerSchema: Schema,
-                                   scalaDefault: Any,
-                                   transient: Boolean,
-                                   decoder: Decoder[T]): T = {
-
-    implicit class RichSchema(s: Schema) {
-      def hasField(fieldName: String): Boolean = s.getField(fieldName) != null
-      def hasDefault(fieldName: String): Boolean = {
-        val field = s.getField(fieldName)
-        field != null && field.defaultVal() != null
-      }
-    }
-
-    record.getSchema.getField(fieldName) match {
-      case field: Schema.Field =>
-        val value = record.get(fieldName)
-        decoder.decode(value, field.schema)
-      case null if readerSchema.hasDefault(fieldName) =>
-        val default = readerSchema.getField(fieldName).defaultVal() match {
-          case JsonProperties.NULL_VALUE => null
-          case other => other
-        }
-        decoder.decode(default, readerSchema.getField(fieldName).schema)
-      case null if scalaDefault != null => scalaDefault.asInstanceOf[T]
-      case null if transient => None.asInstanceOf[T]
-      case _ => sys.error(s"Record $record does not have a value for $fieldName, no default was defined, and the field is not transient")
-    }
-  }
-
-  def decodeT[T](value: Any, schema: Schema)(implicit decoder: Decoder[T]): T = decoder.decode(value, schema)
-
 
   def combine[T](klass: CaseClass[Typeclass, T]): Decoder[T] = {
 
@@ -364,6 +330,21 @@ object Decoder {
               // if we are in here then we are decoding a case class so we need a record schema
               require(schema.getType == Schema.Type.RECORD)
               val values = klass.parameters.map { p =>
+
+                /**
+                  * For a field in the target type (the case class we are marshalling to), we must
+                  * try to pull a value from the Avro GenericRecord. After the value has been retrieved,
+                  * it needs to be decoded into the appropriate Scala type.
+                  *
+                  * If the writer schema does not have an entry for the field then we can consider schema
+                  * evolution using the following rules in the given order.
+                  *
+                  * 1. If the reader schema contains a default for this field, we will use that default.
+                  * 2. If the parameter is defined with a scala default method then we will use that default value.
+                  * 3. If the field is marked as @transient
+                  *
+                  * If none of these rules can be satisfied then an exception will be thrown.
+                  */
 
                 // take into account @AvroName and use the naming strategy
                 val name = naming.to(new AnnotationExtractors(p.annotations).name.getOrElse(p.label))
@@ -392,37 +373,13 @@ object Decoder {
     }
   }
 
-  def decodeField[T](fieldName: String,
-                     record: GenericRecord,
-                     readerSchema: Schema,
-                     scalaDefault: Any,
-                     transient: Boolean,
-                     decoder: Decoder[T]): T = {
-    record.getSchema.getField(fieldName) match {
-      case field: Schema.Field =>
-        val value = record.get(fieldName)
-        decoder.decode(value, field.schema)
-      //      case null if readerSchema.hasDefault(fieldName) =>
-      //        val default = readerSchema.getField(fieldName).defaultVal() match {
-      //          case JsonProperties.NULL_VALUE => null
-      //          case other => other
-      //        }
-      //        decoder.decode(default, readerSchema.getField(fieldName).schema)
-      case null if scalaDefault != null => scalaDefault.asInstanceOf[T]
-      case null if transient => None.asInstanceOf[T]
-      case _ => sys.error(s"Record $record does not have a value for $fieldName, no default was defined, and the field is not transient")
-    }
-  }
-
   def dispatch[T](ctx: SealedTrait[Typeclass, T]): Decoder[T] = new Decoder[T] {
     override def decode(container: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): T = {
       schema.getType match {
-        // with a record we already have the schema for the container, we don't need to do anything
-        // this is how top level ADTs are encoded
         case Schema.Type.RECORD =>
           container match {
             case container: GenericContainer =>
-              val subtype = ctx.subtypes.find { subtype => Namer(subtype.typeName, subtype.annotations).fullName == container.getSchema.getFullName }
+              val subtype = ctx.subtypes.find { subtype => Namer(subtype.typeName, subtype.annotations ++ ctx.annotations).fullName == container.getSchema.getFullName }
                 .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
               subtype.typeclass.decode(container, schema)
             case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
