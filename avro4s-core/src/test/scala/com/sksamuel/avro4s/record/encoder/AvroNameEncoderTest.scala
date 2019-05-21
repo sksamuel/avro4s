@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, Encoder, SchemaFor}
+import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, Encoder, ImmutableRecord, SchemaFor, ToRecord}
+import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
@@ -12,7 +13,7 @@ class AvroNameEncoderTest extends FunSuite with Matchers {
   @AvroNamespace("some.pkg")
   case class AvroNamespaceEncoderTest(foo: String)
 
-  test("encoder should take into account @AvroName") {
+  test("encoder should take into account @AvroName on a field") {
     val schema = AvroSchema[AvroNameEncoderTest]
     val record = Encoder[AvroNameEncoderTest].encode(AvroNameEncoderTest("hello"), schema).asInstanceOf[GenericRecord]
     record.get("bar") shouldBe new Utf8("hello")
@@ -39,7 +40,32 @@ class AvroNameEncoderTest extends FunSuite with Matchers {
     val decoded = Decoder[Spaceship].decode(encoded, SchemaFor[Spaceship].schema)
     spaceship shouldBe decoded
   }
+
+  test("encoding sealed traits with @AvroNamespace at the field level should work #255") {
+    val schema = AvroSchema[MyStark]
+    val ms = MyStark(Sansa(1), "", 0)
+    val record = ToRecord[MyStark](schema).to(ms).asInstanceOf[ImmutableRecord]
+
+    val sansa = SchemaBuilder.record("Sansa").namespace("the.north").fields().requiredInt("i").endRecord()
+    val bran = SchemaBuilder.record("Bran").namespace("the.north").fields().requiredString("s").endRecord()
+
+    record.getSchema shouldBe SchemaBuilder.record("MyStark").namespace("com.sksamuel.avro4s.record.encoder")
+      .fields()
+      .name("stark").`type`(SchemaBuilder.unionOf().`type`(sansa).and().`type`(bran).endUnion()).noDefault()
+      .requiredString("id")
+      .requiredInt("x")
+      .endRecord()
+    record.values.size shouldBe 3
+    record.values.head.asInstanceOf[ImmutableRecord].schema shouldBe sansa
+    record.values.head.asInstanceOf[ImmutableRecord].values shouldBe Vector(1)
+  }
 }
+
+sealed trait Stark
+case class Sansa(i: Int) extends Stark
+case class Bran(s: String) extends Stark
+
+case class MyStark(@AvroNamespace("the.north") stark: Stark, id: String, x: Int)
 
 @AvroNamespace("storage.boxes")
 case class WaterproofBox(airtight_box: AirtightBox)

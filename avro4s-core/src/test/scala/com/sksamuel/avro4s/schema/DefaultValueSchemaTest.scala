@@ -38,11 +38,17 @@ class DefaultValueSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_float.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support default values for optional sealed trait hierarchies" in {
+    "support default values for maps and seqs" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/defaultvalues.json"))
+      val schema = AvroSchema[DefaultValues]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support default values set to None for optional sealed trait hierarchies" in {
       val schema = AvroSchema[DogProspect]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_union.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
+
   }
 }
 

@@ -10,7 +10,7 @@ import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, Schema}
+import org.apache.avro.{Conversions, Schema, SchemaBuilder}
 import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.language.experimental.macros
@@ -24,7 +24,7 @@ import scala.math.BigDecimal.RoundingMode.RoundingMode
   * For example, given a string, and a schema of type Schema.Type.STRING
   * then the string would be encoded as an instance of Utf8, whereas
   * the same string and a Schema.Type.FIXED would be encoded as an
-  * instance of GenericData.Fixed.
+  * instance of GenericFixed.
   *
   * Another example is given a Scala enumeration value, and a schema of
   * type Schema.Type.ENUM, the value would be encoded as an instance
@@ -49,7 +49,10 @@ object Encoder {
   implicit object StringEncoder extends Encoder[String] {
     override def encode(value: String, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = {
       schema.getType match {
-        case Schema.Type.FIXED => new GenericData.Fixed(schema, value.getBytes)
+        case Schema.Type.FIXED =>
+          if (value.getBytes.length > schema.getFixedSize)
+            sys.error(s"Cannot write string with ${value.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
+          GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(value.getBytes).array, schema)
         case Schema.Type.BYTES => ByteBuffer.wrap(value.getBytes)
         case _ => new Utf8(value)
       }
@@ -153,11 +156,15 @@ object Encoder {
   }
 
   implicit object ByteArrayEncoder extends Encoder[Array[Byte]] {
-    override def encode(t: Array[Byte], schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = {
+    override def encode(bytes: Array[Byte], schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = {
       schema.getType match {
-        case Schema.Type.FIXED => new GenericData.Fixed(schema, t)
-        case Schema.Type.BYTES => ByteBuffer.wrap(t)
-        case _ => sys.error(s"Unable to encode $t for schema $schema")
+        case Schema.Type.FIXED =>
+          if (bytes.length > schema.getFixedSize)
+            sys.error(s"Cannot write byte array with ${bytes.length} bytes to fixed type of size ${schema.getFixedSize}")
+          val bb = ByteBuffer.allocate(schema.getFixedSize).put(bytes)
+          GenericData.get.createFixed(null, bb.array(), schema)
+        case Schema.Type.BYTES => ByteBuffer.wrap(bytes)
+        case _ => sys.error(s"Unable to encode $bytes for schema $schema")
       }
     }
   }
@@ -294,6 +301,7 @@ object Encoder {
   }
 
   def combine[T](klass: CaseClass[Typeclass, T]): Encoder[T] = {
+    import scala.collection.JavaConverters._
 
     val extractor = new AnnotationExtractors(klass.annotations)
     val doc = extractor.doc.orNull
@@ -322,14 +330,36 @@ object Encoder {
         override def encode(t: T, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = {
           // the schema passed here must be a record since we are encoding a non-value case class
           require(schema.getType == Schema.Type.RECORD)
-          val values = klass.parameters.flatMap { p =>
-            val extractor = new AnnotationExtractors(p.annotations)
-            if (extractor.transient) None else {
-              // the name may have been overriden with @AvroName and we should then encode with the naming strategy
-              val name = naming.to(extractor.name.getOrElse(p.label))
-              val field = schema.getField(name)
-              if (field == null) throw new RuntimeException(s"Expected field $name did not exist in the schema")
-              Some(p.typeclass.encode(p.dereference(t), field.schema))
+          val values = schema.getFields.asScala.map { field =>
+
+            // find the matching parameter
+            val p = klass.parameters.find { p =>
+              val extractor = new AnnotationExtractors(p.annotations)
+              naming.to(extractor.name.getOrElse(p.label)) == field.name
+            }.getOrElse(sys.error(s"Could not find case class parameter for field ${field.name}"))
+
+            // if we have a trait, and we call encode here, then the dispatch method will try to find the correct
+            // schema using the namespace of the trait. If the field is annotated, the dispatch method won't know
+            // that, and it will fail to find the correct subschema.
+            // Therefore the schema, if a union, should be updated to have the namespace set here, and then
+            // changed back on it's return
+            field.schema.getType match {
+              case Schema.Type.UNION =>
+
+                val extractor = new AnnotationExtractors(p.annotations)
+                extractor.namespace.fold( p.typeclass.encode(p.dereference(t), field.schema)) { namespace =>
+                  val fieldschemas = field.schema().getTypes.asScala.map(SchemaHelper.overrideNamespace(_, klass.typeName.owner))
+                  val union = SchemaBuilder.unionOf().`type`(fieldschemas.head)
+                  fieldschemas.tail.foreach { s => union.and().`type`(s) }
+                  // if the encoded value is a record, then set it back to the original namespace
+                  p.typeclass.encode(p.dereference(t), union.endUnion) match {
+                    case record: ImmutableRecord => record.copy(schema = SchemaHelper.overrideNamespace(record.schema, namespace))
+                    case other => other
+                  }
+                }
+
+              case _ =>
+                p.typeclass.encode(p.dereference(t), field.schema)
             }
           }
           buildRecord(schema, values.asInstanceOf[Seq[AnyRef]], name)
@@ -350,11 +380,11 @@ object Encoder {
             // note: that the schema may have a custom name and a custom namespace!
             // note2: the field for the ADT itself may be annotated!
             val a = ctx.annotations
-            val namer = Namer(subtype.typeName, subtype.annotations)
+            val namer = Namer(subtype.typeName, subtype.annotations ++ ctx.annotations)
             val subschema = SchemaHelper.extractTraitSubschema(namer.fullName, schema)
             subtype.typeclass.encode(t.asInstanceOf[subtype.SType], subschema)
           // for enums we just encode the type name in an enum symbol wrapper. simples!
-          case Schema.Type.ENUM => new GenericData.EnumSymbol(schema, namer.name)
+          case Schema.Type.ENUM => GenericData.get.createEnum(namer.name, schema)
           case other => sys.error(s"Unsupported schema type $other for sealed traits")
         }
       }

@@ -12,7 +12,10 @@ import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
   * Some frameworks, such as a Kafka, store the Schema separately to messages, in which
   * case the [[AvroBinaryInputStream]] is what you would need.
   *
-  * @param os the underlying stream that data will be written to.
+  * @param os      the underlying stream that data will be written to.
+  * @param schema  the schema that will be used to encode the data, sometimes called the writer schema
+  * @param codec   compression codec
+  * @param encoder the avro4s [[Encoder]] that will convert each value to a [[GenericRecord]]
   */
 case class AvroDataOutputStream[T](os: OutputStream,
                                    schema: Schema,

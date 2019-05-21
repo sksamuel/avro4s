@@ -477,6 +477,7 @@ Pizza(hawaiian,List(Ingredient(ham,1.5,5.6), Ingredient(pineapple,5.2,0.2)),fals
 ```
 
 ### Binary and JSON Formats
+
 You can serialize as [binary](https://avro.apache.org/docs/1.8.2/spec.html#binary_encoding) or [json](https://avro.apache.org/docs/1.8.2/spec.html#json_encoding)
 by specifying the format when creating the input or output stream. In the earlier example we use `data` which is considered the "default" for Avro.
 
@@ -491,7 +492,6 @@ AvroInputStream.json.from(...).build(...)
 ```
 
 Note: Binary serialization does not include the schema in the output.
-
 
 ## Avro Records
 
