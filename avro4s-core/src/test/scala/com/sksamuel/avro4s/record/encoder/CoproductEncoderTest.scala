@@ -29,6 +29,7 @@ class CoproductEncoderTest extends FunSuite with Matchers {
 
   test("coproducts with arrays") {
     val schema = AvroSchema[CPWithArray]
+    println(s"$schema")
     Encoder[CPWithArray].encode(CPWithArray(Coproduct[CPWrapper.SSI](Seq("foo", "bar"))), schema) shouldBe ImmutableRecord(schema, Vector(java.util.Arrays.asList(new Utf8("foo"), new Utf8("bar"))))
     Encoder[CPWithArray].encode(CPWithArray(Coproduct[CPWrapper.SSI](4)), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(4)))
   }
