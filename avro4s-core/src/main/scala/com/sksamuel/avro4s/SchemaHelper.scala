@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import org.apache.avro.{JsonProperties, Schema}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
+import scala.util.matching.Regex
 
 object SchemaHelper {
 
@@ -28,10 +29,10 @@ object SchemaHelper {
 
     // if we are looking for an array type then find "array" first
     // this is totally not FP but what the heck it's late and it's perfectly valid
-    fullName match {
-      case "scala.collection.immutable.::" =>
-        return types.asScala.find(_.getType == Schema.Type.ARRAY).getOrElse(sys.error(s"Could not find array type to match $fullName"))
-      case _ =>
+    val arrayTypeNamePattern: Regex = "scala.collection.immutable.::(__B)?".r
+    arrayTypeNamePattern.findFirstMatchIn(fullName) match {
+      case Some(_) => return types.asScala.find(_.getType == Schema.Type.ARRAY).getOrElse(sys.error(s"Could not find array type to match $fullName")) 
+      case None => 
     }
 
     // Finds the matching schema and keeps track a null type if any.

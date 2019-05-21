@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import scala.collection.JavaConverters._
 import java.nio.ByteBuffer
 import java.util.UUID
 
@@ -35,6 +36,9 @@ object DefaultResolver {
     case x: scala.Int => java.lang.Integer.valueOf(x)
     case x: scala.Double => java.lang.Double.valueOf(x)
     case x: scala.Float => java.lang.Float.valueOf(x)
+    case x: Map[_,_] => new java.util.LinkedHashMap[Any,Any](x.asJava)
+    case x: Seq[_] => new java.util.ArrayList[Any](x.asJava)
     case _ => value.asInstanceOf[AnyRef]
   }
+
 }
