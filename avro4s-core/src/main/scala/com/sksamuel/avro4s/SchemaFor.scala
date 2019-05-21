@@ -206,6 +206,7 @@ object SchemaFor {
     // and set to null, or something else, in which case it's a non null value
     val encodedDefault: AnyRef = default match {
       case None => null
+      case Some(None) => JsonProperties.NULL_VALUE
       case Some(null) => JsonProperties.NULL_VALUE
       case Some(other) => DefaultResolver(other, fieldSchema)
     }
@@ -217,7 +218,7 @@ object SchemaFor {
     }
 
     // if our default value is null, then we should change the type to be nullable even if we didn't use option
-    val schemaWithPossibleNull = if (encodedDefault == JsonProperties.NULL_VALUE) {
+    val schemaWithPossibleNull = if (default == Some(null) && schema.getType != Schema.Type.UNION) {
       SchemaBuilder.unionOf().`type`(schema).and().`type`(Schema.create(Schema.Type.NULL)).endUnion()
     } else schema
 

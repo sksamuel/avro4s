@@ -43,8 +43,21 @@ class DefaultValueSchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[DefaultValues]
       schema.toString(true) shouldBe expected.toString(true)
     }
+    "support default values set to None for optional sealed trait hierarchies" in {
+      val schema = AvroSchema[DogProspect]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_union.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
   }
 }
+
+sealed trait Dog
+case class UpperDog(how_fortunate: Double) extends Dog
+case class UnderDog(how_unfortunate: Double) extends Dog
+
+case class DogProspect(dog: Option[Dog] = None)
+
 
 case class ClassWithDefaultString(s: String = "foo")
 case class ClassWithDefaultInt(i: Int = 123)
