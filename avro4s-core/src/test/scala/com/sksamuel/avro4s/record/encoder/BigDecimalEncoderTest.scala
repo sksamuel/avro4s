@@ -69,7 +69,7 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
   test("allow custom typeclass overrides") {
 
     implicit object BigDecimalAsString extends SchemaFor[BigDecimal] {
-      override def schema(namingStrategy: NamingStrategy) = StringSchemaFor.schema()
+      override def schema(namingStrategy: NamingStrategy) = StringSchemaFor.schema(DefaultNamingStrategy)
     }
 
     case class Test(decimal: BigDecimal)

@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 trait SchemaFor[T] extends Serializable {
   self =>
 
-  def schema(namingStrategy: NamingStrategy = DefaultNamingStrategy): Schema
+  def schema(namingStrategy: NamingStrategy): Schema
 
   /**
     * Creates a SchemaFor[U] by applying a function Schema => Schema

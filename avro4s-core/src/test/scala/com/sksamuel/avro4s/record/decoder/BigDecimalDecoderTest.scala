@@ -34,7 +34,7 @@ class BigDecimalDecoderTest extends FlatSpec with Matchers {
   }
 
   it should "be able to decode strings as bigdecimals" in {
-    Decoder[BigDecimal].decode("123.45", BigDecimals.AsString.schema()) shouldBe BigDecimal(123.45)
+    Decoder[BigDecimal].decode("123.45", BigDecimals.AsString.schema(DefaultNamingStrategy)) shouldBe BigDecimal(123.45)
   }
 
   it should "be able to decode generic fixed as bigdecimals" in {

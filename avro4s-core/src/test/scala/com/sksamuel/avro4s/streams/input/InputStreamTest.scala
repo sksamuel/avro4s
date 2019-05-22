@@ -2,15 +2,14 @@ package com.sksamuel.avro4s.streams.input
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{Decoder, Encoder}
-import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema, SchemaFor}
+import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema, Decoder, DefaultNamingStrategy, Encoder, SchemaFor}
 import org.scalatest.{FunSuite, Matchers}
 
 trait InputStreamTest extends FunSuite with Matchers {
 
   def readData[T: SchemaFor : Decoder](out: ByteArrayOutputStream): T = readData(out.toByteArray)
   def readData[T: SchemaFor : Decoder](bytes: Array[Byte]): T = {
-    AvroInputStream.data.from(bytes).build(implicitly[SchemaFor[T]].schema()).iterator.next()
+    AvroInputStream.data.from(bytes).build(implicitly[SchemaFor[T]].schema(DefaultNamingStrategy)).iterator.next()
   }
 
   def writeData[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
@@ -24,7 +23,7 @@ trait InputStreamTest extends FunSuite with Matchers {
 
   def readBinary[T: SchemaFor : Decoder](out: ByteArrayOutputStream): T = readBinary(out.toByteArray)
   def readBinary[T: SchemaFor : Decoder](bytes: Array[Byte]): T = {
-    AvroInputStream.binary.from(bytes).build(implicitly[SchemaFor[T]].schema()).iterator.next()
+    AvroInputStream.binary.from(bytes).build(implicitly[SchemaFor[T]].schema(DefaultNamingStrategy)).iterator.next()
   }
 
   def writeBinary[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {

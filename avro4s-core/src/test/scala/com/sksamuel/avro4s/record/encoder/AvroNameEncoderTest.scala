@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, Encoder, ImmutableRecord, SchemaFor, ToRecord}
+import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, DefaultNamingStrategy, Encoder, ImmutableRecord, SchemaFor, ToRecord}
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
@@ -36,8 +36,8 @@ class AvroNameEncoderTest extends FunSuite with Matchers {
 
   test("support encoding and decoding with empty namespaces") {
     val spaceship = Spaceship(MiserableCosmos(true))
-    val encoded = Encoder[Spaceship].encode(spaceship, SchemaFor[Spaceship].schema())
-    val decoded = Decoder[Spaceship].decode(encoded, SchemaFor[Spaceship].schema())
+    val encoded = Encoder[Spaceship].encode(spaceship, SchemaFor[Spaceship].schema(DefaultNamingStrategy))
+    val decoded = Decoder[Spaceship].decode(encoded, SchemaFor[Spaceship].schema(DefaultNamingStrategy))
     spaceship shouldBe decoded
   }
 
