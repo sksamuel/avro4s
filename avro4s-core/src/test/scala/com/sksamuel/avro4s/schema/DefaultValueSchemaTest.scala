@@ -53,8 +53,8 @@ class DefaultValueSchemaTest extends WordSpec with Matchers {
 }
 
 sealed trait Dog
-case class UpperDog(how_fortunate: Double) extends Dog
 case class UnderDog(how_unfortunate: Double) extends Dog
+case class UpperDog(how_fortunate: Double) extends Dog
 
 case class DogProspect(dog: Option[Dog] = None)
 

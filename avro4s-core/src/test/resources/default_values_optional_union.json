@@ -6,17 +6,27 @@
     {
       "name": "dog",
       "type": [
-          "null",
-          {
-              "type": "record",
-              "name": "UpperDog",
-              "fields": [{"name": "how_fortunate", "type": "double"}]
-          },
-          {
-              "type": "record",
-              "name": "UnderDog",
-              "fields": [{"name": "how_unfortunate", "type": "double"}]
-          }
+        "null",
+        {
+          "type": "record",
+          "name": "UnderDog",
+          "fields": [
+            {
+              "name": "how_unfortunate",
+              "type": "double"
+            }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "UpperDog",
+          "fields": [
+            {
+              "name": "how_fortunate",
+              "type": "double"
+            }
+          ]
+        }
       ],
       "default": null
     }
