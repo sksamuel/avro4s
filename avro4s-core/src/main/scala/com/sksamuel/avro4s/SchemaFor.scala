@@ -348,14 +348,14 @@ object SchemaFor {
     }
 
     val valueType = typeOf[E]
-    val pre = typeRef.pre.typeSymbol.typeSignature.members
+    val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
     val syms = pre.filter { sym =>
       !sym.isMethod &&
         !sym.isType &&
         sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
     }.map { sym =>
       sym.name.decodedName.toString.trim
-    }.toList.reverse
+    }
 
     val as = typeRef.pre.typeSymbol.annotations
     val nameAnnotation = as.collectFirst {
