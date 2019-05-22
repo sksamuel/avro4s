@@ -576,14 +576,14 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | Seq[Byte]                    	| BYTES         	|                  	| ByteBuffer |
 | List[Byte]                   	| BYTES         	|                  	| ByteBuffer |
 | Vector[Byte]                 	| BYTES         	|                  	| ByteBuffer |
-| Array[T]                     	| ARRAY<T>      	|                  	| Array<T> |
-| Vector[T]                    	| ARRAY<T>      	|                  	| Array<T> |
-| Seq[T]                       	| ARRAY<T>      	|                  	| Array<T> |
-| List[T]                      	| ARRAY<T>      	|                  	| Array<T> |
-| Set[T]                       	| ARRAY<T>      	|                  	| Array<T> |
+| Array[T]                     	| ARRAY<T>      	|                  	| Array[T] |
+| Vector[T]                    	| ARRAY<T>      	|                  	| Array[T] |
+| Seq[T]                       	| ARRAY<T>      	|                  	| Array[T] |
+| List[T]                      	| ARRAY<T>      	|                  	| Array[T] |
+| Set[T]                       	| ARRAY<T>      	|                  	| Array[T] |
 | sealed trait of case classes 	| UNION<A,B,..>  	|                  	| A, B, ... |
 | sealed trait of case objects 	| ENUM<A,B,..>  	|                  	| GenericEnumSymbol |
-| Map[String, V]              	| MAP<V>        	|                  	| java.util.Map<String, V> |
+| Map[String, V]              	| MAP<V>        	|                  	| java.util.Map[String, V] |
 | Either[A,B]                  	| UNION<A,B>    	|                  	| A, B |
 | A :+: B :+: C :+: CNil       	| UNION<A,B,C>  	|                  	| A, B, ... |
 | case class T                 	| RECORD        	|                  	| GenericRecord with SpecificRecord |
