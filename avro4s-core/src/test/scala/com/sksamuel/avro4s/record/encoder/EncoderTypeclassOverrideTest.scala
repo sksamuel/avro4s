@@ -14,13 +14,13 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit val StringAsBooleanEncoder = new Encoder[String] {
-      override def encode(t: String, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = java.lang.Boolean.valueOf(true)
+      override def encode(t: String, schema: Schema, naming: NamingStrategy): AnyRef = java.lang.Boolean.valueOf(true)
     }
 
     case class OverrideTest(s: String, i: Int)
 
     val schema = AvroSchema[OverrideTest]
-    val actual = Encoder[OverrideTest].encode(OverrideTest("hello", 123), schema)
+    val actual = Encoder[OverrideTest].encode(OverrideTest("hello", 123), schema, DefaultNamingStrategy)
     val expected = ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true), java.lang.Integer.valueOf(123)))
     actual shouldBe expected
   }
@@ -32,14 +32,14 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit val FooOverrideEncoder = new Encoder[Foo] {
-      override def encode(t: Foo, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = t.b.toString + ":" + t.i
+      override def encode(t: Foo, schema: Schema, naming: NamingStrategy): AnyRef = t.b.toString + ":" + t.i
     }
 
     case class Foo(b: Boolean, i: Int)
     case class OverrideTest(s: String, f: Foo)
 
     val schema = AvroSchema[OverrideTest]
-    val actual = Encoder[OverrideTest].encode(OverrideTest("hello", Foo(true, 123)), schema)
+    val actual = Encoder[OverrideTest].encode(OverrideTest("hello", Foo(true, 123)), schema, DefaultNamingStrategy)
     val expected = ImmutableRecord(schema, Vector(new Utf8("hello"), "true:123"))
     actual shouldBe expected
   }
@@ -51,13 +51,13 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit object FooValueTypeEncoder extends Encoder[FooValueType] {
-      override def encode(t: FooValueType, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = java.lang.Integer.valueOf(t.s.toInt)
+      override def encode(t: FooValueType, schema: Schema, naming: NamingStrategy): AnyRef = java.lang.Integer.valueOf(t.s.toInt)
     }
 
     case class OverrideTest(s: String, foo: FooValueType)
 
     val schema = AvroSchema[OverrideTest]
-    val actual = Encoder[OverrideTest].encode(OverrideTest("hello", FooValueType("123")), schema)
+    val actual = Encoder[OverrideTest].encode(OverrideTest("hello", FooValueType("123")), schema, DefaultNamingStrategy)
     val expected = ImmutableRecord(schema, Vector(new Utf8("hello"), java.lang.Integer.valueOf(123)))
     actual shouldBe expected
   }
@@ -69,11 +69,11 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
     }
 
     implicit object FooValueTypeEncoder extends Encoder[FooValueType] {
-      override def encode(t: FooValueType, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): AnyRef = java.lang.Integer.valueOf(t.s.toInt)
+      override def encode(t: FooValueType, schema: Schema, naming: NamingStrategy): AnyRef = java.lang.Integer.valueOf(t.s.toInt)
     }
 
     val schema = AvroSchema[FooValueType]
-    Encoder[FooValueType].encode(FooValueType("123"), schema) shouldBe java.lang.Integer.valueOf(123)
-    Encoder[FooValueType].encode(FooValueType("5455"), schema) shouldBe java.lang.Integer.valueOf(5455)
+    Encoder[FooValueType].encode(FooValueType("123"), schema, DefaultNamingStrategy) shouldBe java.lang.Integer.valueOf(123)
+    Encoder[FooValueType].encode(FooValueType("5455"), schema, DefaultNamingStrategy) shouldBe java.lang.Integer.valueOf(5455)
   }
 }

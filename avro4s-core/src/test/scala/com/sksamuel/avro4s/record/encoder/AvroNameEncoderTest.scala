@@ -15,20 +15,20 @@ class AvroNameEncoderTest extends FunSuite with Matchers {
 
   test("encoder should take into account @AvroName on a field") {
     val schema = AvroSchema[AvroNameEncoderTest]
-    val record = Encoder[AvroNameEncoderTest].encode(AvroNameEncoderTest("hello"), schema).asInstanceOf[GenericRecord]
+    val record = Encoder[AvroNameEncoderTest].encode(AvroNameEncoderTest("hello"), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
     record.get("bar") shouldBe new Utf8("hello")
   }
 
   test("encoding sealed traits of case objects should take into account AvroName") {
     val schema = AvroSchema[Ship]
-    val record = Encoder[Ship].encode(Ship(Atlantic), schema).asInstanceOf[GenericRecord]
+    val record = Encoder[Ship].encode(Ship(Atlantic), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
     record.get("location").toString shouldBe "atlantic"
   }
 
   test("encoding sealed traits of case objects should take into account @AvroNamespace") {
     val schema = AvroSchema[WaterproofBox]
     val data = WaterproofBox(AirtightBox(Cucumber(1.23)))
-    val record = Encoder[WaterproofBox].encode(data, schema).asInstanceOf[GenericRecord]
+    val record = Encoder[WaterproofBox].encode(data, schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
     val abox = record.get("airtight_box").asInstanceOf[GenericRecord]
     val contents = abox.get("contents").asInstanceOf[GenericRecord]
     contents.get("length") shouldBe 1.23
@@ -36,8 +36,8 @@ class AvroNameEncoderTest extends FunSuite with Matchers {
 
   test("support encoding and decoding with empty namespaces") {
     val spaceship = Spaceship(MiserableCosmos(true))
-    val encoded = Encoder[Spaceship].encode(spaceship, SchemaFor[Spaceship].schema(DefaultNamingStrategy))
-    val decoded = Decoder[Spaceship].decode(encoded, SchemaFor[Spaceship].schema(DefaultNamingStrategy))
+    val encoded = Encoder[Spaceship].encode(spaceship, SchemaFor[Spaceship].schema(DefaultNamingStrategy), DefaultNamingStrategy)
+    val decoded = Decoder[Spaceship].decode(encoded, SchemaFor[Spaceship].schema(DefaultNamingStrategy), DefaultNamingStrategy)
     spaceship shouldBe decoded
   }
 

@@ -2,8 +2,7 @@ package com.sksamuel.avro4s.record.encoder
 
 import java.util.UUID
 
-import com.sksamuel.avro4s.AvroSchema
-import com.sksamuel.avro4s.{Encoder, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroSchema, DefaultNamingStrategy, Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
 
@@ -15,24 +14,24 @@ class UUIDEncoderTest extends WordSpec with Matchers {
     "encode uuids" in {
       val uuid = UUID.randomUUID()
       val schema = AvroSchema[UUIDTest]
-      Encoder[UUIDTest].encode(UUIDTest(uuid), schema) shouldBe ImmutableRecord(schema, Vector(new Utf8(uuid.toString)))
+      Encoder[UUIDTest].encode(UUIDTest(uuid), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(new Utf8(uuid.toString)))
     }
     "encode seq of uuids" in {
       val uuid1 = UUID.randomUUID()
       val uuid2 = UUID.randomUUID()
       val schema = AvroSchema[UUIDSeq]
-      Encoder[UUIDSeq].encode(UUIDSeq(Seq(uuid1, uuid2)), schema) shouldBe ImmutableRecord(schema, Vector(List(new Utf8(uuid1.toString), new Utf8(uuid2.toString)).asJava))
+      Encoder[UUIDSeq].encode(UUIDSeq(Seq(uuid1, uuid2)), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(List(new Utf8(uuid1.toString), new Utf8(uuid2.toString)).asJava))
     }
     "encode UUIDs with defaults" in {
       val uuid = UUID.randomUUID()
       val schema = AvroSchema[UUIDDefault]
-      Encoder[UUIDDefault].encode(UUIDDefault(uuid), schema) shouldBe ImmutableRecord(schema, Vector(new Utf8(uuid.toString)))
+      Encoder[UUIDDefault].encode(UUIDDefault(uuid), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(new Utf8(uuid.toString)))
     }
     "encode Option[UUID]" in {
       val uuid = UUID.randomUUID()
       val schema = AvroSchema[UUIDOption]
-      Encoder[UUIDOption].encode(UUIDOption(Some(uuid)), schema) shouldBe ImmutableRecord(schema, Vector(new Utf8(uuid.toString)))
-      Encoder[UUIDOption].encode(UUIDOption(None), schema) shouldBe ImmutableRecord(schema, Vector(null))
+      Encoder[UUIDOption].encode(UUIDOption(Some(uuid)), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(new Utf8(uuid.toString)))
+      Encoder[UUIDOption].encode(UUIDOption(None), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(null))
     }
   }
 }

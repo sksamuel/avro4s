@@ -21,7 +21,7 @@ trait ToRecord[T] extends Serializable {
 object ToRecord {
   def apply[T: Encoder : SchemaFor]: ToRecord[T] = apply(AvroSchema[T])
   def apply[T](schema: Schema)(implicit encoder: Encoder[T]): ToRecord[T] = new ToRecord[T] {
-    override def to(t: T): Record = encoder.encode(t, schema) match {
+    override def to(t: T): Record = encoder.encode(t, schema, DefaultNamingStrategy) match {
       case record: Record => record
       case output => sys.error(s"Cannot marshall an instance of $t to a Record (was $output)")
     }

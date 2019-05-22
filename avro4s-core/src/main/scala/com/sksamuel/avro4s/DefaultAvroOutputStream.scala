@@ -16,7 +16,7 @@ class DefaultAvroOutputStream[T](os: OutputStream, schema: Schema, serializer: o
   }
 
   override def write(t: T): Unit = {
-    val record = encoder.encode(t, schema).asInstanceOf[GenericRecord]
+    val record = encoder.encode(t, schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
     datumWriter.write(record, serializer)
   }
 

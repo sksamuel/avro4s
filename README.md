@@ -602,7 +602,7 @@ the contents in lower case, we can do the following:
 case class Foo(a: String, b: String)
 
 implicit object FooEncoder extends Encoder[Foo] {
-  override def encode(foo: Foo, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy) = {
+  override def encode(foo: Foo, schema: Schema, naming: NamingStrategy) = {
     val record = new GenericData.Record(schema)
     record.put("a", foo.a.toUpperCase)
     record.put("b", foo.b.toUpperCase)
@@ -611,7 +611,7 @@ implicit object FooEncoder extends Encoder[Foo] {
 }
 
 implicit object FooDecoder extends Decoder[Foo] {
-  override def decode(value: Any, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy) = {
+  override def decode(value: Any, schema: Schema, naming: NamingStrategy) = {
     val record = value.asInstanceOf[GenericRecord]
     Foo(record.get("a").toString.toLowerCase, record.get("b").toString.toLowerCase)
   }
@@ -629,7 +629,7 @@ implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
 }
 
 implicit object DateTimeEncoder extends Encoder[LocalDateTime] {
-  override def apply(value: LocalDateTime, schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy) = 
+  override def apply(value: LocalDateTime, schema: Schema, naming: NamingStrategy) = 
     ISODateTimeFormat.dateTime().print(value)
 }
 

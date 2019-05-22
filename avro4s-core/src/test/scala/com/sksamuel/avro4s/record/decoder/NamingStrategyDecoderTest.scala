@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.decoder
 
 import com.sksamuel.avro4s.record.encoder.NamingTest
-import com.sksamuel.avro4s.{AvroSchema, Decoder, SnakeCase}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultNamingStrategy, SnakeCase}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{FunSuite, Matchers}
 
@@ -13,7 +13,7 @@ class NamingStrategyDecoderTest extends FunSuite with Matchers {
     val decoder = Decoder[NamingTest]
     val record = new GenericData.Record(schema)
     record.put("camel_case", "foo")
-    val result = decoder.decode(record, schema)
+    val result = decoder.decode(record, schema, DefaultNamingStrategy)
     result shouldBe NamingTest("foo")
   }
 }

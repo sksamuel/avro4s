@@ -11,8 +11,8 @@ trait FromRecord[T] extends Serializable {
 }
 
 object FromRecord {
-  def apply[T: Decoder : SchemaFor]: FromRecord[T] = apply(AvroSchema[T])
-  def apply[T: Decoder](schema: Schema): FromRecord[T] = new FromRecord[T] {
-    override def from(record: IndexedRecord): T = implicitly[Decoder[T]].decode(record, record.getSchema)
+  def apply[T: Decoder : SchemaFor]: FromRecord[T] = apply(AvroSchema[T], DefaultNamingStrategy)
+  def apply[T: Decoder](schema: Schema, naming: NamingStrategy): FromRecord[T] = new FromRecord[T] {
+    override def from(record: IndexedRecord): T = implicitly[Decoder[T]].decode(record, record.getSchema, naming)
   }
 }
