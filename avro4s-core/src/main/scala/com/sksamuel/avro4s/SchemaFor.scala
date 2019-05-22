@@ -218,7 +218,7 @@ object SchemaFor {
     }
 
     // if our default value is null, then we should change the type to be nullable even if we didn't use option
-    val schemaWithPossibleNull = if (default == Some(null) && schema.getType != Schema.Type.UNION) {
+    val schemaWithPossibleNull = if (default.contains(null) && schema.getType != Schema.Type.UNION) {
       SchemaBuilder.unionOf().`type`(schema).and().`type`(Schema.create(Schema.Type.NULL)).endUnion()
     } else schema
 

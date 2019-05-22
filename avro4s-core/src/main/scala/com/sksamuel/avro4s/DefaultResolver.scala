@@ -1,13 +1,14 @@
 package com.sksamuel.avro4s
 
-import scala.collection.JavaConverters._
 import java.nio.ByteBuffer
 import java.util.UUID
 
 import org.apache.avro.LogicalTypes.Decimal
-import org.apache.avro.{Conversions, Schema}
-import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.{GenericEnumSymbol, GenericFixed}
 import org.apache.avro.util.Utf8
+import org.apache.avro.{Conversions, Schema}
+
+import scala.collection.JavaConverters._
 
 /**
   * When we set a default on an avro field, the type must match
@@ -23,8 +24,8 @@ object DefaultResolver {
     case Some(x) => apply(x, schema)
     case u: Utf8 => u.toString
     case uuid: UUID => uuid.toString
-    case enum: GenericData.EnumSymbol => enum.toString
-    case fixed: GenericData.Fixed => fixed.bytes()
+    case enum: GenericEnumSymbol[_] => enum.toString
+    case fixed: GenericFixed => fixed.bytes()
     case bd: BigDecimal => bd.toString()
     case byteBuffer: ByteBuffer if schema.getLogicalType.isInstanceOf[Decimal] =>
       val decimalConversion = new Conversions.DecimalConversion
@@ -40,5 +41,4 @@ object DefaultResolver {
     case x: Seq[_] => new java.util.ArrayList[Any](x.asJava)
     case _ => value.asInstanceOf[AnyRef]
   }
-
 }
