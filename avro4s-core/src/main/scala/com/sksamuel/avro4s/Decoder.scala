@@ -346,16 +346,19 @@ object Decoder {
                   * If none of these rules can be satisfied then an exception will be thrown.
                   */
 
+                val extractor = new AnnotationExtractors(p.annotations)
+
+                val name = naming.to(extractor.name.getOrElse(p.label))
+
                 // take into account @AvroName and use the naming strategy to get the name of this parameter in the schema
-                val name = naming.to(new AnnotationExtractors(p.annotations).name.getOrElse(p.label))
+                def field = record.getSchema.getField(name)
 
                 // does the schema contain this parameter? If not, we will be relying on defaults or options in the case class
-                val field = record.getSchema.getField(name)
-                if (field == null) {
+                if (extractor.transient || field == null) {
                   p.default match {
                     case Some(default) => default
-                      // there is no default, the field cannot be found, so bye bye
-                    case None => sys.error(s"Cannot decode ${ctx.typeName.full}.${p.label} as field $name cannot be found in the schema [Schema defines ${record.getSchema.getFields.asScala.map(_.name()).mkString(",")}]")
+                      // there is no default, so the field must be an option
+                    case None => p.typeclass.decode(null, record.getSchema, naming)
                   }
                 } else {
                   val k = record.getSchema.getFields.indexOf(field)
