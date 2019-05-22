@@ -399,11 +399,6 @@ object SchemaFor {
     override def schema(implicit namingStrategy: NamingStrategy) = SchemaHelper.createSafeUnion(base, coproduct)
   }
 
-  //  implicit def genCoproduct[T, C <: Coproduct](implicit gen: Generic.Aux[T, C],
-  //                                               coproductFor: SchemaFor[C]): SchemaFor[T] = new SchemaFor[T] {
-  //    override def schema(implicit namingStrategy: NamingStrategy) = coproductFor.schema
-  //  }
-
   implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = new SchemaFor[(A, B)] {
     override def schema(implicit namingStrategy: NamingStrategy): Schema =
       SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
