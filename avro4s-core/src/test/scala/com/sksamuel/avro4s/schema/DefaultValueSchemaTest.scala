@@ -49,6 +49,13 @@ class DefaultValueSchemaTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
 
+    "support default values of optional Seq and Map" in {
+      val schema = AvroSchema[OptionalDefaultValues]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+
+    }
+
   }
 }
 
@@ -57,6 +64,18 @@ case class UpperDog(how_fortunate: Double) extends Dog
 case class UnderDog(how_unfortunate: Double) extends Dog
 
 case class DogProspect(dog: Option[Dog] = None)
+
+case class OptionalDefaultValues(name: Option[String] = Some("sammy"),
+                         age: Option[Int] = Some(21),
+                         isFemale: Option[Boolean] = Some(false),
+                         length: Option[Double] = Some(6.2),
+                         timestamp: Option[Long] = Some(1468920998000l),
+                         address: Option[Map[String, String]] = Some(Map(
+                           "home" -> "sammy's home address",
+                           "work" -> "sammy's work address"
+                         )),
+                         traits: Option[Seq[String]] = Some(Seq("Adventurous", "Helpful")),
+                         favoriteWine: Option[Wine] = Some(Wine.CabSav))
 
 
 case class ClassWithDefaultString(s: String = "foo")

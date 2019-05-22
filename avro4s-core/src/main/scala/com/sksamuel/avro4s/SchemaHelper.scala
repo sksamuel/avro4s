@@ -95,6 +95,8 @@ object SchemaHelper {
       case _: Double => Schema.Type.DOUBLE
       case _: Array[Byte] => Schema.Type.BYTES
       case _: GenericData.EnumSymbol => Schema.Type.ENUM
+      case _: java.util.ArrayList[_] => Schema.Type.ARRAY
+      case _: java.util.LinkedHashMap[_,_] => Schema.Type.MAP
       case JsonProperties.NULL_VALUE => Schema.Type.NULL
       case other => other
     }
