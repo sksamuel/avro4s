@@ -550,8 +550,8 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | Scala Type                   	| Schema Type   	| Logical Type     	| Encoded Type |
 |------------------------------	|---------------	|------------------	| ------------ |
 | String                       	| STRING        	|                  	| Utf8                      |
-| String                       	| FIXED        	    |                  	| GenericData.Fixed         |
-| String                       	| BYTES        	    |                  	| ByteBuffer         |
+| String                       	| FIXED        	|                  	| GenericFixed         |
+| String                       	| BYTES        	|                  	| ByteBuffer         |
 | Boolean                      	| BOOLEAN       	|                  	| java.lang.Boolean |
 | Long                         	| LONG          	|                  	| java.lang.Long |
 | Int                          	| INT           	|                  	| java.lang.Integer |
@@ -567,28 +567,28 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | Instant                      	| LONG          	| Timestamp-Millis 	| java.lang.Long |
 | Timestamp                    	| LONG          	| Timestamp-Millis 	| java.lang.Long |
 | BigDecimal                   	| BYTES         	| Decimal<8,2>     	| ByteBuffer |
-| BigDecimal                   	| FIXED         	| Decimal<8,2>     	| GenericData.Fixed |
+| BigDecimal                   	| FIXED         	| Decimal<8,2>     	| GenericFixed |
 | BigDecimal                   	| STRING         	| Decimal<8,2>     	| String |
 | Option[T]                    	| UNION<null,T> 	|                  	| null, T |
 | Array[Byte]                  	| BYTES         	|                  	| ByteBuffer |
-| Array[Byte]                  	| FIXED         	|                  	| GenericData.Fixed |
+| Array[Byte]                  	| FIXED         	|                  	| GenericFixed |
 | ByteBuffer                   	| BYTES         	|                  	| ByteBuffer |
 | Seq[Byte]                    	| BYTES         	|                  	| ByteBuffer |
 | List[Byte]                   	| BYTES         	|                  	| ByteBuffer |
 | Vector[Byte]                 	| BYTES         	|                  	| ByteBuffer |
-| Array[T]                     	| ARRAY<T>      	|                  	| Array<T> |
-| Vector[T]                    	| ARRAY<T>      	|                  	| Array<T> |
-| Seq[T]                       	| ARRAY<T>      	|                  	| Array<T> |
-| List[T]                      	| ARRAY<T>      	|                  	| Array<T> |
-| Set[T]                       	| ARRAY<T>      	|                  	| Array<T> |
+| Array[T]                     	| ARRAY<T>      	|                  	| Array[T] |
+| Vector[T]                    	| ARRAY<T>      	|                  	| Array[T] |
+| Seq[T]                       	| ARRAY<T>      	|                  	| Array[T] |
+| List[T]                      	| ARRAY<T>      	|                  	| Array[T] |
+| Set[T]                       	| ARRAY<T>      	|                  	| Array[T] |
 | sealed trait of case classes 	| UNION<A,B,..>  	|                  	| A, B, ... |
-| sealed trait of case objects 	| ENUM<A,B,..>  	|                  	| GenericData.EnumSymbol |
-| Map[String, V]              	| MAP<V>        	|                  	| java.util.Map<String, V> |
+| sealed trait of case objects 	| ENUM<A,B,..>  	|                  	| GenericEnumSymbol |
+| Map[String, V]              	| MAP<V>        	|                  	| java.util.Map[String, V] |
 | Either[A,B]                  	| UNION<A,B>    	|                  	| A, B |
 | A :+: B :+: C :+: CNil       	| UNION<A,B,C>  	|                  	| A, B, ... |
 | case class T                 	| RECORD        	|                  	| GenericRecord with SpecificRecord |
-| Scala enumeration            	| ENUM          	|                  	| GenericData.EnumSymbol |
-| Java enumeration             	| ENUM          	|                  	| GenericData.EnumSymbol |
+| Scala enumeration            	| ENUM          	|                  	| GenericEnumSymbol |
+| Java enumeration             	| ENUM          	|                  	| GenericEnumSymbol |
 | Scala tuples                  | RECORD            |                   | GenericRecord with SpecificRecord |
 
 ### Custom Type Mappings

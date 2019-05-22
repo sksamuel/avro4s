@@ -1,0 +1,35 @@
+{
+  "type": "record",
+  "name": "CoproductWithAdt",
+  "namespace": "com.sksamuel.avro4s.github",
+  "fields": [
+    {
+      "name": "cp",
+      "type": [
+        {
+          "type": "record",
+          "name": "Foo",
+          "namespace": "com.sksamuel.avro4s.github.MyAdt",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "Bar",
+          "namespace": "com.sksamuel.avro4s.github.MyAdt",
+          "fields": [
+            {
+              "name": "id",
+              "type": "int"
+            }
+          ]
+        },
+        "boolean"
+      ]
+    }
+  ]
+}
