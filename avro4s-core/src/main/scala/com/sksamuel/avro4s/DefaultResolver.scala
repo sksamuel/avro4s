@@ -36,8 +36,8 @@ object DefaultResolver {
     case x: scala.Int => java.lang.Integer.valueOf(x)
     case x: scala.Double => java.lang.Double.valueOf(x)
     case x: scala.Float => java.lang.Float.valueOf(x)
-    case x: Map[_,_] => new java.util.LinkedHashMap[Any,Any](x.asJava)
-    case x: Seq[_] => new java.util.ArrayList[Any](x.asJava)
+    case x: Map[_,_] => x.asJava
+    case x: Seq[_] => x.asJava
     case _ => value.asInstanceOf[AnyRef]
   }
 
