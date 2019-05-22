@@ -11,13 +11,13 @@ object Cats {
 
   implicit def nonEmptyListSchemaFor[T](schemaFor: SchemaFor[T]): SchemaFor[NonEmptyList[T]] = {
     new SchemaFor[NonEmptyList[T]] {
-      override def schema(implicit namingStrategy: NamingStrategy) = Schema.createArray(schemaFor.schema)
+      override def schema(namingStrategy: NamingStrategy) = Schema.createArray(schemaFor.schema())
     }
   }
 
   implicit def nonEmptyVectorSchemaFor[T](schemaFor: SchemaFor[T]): SchemaFor[NonEmptyVector[T]] = {
     new SchemaFor[NonEmptyVector[T]] {
-      override def schema(implicit namingStrategy: NamingStrategy) = Schema.createArray(schemaFor.schema)
+      override def schema(namingStrategy: NamingStrategy) = Schema.createArray(schemaFor.schema())
     }
   }
 

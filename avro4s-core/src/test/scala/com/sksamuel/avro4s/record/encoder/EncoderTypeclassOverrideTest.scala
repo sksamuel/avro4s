@@ -10,7 +10,7 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in Encoder implicit for a basic type") {
 
     implicit val StringAsBooleanSchemaFor = new SchemaFor[String] {
-      override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().booleanType()
+      override def schema(namingStrategy: NamingStrategy) = SchemaBuilder.builder().booleanType()
     }
 
     implicit val StringAsBooleanEncoder = new Encoder[String] {
@@ -28,7 +28,7 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in Encoder implicit for a complex type") {
 
     implicit val FooOverrideSchemaFor = new SchemaFor[Foo] {
-      override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().stringType()
+      override def schema(namingStrategy: NamingStrategy) = SchemaBuilder.builder().stringType()
     }
 
     implicit val FooOverrideEncoder = new Encoder[Foo] {
@@ -47,7 +47,7 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in Encoder implicit for a value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().intType()
+      override def schema(namingStrategy: NamingStrategy) = SchemaBuilder.builder().intType()
     }
 
     implicit object FooValueTypeEncoder extends Encoder[FooValueType] {
@@ -65,7 +65,7 @@ class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in Encoder implicit for a top level value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().intType()
+      override def schema(namingStrategy: NamingStrategy) = SchemaBuilder.builder().intType()
     }
 
     implicit object FooValueTypeEncoder extends Encoder[FooValueType] {

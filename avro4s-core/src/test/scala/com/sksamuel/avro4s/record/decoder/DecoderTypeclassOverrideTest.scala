@@ -16,7 +16,7 @@ class DecoderTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in Decoder implicit for a basic type") {
 
     implicit val StringAsBooleanSchemaFor = new SchemaFor[String] {
-      override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().booleanType()
+      override def schema(namingStrategy: NamingStrategy) = SchemaBuilder.builder().booleanType()
     }
 
     implicit val StringAsBooleanDecoder = new Decoder[String] {
@@ -39,7 +39,7 @@ class DecoderTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in Decoder implicit for a complex type") {
 
     implicit val FooOverrideSchemaFor = new SchemaFor[Foo] {
-      override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().stringType()
+      override def schema(namingStrategy: NamingStrategy) = SchemaBuilder.builder().stringType()
     }
 
     implicit val FooOverrideEncoder = new Decoder[Foo] {
@@ -62,7 +62,7 @@ class DecoderTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in Decoder implicit for a value type") {
 
     implicit val FooValueTypeOverrideSchemaFor = new SchemaFor[FooValueType] {
-      override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().intType()
+      override def schema(namingStrategy: NamingStrategy) = SchemaBuilder.builder().intType()
     }
 
     implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {
@@ -84,7 +84,7 @@ class DecoderTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in Decoder implicit for a top level value type") {
 
     implicit val FooValueTypeOverrideSchemaFor = new SchemaFor[FooValueType] {
-      override def schema(implicit namingStrategy: NamingStrategy) = SchemaBuilder.builder().intType()
+      override def schema(namingStrategy: NamingStrategy) = SchemaBuilder.builder().intType()
     }
 
     implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {

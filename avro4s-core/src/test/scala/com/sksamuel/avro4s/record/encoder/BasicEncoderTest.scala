@@ -19,7 +19,7 @@ class BasicEncoderTest extends WordSpec with Matchers {
     "encode strings as GenericFixed and pad bytes when schema is fixed" in {
       case class Foo(s: String)
       implicit object StringFixedSchemaFor extends SchemaFor[String] {
-        override def schema(implicit namingStrategy: NamingStrategy) = Schema.createFixed("FixedString", null, null, 7)
+        override def schema(namingStrategy: NamingStrategy) = Schema.createFixed("FixedString", null, null, 7)
       }
       val schema = AvroSchema[Foo]
       val record = Encoder[Foo].encode(Foo("hello"), schema).asInstanceOf[GenericRecord]

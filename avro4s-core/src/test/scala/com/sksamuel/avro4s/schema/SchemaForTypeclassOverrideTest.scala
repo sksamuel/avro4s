@@ -9,7 +9,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in SchemaFor implicit for a basic type") {
 
     implicit val StringSchemaFor = new SchemaFor[String] {
-      override def schema(implicit namingStrategy: NamingStrategy) = {
+      override def schema(namingStrategy: NamingStrategy) = {
         val schema = SchemaBuilder.builder().bytesType()
         schema.addProp("foo", "bar": AnyRef)
         schema
@@ -26,7 +26,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in SchemaFor implicit for a complex type") {
 
     implicit val FooSchemaFor = new SchemaFor[Foo] {
-      override def schema(implicit namingStrategy: NamingStrategy) = {
+      override def schema(namingStrategy: NamingStrategy) = {
         val schema = SchemaBuilder.builder().doubleType()
         schema.addProp("foo", "bar": AnyRef)
         schema
@@ -44,7 +44,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in SchemaFor implicit for a value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(implicit namingStrategy: NamingStrategy) = {
+      override def schema(namingStrategy: NamingStrategy) = {
         val schema = SchemaBuilder.builder().intType()
         schema.addProp("foo", "bar": AnyRef)
         schema
@@ -61,7 +61,7 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
   test("allow overriding built in SchemaFor implicit for a top level value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(implicit namingStrategy: NamingStrategy) = {
+      override def schema(namingStrategy: NamingStrategy) = {
         val schema = SchemaBuilder.builder().intType()
         schema.addProp("foo", "bar": AnyRef)
         schema

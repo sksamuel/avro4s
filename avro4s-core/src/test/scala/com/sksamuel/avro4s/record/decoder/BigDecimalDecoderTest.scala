@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.record.decoder
 import com.sksamuel.avro4s.Decoder.BigDecimalDecoder
 import com.sksamuel.avro4s.{AvroSchema, BigDecimals, Decoder, DefaultNamingStrategy, NamingStrategy, SchemaFor}
 import org.apache.avro.generic.GenericData
-import org.apache.avro.{Conversions, LogicalTypes, Schema, SchemaBuilder}
+import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.language.higherKinds
@@ -34,17 +34,17 @@ class BigDecimalDecoderTest extends FlatSpec with Matchers {
   }
 
   it should "be able to decode strings as bigdecimals" in {
-    Decoder[BigDecimal].decode("123.45", BigDecimals.AsString.schema) shouldBe BigDecimal(123.45)
+    Decoder[BigDecimal].decode("123.45", BigDecimals.AsString.schema()) shouldBe BigDecimal(123.45)
   }
 
   it should "be able to decode generic fixed as bigdecimals" in {
     implicit object BigDecimalAsFixed extends SchemaFor[BigDecimal] {
-      override def schema(implicit namingStrategy: NamingStrategy = DefaultNamingStrategy) = LogicalTypes.decimal(10, 8).addToSchema(
+      override def schema(namingStrategy: NamingStrategy = DefaultNamingStrategy) = LogicalTypes.decimal(10, 8).addToSchema(
         Schema.createFixed("BigDecimal", null, null, 8))
     }
 
-    val fixed = GenericData.get().createFixed(null, Array[Byte](0, 4, 98, -43, 55, 43, -114, 0), BigDecimalAsFixed.schema)
-    Decoder[BigDecimal].decode(fixed, BigDecimalAsFixed.schema) shouldBe BigDecimal(12345678)
+    val fixed = GenericData.get().createFixed(null, Array[Byte](0, 4, 98, -43, 55, 43, -114, 0), BigDecimalAsFixed.schema())
+    Decoder[BigDecimal].decode(fixed, BigDecimalAsFixed.schema()) shouldBe BigDecimal(12345678)
   }
 
 //  it should "be able to decode longs as bigdecimals" in {
