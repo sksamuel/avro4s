@@ -305,7 +305,7 @@ object Decoder {
   }
 
 
-  def combine[T](klass: CaseClass[Typeclass, T]): Decoder[T] = {
+  def combine[T](ctx: CaseClass[Typeclass, T]): Decoder[T] = {
 
     // In Scala, value types are erased at compile time. So in avro4s we assume that value types do not exist
     // in the avro side, neither in the schema, nor in the input values. Therefore, when creating a decoder
@@ -315,11 +315,11 @@ object Decoder {
 
     // So the generated decoder for a value type should simply pass through to a generated decoder for
     // the underlying type without worrying about fields etc.
-    if (klass.isValueClass) {
+    if (ctx.isValueClass) {
       new Decoder[T] {
         override def decode(value: Any, schema: Schema, naming: NamingStrategy): T = {
-          val decoded = klass.parameters.head.typeclass.decode(value, schema, naming)
-          klass.rawConstruct(List(decoded))
+          val decoded = ctx.parameters.head.typeclass.decode(value, schema, naming)
+          ctx.rawConstruct(List(decoded))
         }
       }
     } else {
@@ -329,7 +329,7 @@ object Decoder {
             case record: IndexedRecord =>
               // if we are in here then we are decoding a case class so we need a record schema
               require(schema.getType == Schema.Type.RECORD)
-              val values = klass.parameters.map { p =>
+              val values = ctx.parameters.map { p =>
 
                 /**
                   * For a field in the target type (the case class we are marshalling to), we must
@@ -346,17 +346,17 @@ object Decoder {
                   * If none of these rules can be satisfied then an exception will be thrown.
                   */
 
-                // take into account @AvroName and use the naming strategy
+                // take into account @AvroName and use the naming strategy to get the name of this parameter in the schema
                 val name = naming.to(new AnnotationExtractors(p.annotations).name.getOrElse(p.label))
 
-                // does the schema contain this parameter? If not, we will be relying on defaults or options
+                // does the schema contain this parameter? If not, we will be relying on defaults or options in the case class
                 val field = record.getSchema.getField(name)
                 if (field == null) {
                   p.default match {
                     case Some(default) => default
-                    case None => p.typeclass.decode(null, schema, naming)
+                      // there is no default, the field cannot be found, so bye bye
+                    case None => sys.error(s"Cannot decode ${ctx.typeName.full}.${p.label} as field $name cannot be found in the schema [Schema defines ${record.getSchema.getFields.asScala.map(_.name()).mkString(",")}]")
                   }
-              //    param.default.getOrElse(sys.error(s"Record does not have field ${param.label} and the class does not define a default"))
                 } else {
                   val k = record.getSchema.getFields.indexOf(field)
                   val value = record.get(k)
@@ -364,7 +364,7 @@ object Decoder {
                 }
               }
 
-              klass.rawConstruct(values)
+              ctx.rawConstruct(values)
 
             case _ => sys.error(s"This decoder can only handle types of IndexedRecord or it's subtypes such as GenericRecord [was ${value.getClass}]")
           }

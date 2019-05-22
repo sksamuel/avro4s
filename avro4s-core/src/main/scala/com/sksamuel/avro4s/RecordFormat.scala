@@ -14,10 +14,10 @@ trait RecordFormat[T] extends ToRecord[T] with FromRecord[T] with Serializable
   */
 object RecordFormat {
 
-  def apply[T: Encoder : Decoder : SchemaFor]: RecordFormat[T] = apply(AvroSchema[T], DefaultNamingStrategy)
+  def apply[T: Encoder : Decoder : SchemaFor]: RecordFormat[T] = apply(AvroSchema[T])
 
-  def apply[T: Encoder : Decoder](schema: Schema, naming: NamingStrategy): RecordFormat[T] = new RecordFormat[T] {
-    private val fromRecord = FromRecord[T](schema, naming)
+  def apply[T: Encoder : Decoder](schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): RecordFormat[T] = new RecordFormat[T] {
+    private val fromRecord = FromRecord[T](schema)
     private val toRecord = ToRecord[T](schema)
     override def from(record: IndexedRecord): T = fromRecord.from(record)
     override def to(t: T): Record = toRecord.to(t)
