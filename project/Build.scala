@@ -12,7 +12,7 @@ object Build extends AutoPlugin {
     val ScalatestVersion = "3.0.7"
     val ScalaVersion = "2.12.8"
     val Slf4jVersion = "1.7.26"
-    val Json4sVersion = "3.6.5"
+    val Json4sVersion = "3.6.6"
     val CatsVersion = "1.6.0"
     val ShapelessVersion = "2.3.3"
   }
