@@ -16,7 +16,7 @@ class StructEncoderTest extends WordSpec with Matchers {
       val countySchema = AvroSchema[County]
       val townSchema = AvroSchema[Town]
       val count = County("Bucks", Seq(Town("Hardwick", 123), Town("Weedon", 225)), true, 12.34, 0.123)
-      val result = Encoder[County].encode(count, countySchema, DefaultNamingStrategy)
+      val result = Encoder[County].encode(count, countySchema)
 
       val hardwick = ImmutableRecord(townSchema, Vector(new Utf8("Hardwick"), java.lang.Integer.valueOf(123)))
       val weedon = ImmutableRecord(townSchema, Vector(new Utf8("Weedon"), java.lang.Integer.valueOf(225)))

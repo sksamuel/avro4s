@@ -10,6 +10,6 @@ case class CoproductOfCoproductsField(cp: Coproducts :+: Boolean :+: CNil)
 class Github273 extends FunSuite with Matchers {
 
   test("Diverging implicit expansion for SchemaFor in Coproducts inside case classes #273") {
-    SchemaFor[CoproductOfCoproductsField].schema(DefaultNamingStrategy)
+    SchemaFor[CoproductOfCoproductsField].schema
   }
 }

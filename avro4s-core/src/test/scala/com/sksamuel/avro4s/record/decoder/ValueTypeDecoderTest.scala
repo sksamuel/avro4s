@@ -11,7 +11,7 @@ class ValueTypeDecoderTest extends FunSuite with Matchers {
   case class OptionTest(foo: Option[FooValueType])
 
   test("top level value types") {
-    val actual = Decoder[FooValueType].decode("hello", AvroSchema[FooValueType], DefaultNamingStrategy)
+    val actual = Decoder[FooValueType].decode("hello", AvroSchema[FooValueType])
     actual shouldBe FooValueType("hello")
   }
 
@@ -21,7 +21,7 @@ class ValueTypeDecoderTest extends FunSuite with Matchers {
     val record1 = new GenericData.Record(schema)
     record1.put("foo", new Utf8("hello"))
 
-    Decoder[Test].decode(record1, schema, DefaultNamingStrategy) shouldBe Test(FooValueType("hello"))
+    Decoder[Test].decode(record1, schema) shouldBe Test(FooValueType("hello"))
   }
 
   test("support value types inside Options") {
@@ -30,7 +30,7 @@ class ValueTypeDecoderTest extends FunSuite with Matchers {
     val record1 = new GenericData.Record(schema)
     record1.put("foo", new Utf8("hello"))
 
-    Decoder[OptionTest].decode(record1, schema, DefaultNamingStrategy) shouldBe OptionTest(Some(FooValueType("hello")))
+    Decoder[OptionTest].decode(record1, schema) shouldBe OptionTest(Some(FooValueType("hello")))
   }
 }
 

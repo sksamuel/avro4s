@@ -28,7 +28,7 @@ class AvroDataInputStream[T](in: InputStream,
     override def hasNext: Boolean = dataFileReader.hasNext
     override def next(): T = {
       val record = dataFileReader.next
-      decoder.decode(record, readerSchema.getOrElse(record.getSchema), DefaultNamingStrategy)
+      decoder.decode(record, readerSchema.getOrElse(record.getSchema))
     }
   }
 
@@ -36,7 +36,7 @@ class AvroDataInputStream[T](in: InputStream,
     override def hasNext: Boolean = dataFileReader.hasNext
     override def next(): Try[T] = Try {
       val record = dataFileReader.next
-      decoder.decode(record, readerSchema.getOrElse(record.getSchema), DefaultNamingStrategy)
+      decoder.decode(record, readerSchema.getOrElse(record.getSchema))
     }
   }
 

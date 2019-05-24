@@ -9,7 +9,7 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
 
   test("support sealed traits of case classes") {
     val schema = AvroSchema[Wrapper]
-    val record = Encoder[Wrapper].encode(Wrapper(Wobble("foo")), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Wrapper].encode(Wrapper(Wobble("foo")), schema).asInstanceOf[GenericRecord]
     val wibble = record.get("wibble").asInstanceOf[GenericRecord]
     wibble.get("str") shouldBe new Utf8("foo")
     // the schema should be of the actual impl class
@@ -18,7 +18,7 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
 
   test("support trait subtypes fields with same name") {
     val schema = AvroSchema[Trapper]
-    val record = Encoder[Trapper].encode(Trapper(Tobble("foo", "bar")), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Trapper].encode(Trapper(Tobble("foo", "bar")), schema).asInstanceOf[GenericRecord]
     val tobble = record.get("tibble").asInstanceOf[GenericRecord]
     tobble.get("str") shouldBe new Utf8("foo")
     tobble.get("place") shouldBe new Utf8("bar")
@@ -27,7 +27,7 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
 
   test("support trait subtypes fields with same name and same type") {
     val schema = AvroSchema[Napper]
-    val record = Encoder[Napper].encode(Napper(Nabble("foo", 44)), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Napper].encode(Napper(Nabble("foo", 44)), schema).asInstanceOf[GenericRecord]
     val nobble = record.get("nibble").asInstanceOf[GenericRecord]
     nobble.get("str") shouldBe new Utf8("foo")
     nobble.get("age") shouldBe 44
@@ -36,7 +36,7 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
 
   test("support top level ADTs") {
     val schema = AvroSchema[Nibble]
-    val record = Encoder[Nibble].encode(Nabble("foo", 44), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Nibble].encode(Nabble("foo", 44), schema).asInstanceOf[GenericRecord]
     record.get("str") shouldBe new Utf8("foo")
     record.get("age") shouldBe 44
     record.getSchema shouldBe AvroSchema[Nabble]
@@ -44,19 +44,19 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
 
   test("trait of case objects should be encoded as enum") {
     val schema = AvroSchema[DibbleWrapper]
-    Encoder[DibbleWrapper].encode(DibbleWrapper(Dobble), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord].get("dibble") shouldBe new GenericData.EnumSymbol(schema, Dobble)
-    Encoder[DibbleWrapper].encode(DibbleWrapper(Dabble), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord].get("dibble") shouldBe new GenericData.EnumSymbol(schema, Dabble)
+    Encoder[DibbleWrapper].encode(DibbleWrapper(Dobble), schema).asInstanceOf[GenericRecord].get("dibble") shouldBe new GenericData.EnumSymbol(schema, Dobble)
+    Encoder[DibbleWrapper].encode(DibbleWrapper(Dabble), schema).asInstanceOf[GenericRecord].get("dibble") shouldBe new GenericData.EnumSymbol(schema, Dabble)
   }
 
   test("top level traits of case objects should be encoded as enum") {
     val schema = AvroSchema[Dibble]
-    Encoder[Dibble].encode(Dobble, schema, DefaultNamingStrategy) shouldBe new GenericData.EnumSymbol(schema, Dobble)
-    Encoder[Dibble].encode(Dabble, schema, DefaultNamingStrategy) shouldBe new GenericData.EnumSymbol(schema, Dabble)
+    Encoder[Dibble].encode(Dobble, schema) shouldBe new GenericData.EnumSymbol(schema, Dobble)
+    Encoder[Dibble].encode(Dabble, schema) shouldBe new GenericData.EnumSymbol(schema, Dabble)
   }
 
   test("options of sealed traits should be encoded correctly") {
     val schema = AvroSchema[MeasurableThing]
-    val record = Encoder[MeasurableThing].encode(MeasurableThing(Some(WidthDimension(1.23))), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[MeasurableThing].encode(MeasurableThing(Some(WidthDimension(1.23))), schema).asInstanceOf[GenericRecord]
     val width = record.get("dimension").asInstanceOf[GenericRecord]
     width.get("width") shouldBe 1.23
   }
@@ -67,7 +67,7 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     case class InnerTwo(height: Double) extends Inner
     case class Outer(inner: Inner)
     val schema = AvroSchema[Outer]
-    val record = Encoder[Outer].encode(Outer(InnerTwo(1.23)), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Outer].encode(Outer(InnerTwo(1.23)), schema).asInstanceOf[GenericRecord]
     val inner = record.get("inner").asInstanceOf[GenericRecord]
     inner.get("height") shouldBe 1.23
   }
@@ -78,7 +78,7 @@ class SealedTraitEncoderTest extends FunSuite with Matchers {
     case class InnerOne(value: Double, optVal: Option[Float]) extends Inner
     case class InnerTwo(height: Double) extends Inner
     val schema = AvroSchema[Outer]
-    val record = Encoder[Outer].encode(Outer(InnerOne(1.23, None)), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Outer].encode(Outer(InnerOne(1.23, None)), schema).asInstanceOf[GenericRecord]
   }
 }
 

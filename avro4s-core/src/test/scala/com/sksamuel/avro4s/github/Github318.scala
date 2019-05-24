@@ -15,6 +15,6 @@ class Github318 extends FunSuite with Matchers {
 
   test("Error getting SchemaFor instance for Coproduct with ADT #318") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github/github_318.json"))
-    SchemaFor[CoproductWithAdt].schema(DefaultNamingStrategy).toString(true) shouldBe expected.toString(true)
+    SchemaFor[CoproductWithAdt].schema.toString(true) shouldBe expected.toString(true)
   }
 }

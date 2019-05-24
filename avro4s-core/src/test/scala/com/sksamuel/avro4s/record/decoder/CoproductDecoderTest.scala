@@ -12,7 +12,7 @@ class CoproductDecoderTest extends FunSuite with Matchers {
     val schema = AvroSchema[CPWrapper]
     val record = new GenericData.Record(schema)
     record.put("u", new Utf8("wibble"))
-    Decoder[CPWrapper].decode(record, schema, DefaultNamingStrategy) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
+    Decoder[CPWrapper].decode(record, schema) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
   }
 
   test("coproducts with case classes") {
@@ -21,7 +21,7 @@ class CoproductDecoderTest extends FunSuite with Matchers {
     gimble.put("x", new Utf8("foo"))
     val record = new GenericData.Record(schema)
     record.put("u", gimble)
-    Decoder[CPWrapper].decode(record, schema, DefaultNamingStrategy) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))
+    Decoder[CPWrapper].decode(record, schema) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))
   }
 
   test("coproducts with options") {
@@ -30,7 +30,7 @@ class CoproductDecoderTest extends FunSuite with Matchers {
     gimble.put("x", new Utf8("foo"))
     val record = new GenericData.Record(schema)
     record.put("u", gimble)
-    Decoder[CPWithOption].decode(record, schema, DefaultNamingStrategy) shouldBe CPWithOption(Some(Coproduct[CPWrapper.ISBG](Gimble("foo"))))
+    Decoder[CPWithOption].decode(record, schema) shouldBe CPWithOption(Some(Coproduct[CPWrapper.ISBG](Gimble("foo"))))
   }
 }
 

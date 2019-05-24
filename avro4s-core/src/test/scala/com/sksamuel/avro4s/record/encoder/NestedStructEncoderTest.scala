@@ -12,7 +12,7 @@ class NestedStructEncoderTest extends FunSuite with Matchers {
     case class Fooo(foo: Foo)
     case class Foooo(fooo: Fooo)
 
-    Encoder[Foooo].encode(Foooo(Fooo(Foo("a"))), AvroSchema[Foooo], DefaultNamingStrategy) shouldBe
+    Encoder[Foooo].encode(Foooo(Fooo(Foo("a"))), AvroSchema[Foooo]) shouldBe
       ImmutableRecord(
         AvroSchema[Foooo],
         Vector(

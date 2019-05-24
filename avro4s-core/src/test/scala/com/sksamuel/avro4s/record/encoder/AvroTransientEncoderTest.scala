@@ -8,7 +8,7 @@ class AvroTransientEncoderTest extends FunSuite with Matchers {
 
   test("encoder should skip @AvroTransient fields") {
     case class Foo(a: String, @AvroTransient b: String, c: String)
-    val record = Encoder[Foo].encode(Foo("a", "b", "c"), AvroSchema[Foo], DefaultNamingStrategy).asInstanceOf[ImmutableRecord]
+    val record = Encoder[Foo].encode(Foo("a", "b", "c"), AvroSchema[Foo]).asInstanceOf[ImmutableRecord]
     record.values shouldBe Vector(new Utf8("a"), new Utf8("c"))
   }
 }

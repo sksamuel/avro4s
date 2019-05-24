@@ -7,9 +7,9 @@ import org.scalatest.{FunSuite, Matchers}
 class NamingStrategyEncoderTest extends FunSuite with Matchers {
 
   test("adding an in scope NamingStrategy should overide the fields in an encoder") {
-    val schema = SchemaFor[NamingTest].schema(SnakeCase)
+    val schema = SchemaFor[NamingTest].withNamingStrategy(SnakeCase)
     val encoder = Encoder[NamingTest]
-    val record = encoder.encode(NamingTest("Foo"), schema, SnakeCase).asInstanceOf[GenericRecord]
+    val record = encoder.encode(NamingTest("Foo"), schema.schema).asInstanceOf[GenericRecord]
     record.get("camel_case")
   }
 

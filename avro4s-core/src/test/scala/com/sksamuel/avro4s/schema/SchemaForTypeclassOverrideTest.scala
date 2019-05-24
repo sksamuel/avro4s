@@ -8,12 +8,10 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
 
   test("allow overriding built in SchemaFor implicit for a basic type") {
 
-    implicit val StringSchemaFor = new SchemaFor[String] {
-      override def schema(namingStrategy: NamingStrategy) = {
-        val schema = SchemaBuilder.builder().bytesType()
-        schema.addProp("foo", "bar": AnyRef)
-        schema
-      }
+    implicit val StringSchemaFor = SchemaFor[String] {
+      val schema = SchemaBuilder.builder().bytesType()
+      schema.addProp("foo", "bar": AnyRef)
+      schema
     }
 
     case class OverrideTest(s: String, i: Int)
@@ -25,12 +23,10 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
 
   test("allow overriding built in SchemaFor implicit for a complex type") {
 
-    implicit val FooSchemaFor = new SchemaFor[Foo] {
-      override def schema(namingStrategy: NamingStrategy) = {
-        val schema = SchemaBuilder.builder().doubleType()
-        schema.addProp("foo", "bar": AnyRef)
-        schema
-      }
+    implicit val FooSchemaFor = SchemaFor[Foo] {
+      val schema = SchemaBuilder.builder().doubleType()
+      schema.addProp("foo", "bar": AnyRef)
+      schema
     }
 
     case class Foo(s: String, b: Boolean)
@@ -43,12 +39,10 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
 
   test("allow overriding built in SchemaFor implicit for a value type") {
 
-    implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(namingStrategy: NamingStrategy) = {
-        val schema = SchemaBuilder.builder().intType()
-        schema.addProp("foo", "bar": AnyRef)
-        schema
-      }
+    implicit val FooValueTypeSchemaFor = SchemaFor[FooValueType] {
+      val schema = SchemaBuilder.builder().intType()
+      schema.addProp("foo", "bar": AnyRef)
+      schema
     }
 
     case class OverrideTest(s: String, foo: FooValueType)
@@ -60,12 +54,10 @@ class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
 
   test("allow overriding built in SchemaFor implicit for a top level value type") {
 
-    implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(namingStrategy: NamingStrategy) = {
-        val schema = SchemaBuilder.builder().intType()
-        schema.addProp("foo", "bar": AnyRef)
-        schema
-      }
+    implicit val FooValueTypeSchemaFor = SchemaFor[FooValueType] {
+      val schema = SchemaBuilder.builder().intType()
+      schema.addProp("foo", "bar": AnyRef)
+      schema
     }
 
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schema_override_top_level_value_type.json"))

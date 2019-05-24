@@ -48,6 +48,14 @@
       "default": ["Adventurous", "Helpful"]
     },
     {
+      "name": "tags",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
       "name": "favoriteWine",
       "type": {
         "type": "enum",

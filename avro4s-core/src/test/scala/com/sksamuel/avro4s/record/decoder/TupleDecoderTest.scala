@@ -19,7 +19,7 @@ class TupleDecoderTest extends FunSuite with Matchers {
     z.put("_2", java.lang.Integer.valueOf(214))
     val record = new GenericData.Record(schema)
     record.put("z", z)
-    Decoder[Test2].decode(record, schema, DefaultNamingStrategy) shouldBe Test2(("hello", 214))
+    Decoder[Test2].decode(record, schema) shouldBe Test2(("hello", 214))
   }
 
   test("decode tuple3") {
@@ -30,7 +30,7 @@ class TupleDecoderTest extends FunSuite with Matchers {
     z.put("_3", java.lang.Boolean.valueOf(true))
     val record = new GenericData.Record(schema)
     record.put("z", z)
-    Decoder[Test3].decode(record, schema, DefaultNamingStrategy) shouldBe Test3(("hello", 214, true))
+    Decoder[Test3].decode(record, schema) shouldBe Test3(("hello", 214, true))
   }
 
   test("decode tuple4") {
@@ -42,7 +42,7 @@ class TupleDecoderTest extends FunSuite with Matchers {
     z.put("_4", java.lang.Double.valueOf(56.45))
     val record = new GenericData.Record(schema)
     record.put("z", z)
-    Decoder[Test4].decode(record, schema, DefaultNamingStrategy) shouldBe Test4(("hello", 214, true, 56.45))
+    Decoder[Test4].decode(record, schema) shouldBe Test4(("hello", 214, true, 56.45))
   }
 
   test("decode tuple5") {
@@ -55,7 +55,7 @@ class TupleDecoderTest extends FunSuite with Matchers {
     z.put("_5", java.lang.Long.valueOf(9999999999L))
     val record = new GenericData.Record(schema)
     record.put("z", z)
-    Decoder[Test5].decode(record, schema, DefaultNamingStrategy) shouldBe Test5(("hello", 214, true, 56.45, 9999999999L))
+    Decoder[Test5].decode(record, schema) shouldBe Test5(("hello", 214, true, 56.45, 9999999999L))
   }
 }
 

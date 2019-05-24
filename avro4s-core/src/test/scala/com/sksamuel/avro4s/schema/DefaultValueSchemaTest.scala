@@ -95,4 +95,5 @@ case class DefaultValues(name: String = "sammy",
                            "work" -> "sammy's work address"
                          ),
                          traits: Seq[String] = Seq("Adventurous", "Helpful"),
+                         tags: List[String] = List.empty,
                          favoriteWine: Wine = Wine.CabSav)

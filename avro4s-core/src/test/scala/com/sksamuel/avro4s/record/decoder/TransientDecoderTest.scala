@@ -13,6 +13,6 @@ class TransientDecoderTest extends FunSuite with Matchers {
     val schema = AvroSchema[TransientFoo]
     val record = new GenericData.Record(schema)
     record.put("a", new Utf8("hello"))
-    Decoder[TransientFoo].decode(record, schema, DefaultNamingStrategy) shouldBe TransientFoo("hello", None)
+    Decoder[TransientFoo].decode(record, schema) shouldBe TransientFoo("hello", None)
   }
 }

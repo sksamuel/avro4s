@@ -19,6 +19,6 @@ case class Invert(i: InvertibleComplexWrapper) extends Complex
 
 class Github292 extends FunSuite with Matchers {
   test("Introducing type-parametrised values breaks derivation for some ADTs #292") {
-    SchemaFor[Complex].schema(DefaultNamingStrategy).toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github292.json")).toString(true)
+    SchemaFor[Complex].schema.toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github292.json")).toString(true)
   }
 }

@@ -7,7 +7,7 @@ import scala.language.implicitConversions
 object SparkSchemas {
 
   // see https://github.com/sksamuel/avro4s/issues/271
-  implicit def BigDecimalSchemaFor(sp: ScalePrecision) = new SchemaFor[BigDecimal] {
+  implicit def BigDecimalSchemaFor(sp: ScalePrecision) = SchemaFor[BigDecimal] {
     /**
       * To be precise Spark expect the following mapping type -> precision:
       *
@@ -20,7 +20,7 @@ object SparkSchemas {
       * https://github.com/apache/spark/blob/v2.4.0/sql/catalyst/src/main/scala/org/apache/spark/sql/types/Decimal.scala#L417-L421
       * https://github.com/apache/spark/blob/v2.4.0/sql/core/src/main/java/org/apache/spark/sql/execution/datasources/parquet/VectorizedColumnReader.java#L501-L538
       */
-    override def schema(namingStrategy: NamingStrategy): Schema = {
+    {
       if (0 <= sp.precision && sp.precision <= 9) {
         LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.intType)
       } else if (10 <= sp.precision && sp.precision <= 18) {

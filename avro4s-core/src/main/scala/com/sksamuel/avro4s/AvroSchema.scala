@@ -18,5 +18,5 @@ object AvroSchema {
     * how the field names are generated.
     */
   def apply[T](implicit schemaFor: SchemaFor[T],
-               naming: NamingStrategy = DefaultNamingStrategy): Schema = schemaFor.schema(naming)
+               naming: NamingStrategy = DefaultNamingStrategy): Schema = schemaFor.withNamingStrategy(naming).schema
 }

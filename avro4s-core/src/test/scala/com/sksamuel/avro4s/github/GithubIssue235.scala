@@ -24,7 +24,7 @@ object Bug {
   ): Unit = {
 
     val format = RecordFormat[T]
-    val schema = schemaFor.schema(DefaultNamingStrategy)
+    val schema = schemaFor.schema
     val datumReader = new GenericDatumReader[GenericRecord](schema)
     val datumWriter = new GenericDatumWriter[GenericRecord](schema)
 
