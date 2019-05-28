@@ -283,7 +283,7 @@ val schema = AvroSchema[Recursive]
 
 ### Transient Fields
 
-Avro4s does not support the @transient anotation to mark a field as ignored, but instead supports its own @AvroTransient annotation to do the same job. Any field marked with this will be included in the generated schema.
+Avro4s does not support the @transient anotation to mark a field as ignored, but instead supports its own @AvroTransient annotation to do the same job. Any field marked with this will be excluded from the generated schema.
 
 ```scala
 package com.sksamuel
