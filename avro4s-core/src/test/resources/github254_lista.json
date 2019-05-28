@@ -7,18 +7,15 @@
     "fields": [
       {
         "name": "c",
-        "type": [
+        "type":
           {
-            "type": "record",
-            "name": "c1",
-            "fields": []
-          },
-          {
-            "type": "record",
-            "name": "c2",
-            "fields": []
+            "type": "enum",
+            "name": "C",
+            "symbols": [
+              "c1",
+              "c2"
+            ]
           }
-        ]
       }
     ]
   }
