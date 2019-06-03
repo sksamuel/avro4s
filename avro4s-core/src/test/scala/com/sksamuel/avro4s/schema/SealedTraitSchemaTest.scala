@@ -29,9 +29,22 @@ class SealedTraitSchemaTest extends FunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("trait of case objects should be encoded as enum") {
+  test("trait of case objects at the top level should be encoded as enum") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_trait_of_objects.json"))
     val schema = AvroSchema[Dibble]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  sealed trait Foo extends Product with Serializable
+
+  case object Bar extends Foo
+  case object Baz extends Foo
+
+  case class Schema(foo: Foo)
+
+  test("trait of case objects at a nested level should be encoded as enum") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_trait_of_nested_objects.json"))
+    val schema = AvroSchema[Schema]
     schema.toString(true) shouldBe expected.toString(true)
   }
 

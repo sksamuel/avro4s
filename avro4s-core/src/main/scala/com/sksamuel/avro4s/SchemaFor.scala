@@ -307,24 +307,14 @@ object SchemaFor {
 
       record
     }
-  }, DefaultNamingStrategy)
+  })
 
-  def dispatch[T](ctx: SealedTrait[Typeclass, T]): SchemaFor[T] = SchemaFor[T] ({ naming: NamingStrategy =>
+  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T]): SchemaFor[T] = SchemaFor[T] ({ naming: NamingStrategy =>
       import scala.reflect.runtime.universe
 
       val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
-
-      // if all objects then we encode as enums, otherwise as a union
-      // this is a big hacky until magnolia can do it for us
-      val objs = ctx.subtypes.forall { subtype =>
-        try {
-          // to be a case object, we need the object, but no class
-          val module = runtimeMirror.staticModule(subtype.typeName.full)
-          !runtimeMirror.staticClass(subtype.typeName.full).isCaseClass
-        } catch {
-          case NonFatal(_) => false
-        }
-      }
+      val tpe = runtimeMirror.weakTypeOf[T]
+      val objs = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.knownDirectSubclasses.forall(_.isModuleClass)
 
       if (objs) {
         val symbols = ctx.subtypes.map { sub =>
