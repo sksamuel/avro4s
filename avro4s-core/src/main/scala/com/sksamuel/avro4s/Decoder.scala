@@ -60,7 +60,8 @@ object Decoder {
     new Decoder[T] {
 
       override def withNamingStrategy(newNamingStrategy: NamingStrategy): Typeclass[T] =
-        Decoder(dec, newNamingStrategy)
+        if (naming == newNamingStrategy) this
+        else Decoder(dec, newNamingStrategy)
 
       override def decode(value: Any, schema: Schema): T = dec(value, schema, naming)
     }
@@ -203,8 +204,8 @@ object Decoder {
     }
   }
 
-  implicit def optionDecoder[T](implicit decoder: Decoder[T]) = new Decoder[Option[T]] {
-    override def decode(value: Any, schema: Schema): Option[T] = if (value == null) None else {
+  implicit def optionDecoder[T](implicit decoder: Decoder[T]) = Decoder[Option[T]] {
+    (value: Any, schema: Schema, naming: NamingStrategy) => if (value == null) None else {
       // Options are Union schemas of ["null", other], the decoder may require the other schema
       val schemas = if (schema.getType == Schema.Type.UNION) {
         schema.getTypes.asScala.toList
@@ -215,7 +216,7 @@ object Decoder {
         case s :: Nil => s
         case multipleSchemas => Schema.createUnion(multipleSchemas.asJava)
       }
-      Option(decoder.decode(value, nonNullSchema))
+      Option(decoder.withNamingStrategy(naming).decode(value, nonNullSchema))
     }
   }
 
@@ -227,23 +228,28 @@ object Decoder {
 
   implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = seqDecoder[T](decoder).map(_.toList)
 
-  implicit def seqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = new Decoder[Seq[T]] {
+  implicit def seqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = Decoder[Seq[T]] {
 
     import scala.collection.JavaConverters._
 
-    override def decode(value: Any, schema: Schema): Seq[T] = value match {
-      case array: Array[_] => array.toSeq.map(decoder.decode(_, schema.getElementType))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType)).toSeq
+    (value: Any, schema: Schema, naming: NamingStrategy) => value match {
+      case array: Array[_] =>
+        array.toSeq.map(decoder.withNamingStrategy(naming).decode(_, schema.getElementType))
+      case list: java.util.Collection[_] =>
+        list.asScala.map(decoder.withNamingStrategy(naming).decode(_, schema.getElementType)).toSeq
       case other => sys.error("Unsupported array " + other)
     }
   }
 
-  implicit def mapDecoder[T](implicit valueDecoder: Decoder[T]): Decoder[Map[String, T]] = new Decoder[Map[String, T]] {
+  implicit def mapDecoder[T](implicit valueDecoder: Decoder[T]): Decoder[Map[String, T]] = Decoder[Map[String, T]] {
 
     import scala.collection.JavaConverters._
 
-    override def decode(value: Any, schema: Schema): Map[String, T] = value match {
-      case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> valueDecoder.decode(v, schema.getValueType) }
+    (value: Any, schema: Schema, naming: NamingStrategy) => value match {
+      case map: java.util.Map[_, _] =>
+        map.asScala.toMap.map { case (k, v) =>
+          k.toString -> valueDecoder.withNamingStrategy(naming).decode(v, schema.getValueType)
+        }
       case other => sys.error("Unsupported map " + other)
     }
   }
@@ -331,9 +337,9 @@ object Decoder {
     // So the generated decoder for a value type should simply pass through to a generated decoder for
     // the underlying type without worrying about fields etc.
     if (ctx.isValueClass) {
-      new Decoder[T] {
-        override def decode(value: Any, schema: Schema): T = {
-          val decoded = ctx.parameters.head.typeclass.decode(value, schema)
+      Decoder[T] {
+        (value: Any, schema: Schema, naming: NamingStrategy) => {
+          val decoded = ctx.parameters.head.typeclass.withNamingStrategy(naming).decode(value, schema)
           ctx.rawConstruct(List(decoded))
         }
       }
@@ -439,12 +445,12 @@ object Decoder {
   implicit def tuple2Decoder[A, B](implicit
                                    decoderA: Decoder[A],
                                    decoderB: Decoder[B]
-                                  ) = new Decoder[(A, B)] {
-    override def decode(t: Any, schema: Schema): (A, B) = {
+                                  ) = Decoder[(A, B)] {
+    (t: Any, schema: Schema, naming: NamingStrategy) => {
       val record = t.asInstanceOf[GenericRecord]
       (
-        decoderA.decode(record.get("_1"), schema),
-        decoderB.decode(record.get("_2"), schema)
+        decoderA.withNamingStrategy(naming).decode(record.get("_1"), schema),
+        decoderB.withNamingStrategy(naming).decode(record.get("_2"), schema)
       )
     }
   }
@@ -453,13 +459,13 @@ object Decoder {
                                             decoderA: Decoder[A],
                                             decoderB: Decoder[B],
                                             decoderC: Decoder[C]
-                                           ) = new Decoder[(A, B, C)] {
-    override def decode(t: Any, schema: Schema): (A, B, C) = {
+                                           ) = Decoder[(A, B, C)] {
+    (t: Any, schema: Schema, naming: NamingStrategy) => {
       val record = t.asInstanceOf[GenericRecord]
       (
-        decoderA.decode(record.get("_1"), schema),
-        decoderB.decode(record.get("_2"), schema),
-        decoderC.decode(record.get("_3"), schema)
+        decoderA.withNamingStrategy(naming).decode(record.get("_1"), schema),
+        decoderB.withNamingStrategy(naming).decode(record.get("_2"), schema),
+        decoderC.withNamingStrategy(naming).decode(record.get("_3"), schema)
       )
     }
   }
@@ -469,14 +475,14 @@ object Decoder {
                                             decoderB: Decoder[B],
                                             decoderC: Decoder[C],
                                             decoderD: Decoder[D]
-                                           ) = new Decoder[(A, B, C, D)] {
-    override def decode(t: Any, schema: Schema): (A, B, C, D) = {
+                                           ) = Decoder[(A, B, C, D)] {
+    (t: Any, schema: Schema, naming: NamingStrategy) => {
       val record = t.asInstanceOf[GenericRecord]
       (
-        decoderA.decode(record.get("_1"), schema),
-        decoderB.decode(record.get("_2"), schema),
-        decoderC.decode(record.get("_3"), schema),
-        decoderD.decode(record.get("_4"), schema)
+        decoderA.withNamingStrategy(naming).decode(record.get("_1"), schema),
+        decoderB.withNamingStrategy(naming).decode(record.get("_2"), schema),
+        decoderC.withNamingStrategy(naming).decode(record.get("_3"), schema),
+        decoderD.withNamingStrategy(naming).decode(record.get("_4"), schema)
       )
     }
   }
@@ -487,15 +493,15 @@ object Decoder {
                                             decoderC: Decoder[C],
                                             decoderD: Decoder[D],
                                             decoderE: Decoder[E]
-                                           ) = new Decoder[(A, B, C, D, E)] {
-    override def decode(t: Any, schema: Schema): (A, B, C, D, E) = {
+                                           ) = Decoder[(A, B, C, D, E)] {
+    (t: Any, schema: Schema, naming: NamingStrategy) => {
       val record = t.asInstanceOf[GenericRecord]
       (
-        decoderA.decode(record.get("_1"), schema),
-        decoderB.decode(record.get("_2"), schema),
-        decoderC.decode(record.get("_3"), schema),
-        decoderD.decode(record.get("_4"), schema),
-        decoderE.decode(record.get("_5"), schema)
+        decoderA.withNamingStrategy(naming).decode(record.get("_1"), schema),
+        decoderB.withNamingStrategy(naming).decode(record.get("_2"), schema),
+        decoderC.withNamingStrategy(naming).decode(record.get("_3"), schema),
+        decoderD.withNamingStrategy(naming).decode(record.get("_4"), schema),
+        decoderE.withNamingStrategy(naming).decode(record.get("_5"), schema)
       )
     }
   }

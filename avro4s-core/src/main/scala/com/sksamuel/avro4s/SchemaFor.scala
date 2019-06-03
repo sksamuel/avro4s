@@ -57,7 +57,8 @@ object SchemaFor {
 
   def apply[T](fn: NamingStrategy => Schema, naming: NamingStrategy): SchemaFor[T] = new SchemaFor[T] {
     override def withNamingStrategy(newNamingStrategy: NamingStrategy): Typeclass[T] =
-      SchemaFor(fn, newNamingStrategy)
+      if (naming == newNamingStrategy) this
+      else SchemaFor(fn, newNamingStrategy)
 
     override def schema: Schema = fn(naming)
   }
@@ -89,8 +90,8 @@ object SchemaFor {
   }
 
   implicit def mapSchemaFor[V](implicit schemaFor: SchemaFor[V]): SchemaFor[Map[String, V]] = {
-    new SchemaFor[Map[String, V]] {
-      override def schema =  SchemaBuilder.map().values(schemaFor.schema)
+    SchemaFor[Map[String, V]] { naming: NamingStrategy =>
+      SchemaBuilder.map().values(schemaFor.withNamingStrategy(naming).schema)
     }
   }
 
@@ -99,43 +100,42 @@ object SchemaFor {
   }
 
   implicit def eitherSchemaFor[A, B](implicit leftFor: SchemaFor[A], rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] =
-    SchemaFor[Either[A, B]] {
-      SchemaHelper.createSafeUnion(leftFor.schema, rightFor.schema)
+    SchemaFor[Either[A, B]] { naming: NamingStrategy =>
+      SchemaHelper.createSafeUnion(leftFor.withNamingStrategy(naming).schema, rightFor.withNamingStrategy(naming).schema)
     }
 
-  implicit def optionSchemaFor[T](implicit schemaFor: SchemaFor[T]): SchemaFor[Option[T]] = SchemaFor[Option[T]] {
-    val elementSchema = schemaFor.schema
+  implicit def optionSchemaFor[T](implicit schemaFor: SchemaFor[T]): SchemaFor[Option[T]] = SchemaFor[Option[T]] { naming: NamingStrategy =>
+    val elementSchema = schemaFor.withNamingStrategy(naming).schema
     val nullSchema = SchemaBuilder.builder().nullType()
     SchemaHelper.createSafeUnion(elementSchema, nullSchema)
   }
 
   implicit def arraySchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Array[S]] = SchemaFor[Array[S]] {
-    Schema.createArray(schemaFor.schema)
+    naming: NamingStrategy => Schema.createArray(schemaFor.withNamingStrategy(naming).schema)
   }
 
   implicit def listSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[List[S]] = SchemaFor[List[S]] {
-    Schema.createArray(schemaFor.schema)
+    naming: NamingStrategy => Schema.createArray(schemaFor.withNamingStrategy(naming).schema)
   }
 
   implicit def setSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Set[S]] = SchemaFor[Set[S]] {
-    Schema.createArray(schemaFor.schema)
+    naming: NamingStrategy => Schema.createArray(schemaFor.withNamingStrategy(naming).schema)
   }
 
-  implicit def vectorSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Vector[S]] = {
-    SchemaFor[Vector[S]] {
-      Schema.createArray(schemaFor.schema)
+  implicit def vectorSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Vector[S]] =
+    SchemaFor[Vector[S]] { naming: NamingStrategy =>
+      Schema.createArray(schemaFor.withNamingStrategy(naming).schema)
     }
-  }
 
   implicit def seqSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Seq[S]] = {
-    SchemaFor[Seq[S]] {
-      Schema.createArray(schemaFor.schema)
+    SchemaFor[Seq[S]] { naming: NamingStrategy =>
+      Schema.createArray(schemaFor.withNamingStrategy(naming).schema)
     }
   }
 
   implicit def iterableSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Iterable[S]] = {
-    SchemaFor[Iterable[S]] {
-      Schema.createArray(schemaFor.schema)
+    SchemaFor[Iterable[S]] { naming: NamingStrategy =>
+      Schema.createArray(schemaFor.withNamingStrategy(naming).schema)
     }
   }
 
