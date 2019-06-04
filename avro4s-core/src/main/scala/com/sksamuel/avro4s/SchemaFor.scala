@@ -273,7 +273,7 @@ object SchemaFor {
           val builder = SchemaBuilder.fixed(name).doc(doc).namespace(namespace).aliases(aliases: _*)
           props.foreach { case (k, v) => builder.prop(k, v) }
           builder.size(size)
-        case None => param.typeclass.schema
+        case None => param.typeclass.withNamingStrategy(naming).schema
       }
 
     } else {
@@ -324,7 +324,7 @@ object SchemaFor {
         val namer = Namer(ctx.typeName, ctx.annotations)
         SchemaBuilder.enumeration(namer.name).namespace(namer.namespace).symbols(symbols: _*)
       } else {
-        val schemas = ctx.subtypes.map(_.typeclass.schema)
+        val schemas = ctx.subtypes.map(_.typeclass.withNamingStrategy(naming).schema)
         SchemaHelper.createSafeUnion(schemas: _*)
       }
     })
@@ -371,41 +371,41 @@ object SchemaFor {
   // Shapeless's implementation builds up the type recursively,
   // (i.e., it's actually A :+: (B :+: (C :+: CNil)))
   // so here we define the schema for the base case of the recursion, C :+: CNil
-  implicit def coproductBaseSchema[S](implicit basefor: SchemaFor[S]): SchemaFor[S :+: CNil] = SchemaFor[S :+: CNil] {
+  implicit def coproductBaseSchema[S](implicit basefor: SchemaFor[S]): SchemaFor[S :+: CNil] = SchemaFor[S :+: CNil] { naming: NamingStrategy =>
 
     import scala.collection.JavaConverters._
 
     {
-      val base = basefor.schema
+      val base = basefor.withNamingStrategy(naming).schema
       val schemas = scala.util.Try(base.getTypes.asScala).getOrElse(Seq(base))
       Schema.createUnion(schemas.asJava)
     }
   }
 
   // And here we continue the recursion up.
-  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: SchemaFor[S], coproductFor: SchemaFor[T]): SchemaFor[S :+: T] = SchemaFor[S :+: T] {
-    val base = basefor.schema
-    val coproduct = coproductFor.schema
+  implicit def coproductSchema[S, T <: Coproduct](implicit basefor: SchemaFor[S], coproductFor: SchemaFor[T]): SchemaFor[S :+: T] = SchemaFor[S :+: T] { naming: NamingStrategy =>
+    val base = basefor.withNamingStrategy(naming).schema
+    val coproduct = coproductFor.withNamingStrategy(naming).schema
     SchemaHelper.createSafeUnion(base, coproduct)
   }
 
-  implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = SchemaFor[(A, B)] {
+  implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = SchemaFor[(A, B)] { naming: NamingStrategy =>
       SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
         .fields()
-        .name("_1").`type`(a.schema).noDefault()
-        .name("_2").`type`(b.schema).noDefault()
+        .name("_1").`type`(a.withNamingStrategy(naming).schema).noDefault()
+        .name("_2").`type`(b.withNamingStrategy(naming).schema).noDefault()
         .endRecord()
   }
 
   implicit def tuple3SchemaFor[A, B, C](implicit
     a: SchemaFor[A],
     b: SchemaFor[B],
-    c: SchemaFor[C]): SchemaFor[(A, B, C)] = SchemaFor[(A, B, C)] {
+    c: SchemaFor[C]): SchemaFor[(A, B, C)] = SchemaFor[(A, B, C)] { naming: NamingStrategy =>
       SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
         .fields()
-        .name("_1").`type`(a.schema).noDefault()
-        .name("_2").`type`(b.schema).noDefault()
-        .name("_3").`type`(c.schema).noDefault()
+        .name("_1").`type`(a.withNamingStrategy(naming).schema).noDefault()
+        .name("_2").`type`(b.withNamingStrategy(naming).schema).noDefault()
+        .name("_3").`type`(c.withNamingStrategy(naming).schema).noDefault()
         .endRecord()
   }
 
@@ -413,13 +413,13 @@ object SchemaFor {
     a: SchemaFor[A],
     b: SchemaFor[B],
     c: SchemaFor[C],
-    d: SchemaFor[D]): SchemaFor[(A, B, C, D)] = SchemaFor[(A, B, C, D)] {
+    d: SchemaFor[D]): SchemaFor[(A, B, C, D)] = SchemaFor[(A, B, C, D)] { naming: NamingStrategy =>
       SchemaBuilder.record("Tuple4").namespace("scala").doc(null)
         .fields()
-        .name("_1").`type`(a.schema).noDefault()
-        .name("_2").`type`(b.schema).noDefault()
-        .name("_3").`type`(c.schema).noDefault()
-        .name("_4").`type`(d.schema).noDefault()
+        .name("_1").`type`(a.withNamingStrategy(naming).schema).noDefault()
+        .name("_2").`type`(b.withNamingStrategy(naming).schema).noDefault()
+        .name("_3").`type`(c.withNamingStrategy(naming).schema).noDefault()
+        .name("_4").`type`(d.withNamingStrategy(naming).schema).noDefault()
         .endRecord()
   }
 
@@ -428,14 +428,14 @@ object SchemaFor {
     b: SchemaFor[B],
     c: SchemaFor[C],
     d: SchemaFor[D],
-    e: SchemaFor[E]): SchemaFor[(A, B, C, D, E)] = SchemaFor[(A, B, C, D, E)] {
+    e: SchemaFor[E]): SchemaFor[(A, B, C, D, E)] = SchemaFor[(A, B, C, D, E)] { naming: NamingStrategy =>
       SchemaBuilder.record("Tuple5").namespace("scala").doc(null)
         .fields()
-        .name("_1").`type`(a.schema).noDefault()
-        .name("_2").`type`(b.schema).noDefault()
-        .name("_3").`type`(c.schema).noDefault()
-        .name("_4").`type`(d.schema).noDefault()
-        .name("_5").`type`(e.schema).noDefault()
+        .name("_1").`type`(a.withNamingStrategy(naming).schema).noDefault()
+        .name("_2").`type`(b.withNamingStrategy(naming).schema).noDefault()
+        .name("_3").`type`(c.withNamingStrategy(naming).schema).noDefault()
+        .name("_4").`type`(d.withNamingStrategy(naming).schema).noDefault()
+        .name("_5").`type`(e.withNamingStrategy(naming).schema).noDefault()
         .endRecord()
   }
 
