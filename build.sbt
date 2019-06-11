@@ -12,7 +12,7 @@ lazy val root = Project("avro4s", file("."))
   .aggregate(
     `avro4s-core`,
     `avro4s-json`,
-    `avro4s-cats`,
+   // `avro4s-cats`,
     `avro4s-kafka`
   )
 
@@ -32,18 +32,18 @@ val `avro4s-json` = project.in(file("avro4s-json"))
     )
   )
 
-val `avro4s-cats` = project.in(file("avro4s-cats"))
-  .dependsOn(`avro4s-core`)
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % CatsVersion
-    )
-  )
+//val `avro4s-cats` = project.in(file("avro4s-cats"))
+//  .dependsOn(`avro4s-core`)
+//  .settings(
+//    libraryDependencies ++= Seq(
+//      "org.typelevel" %% "cats-core" % CatsVersion
+//    )
+//  )
 
 val `avro4s-kafka` = project.in(file("avro4s-kafka"))
   .dependsOn(`avro4s-core`)
   .settings(
     libraryDependencies ++= Seq(
-      "org.apache.kafka" % "kafka-clients" % "2.2.0"
+      "org.apache.kafka" % "kafka-clients" % "2.2.1"
     )
   )

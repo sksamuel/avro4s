@@ -9,11 +9,11 @@ object Build extends AutoPlugin {
     val org = "com.sksamuel.avro4s"
     val AvroVersion = "1.9.0"
     val Log4jVersion = "1.2.17"
-    val ScalatestVersion = "3.0.7"
+    val ScalatestVersion = "3.0.8"
     val ScalaVersion = "2.12.8"
     val Slf4jVersion = "1.7.26"
-    val Json4sVersion = "3.6.5"
-    val CatsVersion = "1.6.0"
+    val Json4sVersion = "3.6.6"
+    val CatsVersion = "1.6.1"
     val ShapelessVersion = "2.3.3"
   }
 
@@ -26,7 +26,7 @@ object Build extends AutoPlugin {
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq(ScalaVersion, "2.11.12"),
+    crossScalaVersions := Seq(ScalaVersion, "2.11.12", "2.13.0"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(
@@ -69,7 +69,7 @@ object Build extends AutoPlugin {
     if (isTravis) {
       version := s"3.0.0.$travisBuildNumber-SNAPSHOT"
     } else {
-      version := "3.0.0-RC2"
+      version := "3.0.0-RC3"
     },
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
