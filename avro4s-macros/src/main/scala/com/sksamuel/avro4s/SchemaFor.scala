@@ -299,12 +299,12 @@ object SchemaFor extends TupleSchemaFor with CoproductSchemaFor {
       val annos = reflect.annotationsqq(tpe.typeSymbol)
 
       c.Expr[SchemaFor[T]](
-        q"""
-        new _root_.com.sksamuel.avro4s.SchemaFor[$tpe] {
-          private val _schema = _root_.com.sksamuel.avro4s.SchemaFor.buildSchema($name, $namespace, Seq(..$fields), Seq(..$annos), $isValueClass)
-          override def schema: _root_.org.apache.avro.Schema = _schema
-        }
-      """)
+        q"""{
+          val _schema = _root_.com.sksamuel.avro4s.SchemaFor.buildSchema($name, $namespace, Seq(..$fields), Seq(..$annos), $isValueClass)
+          new _root_.com.sksamuel.avro4s.SchemaFor[$tpe] {
+            override def schema: _root_.org.apache.avro.Schema = _schema
+          }
+        }""")
     }
   }
 

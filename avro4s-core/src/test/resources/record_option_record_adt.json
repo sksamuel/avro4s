@@ -1,0 +1,22 @@
+{
+  "type" : "record",
+  "name" : "HasOption",
+  "namespace" : "com.sksamuel.avro4s.schema",
+  "fields" : [ {
+    "name" : "option",
+    "type" : [ "null", {
+      "type" : "record",
+      "name" : "HasAdt",
+      "namespace" : "com.sksamuel.avro4s.schema",
+      "fields" : [ {
+        "name" : "adt",
+        "type" : {
+          "type" : "enum",
+          "name" : "Adt",
+          "namespace" : "com.sksamuel.avro4s.schema",
+          "symbols" : [ "One", "Two" ]
+        }
+      } ]
+    } ]
+  } ]
+}
