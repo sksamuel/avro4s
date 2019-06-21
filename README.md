@@ -732,11 +732,21 @@ This will result in a schema where both `BigDecimal` quantities have their own s
 
 ## Cats Support
 
-If you use cats in your domain objects, then Avro4s provides a cats module with schemas, encoders and decoders for some cats typs.
+If you use cats in your domain objects, then Avro4s provides a cats module with schemas, encoders and decoders for some cats types.
 Just import `import com.sksamuel.avro4s.cats._` before calling into the macros.
 
 ```scala
 case class Foo(list: NonEmptyList[String], vector: NonEmptyVector[Boolean])
+val schema = AvroSchema[Foo]
+```
+
+## Refined Support
+
+If you use [refined](https://github.com/fthomas/refined) in your domain objects, then Avro4s provides a refined module with schemas, encoders and decoders for refined types.
+Just import `import com.sksamuel.avro4s.refined._` before calling into the macros.
+
+```scala
+case class Foo(nonEmptyStr: String Refined NonEmpty)
 val schema = AvroSchema[Foo]
 ```
 
