@@ -212,6 +212,8 @@ object Decoder {
 
   implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = seqDecoder[T](decoder).map(_.toList)
 
+  implicit def mutableSeqDecoder[T](implicit decoder: Decoder[T]): Decoder[scala.collection.mutable.Seq[T]] = seqDecoder[T](decoder).map(_.to[scala.collection.mutable.Seq])
+
   implicit def seqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = new Decoder[Seq[T]] {
 
     import scala.collection.JavaConverters._
@@ -219,6 +221,17 @@ object Decoder {
     override def decode(value: Any, schema: Schema, naming: NamingStrategy): Seq[T] = value match {
       case array: Array[_] => array.toSeq.map(decoder.decode(_, schema.getElementType, naming))
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType, naming)).toSeq
+      case other => sys.error("Unsupported array " + other)
+    }
+  }
+
+  implicit def immutableSeqDecoder[T](implicit decoder: Decoder[T]): Decoder[scala.collection.immutable.Seq[T]] = new Decoder[scala.collection.immutable.Seq[T]] {
+
+    import scala.collection.JavaConverters._
+
+    override def decode(value: Any, schema: Schema, naming: NamingStrategy): scala.collection.immutable.Seq[T] = value match {
+      case array: Array[_] => array.to[scala.collection.immutable.Seq].map(decoder.decode(_, schema.getElementType, naming))
+      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType, naming)).to[scala.collection.immutable.Seq]
       case other => sys.error("Unsupported array " + other)
     }
   }

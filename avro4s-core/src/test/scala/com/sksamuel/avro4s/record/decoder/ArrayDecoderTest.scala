@@ -1,8 +1,7 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultNamingStrategy, Encoder, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultNamingStrategy}
 import org.apache.avro.generic.GenericData
-import org.apache.avro.util.Utf8
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.language.higherKinds
@@ -17,6 +16,8 @@ case class TestSeqBooleans(booleans: Seq[Boolean])
 
 case class TestArrayRecords(records: Array[Record])
 case class TestSeqRecords(records: Seq[Record])
+case class TestImmutableSeqRecords(records: scala.collection.immutable.Seq[Record])
+case class TestMutableSeqRecords(records: scala.collection.mutable.Seq[Record])
 case class TestListRecords(records: List[Record])
 case class TestSetRecords(records: Set[Record])
 case class TestVectorRecords(records: Vector[Record])
@@ -54,10 +55,11 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       Decoder[TestVectorRecords].decode(container, containerSchema, DefaultNamingStrategy) shouldBe TestVectorRecords(Vector(Record("qwe", 123.4), Record("wer", 8234.324)))
     }
 
-    "support array for a scala.collection.immutable.Seq of primitives" in {
-      case class Test(seq: Seq[String])
-      val schema = AvroSchema[Test]
-      Encoder[Test].encode(Test(Vector("a", "34", "fgD")), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("a"), new Utf8("34"), new Utf8("fgD")).asJava))
+    "support array for a scala.collection.Seq of primitives" in {
+      val schema = AvroSchema[TestSeqBooleans]
+      val record = new GenericData.Record(schema)
+      record.put("booleans", List(true, false, true).asJava)
+      Decoder[TestSeqBooleans].decode(record, schema, DefaultNamingStrategy) shouldBe TestSeqBooleans(Seq(true, false, true))
     }
 
     "support array for an Array of primitives" in {
@@ -94,7 +96,7 @@ class ArrayDecoderTest extends WordSpec with Matchers {
       Decoder[TestListRecords].decode(container, containerSchema, DefaultNamingStrategy) shouldBe TestListRecords(List(Record("qwe", 123.4), Record("wer", 8234.324)))
     }
 
-    "support array for a scala.collection.immutable.Seq of records" in {
+    "support array for a scala.collection.Seq of records" in {
 
       val containerSchema = AvroSchema[TestSeqRecords]
       val recordSchema = AvroSchema[Record]
@@ -112,6 +114,44 @@ class ArrayDecoderTest extends WordSpec with Matchers {
 
       Decoder[TestSeqRecords].decode(container, containerSchema, DefaultNamingStrategy) shouldBe TestSeqRecords(Seq(Record("qwe", 123.4), Record("wer", 8234.324)))
     }
+
+
+    "support array for a scala.collection.immutable.Seq of records" in {
+      val containerSchema = AvroSchema[TestImmutableSeqRecords]
+      val recordSchema = AvroSchema[Record]
+
+      val record1 = new GenericData.Record(recordSchema)
+      record1.put("str", "qwe")
+      record1.put("double", 123.4)
+
+      val record2 = new GenericData.Record(recordSchema)
+      record2.put("str", "wer")
+      record2.put("double", 8234.324)
+
+      val container = new GenericData.Record(containerSchema)
+      container.put("records", List(record1, record2).asJava)
+
+      Decoder[TestImmutableSeqRecords].decode(container, containerSchema, DefaultNamingStrategy) shouldBe TestImmutableSeqRecords(scala.collection.immutable.Seq(Record("qwe", 123.4), Record("wer", 8234.324)))
+    }
+
+    "support array for a scala.collection.mutable.Seq of records" in {
+      val containerSchema = AvroSchema[TestMutableSeqRecords]
+      val recordSchema = AvroSchema[Record]
+
+      val record1 = new GenericData.Record(recordSchema)
+      record1.put("str", "qwe")
+      record1.put("double", 123.4)
+
+      val record2 = new GenericData.Record(recordSchema)
+      record2.put("str", "wer")
+      record2.put("double", 8234.324)
+
+      val container = new GenericData.Record(containerSchema)
+      container.put("records", List(record1, record2).asJava)
+
+      Decoder[TestMutableSeqRecords].decode(container, containerSchema, DefaultNamingStrategy) shouldBe TestMutableSeqRecords(scala.collection.mutable.Seq(Record("qwe", 123.4), Record("wer", 8234.324)))
+    }
+
 
     "support array for an Array of records" in {
 
