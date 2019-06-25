@@ -476,6 +476,9 @@ object Encoder extends LowPriorityEncoderImplicits{
 
 trait LowPriorityEncoderImplicits{
 
+  /**
+    * Generic encoder for collections types.
+    */
   implicit def iterableEncoder[S, M[T] <: Iterable[T]](implicit encoder: Encoder[S]): Encoder[M[S]] = new Encoder[M[S]] {
 
     import scala.collection.JavaConverters._

@@ -2,17 +2,18 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.time._
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.LogicalTypes.{Decimal, TimeMicros, TimeMillis}
-import org.apache.avro.generic.{GenericContainer, GenericEnumSymbol, GenericFixed, GenericRecord, IndexedRecord}
+import org.apache.avro.generic._
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
 import shapeless.{:+:, CNil, Coproduct, Inr}
 
 import scala.collection.JavaConverters._
+import scala.collection.generic.CanBuildFrom
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe
@@ -49,7 +50,7 @@ trait Decoder[T] extends Serializable {
   }
 }
 
-object Decoder {
+object Decoder extends LowPriorityDecoderImplicits{
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
@@ -204,15 +205,11 @@ object Decoder {
     }
   }
 
-  implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = seqDecoder[T](decoder).map(_.toVector)
-
   implicit def arrayDecoder[T](implicit decoder: Decoder[T], classTag: ClassTag[T]): Decoder[Array[T]] = seqDecoder[T](decoder).map(_.toArray)
 
   implicit def setDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] = seqDecoder[T](decoder).map(_.toSet)
 
   implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = seqDecoder[T](decoder).map(_.toList)
-
-  implicit def mutableSeqDecoder[T](implicit decoder: Decoder[T]): Decoder[scala.collection.mutable.Seq[T]] = seqDecoder[T](decoder).map(_.to[scala.collection.mutable.Seq])
 
   implicit def seqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = new Decoder[Seq[T]] {
 
@@ -221,17 +218,6 @@ object Decoder {
     override def decode(value: Any, schema: Schema, naming: NamingStrategy): Seq[T] = value match {
       case array: Array[_] => array.toSeq.map(decoder.decode(_, schema.getElementType, naming))
       case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType, naming)).toSeq
-      case other => sys.error("Unsupported array " + other)
-    }
-  }
-
-  implicit def immutableSeqDecoder[T](implicit decoder: Decoder[T]): Decoder[scala.collection.immutable.Seq[T]] = new Decoder[scala.collection.immutable.Seq[T]] {
-
-    import scala.collection.JavaConverters._
-
-    override def decode(value: Any, schema: Schema, naming: NamingStrategy): scala.collection.immutable.Seq[T] = value match {
-      case array: Array[_] => array.to[scala.collection.immutable.Seq].map(decoder.decode(_, schema.getElementType, naming))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType, naming)).to[scala.collection.immutable.Seq]
       case other => sys.error("Unsupported array " + other)
     }
   }
@@ -525,4 +511,26 @@ object Decoder {
       }
     }
   }
+}
+
+trait LowPriorityDecoderImplicits {
+
+  /**
+    * Generic decoder for collections types.
+    */
+  implicit def traversableDecoder[F[_], A](implicit bf: CanBuildFrom[Nothing, A, F[A]], decoder: Decoder[A]): Decoder[F[A]] = new Decoder[F[A]] {
+
+    private def decodeTraversable[B](traversableOnce: TraversableOnce[B], schema: Schema, naming: NamingStrategy) = {
+      traversableOnce.foldLeft(bf()){ case (acc, elem) =>
+        acc += decoder.decode(elem, schema.getElementType, naming)
+      }.result()
+    }
+
+    override def decode(value: Any, schema: Schema, naming: NamingStrategy): F[A] = value match {
+      case array: Array[_] => decodeTraversable(array, schema, naming)
+      case list: java.util.Collection[_] => decodeTraversable(list.asScala, schema, naming)
+      case other => sys.error("Unsupported array " + other)
+    }
+  }
+
 }
