@@ -399,19 +399,19 @@ object Decoder extends LowPriorityDecoderImplicits{
           }
         // case objects are encoded as enums
         // we need to take the string and create the object
-        case Schema.Type.ENUM =>
-          container match {
-            case enum: GenericEnumSymbol[_] =>
-              ctx.subtypes.find { subtype => Namer(subtype).name == enum.getSchema.getFullName }
-                .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
-                .typeclass.decode(enum, enum.getSchema, naming)
-            case str: String =>
-              val subtype = ctx.subtypes.find { subtype => Namer(subtype).name == str }
-                .getOrElse(sys.error(s"Could not find subtype for enum $str"))
-              val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
-              val module = runtimeMirror.staticModule(subtype.typeName.full)
-              val companion = runtimeMirror.reflectModule(module.asModule)
-              companion.instance.asInstanceOf[T]
+        case Schema.Type.ENUM => {
+            val subtype = container match {
+              case enum: GenericEnumSymbol[_] =>
+                ctx.subtypes.find { subtype => Namer(subtype).name == enum.toString }
+                  .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
+              case str: String =>
+                ctx.subtypes.find { subtype => Namer(subtype).name == str }
+                  .getOrElse(sys.error(s"Could not find subtype for enum $str"))
+            }
+            val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
+            val module = runtimeMirror.staticModule(subtype.typeName.full)
+            val companion = runtimeMirror.reflectModule(module.asModule)
+            companion.instance.asInstanceOf[T]
           }
         case other => sys.error(s"Unsupported sealed trait schema type $other")
       }

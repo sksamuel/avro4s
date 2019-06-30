@@ -1,8 +1,8 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, DefaultNamingStrategy, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, DefaultNamingStrategy, ImmutableRecord, Encoder}
 import org.apache.avro.SchemaBuilder
-import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
 
@@ -75,6 +75,17 @@ class SealedTraitDecoderTest extends FunSuite with Matchers {
     Decoder[ThingHolder].decode(record1, schema, DefaultNamingStrategy) shouldBe ThingHolder(WhimWham)
     Decoder[ThingHolder].decode(record2, schema, DefaultNamingStrategy) shouldBe ThingHolder(Widget)
   }
+
+  test("use @AvroNamespace and @AvroName with sealed traits of case objects in a round trip") {
+    val thingySchema = SchemaBuilder.enumeration("thingy").symbols("whim_wham", "widget")
+    val schema = SchemaBuilder.record("ThingHolder").fields().name("thing").`type`(thingySchema).noDefault().endRecord()
+
+    val value = ThingHolder(WhimWham)
+    val encodedRecord: GenericRecord = Encoder[ThingHolder].encode(value, schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val decoded = Decoder[ThingHolder].decode(encodedRecord, schema, DefaultNamingStrategy)
+    decoded shouldBe value
+  }
+
 }
 
 sealed trait Wibble
