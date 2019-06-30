@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.time._
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
@@ -42,7 +42,7 @@ trait Encoder[T] extends Serializable {
 
 case class Exported[A](instance: A) extends AnyVal
 
-object Encoder {
+object Encoder extends LowPriorityEncoderImplicits{
 
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 
@@ -470,6 +470,23 @@ object Encoder {
           encoderS.encode(h, s, naming)
         case Inr(t) => encoderT.encode(t, schema, naming)
       }
+    }
+  }
+}
+
+trait LowPriorityEncoderImplicits{
+
+  /**
+    * Generic encoder for collections types.
+    */
+  implicit def iterableEncoder[S, M[T] <: Iterable[T]](implicit encoder: Encoder[S]): Encoder[M[S]] = new Encoder[M[S]] {
+
+    import scala.collection.JavaConverters._
+
+    override def encode(ts: M[S], schema: Schema, naming: NamingStrategy): java.util.List[AnyRef] = {
+      require(schema != null)
+      val arraySchema = SchemaHelper.extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
+      ts.map(encoder.encode(_, arraySchema.getElementType, naming)).toSeq.asJava
     }
   }
 }

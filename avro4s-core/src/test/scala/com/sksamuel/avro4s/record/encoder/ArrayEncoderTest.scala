@@ -22,10 +22,20 @@ class ArrayEncoderTest extends WordSpec with Matchers {
       val rschema = AvroSchema[Record]
       Encoder[Test].encode(Test(Vector(Record("abc", 12.34))), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(Vector(ImmutableRecord(rschema, Vector(new Utf8("abc"), java.lang.Double.valueOf(12.34)))).asJava))
     }
-    "generate array for a scala.collection.immutable.Seq of primitives" in {
+    "generate array for a scala.collection.Seq of primitives" in {
       case class Test(seq: Seq[String])
       val schema = AvroSchema[Test]
-      Encoder[Test].encode(Test(Vector("a", "fgD")), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("a"), new Utf8("fgD")).asJava))
+      Encoder[Test].encode(Test(Seq("a", "fgD")), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("a"), new Utf8("fgD")).asJava))
+    }
+    "generate array for a scala.collection.immutable.Seq of primitives" in {
+      case class Test(seq: scala.collection.immutable.Seq[String])
+      val schema = AvroSchema[Test]
+      Encoder[Test].encode(Test(scala.collection.immutable.Seq("a", "fgD")), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("a"), new Utf8("fgD")).asJava))
+    }
+    "generate array for a scala.collection.mutable.Seq of primitives" in {
+      case class Test(seq: scala.collection.mutable.Seq[String])
+      val schema = AvroSchema[Test]
+      Encoder[Test].encode(Test(scala.collection.mutable.Seq("a", "fgD")), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("a"), new Utf8("fgD")).asJava))
     }
     "generate array for an Array of primitives" in {
       case class Test(array: Array[Boolean])

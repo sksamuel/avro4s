@@ -2,17 +2,18 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.time._
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.LogicalTypes.{Decimal, TimeMicros, TimeMillis}
-import org.apache.avro.generic.{GenericContainer, GenericEnumSymbol, GenericFixed, GenericRecord, IndexedRecord}
+import org.apache.avro.generic._
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
 import shapeless.{:+:, CNil, Coproduct, Inr}
 
 import scala.collection.JavaConverters._
+import scala.collection.generic.CanBuildFrom
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe
@@ -49,7 +50,7 @@ trait Decoder[T] extends Serializable {
   }
 }
 
-object Decoder {
+object Decoder extends LowPriorityDecoderImplicits{
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
@@ -203,8 +204,6 @@ object Decoder {
       Option(decoder.decode(value, nonNullSchema, naming))
     }
   }
-
-  implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = seqDecoder[T](decoder).map(_.toVector)
 
   implicit def arrayDecoder[T](implicit decoder: Decoder[T], classTag: ClassTag[T]): Decoder[Array[T]] = seqDecoder[T](decoder).map(_.toArray)
 
@@ -512,4 +511,26 @@ object Decoder {
       }
     }
   }
+}
+
+trait LowPriorityDecoderImplicits {
+
+  /**
+    * Generic decoder for collections types.
+    */
+  implicit def traversableDecoder[F[_], A](implicit bf: CanBuildFrom[Nothing, A, F[A]], decoder: Decoder[A]): Decoder[F[A]] = new Decoder[F[A]] {
+
+    private def decodeTraversable[B](traversableOnce: TraversableOnce[B], schema: Schema, naming: NamingStrategy) = {
+      traversableOnce.foldLeft(bf()){ case (acc, elem) =>
+        acc += decoder.decode(elem, schema.getElementType, naming)
+      }.result()
+    }
+
+    override def decode(value: Any, schema: Schema, naming: NamingStrategy): F[A] = value match {
+      case array: Array[_] => decodeTraversable(array, schema, naming)
+      case list: java.util.Collection[_] => decodeTraversable(list.asScala, schema, naming)
+      case other => sys.error("Unsupported array " + other)
+    }
+  }
+
 }
