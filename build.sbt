@@ -19,7 +19,7 @@ lazy val root = Project("avro4s", file("."))
 val `avro4s-core` = project.in(file("avro4s-core"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.softwaremill" %% "magnolia" % "0.11.0-sml",
+      "com.softwaremill" %% "magnolia" % "0.11.1-sml",
       "com.chuusai" %% "shapeless" % ShapelessVersion
     )
   )
