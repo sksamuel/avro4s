@@ -1,11 +1,11 @@
 package com.sksamuel.avro4s
 
-import cats.data.{NonEmptyList, NonEmptyVector}
+import _root_.cats.data.{NonEmptyList, NonEmptyVector}
 import org.apache.avro.Schema
 
 import scala.language.implicitConversions
 
-object Cats {
+package object cats {
 
   import scala.collection.JavaConverters._
 
@@ -22,7 +22,7 @@ object Cats {
   }
 
   implicit def nonEmptyListEncoder[T](encoder: Encoder[T]) = new Encoder[NonEmptyList[T]] {
-    override def encode(ts: cats.data.NonEmptyList[T], schema: Schema, naming: NamingStrategy): java.util.List[AnyRef] = {
+    override def encode(ts: NonEmptyList[T], schema: Schema, naming: NamingStrategy): java.util.List[AnyRef] = {
       require(schema != null)
       ts.map(encoder.encode(_, schema.getElementType, naming)).toList.asJava
     }

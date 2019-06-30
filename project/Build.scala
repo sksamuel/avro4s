@@ -15,6 +15,7 @@ object Build extends AutoPlugin {
     val Json4sVersion = "3.6.7"
     val CatsVersion = "1.6.1"
     val ShapelessVersion = "2.3.3"
+    val RefinedVersion = "0.9.8"
   }
 
   import autoImport._
