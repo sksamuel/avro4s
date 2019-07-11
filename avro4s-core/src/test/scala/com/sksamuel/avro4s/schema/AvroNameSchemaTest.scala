@@ -32,4 +32,15 @@ class AvroNameSchemaTest extends FunSuite with Matchers {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_nested_java_enum.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
+
+  test("@AvroName on top level ADT type") {
+    val schema = AvroSchema[Weather]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_sealed_trait.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
 }
+
+@AvroName("foofoo")
+sealed trait Weather
+case object Rainy extends Weather
+case object Sunny extends Weather

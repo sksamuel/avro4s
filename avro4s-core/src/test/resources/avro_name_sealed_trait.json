@@ -1,0 +1,9 @@
+{
+  "type": "enum",
+  "name": "foofoo",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "symbols": [
+    "Rainy",
+    "Sunny"
+  ]
+}
