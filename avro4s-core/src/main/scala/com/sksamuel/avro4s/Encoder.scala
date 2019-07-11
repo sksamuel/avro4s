@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.util
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
@@ -105,9 +106,11 @@ object Encoder {
 
     override def encode(map: Map[String, V], schema: Schema, naming: NamingStrategy): java.util.Map[String, AnyRef] = {
       require(schema != null)
-      map.map { case (k, v) =>
-        (k, encoder.encode(v, schema.getValueType, naming))
-      }.asJava
+      val java = new util.HashMap[String, AnyRef]
+      map.foreach { case (k, v) =>
+        java.put(k, encoder.encode(v, schema.getValueType, naming))
+      }
+      java
     }
   }
 
@@ -288,7 +291,7 @@ object Encoder {
     *                 and @AvroErasedName. This name is used for
     *                 extracting the specific subschema from a union schema.
     */
-  def buildRecord(schema: Schema, values: Seq[AnyRef], fullName: String): AnyRef = {
+  def buildRecord(schema: Schema, values: List[AnyRef], fullName: String): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
         val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
@@ -362,7 +365,7 @@ object Encoder {
                 p.typeclass.encode(p.dereference(t), field.schema, naming)
             }
           }
-          buildRecord(schema, values.asInstanceOf[Seq[AnyRef]], name)
+          buildRecord(schema, values.toList, name)
         }
       }
     }
