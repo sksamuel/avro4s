@@ -46,15 +46,21 @@ class AvroNamespaceTest extends WordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
 
-    "support namespace annotations on ADTs at field level" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum.json"))
+    "support namespace annotations on case classes at field level" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum_field_level.json"))
       val schema = AvroSchema[Teapot]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
-    "support namespace annotations on ADTs at type level" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum2.json"))
+    "support namespace annotations on case classes at class level" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum_class_level.json"))
       val schema = AvroSchema[Location]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support namespace annotations on ADTs at type level" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum_trait_level.json"))
+      val schema = AvroSchema[Africa]
       schema.toString(true) shouldBe expected.toString(true)
     }
 

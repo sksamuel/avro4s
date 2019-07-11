@@ -1,0 +1,10 @@
+{
+  "type": "enum",
+  "name": "Africa",
+  "namespace": "wobble",
+  "symbols": [
+    "Cameroon",
+    "Comoros",
+    "Chad"
+  ]
+}

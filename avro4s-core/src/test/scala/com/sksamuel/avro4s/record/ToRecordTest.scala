@@ -1,5 +1,6 @@
-package com.sksamuel.avro4s
+package com.sksamuel.avro4s.record
 
+import com.sksamuel.avro4s.{AvroNamespace, AvroSchema, ToRecord}
 import org.scalatest.{FunSuite, Matchers}
 
 sealed trait Foo
