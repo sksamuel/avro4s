@@ -8,6 +8,8 @@ trait AvroAliasable extends AvroFieldReflection {
   val alias: String
 }
 
+case class AvroNoDefault() extends StaticAnnotation
+
 case class AvroDoc(override val doc: String) extends AvroDocumentable
 
 trait AvroDocumentable extends AvroFieldReflection {
@@ -34,7 +36,6 @@ case class AvroFixed(override val size: Int) extends AvroFixable
 trait AvroFixable extends AvroFieldReflection {
   val size: Int
 }
-
 
 /**
   * [[AvroName]] allows the name used by Avro to be different
@@ -80,7 +81,7 @@ trait AvroNamespaceable extends AvroFieldReflection {
 
 case class AvroProp(override val key: String, override val value:String) extends AvroProperty
 
-trait AvroProperty extends AvroFieldReflection{
+trait AvroProperty extends AvroFieldReflection {
   val key: String
   val value: String
 }

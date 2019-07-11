@@ -38,7 +38,7 @@ package object cats {
   implicit def nonEmptyListDecoder[T](decoder: Decoder[T]) = new Decoder[NonEmptyList[T]] {
     override def decode(value: Any, schema: Schema, naming: NamingStrategy): NonEmptyList[T] = value match {
       case array: Array[_] =>
-        val list = array.map(decoder.decode(_, schema, naming)).toList
+        val list = array.toList.map(decoder.decode(_, schema, naming))
         NonEmptyList.fromListUnsafe(list)
       case list: java.util.Collection[_] => NonEmptyList.fromListUnsafe(list.asScala.map(decoder.decode(_, schema, naming)).toList)
       case other => sys.error("Unsupported type " + other)

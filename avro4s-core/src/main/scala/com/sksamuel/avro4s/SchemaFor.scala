@@ -277,7 +277,10 @@ object SchemaFor {
       } else {
 
         val fields = ctx.parameters.flatMap { param =>
-          if (new AnnotationExtractors(param.annotations).transient) None else {
+
+          val annos = new AnnotationExtractors(param.annotations)
+
+          if (annos.transient) None else {
             val s = param.typeclass.schema(namingStrategy)
             // if the field is a value type then we may have annotated it with @AvroDoc, and that doc should be
             // placed onto the field, not onto the record type, because there won't be a record type for a value type!
@@ -294,7 +297,9 @@ object SchemaFor {
             } catch {
               case NonFatal(_) => None
             }
-            Some(buildField(param.label, namespace, param.annotations, s, param.default, namingStrategy, doc))
+
+            val default = if (annos.nodefault) None else param.default
+            Some(buildField(param.label, namespace, param.annotations, s, default, namingStrategy, doc))
           }
         }
 

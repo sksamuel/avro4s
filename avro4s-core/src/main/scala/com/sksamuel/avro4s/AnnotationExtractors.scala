@@ -25,6 +25,7 @@ class AnnotationExtractors(annos: Seq[Any]) {
     prop.key -> prop.value
   }.toMap
 
+  def nodefault: Boolean = exists[AvroNoDefault]
   def transient: Boolean = exists[AvroTransient]
   def erased: Boolean = exists[AvroErasedName]
 }

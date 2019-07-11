@@ -10,7 +10,6 @@ object Build extends AutoPlugin {
     val AvroVersion = "1.9.0"
     val Log4jVersion = "1.2.17"
     val ScalatestVersion = "3.0.8"
-    val ScalaVersion = "2.12.8"
     val Slf4jVersion = "1.7.26"
     val Json4sVersion = "3.6.7"
     val CatsVersion = "2.0.0-M4"
@@ -27,15 +26,15 @@ object Build extends AutoPlugin {
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
-    scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq(ScalaVersion, "2.13.0"),
+    scalaVersion := "2.13.0",
+    crossScalaVersions := Seq("2.12.8", "2.13.0"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(
       "-unchecked", "-deprecation",
       "-encoding",
       "utf8",
-      "-Xfatal-warnings",
+   //   "-Xfatal-warnings",
       "-feature",
       "-language:higherKinds",
    //   "-Xlog-implicits",
