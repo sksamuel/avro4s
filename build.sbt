@@ -20,7 +20,7 @@ lazy val root = Project("avro4s", file("."))
 val `avro4s-core` = project.in(file("avro4s-core"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.softwaremill" %% "magnolia" % "0.11.1-sml",
+      "com.propensive" %% "magnolia" % MagnoliaVersion,
       "com.chuusai" %% "shapeless" % ShapelessVersion
     )
   )
@@ -33,13 +33,13 @@ val `avro4s-json` = project.in(file("avro4s-json"))
     )
   )
 
-//val `avro4s-cats` = project.in(file("avro4s-cats"))
-//  .dependsOn(`avro4s-core`)
-//  .settings(
-//    libraryDependencies ++= Seq(
-//      "org.typelevel" %% "cats-core" % CatsVersion
-//    )
-//  )
+val `avro4s-cats` = project.in(file("avro4s-cats"))
+  .dependsOn(`avro4s-core`)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % CatsVersion
+    )
+  )
 
 val `avro4s-kafka` = project.in(file("avro4s-kafka"))
   .dependsOn(`avro4s-core`)

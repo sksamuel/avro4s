@@ -13,9 +13,10 @@ object Build extends AutoPlugin {
     val ScalaVersion = "2.12.8"
     val Slf4jVersion = "1.7.26"
     val Json4sVersion = "3.6.7"
-    val CatsVersion = "1.6.1"
+    val CatsVersion = "2.0.0-M4"
     val ShapelessVersion = "2.3.3"
     val RefinedVersion = "0.9.8"
+    val MagnoliaVersion = "0.11.0"
   }
 
   import autoImport._
@@ -27,7 +28,7 @@ object Build extends AutoPlugin {
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq(ScalaVersion, "2.11.12", "2.12.8"),
+    crossScalaVersions := Seq(ScalaVersion, "2.13.0"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(
