@@ -37,23 +37,9 @@ class ArraySchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[NestedListString]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "generate array type for a scala.collection.Seq of records" in {
-      case class Nested(goo: String)
-      case class Test(seq: Seq[Nested])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seqrecords.json"))
-      val schema = AvroSchema[Test]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
     "generate array type for a scala.collection.immutable.Seq of records" in {
       case class Nested(goo: String)
-      case class Test(seq: scala.collection.immutable.Seq[Nested])
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seqrecords.json"))
-      val schema = AvroSchema[Test]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
-    "generate array type for a scala.collection.mutable.Seq of records" in {
-      case class Nested(goo: String)
-      case class Test(seq: scala.collection.mutable.Seq[Nested])
+      case class Test(seq: Seq[Nested])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/seqrecords.json"))
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)

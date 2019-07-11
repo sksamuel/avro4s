@@ -105,8 +105,32 @@ object SchemaFor {
     }
   }
 
-  implicit def iterableSchemaFor[S, M[T] <: Iterable[T]](implicit schemaFor: SchemaFor[S]): SchemaFor[M[S]] = {
-    new SchemaFor[M[S]] {
+  implicit def listSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[List[S]] = {
+    new SchemaFor[List[S]] {
+      override def schema(namingStrategy: NamingStrategy): Schema = Schema.createArray(schemaFor.schema(namingStrategy))
+    }
+  }
+
+  implicit def setSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Set[S]] = {
+    new SchemaFor[Set[S]] {
+      override def schema(namingStrategy: NamingStrategy): Schema = Schema.createArray(schemaFor.schema(namingStrategy))
+    }
+  }
+
+  implicit def vectorSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Vector[S]] = {
+    new SchemaFor[Vector[S]] {
+      override def schema(namingStrategy: NamingStrategy): Schema = Schema.createArray(schemaFor.schema(namingStrategy))
+    }
+  }
+
+  implicit def seqSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Seq[S]] = {
+    new SchemaFor[Seq[S]] {
+      override def schema(namingStrategy: NamingStrategy): Schema = Schema.createArray(schemaFor.schema(namingStrategy))
+    }
+  }
+
+  implicit def iterableSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Iterable[S]] = {
+    new SchemaFor[Iterable[S]] {
       override def schema(namingStrategy: NamingStrategy): Schema = Schema.createArray(schemaFor.schema(namingStrategy))
     }
   }
