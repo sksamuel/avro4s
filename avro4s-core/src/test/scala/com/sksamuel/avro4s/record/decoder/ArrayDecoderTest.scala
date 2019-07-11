@@ -169,14 +169,8 @@ class ArrayDecoderTest extends WordSpec with Matchers {
     //      val schema = SchemaEncoder[TupleTest3]
     //    }
 
-    "support top level scala.collection.Seq[Double]" in {
-      Decoder[scala.collection.Seq[Double]].decode(Array(1.2, 34.5, 54.3), AvroSchema[Seq[Double]], DefaultNamingStrategy) shouldBe scala.collection.Seq(1.2, 34.5, 54.3)
-    }
-    "support top level scala.collection.immutable.Seq[Double]" in {
-      Decoder[scala.collection.immutable.Seq[Double]].decode(Array(1.2, 34.5, 54.3), AvroSchema[Seq[Double]], DefaultNamingStrategy) shouldBe scala.collection.immutable.Seq(1.2, 34.5, 54.3)
-    }
-    "support top level scala.collection.mutable.Seq[Double]" in {
-      Decoder[scala.collection.mutable.Seq[Double]].decode(Array(1.2, 34.5, 54.3), AvroSchema[Seq[Double]], DefaultNamingStrategy) shouldBe scala.collection.mutable.Seq(1.2, 34.5, 54.3)
+    "support top level Seq[Double]" in {
+      Decoder[Seq[Double]].decode(Array(1.2, 34.5, 54.3), AvroSchema[Seq[Double]], DefaultNamingStrategy) shouldBe Seq(1.2, 34.5, 54.3)
     }
     "support top level List[Int]" in {
       Decoder[List[Int]].decode(Array(1, 4, 9), AvroSchema[Seq[Int]], DefaultNamingStrategy) shouldBe List(1, 4, 9)
