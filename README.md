@@ -341,6 +341,41 @@ Would generate the following schema:
 }
 ```
 
+### Defaults
+
+Avro4s will take into account default values on fields. For example, the following class `case class Wibble(s: String = "foo")` would be serialized as:
+
+```json
+{
+  "type": "record",
+  "name": "Wibble",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "s",
+      "type": "string",
+      "default" : "foo"
+    }
+  ]
+}
+```
+
+However if you wish the scala default to be ignored, then you can annotate the field with @AvroNoDefault. So this class `case class Wibble(@AvroNoDefault s: String = "foo")` would be serialized as:
+
+```json
+{
+  "type": "record",
+  "name": "Wibble",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "s",
+      "type": "string"
+    }
+  ]
+}
+```
+
 ### Avro Fixed
 
 Avro supports the idea of fixed length byte arrays. To use these we can either override the schema generated for a type to return `Schema.Type.Fixed`. This will work for types like String or UUID. You can also annotate a field with @AvroFixed(size).
