@@ -353,9 +353,13 @@ object Encoder {
                 extractor.namespace.fold( p.typeclass.encode(p.dereference(t), field.schema, naming)) { namespace =>
                   val fieldschemas = field.schema().getTypes.asScala.map(SchemaHelper.overrideNamespace(_, klass.typeName.owner))
                   val union = SchemaBuilder.unionOf().`type`(fieldschemas.head)
-                  fieldschemas.tail.foreach { s => union.and().`type`(s) }
+
+                  val combinedSchema = fieldschemas.tail.foldLeft(union) { (combined, next) =>
+                    combined.and().`type`(next)
+                  }.endUnion
+
                   // if the encoded value is a record, then set it back to the original namespace
-                  p.typeclass.encode(p.dereference(t), union.endUnion, naming) match {
+                  p.typeclass.encode(p.dereference(t), combinedSchema, naming) match {
                     case record: ImmutableRecord => record.copy(schema = SchemaHelper.overrideNamespace(record.schema, namespace))
                     case other => other
                   }
