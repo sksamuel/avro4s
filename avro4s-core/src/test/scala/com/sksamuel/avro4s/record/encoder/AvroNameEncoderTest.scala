@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, DefaultNamingStrategy, Encoder, ImmutableRecord, SchemaFor, ToRecord}
-import org.apache.avro.SchemaBuilder
+import org.apache.avro.{Schema, SchemaBuilder}
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
@@ -59,6 +59,25 @@ class AvroNameEncoderTest extends FunSuite with Matchers {
     record.values.head.asInstanceOf[ImmutableRecord].schema shouldBe sansa
     record.values.head.asInstanceOf[ImmutableRecord].values shouldBe Vector(1)
   }
+
+  test("support encoding a union with @AvroNamespace at the field level") {
+    val schema = AvroSchema[Cupcat]
+    val cupcat = Cupcat(Option(Snoutley("snoutley")))
+
+    val record = ToRecord[Cupcat](schema).to(cupcat).asInstanceOf[ImmutableRecord]
+
+    val snoutley: Schema = SchemaBuilder.record("Snoutley").namespace("cup.cat").fields().requiredString("name").endRecord()
+
+
+    record.getSchema shouldBe SchemaBuilder.record("Cupcat").namespace("com.sksamuel.avro4s.record.encoder")
+        .fields()
+        .name("snoutley").`type`(SchemaBuilder.unionOf().nullType().and().`type`(snoutley).endUnion()).noDefault()
+        .endRecord()
+
+    record.values.size shouldBe 1
+  }
+
+
 }
 
 sealed trait Stark
@@ -100,3 +119,6 @@ sealed trait Cosmos
 case class FunCosmos(amountOfFun: Float) extends Cosmos
 @AvroNamespace("")
 case class MiserableCosmos(isTrulyAwful: Boolean) extends Cosmos
+
+case class Snoutley(name: String)
+case class Cupcat(@AvroNamespace("cup.cat") snoutley: Option[Snoutley])
