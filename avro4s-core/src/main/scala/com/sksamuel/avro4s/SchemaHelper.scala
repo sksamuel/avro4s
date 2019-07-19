@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.DefaultResolver.UserDefinedDefault
 import org.apache.avro.{JsonProperties, Schema}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
@@ -31,8 +32,8 @@ object SchemaHelper {
     // this is totally not FP but what the heck it's late and it's perfectly valid
     val arrayTypeNamePattern: Regex = "scala.collection.immutable.::(__B)?".r
     arrayTypeNamePattern.findFirstMatchIn(fullName) match {
-      case Some(_) => return types.asScala.find(_.getType == Schema.Type.ARRAY).getOrElse(sys.error(s"Could not find array type to match $fullName")) 
-      case None => 
+      case Some(_) => return types.asScala.find(_.getType == Schema.Type.ARRAY).getOrElse(sys.error(s"Could not find array type to match $fullName"))
+      case None =>
     }
 
     // Finds the matching schema and keeps track a null type if any.
@@ -100,7 +101,14 @@ object SchemaHelper {
       case JsonProperties.NULL_VALUE => Schema.Type.NULL
       case other => other
     }
-    val (first, rest) = schema.getTypes.asScala.partition(_.getType == defaultType)
+
+    val (first, rest) = schema.getTypes.asScala.partition { t =>
+      defaultType match {
+        case UserDefinedDefault(name, _) => name == t.getName
+        case _ => t.getType == defaultType
+      }
+    }
+
     val result = Schema.createUnion(first.headOption.toSeq ++ rest: _*)
     schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
     result

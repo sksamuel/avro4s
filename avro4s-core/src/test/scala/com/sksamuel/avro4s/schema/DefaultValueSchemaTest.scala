@@ -53,16 +53,27 @@ class DefaultValueSchemaTest extends WordSpec with Matchers {
       val schema = AvroSchema[OptionalDefaultValues]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_default_values.json"))
       schema.toString(true) shouldBe expected.toString(true)
-
     }
 
+    "support default values that are case classes" in {
+      val schema = AvroSchema[Cuppers]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_class_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are case objects" in {
+      implicit val schema = AvroSchema[NoVarg]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
 sealed trait Dog
 case class UnderDog(how_unfortunate: Double) extends Dog
 case class UpperDog(how_fortunate: Double) extends Dog
-
 case class DogProspect(dog: Option[Dog] = None)
 
 case class OptionalDefaultValues(name: Option[String] = Some("sammy"),
@@ -96,3 +107,10 @@ case class DefaultValues(name: String = "sammy",
                          ),
                          traits: Seq[String] = Seq("Adventurous", "Helpful"),
                          favoriteWine: Wine = Wine.CabSav)
+
+sealed trait Cupcat
+case object Rendal extends Cupcat
+case class Snoutley(snoutley: String) extends Cupcat
+
+case class Cuppers(cupcat: Cupcat = Snoutley("hates varg"))
+case class NoVarg(cupcat: Cupcat = Rendal)
