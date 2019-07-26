@@ -116,3 +116,5 @@ sealed trait AvroFieldReflection extends StaticAnnotation {
 
   def getAllFields = getClassFields(this.getClass)
 }
+
+case class AvroSortPriority(priority: Float) extends AvroFieldReflection
