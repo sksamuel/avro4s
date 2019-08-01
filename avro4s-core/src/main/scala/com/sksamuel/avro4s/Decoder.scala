@@ -428,8 +428,8 @@ object Decoder {
     override def decode(t: Any, schema: Schema, naming: NamingStrategy): (A, B) = {
       val record = t.asInstanceOf[GenericRecord]
       (
-        decoderA.decode(record.get("_1"), schema, naming),
-        decoderB.decode(record.get("_2"), schema, naming)
+        decoderA.decode(record.get("_1"), schema.getField("_1").schema(), naming),
+        decoderB.decode(record.get("_2"), schema.getField("_2").schema(), naming)
       )
     }
   }
@@ -442,9 +442,9 @@ object Decoder {
     override def decode(t: Any, schema: Schema, naming: NamingStrategy): (A, B, C) = {
       val record = t.asInstanceOf[GenericRecord]
       (
-        decoderA.decode(record.get("_1"), schema, naming),
-        decoderB.decode(record.get("_2"), schema, naming),
-        decoderC.decode(record.get("_3"), schema, naming)
+        decoderA.decode(record.get("_1"), schema.getField("_1").schema(), naming),
+        decoderB.decode(record.get("_2"), schema.getField("_2").schema(), naming),
+        decoderC.decode(record.get("_3"), schema.getField("_3").schema(), naming)
       )
     }
   }
@@ -458,10 +458,10 @@ object Decoder {
     override def decode(t: Any, schema: Schema, naming: NamingStrategy): (A, B, C, D) = {
       val record = t.asInstanceOf[GenericRecord]
       (
-        decoderA.decode(record.get("_1"), schema, naming),
-        decoderB.decode(record.get("_2"), schema, naming),
-        decoderC.decode(record.get("_3"), schema, naming),
-        decoderD.decode(record.get("_4"), schema, naming)
+        decoderA.decode(record.get("_1"), schema.getField("_1").schema(), naming),
+        decoderB.decode(record.get("_2"), schema.getField("_2").schema(), naming),
+        decoderC.decode(record.get("_3"), schema.getField("_3").schema(), naming),
+        decoderD.decode(record.get("_4"), schema.getField("_4").schema(), naming)
       )
     }
   }
@@ -476,11 +476,11 @@ object Decoder {
     override def decode(t: Any, schema: Schema, naming: NamingStrategy): (A, B, C, D, E) = {
       val record = t.asInstanceOf[GenericRecord]
       (
-        decoderA.decode(record.get("_1"), schema, naming),
-        decoderB.decode(record.get("_2"), schema, naming),
-        decoderC.decode(record.get("_3"), schema, naming),
-        decoderD.decode(record.get("_4"), schema, naming),
-        decoderE.decode(record.get("_5"), schema, naming)
+        decoderA.decode(record.get("_1"), schema.getField("_1").schema(), naming),
+        decoderB.decode(record.get("_2"), schema.getField("_2").schema(), naming),
+        decoderC.decode(record.get("_3"), schema.getField("_3").schema(), naming),
+        decoderD.decode(record.get("_4"), schema.getField("_4").schema(), naming),
+        decoderE.decode(record.get("_5"), schema.getField("_5").schema(), naming)
       )
     }
   }
