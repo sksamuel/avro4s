@@ -365,7 +365,14 @@ object Decoder {
                 } else {
                   val k = record.getSchema.getFields.indexOf(field)
                   val value = record.get(k)
-                  p.typeclass.decode(value, schema.getFields.get(p.index).schema, naming)
+                  val tryDecode = util.Try {
+                    p.typeclass.decode(value, schema.getFields.get(p.index).schema, naming)
+                  }.toEither
+                  (tryDecode, p.default) match {
+                    case (Right(v), _) => v
+                    case (Left(_), Some(default)) => default
+                    case (Left(ex), _) => throw ex
+                  }
                 }
               }
 

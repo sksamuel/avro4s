@@ -5,6 +5,7 @@ import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
+import com.sksamuel.avro4s.DefaultResolver.UserDefinedDefault
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.{:+:, CNil, Coproduct}
@@ -239,10 +240,11 @@ object SchemaFor {
       .map(SchemaHelper.overrideNamespace(schemaWithOrderedUnion, _))
       .getOrElse(schemaWithOrderedUnion)
 
-    val field = if (encodedDefault == null)
-      new Schema.Field(name, schemaWithResolvedNamespace, doc)
-    else
-      new Schema.Field(name, schemaWithResolvedNamespace, doc, encodedDefault)
+    val field = encodedDefault match {
+      case null => new Schema.Field(name, schemaWithResolvedNamespace, doc)
+      case UserDefinedDefault(_, m) => new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
+      case _ => new Schema.Field(name, schemaWithResolvedNamespace, doc, encodedDefault)
+    }
 
     props.foreach { case (k, v) => field.addProp(k, v: AnyRef) }
     aliases.foreach(field.addAlias)
