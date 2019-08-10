@@ -19,7 +19,8 @@ import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
   */
 case class AvroDataOutputStream[T](os: OutputStream,
                                    schema: Schema,
-                                   codec: CodecFactory)
+                                   codec: CodecFactory,
+                                   fieldMapper: FieldMapper = DefaultFieldMapper)
                                   (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
 
   val (writer, writeFn) = schema.getType match {
@@ -35,7 +36,7 @@ case class AvroDataOutputStream[T](os: OutputStream,
       dataFileWriter.setCodec(codec)
       dataFileWriter.create(schema, os)
       (dataFileWriter, (t: T) => {
-        val record = encoder.encode(t, schema, DefaultNamingStrategy).asInstanceOf[ImmutableRecord]
+        val record = encoder.encode(t, schema, fieldMapper).asInstanceOf[ImmutableRecord]
         dataFileWriter.append(record)
       })
   }

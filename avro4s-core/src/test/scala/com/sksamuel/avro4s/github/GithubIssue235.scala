@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{Decoder, DefaultNamingStrategy, Encoder, RecordFormat, SchemaFor}
+import com.sksamuel.avro4s.{Decoder, DefaultFieldMapper, Encoder, RecordFormat, SchemaFor}
 import java.io.ByteArrayOutputStream
 
 import org.apache.avro.generic.{GenericDatumReader, GenericDatumWriter, GenericRecord}
@@ -24,7 +24,7 @@ object Bug {
   ): Unit = {
 
     val format = RecordFormat[T]
-    val schema = schemaFor.schema(DefaultNamingStrategy)
+    val schema = schemaFor.schema(DefaultFieldMapper)
     val datumReader = new GenericDatumReader[GenericRecord](schema)
     val datumWriter = new GenericDatumWriter[GenericRecord](schema)
 

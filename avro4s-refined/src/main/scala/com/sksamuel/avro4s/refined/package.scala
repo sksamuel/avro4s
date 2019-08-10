@@ -5,7 +5,7 @@ import eu.timepit.refined.api.{RefType, Validate}
 package object refined {
 
   implicit def refinedSchemaFor[T: SchemaFor, P, F[_, _]]: SchemaFor[F[T, P]] =
-    (namingStrategy: NamingStrategy) => SchemaFor[T].schema(namingStrategy)
+    (fieldMapper: FieldMapper) => SchemaFor[T].schema(fieldMapper)
 
   implicit def refinedEncoder[T: Encoder, P, F[_, _] : RefType]: Encoder[F[T, P]] =
     Encoder[T].comap(RefType[F].unwrap)

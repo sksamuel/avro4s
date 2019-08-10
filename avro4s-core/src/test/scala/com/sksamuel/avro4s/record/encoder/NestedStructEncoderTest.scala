@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, DefaultNamingStrategy, Encoder, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
 
@@ -12,7 +12,7 @@ class NestedStructEncoderTest extends FunSuite with Matchers {
     case class Fooo(foo: Foo)
     case class Foooo(fooo: Fooo)
 
-    Encoder[Foooo].encode(Foooo(Fooo(Foo("a"))), AvroSchema[Foooo], DefaultNamingStrategy) shouldBe
+    Encoder[Foooo].encode(Foooo(Fooo(Foo("a"))), AvroSchema[Foooo], DefaultFieldMapper) shouldBe
       ImmutableRecord(
         AvroSchema[Foooo],
         Vector(

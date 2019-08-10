@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, DefaultNamingStrategy, Encoder}
+import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder}
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
@@ -10,7 +10,7 @@ class TupleEncoderTest extends FunSuite with Matchers {
   test("encode tuple2") {
     case class Test(z: (String, Option[Int]))
     val schema = AvroSchema[Test]
-    val record = Encoder[Test].encode(Test("hello", Some(55)), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Test].encode(Test("hello", Some(55)), schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
     val z = record.get("z").asInstanceOf[GenericRecord]
     z.get("_1") shouldBe new Utf8("hello")
     z.get("_2") shouldBe 55
@@ -19,7 +19,7 @@ class TupleEncoderTest extends FunSuite with Matchers {
   test("encode tuple3") {
     case class Test(z: (String, Option[Int], Long))
     val schema = AvroSchema[Test]
-    val record = Encoder[Test].encode(Test("hello", Some(55), 9999999L), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Test].encode(Test("hello", Some(55), 9999999L), schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
     val z = record.get("z").asInstanceOf[GenericRecord]
     z.get("_1") shouldBe new Utf8("hello")
     z.get("_2") shouldBe 55
@@ -29,7 +29,7 @@ class TupleEncoderTest extends FunSuite with Matchers {
   test("encode tuple4") {
     case class Test(z: (String, Option[Int], Boolean, Double))
     val schema = AvroSchema[Test]
-    val record = Encoder[Test].encode(Test("hello", Some(55), true, 0.24), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Test].encode(Test("hello", Some(55), true, 0.24), schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
     val z = record.get("z").asInstanceOf[GenericRecord]
     z.get("_1") shouldBe new Utf8("hello")
     z.get("_2") shouldBe 55
@@ -40,7 +40,7 @@ class TupleEncoderTest extends FunSuite with Matchers {
   test("encode tuple5") {
     case class Test(z: (String, Option[Int], String, Boolean, String))
     val schema = AvroSchema[Test]
-    val record = Encoder[Test].encode(Test("a", Some(55), "b", true, "c"), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Test].encode(Test("a", Some(55), "b", true, "c"), schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
     val z = record.get("z").asInstanceOf[GenericRecord]
     z.get("_1") shouldBe new Utf8("a")
     z.get("_2") shouldBe 55

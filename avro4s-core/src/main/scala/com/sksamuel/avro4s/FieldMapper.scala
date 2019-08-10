@@ -2,8 +2,20 @@ package com.sksamuel.avro4s
 
 import scala.collection.mutable.ListBuffer
 
-sealed trait NamingStrategy {
+/**
+  * We may have a schema with a field in snake case like say { "first_name": "sam" } and
+  * that schema needs to be used for a case class field `firstName`.
+  *
+  * The [[FieldMapper]] is used to map fields in a schema to fields in a class by
+  * transforming the class field name to the wire name format.
+  */
+sealed trait FieldMapper {
 
+  /**
+    * Takes a field name from a type and converts it to the wire format.
+    * Eg, `case class Foo(wibbleWobble: String)` with a SnakeCase instance
+    * would result in `wibble_wobble`
+    */
   def to(name: String): String = name
 
   protected def fromDelimited(sep: String, s: String): String = {
@@ -24,11 +36,11 @@ sealed trait NamingStrategy {
   }
 }
 
-case object DefaultNamingStrategy extends NamingStrategy {
+case object DefaultFieldMapper extends FieldMapper {
   override def to(name: String): String = name
 }
 
-case object PascalCase extends NamingStrategy {
+case object PascalCase extends FieldMapper {
   override def to(name: String): String = {
     if (name.length == 1) name.toUpperCase else {
       val chars = name.toCharArray
@@ -38,10 +50,10 @@ case object PascalCase extends NamingStrategy {
   }
 }
 
-case object SnakeCase extends NamingStrategy {
+case object SnakeCase extends FieldMapper {
   override def to(name: String): String = toDelimited('_', name)
 }
 
-case object LispCase extends NamingStrategy {
+case object LispCase extends FieldMapper {
   override def to(name: String): String = toDelimited('-', name)
 }

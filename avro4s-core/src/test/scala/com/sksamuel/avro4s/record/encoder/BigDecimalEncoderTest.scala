@@ -23,7 +23,7 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
     val s = schema.getField("decimal").schema()
     val bytes = new Conversions.DecimalConversion().toBytes(BigDecimal(12.34).bigDecimal, s, s.getLogicalType)
 
-    Encoder[Test].encode(obj, schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(bytes))
+    Encoder[Test].encode(obj, schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(bytes))
   }
 
   test("allow decimals to be encoded as strings") {
@@ -33,7 +33,7 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
     case class Test(decimal: BigDecimal)
 
     val schema = AvroSchema[Test]
-    val record = Encoder[Test].encode(Test(123.456), schema, DefaultNamingStrategy)
+    val record = Encoder[Test].encode(Test(123.456), schema, DefaultFieldMapper)
     record shouldBe ImmutableRecord(schema, Vector(new Utf8("123.456")))
   }
 
@@ -48,10 +48,10 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
     implicit val roundingMode = RoundingMode.HALF_UP
 
     val bytesRoundedDown = new Conversions.DecimalConversion().toBytes(BigDecimal(12.34).bigDecimal, s, s.getLogicalType)
-    Encoder[Test].encode(Test(12.3449), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(bytesRoundedDown))
+    Encoder[Test].encode(Test(12.3449), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(bytesRoundedDown))
 
     val bytesRoundedUp = new Conversions.DecimalConversion().toBytes(BigDecimal(12.35).bigDecimal, s, s.getLogicalType)
-    Encoder[Test].encode(Test(12.345), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(bytesRoundedUp))
+    Encoder[Test].encode(Test(12.345), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(bytesRoundedUp))
   }
 
   test("support optional big decimals") {
@@ -62,30 +62,30 @@ class BigDecimalEncoderTest extends FunSuite with Matchers {
     val s = schema.getField("big").schema().getTypes.asScala.find(_.getType != Schema.Type.NULL).get
     val bytes = new Conversions.DecimalConversion().toBytes(BigDecimal(123.4).bigDecimal.setScale(2), s, s.getLogicalType)
 
-    Encoder[Test].encode(Test(Some(123.4)), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(bytes))
-    Encoder[Test].encode(Test(None), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(null))
+    Encoder[Test].encode(Test(Some(123.4)), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(bytes))
+    Encoder[Test].encode(Test(None), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(null))
   }
 
   test("allow custom typeclass overrides") {
 
     implicit object BigDecimalAsString extends SchemaFor[BigDecimal] {
-      override def schema(namingStrategy: NamingStrategy) = StringSchemaFor.schema(DefaultNamingStrategy)
+      override def schema(fieldMapper: FieldMapper): Schema = StringSchemaFor.schema(DefaultFieldMapper)
     }
 
     case class Test(decimal: BigDecimal)
 
     val schema = AvroSchema[Test]
-    Encoder[Test].encode(Test(123.66), schema, DefaultNamingStrategy) shouldBe ImmutableRecord(schema, Vector(new Utf8("123.66")))
+    Encoder[Test].encode(Test(123.66), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(new Utf8("123.66")))
   }
 
   test("allow bigdecimals to be encoded as generic fixed") {
     case class Test(s: BigDecimal)
     implicit object BigDecimalAsFixed extends SchemaFor[BigDecimal] {
-      override def schema(namingStrategy: NamingStrategy) = LogicalTypes.decimal(10, 8).addToSchema(
+      override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.decimal(10, 8).addToSchema(
         Schema.createFixed("BigDecimal", null, null, 8))
     }
     val schema = AvroSchema[Test]
-    val record = Encoder[Test].encode(Test(12345678), schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = Encoder[Test].encode(Test(12345678), schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
     record.get("s").asInstanceOf[GenericData.Fixed].bytes().toList shouldBe Seq(0, 4, 98, -43, 55, 43, -114, 0)
   }
 }

@@ -16,7 +16,7 @@ object RecordFormat {
 
   def apply[T: Encoder : Decoder : SchemaFor]: RecordFormat[T] = apply(AvroSchema[T])
 
-  def apply[T: Encoder : Decoder](schema: Schema)(implicit naming: NamingStrategy = DefaultNamingStrategy): RecordFormat[T] = new RecordFormat[T] {
+  def apply[T: Encoder : Decoder](schema: Schema)(implicit fieldMapper: FieldMapper = DefaultFieldMapper): RecordFormat[T] = new RecordFormat[T] {
     private val fromRecord = FromRecord[T](schema)
     private val toRecord = ToRecord[T](schema)
     override def from(record: IndexedRecord): T = fromRecord.from(record)

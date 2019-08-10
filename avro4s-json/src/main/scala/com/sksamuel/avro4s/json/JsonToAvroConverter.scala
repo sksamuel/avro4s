@@ -19,7 +19,7 @@ import org.apache.avro.Schema
   */
 class JsonToAvroConverter(namespace: String,
                           avroStringTypeIsString: Boolean = false,
-                          jsonNamingStrategy: NamingStrategy = DefaultNamingStrategy) {
+                          jsonFieldMapper: FieldMapper = DefaultFieldMapper) {
 
   import org.json4s._
   import org.json4s.native.JsonMethods._
@@ -29,7 +29,7 @@ class JsonToAvroConverter(namespace: String,
   def convert(name: String, str: String): Schema = {
     convert(name, parse(str).transformField {
       case JField(n, v) =>
-        val newName = toCamelCase(n, jsonNamingStrategy)
+        val newName = toCamelCase(n, jsonFieldMapper)
         (newName, v)
     })
   }
@@ -61,7 +61,7 @@ class JsonToAvroConverter(namespace: String,
     schema
   }
 
-  private def toCamelCase(s: String, from: NamingStrategy): String = {
+  private def toCamelCase(s: String, from: FieldMapper): String = {
     def fromDelimited(sep: String, s: String): String = {
       val head :: tail = s.split(sep).toList
       head ++ tail.foldLeft("")((acc, word) => acc ++ word.capitalize)
@@ -73,7 +73,7 @@ class JsonToAvroConverter(namespace: String,
     }
 
     from match {
-      case DefaultNamingStrategy => s
+      case DefaultFieldMapper => s
       case PascalCase => decapitalize(s)
       case SnakeCase => fromDelimited("_", s)
       case LispCase => fromDelimited("-", s)

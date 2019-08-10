@@ -5,7 +5,10 @@ import java.io.OutputStream
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 
-class DefaultAvroOutputStream[T](os: OutputStream, schema: Schema, serializer: org.apache.avro.io.Encoder)
+class DefaultAvroOutputStream[T](os: OutputStream,
+                                 schema: Schema,
+                                 serializer: org.apache.avro.io.Encoder,
+                                 fieldMapper: FieldMapper = DefaultFieldMapper)
                                 (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
 
   private val datumWriter = new GenericDatumWriter[GenericRecord](schema)
@@ -16,7 +19,7 @@ class DefaultAvroOutputStream[T](os: OutputStream, schema: Schema, serializer: o
   }
 
   override def write(t: T): Unit = {
-    val record = encoder.encode(t, schema, DefaultNamingStrategy).asInstanceOf[GenericRecord]
+    val record = encoder.encode(t, schema, fieldMapper).asInstanceOf[GenericRecord]
     datumWriter.write(record, serializer)
   }
 

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultNamingStrategy}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{Matchers, WordSpec}
 
@@ -35,7 +35,7 @@ class StructDecoderTest extends WordSpec with Matchers {
       bucks.put("lat", 12.34)
       bucks.put("long", 0.123)
 
-      Decoder[County].decode(bucks, countySchema, DefaultNamingStrategy) shouldBe obj
+      Decoder[County].decode(bucks, countySchema, DefaultFieldMapper) shouldBe obj
     }
 
     "decode optional structs" in {
@@ -63,12 +63,12 @@ class StructDecoderTest extends WordSpec with Matchers {
       val record = new GenericData.Record(optionCountySchema)
       record.put("county", bucks)
 
-      Decoder[OptionCounty].decode(record, optionCountySchema, DefaultNamingStrategy) shouldBe obj
+      Decoder[OptionCounty].decode(record, optionCountySchema, DefaultFieldMapper) shouldBe obj
 
       val emptyRecord = new GenericData.Record(optionCountySchema)
       emptyRecord.put("county", null)
 
-      Decoder[OptionCounty].decode(emptyRecord, optionCountySchema, DefaultNamingStrategy) shouldBe OptionCounty(None)
+      Decoder[OptionCounty].decode(emptyRecord, optionCountySchema, DefaultFieldMapper) shouldBe OptionCounty(None)
     }
   }
 }

@@ -14,9 +14,9 @@ object AvroSchema {
     *
     * val schema = AvroSchema[MyType]
     *
-    * An implicit [[NamingStrategy]] can be provided to override
+    * An implicit [[FieldMapper]] can be provided to override
     * how the field names are generated.
     */
   def apply[T](implicit schemaFor: SchemaFor[T],
-               naming: NamingStrategy = DefaultNamingStrategy): Schema = schemaFor.schema(naming)
+               fieldMapper: FieldMapper = DefaultFieldMapper): Schema = schemaFor.schema(fieldMapper)
 }

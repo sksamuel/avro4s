@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultNamingStrategy}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import com.sksamuel.avro4s.schema.{Colours, Wine}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
@@ -19,7 +19,7 @@ class EnumDecoderTest extends WordSpec with Matchers {
       val schema = AvroSchema[JavaEnumClass]
       val record = new GenericData.Record(schema)
       record.put("wine", new EnumSymbol(schema.getField("wine").schema(), "CabSav"))
-      Decoder[JavaEnumClass].decode(record, schema, DefaultNamingStrategy) shouldBe JavaEnumClass(Wine.CabSav)
+      Decoder[JavaEnumClass].decode(record, schema, DefaultFieldMapper) shouldBe JavaEnumClass(Wine.CabSav)
     }
     "support optional java enums" in {
       val schema = AvroSchema[JavaOptionEnumClass]
@@ -27,17 +27,17 @@ class EnumDecoderTest extends WordSpec with Matchers {
 
       val record1 = new GenericData.Record(schema)
       record1.put("wine", new EnumSymbol(wineSchema, "Merlot"))
-      Decoder[JavaOptionEnumClass].decode(record1, schema, DefaultNamingStrategy) shouldBe JavaOptionEnumClass(Some(Wine.Merlot))
+      Decoder[JavaOptionEnumClass].decode(record1, schema, DefaultFieldMapper) shouldBe JavaOptionEnumClass(Some(Wine.Merlot))
 
       val record2 = new GenericData.Record(schema)
       record2.put("wine", null)
-      Decoder[JavaOptionEnumClass].decode(record2, schema, DefaultNamingStrategy) shouldBe JavaOptionEnumClass(None)
+      Decoder[JavaOptionEnumClass].decode(record2, schema, DefaultFieldMapper) shouldBe JavaOptionEnumClass(None)
     }
     "support scala enums" in {
       val schema = AvroSchema[ScalaEnumClass]
       val record = new GenericData.Record(schema)
       record.put("colour", new EnumSymbol(schema.getField("colour").schema(), "Green"))
-      Decoder[ScalaEnumClass].decode(record, schema, DefaultNamingStrategy) shouldBe ScalaEnumClass(Colours.Green)
+      Decoder[ScalaEnumClass].decode(record, schema, DefaultFieldMapper) shouldBe ScalaEnumClass(Colours.Green)
     }
     "support optional scala enums" in {
       val schema = AvroSchema[ScalaOptionEnumClass]
@@ -45,11 +45,11 @@ class EnumDecoderTest extends WordSpec with Matchers {
 
       val record1 = new GenericData.Record(schema)
       record1.put("colour", new EnumSymbol(colourSchema, "Amber"))
-      Decoder[ScalaOptionEnumClass].decode(record1, schema, DefaultNamingStrategy) shouldBe ScalaOptionEnumClass(Some(Colours.Amber))
+      Decoder[ScalaOptionEnumClass].decode(record1, schema, DefaultFieldMapper) shouldBe ScalaOptionEnumClass(Some(Colours.Amber))
 
       val record2 = new GenericData.Record(schema)
       record2.put("colour", null)
-      Decoder[ScalaOptionEnumClass].decode(record2, schema, DefaultNamingStrategy) shouldBe ScalaOptionEnumClass(None)
+      Decoder[ScalaOptionEnumClass].decode(record2, schema, DefaultFieldMapper) shouldBe ScalaOptionEnumClass(None)
     }
   }
 }

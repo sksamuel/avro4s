@@ -34,10 +34,16 @@ import scala.math.BigDecimal.RoundingMode.RoundingMode
 trait Encoder[T] extends Serializable {
   self =>
 
-  def encode(t: T, schema: Schema, naming: NamingStrategy): AnyRef
+  /**
+    * @param fieldMapper the [[FieldMapper]] is used when encoding container types
+    *                    with nested fields. Fields may have a different name in the
+    *                    outgoing message compared to the class field names, and the
+    *                    fieldMapper is used to map between them.
+    */
+  def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef
 
   def comap[S](fn: S => T): Encoder[S] = new Encoder[S] {
-    override def encode(value: S, schema: Schema, naming: NamingStrategy): AnyRef = self.encode(fn(value), schema, naming)
+    override def encode(value: S, schema: Schema, fieldMapper: FieldMapper): AnyRef = self.encode(fn(value), schema, fieldMapper)
   }
 }
 
@@ -48,7 +54,7 @@ object Encoder {
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 
   implicit object StringEncoder extends Encoder[String] {
-    override def encode(value: String, schema: Schema, naming: NamingStrategy): AnyRef = {
+    override def encode(value: String, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       schema.getType match {
         case Schema.Type.FIXED =>
           if (value.getBytes.length > schema.getFixedSize)
@@ -61,35 +67,35 @@ object Encoder {
   }
 
   implicit object BooleanEncoder extends Encoder[Boolean] {
-    override def encode(t: Boolean, schema: Schema, naming: NamingStrategy): java.lang.Boolean = java.lang.Boolean.valueOf(t)
+    override def encode(t: Boolean, schema: Schema, fieldMapper: FieldMapper): java.lang.Boolean = java.lang.Boolean.valueOf(t)
   }
 
   implicit object IntEncoder extends Encoder[Int] {
-    override def encode(t: Int, schema: Schema, naming: NamingStrategy): java.lang.Integer = java.lang.Integer.valueOf(t)
+    override def encode(t: Int, schema: Schema, fieldMapper: FieldMapper): java.lang.Integer = java.lang.Integer.valueOf(t)
   }
 
   implicit object LongEncoder extends Encoder[Long] {
-    override def encode(t: Long, schema: Schema, naming: NamingStrategy): java.lang.Long = java.lang.Long.valueOf(t)
+    override def encode(t: Long, schema: Schema, fieldMapper: FieldMapper): java.lang.Long = java.lang.Long.valueOf(t)
   }
 
   implicit object FloatEncoder extends Encoder[Float] {
-    override def encode(t: Float, schema: Schema, naming: NamingStrategy): java.lang.Float = java.lang.Float.valueOf(t)
+    override def encode(t: Float, schema: Schema, fieldMapper: FieldMapper): java.lang.Float = java.lang.Float.valueOf(t)
   }
 
   implicit object DoubleEncoder extends Encoder[Double] {
-    override def encode(t: Double, schema: Schema, naming: NamingStrategy): java.lang.Double = java.lang.Double.valueOf(t)
+    override def encode(t: Double, schema: Schema, fieldMapper: FieldMapper): java.lang.Double = java.lang.Double.valueOf(t)
   }
 
   implicit object ShortEncoder extends Encoder[Short] {
-    override def encode(t: Short, schema: Schema, naming: NamingStrategy): java.lang.Short = java.lang.Short.valueOf(t)
+    override def encode(t: Short, schema: Schema, fieldMapper: FieldMapper): java.lang.Short = java.lang.Short.valueOf(t)
   }
 
   implicit object ByteEncoder extends Encoder[Byte] {
-    override def encode(t: Byte, schema: Schema, naming: NamingStrategy): java.lang.Byte = java.lang.Byte.valueOf(t)
+    override def encode(t: Byte, schema: Schema, fieldMapper: FieldMapper): java.lang.Byte = java.lang.Byte.valueOf(t)
   }
 
   implicit object NoneEncoder extends Encoder[None.type] {
-    override def encode(t: None.type, schema: Schema, naming: NamingStrategy) = null
+    override def encode(t: None.type, schema: Schema, fieldMapper: FieldMapper): AnyRef = null
   }
 
   implicit val UUIDEncoder: Encoder[UUID] = StringEncoder.comap[UUID](_.toString)
@@ -104,11 +110,11 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(map: Map[String, V], schema: Schema, naming: NamingStrategy): java.util.Map[String, AnyRef] = {
+    override def encode(map: Map[String, V], schema: Schema, fieldMapper: FieldMapper): java.util.Map[String, AnyRef] = {
       require(schema != null)
       val java = new util.HashMap[String, AnyRef]
       map.foreach { case (k, v) =>
-        java.put(k, encoder.encode(v, schema.getValueType, naming))
+        java.put(k, encoder.encode(v, schema.getValueType, fieldMapper))
       }
       java
     }
@@ -118,10 +124,10 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: List[T], schema: Schema, naming: NamingStrategy): java.util.List[AnyRef] = {
+    override def encode(ts: List[T], schema: Schema, fieldMapper: FieldMapper): java.util.List[AnyRef] = {
       require(schema != null)
       val arraySchema = SchemaHelper.extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
-      ts.map(encoder.encode(_, arraySchema.getElementType, naming)).asJava
+      ts.map(encoder.encode(_, arraySchema.getElementType, fieldMapper)).asJava
     }
   }
 
@@ -129,10 +135,10 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: Set[T], schema: Schema, naming: NamingStrategy): java.util.List[AnyRef] = {
+    override def encode(ts: Set[T], schema: Schema, fieldMapper: FieldMapper): java.util.List[AnyRef] = {
       require(schema != null)
       val arraySchema = SchemaHelper.extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
-      ts.map(encoder.encode(_, arraySchema.getElementType, naming)).toList.asJava
+      ts.map(encoder.encode(_, arraySchema.getElementType, fieldMapper)).toList.asJava
     }
   }
 
@@ -140,10 +146,10 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: Vector[T], schema: Schema, naming: NamingStrategy): java.util.List[AnyRef] = {
+    override def encode(ts: Vector[T], schema: Schema, fieldMapper: FieldMapper): java.util.List[AnyRef] = {
       require(schema != null)
       val arraySchema = SchemaHelper.extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
-      ts.map(encoder.encode(_, arraySchema.getElementType, naming)).asJava
+      ts.map(encoder.encode(_, arraySchema.getElementType, fieldMapper)).asJava
     }
   }
 
@@ -151,15 +157,15 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(ts: Seq[T], schema: Schema, naming: NamingStrategy): java.util.List[AnyRef] = {
+    override def encode(ts: Seq[T], schema: Schema, fieldMapper: FieldMapper): java.util.List[AnyRef] = {
       require(schema != null)
       val arraySchema = SchemaHelper.extractSchemaFromPossibleUnion(schema, Schema.Type.ARRAY)
-      ts.map(encoder.encode(_, arraySchema.getElementType, naming)).asJava
+      ts.map(encoder.encode(_, arraySchema.getElementType, fieldMapper)).asJava
     }
   }
 
   implicit object ByteArrayEncoder extends Encoder[Array[Byte]] {
-    override def encode(bytes: Array[Byte], schema: Schema, naming: NamingStrategy): AnyRef = {
+    override def encode(bytes: Array[Byte], schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       schema.getType match {
         case Schema.Type.FIXED =>
           if (bytes.length > schema.getFixedSize)
@@ -177,7 +183,7 @@ object Encoder {
   implicit val ByteVectorEncoder: Encoder[Vector[Byte]] = ByteArrayEncoder.comap(_.toArray[Byte])
 
   implicit object ByteBufferEncoder extends Encoder[ByteBuffer] {
-    override def encode(t: ByteBuffer, schema: Schema, naming: NamingStrategy): ByteBuffer = t
+    override def encode(t: ByteBuffer, schema: Schema, fieldMapper: FieldMapper): ByteBuffer = t
   }
 
   implicit def arrayEncoder[T](implicit encoder: Encoder[T]): Encoder[Array[T]] = new Encoder[Array[T]] {
@@ -185,9 +191,9 @@ object Encoder {
     import scala.collection.JavaConverters._
 
     // if our schema is BYTES then we assume the incoming array is a byte array and serialize appropriately
-    override def encode(ts: Array[T], schema: Schema, naming: NamingStrategy): AnyRef = schema.getType match {
+    override def encode(ts: Array[T], schema: Schema, fieldMapper: FieldMapper): AnyRef = schema.getType match {
       case Schema.Type.BYTES => ByteBuffer.wrap(ts.asInstanceOf[Array[Byte]])
-      case _ => ts.map(encoder.encode(_, schema.getElementType, naming)).toList.asJava
+      case _ => ts.map(encoder.encode(_, schema.getElementType, fieldMapper)).toList.asJava
     }
   }
 
@@ -195,21 +201,21 @@ object Encoder {
 
     import scala.collection.JavaConverters._
 
-    override def encode(t: Option[T], schema: Schema, naming: NamingStrategy): AnyRef = {
+    override def encode(t: Option[T], schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       // if the option is none we just return null, otherwise we encode the value
       // by finding the non null schema
       val nonNullSchema = schema.getTypes.asScala.filter(_.getType != Schema.Type.NULL).toList match {
         case s :: Nil => s
         case multipleSchemas => Schema.createUnion(multipleSchemas.asJava)
       }
-      t.map(encoder.encode(_, nonNullSchema, naming)).orNull
+      t.map(encoder.encode(_, nonNullSchema, fieldMapper)).orNull
     }
   }
 
   implicit def eitherEncoder[T, U](implicit leftEncoder: Encoder[T], rightEncoder: Encoder[U]): Encoder[Either[T, U]] = new Encoder[Either[T, U]] {
-    override def encode(t: Either[T, U], schema: Schema, naming: NamingStrategy): AnyRef = t match {
-      case Left(left) => leftEncoder.encode(left, schema.getTypes.get(0), naming)
-      case Right(right) => rightEncoder.encode(right, schema.getTypes.get(1), naming)
+    override def encode(t: Either[T, U], schema: Schema, fieldMapper: FieldMapper): AnyRef = t match {
+      case Left(left) => leftEncoder.encode(left, schema.getTypes.get(0), fieldMapper)
+      case Right(right) => rightEncoder.encode(right, schema.getTypes.get(1), fieldMapper)
     }
   }
 
@@ -222,16 +228,16 @@ object Encoder {
     private val converter = new Conversions.DecimalConversion
     private val rm = java.math.RoundingMode.valueOf(roundingMode.id)
 
-    override def encode(decimal: BigDecimal, schema: Schema, naming: NamingStrategy) = {
+    override def encode(decimal: BigDecimal, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
 
       // we support encoding big decimals in three ways - fixed, bytes or as a String, depending on the schema passed in
       // the scale and precision should come from the schema and the rounding mode from the implicit
       schema.getType match {
-        case Schema.Type.STRING => StringEncoder.encode(decimal.toString, schema, naming)
+        case Schema.Type.STRING => StringEncoder.encode(decimal.toString, schema, fieldMapper)
         case Schema.Type.BYTES => ByteBufferEncoder.comap[BigDecimal] { value =>
           val logical = schema.getLogicalType.asInstanceOf[Decimal]
           converter.toBytes(decimal.underlying.setScale(logical.getScale, rm), schema, logical)
-        }.encode(decimal, schema, naming)
+        }.encode(decimal, schema, fieldMapper)
         case Schema.Type.FIXED =>
           val logical = schema.getLogicalType.asInstanceOf[Decimal]
           converter.toFixed(decimal.underlying.setScale(logical.getScale, rm), schema, logical)
@@ -241,11 +247,11 @@ object Encoder {
   }
 
   implicit def javaEnumEncoder[E <: Enum[_]]: Encoder[E] = new Encoder[E] {
-    override def encode(t: E, schema: Schema, naming: NamingStrategy): EnumSymbol = new EnumSymbol(schema, t.name)
+    override def encode(t: E, schema: Schema, fieldMapper: FieldMapper): EnumSymbol = new EnumSymbol(schema, t.name)
   }
 
   implicit def scalaEnumEncoder[E <: Enumeration#Value]: Encoder[E] = new Encoder[E] {
-    override def encode(t: E, schema: Schema, naming: NamingStrategy): EnumSymbol = new EnumSymbol(schema, t.toString)
+    override def encode(t: E, schema: Schema, fieldMapper: FieldMapper): EnumSymbol = new EnumSymbol(schema, t.toString)
   }
 
   type Typeclass[T] = Encoder[T]
@@ -263,17 +269,17 @@ object Encoder {
     * containing class, and comparing to the record full names in the subschemas.
     *
     */
-  private def encodeField[T](t: T, fieldName: String, schema: Schema, fullName: String, encoder: Encoder[T], naming: NamingStrategy): AnyRef = {
+  private def encodeField[T](t: T, fieldName: String, schema: Schema, fullName: String, encoder: Encoder[T], fieldMapper: FieldMapper): AnyRef = {
     schema.getType match {
       case Schema.Type.UNION =>
         val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
         val field = subschema.getField(fieldName)
-        encoder.encode(t, field.schema, naming)
+        encoder.encode(t, field.schema, fieldMapper)
       case Schema.Type.RECORD =>
         val field = schema.getField(fieldName)
-        encoder.encode(t, field.schema, naming)
+        encoder.encode(t, field.schema, fieldMapper)
       // otherwise we are encoding a simple field
-      case _ => encoder.encode(t, schema, naming)
+      case _ => encoder.encode(t, schema, fieldMapper)
     }
   }
 
@@ -311,9 +317,9 @@ object Encoder {
     val aliases = extractor.aliases
     val props = extractor.props
 
-    val namer = Namer(klass.typeName, klass.annotations)
-    val namespace = namer.namespace
-    val name = namer.name
+    val nameExtractor = NameExtractor(klass.typeName, klass.annotations)
+    val namespace = nameExtractor.namespace
+    val name = nameExtractor.name
 
     // An encoder for a value type just needs to pass through the given value into an encoder
     // for the backing type. At runtime, the value type class won't exist, and the input
@@ -323,14 +329,14 @@ object Encoder {
     // the underlying string
     if (klass.isValueClass) {
       new Encoder[T] {
-        override def encode(t: T, schema: Schema, naming: NamingStrategy): AnyRef = {
+        override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
           val p = klass.parameters.head
-          p.typeclass.encode(p.dereference(t), schema, naming)
+          p.typeclass.encode(p.dereference(t), schema, fieldMapper)
         }
       }
     } else {
       new Encoder[T] {
-        override def encode(t: T, schema: Schema, naming: NamingStrategy): AnyRef = {
+        override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
           // the schema passed here must be a record since we are encoding a non-value case class
           require(schema.getType == Schema.Type.RECORD)
           val values = schema.getFields.asScala.map { field =>
@@ -338,7 +344,7 @@ object Encoder {
             // find the matching parameter
             val p = klass.parameters.find { p =>
               val extractor = new AnnotationExtractors(p.annotations)
-              naming.to(extractor.name.getOrElse(p.label)) == field.name
+              fieldMapper.to(extractor.name.getOrElse(p.label)) == field.name
             }.getOrElse(sys.error(s"Could not find case class parameter for field ${field.name}"))
 
             // if we have a trait, and we call encode here, then the dispatch method will try to find the correct
@@ -350,7 +356,7 @@ object Encoder {
               case Schema.Type.UNION =>
 
                 val extractor = new AnnotationExtractors(p.annotations)
-                extractor.namespace.fold( p.typeclass.encode(p.dereference(t), field.schema, naming)) { namespace =>
+                extractor.namespace.fold(p.typeclass.encode(p.dereference(t), field.schema, fieldMapper)) { namespace =>
                   val fieldschemas = field.schema().getTypes.asScala.map(SchemaHelper.overrideNamespace(_, klass.typeName.owner))
                   val union = SchemaBuilder.unionOf().`type`(fieldschemas.head)
 
@@ -359,14 +365,14 @@ object Encoder {
                   }.endUnion
 
                   // if the encoded value is a record, then set it back to the original namespace
-                  p.typeclass.encode(p.dereference(t), combinedSchema, naming) match {
+                  p.typeclass.encode(p.dereference(t), combinedSchema, fieldMapper) match {
                     case record: ImmutableRecord => record.copy(schema = SchemaHelper.overrideNamespace(record.schema, namespace))
                     case other => other
                   }
                 }
 
               case _ =>
-                p.typeclass.encode(p.dereference(t), field.schema, naming)
+                p.typeclass.encode(p.dereference(t), field.schema, fieldMapper)
             }
           }
           buildRecord(schema, values.toList, name)
@@ -376,10 +382,10 @@ object Encoder {
   }
 
   def dispatch[T](ctx: SealedTrait[Typeclass, T]): Encoder[T] = new Encoder[T] {
-    override def encode(t: T, schema: Schema, naming: NamingStrategy): AnyRef = {
+    override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       ctx.dispatch(t) { subtype =>
-        val namer = Namer(subtype.typeName, subtype.annotations)
-        val fullname = namer.namespace + "." + namer.name
+        val nameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
+        val fullname = nameExtractor.namespace + "." + nameExtractor.name
         schema.getType match {
           // we support two types of schema here - a union when subtypes are classes and a enum when the subtypes are all case objects
           case Schema.Type.UNION =>
@@ -387,11 +393,11 @@ object Encoder {
             // note: that the schema may have a custom name and a custom namespace!
             // note2: the field for the ADT itself may be annotated!
             val a = ctx.annotations
-            val namer = Namer(subtype.typeName, subtype.annotations ++ ctx.annotations)
-            val subschema = SchemaHelper.extractTraitSubschema(namer.fullName, schema)
-            subtype.typeclass.encode(t.asInstanceOf[subtype.SType], subschema, naming)
+            val nameExtractor = NameExtractor(subtype.typeName, subtype.annotations ++ ctx.annotations)
+            val subschema = SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema)
+            subtype.typeclass.encode(t.asInstanceOf[subtype.SType], subschema, fieldMapper)
           // for enums we just encode the type name in an enum symbol wrapper. simples!
-          case Schema.Type.ENUM => GenericData.get.createEnum(namer.name, schema)
+          case Schema.Type.ENUM => GenericData.get.createEnum(nameExtractor.name, schema)
           case other => sys.error(s"Unsupported schema type $other for sealed traits")
         }
       }
@@ -399,53 +405,53 @@ object Encoder {
   }
 
   implicit def tuple2Encoder[A, B](implicit encA: Encoder[A], encB: Encoder[B]) = new Encoder[(A, B)] {
-    override def encode(t: (A, B), schema: Schema, naming: NamingStrategy): AnyRef = {
+    override def encode(t: (A, B), schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       ImmutableRecord(
         schema,
         Vector(
-          encA.encode(t._1, schema.getField("_1").schema, naming),
-          encB.encode(t._2, schema.getField("_2").schema, naming))
+          encA.encode(t._1, schema.getField("_1").schema, fieldMapper),
+          encB.encode(t._2, schema.getField("_2").schema, fieldMapper))
       )
     }
   }
 
   implicit def tuple3Encoder[A, B, C](implicit encA: Encoder[A], encB: Encoder[B], encC: Encoder[C]) = new Encoder[(A, B, C)] {
-    override def encode(t: (A, B, C), schema: Schema, naming: NamingStrategy): AnyRef = {
+    override def encode(t: (A, B, C), schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       ImmutableRecord(
         schema,
         Vector(
-          encA.encode(t._1, schema.getField("_1").schema, naming),
-          encB.encode(t._2, schema.getField("_2").schema, naming),
-          encC.encode(t._3, schema.getField("_3").schema, naming)
+          encA.encode(t._1, schema.getField("_1").schema, fieldMapper),
+          encB.encode(t._2, schema.getField("_2").schema, fieldMapper),
+          encC.encode(t._3, schema.getField("_3").schema, fieldMapper)
         )
       )
     }
   }
 
   implicit def tuple4Encoder[A, B, C, D](implicit encA: Encoder[A], encB: Encoder[B], encC: Encoder[C], encD: Encoder[D]) = new Encoder[(A, B, C, D)] {
-    override def encode(t: (A, B, C, D), schema: Schema, naming: NamingStrategy): AnyRef = {
+    override def encode(t: (A, B, C, D), schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       ImmutableRecord(
         schema,
         Vector(
-          encA.encode(t._1, schema.getField("_1").schema, naming),
-          encB.encode(t._2, schema.getField("_2").schema, naming),
-          encC.encode(t._3, schema.getField("_3").schema, naming),
-          encD.encode(t._4, schema.getField("_4").schema, naming)
+          encA.encode(t._1, schema.getField("_1").schema, fieldMapper),
+          encB.encode(t._2, schema.getField("_2").schema, fieldMapper),
+          encC.encode(t._3, schema.getField("_3").schema, fieldMapper),
+          encD.encode(t._4, schema.getField("_4").schema, fieldMapper)
         )
       )
     }
   }
 
   implicit def tuple5Encoder[A, B, C, D, E](implicit encA: Encoder[A], encB: Encoder[B], encC: Encoder[C], encD: Encoder[D], encE: Encoder[E]) = new Encoder[(A, B, C, D, E)] {
-    override def encode(t: (A, B, C, D, E), schema: Schema, naming: NamingStrategy): AnyRef = {
+    override def encode(t: (A, B, C, D, E), schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       ImmutableRecord(
         schema,
         Vector(
-          encA.encode(t._1, schema.getField("_1").schema, naming),
-          encB.encode(t._2, schema.getField("_2").schema, naming),
-          encC.encode(t._3, schema.getField("_3").schema, naming),
-          encD.encode(t._4, schema.getField("_4").schema, naming),
-          encE.encode(t._5, schema.getField("_5").schema, naming)
+          encA.encode(t._1, schema.getField("_1").schema, fieldMapper),
+          encB.encode(t._2, schema.getField("_2").schema, fieldMapper),
+          encC.encode(t._3, schema.getField("_3").schema, fieldMapper),
+          encD.encode(t._4, schema.getField("_4").schema, fieldMapper),
+          encE.encode(t._5, schema.getField("_5").schema, fieldMapper)
         )
       )
     }
@@ -461,21 +467,21 @@ object Encoder {
   // actually construct a value of type a: CNil, but the Encoder[CNil]
   // needs to exist to supply a base case for the recursion.
   implicit def cnilEncoder: Encoder[CNil] = new Encoder[CNil] {
-    override def encode(t: CNil, schema: Schema, naming: NamingStrategy): AnyRef = sys.error("This should never happen: CNil has no inhabitants")
+    override def encode(t: CNil, schema: Schema, fieldMapper: FieldMapper): AnyRef = sys.error("This should never happen: CNil has no inhabitants")
   }
 
   // A :+: B is either Inl(value: A) or Inr(value: B), continuing the recursion
   implicit def coproductEncoder[H, T <: Coproduct](implicit encoderS: Encoder[H], encoderT: Encoder[T]): Encoder[H :+: T] = new Encoder[H :+: T] {
-    override def encode(value: H :+: T, schema: Schema, naming: NamingStrategy): AnyRef = {
+    override def encode(value: H :+: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       // the schema passed in here will be a union
       require(schema.getType == Schema.Type.UNION)
       value match {
         // we must extract the appropriate schema from the union when we hit the base left case
         case Inl(h) =>
-          val namer = Namer(h.getClass)
-          val s = SchemaHelper.extractTraitSubschema(namer.fullName, schema)
-          encoderS.encode(h, s, naming)
-        case Inr(t) => encoderT.encode(t, schema, naming)
+          val nameExtractor = NameExtractor(h.getClass)
+          val s = SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema)
+          encoderS.encode(h, s, fieldMapper)
+        case Inr(t) => encoderT.encode(t, schema, fieldMapper)
       }
     }
   }

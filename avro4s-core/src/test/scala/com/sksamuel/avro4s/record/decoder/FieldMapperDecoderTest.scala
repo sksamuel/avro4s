@@ -5,9 +5,9 @@ import com.sksamuel.avro4s.{Decoder, SchemaFor, SnakeCase}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{FunSuite, Matchers}
 
-class NamingStrategyDecoderTest extends FunSuite with Matchers {
+class FieldMapperDecoderTest extends FunSuite with Matchers {
 
-  test("NamingStrategy should overide the field names in a decoder") {
+  test("fieldMapper should overide the field names in a decoder") {
     val schema = SchemaFor[NamingTest].schema(SnakeCase)
     val decoder = Decoder[NamingTest]
     val record = new GenericData.Record(schema)

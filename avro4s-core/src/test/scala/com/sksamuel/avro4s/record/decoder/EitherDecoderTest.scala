@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, DefaultNamingStrategy, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, DefaultFieldMapper, ImmutableRecord}
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.util.Utf8
 import org.scalatest.{FunSuite, Matchers}
@@ -34,20 +34,20 @@ class EitherDecoderTest extends FunSuite with Matchers {
 
   test("decode union:T,U for Either[T,U] of primitives") {
     val schema = AvroSchema[Test]
-    Decoder[Test].decode(ImmutableRecord(schema, Vector(new Utf8("foo"))), schema, DefaultNamingStrategy) shouldBe Test(Left("foo"))
-    Decoder[Test].decode(ImmutableRecord(schema, Vector(java.lang.Double.valueOf(234.4D))), schema, DefaultNamingStrategy) shouldBe Test(Right(234.4D))
+    Decoder[Test].decode(ImmutableRecord(schema, Vector(new Utf8("foo"))), schema, DefaultFieldMapper) shouldBe Test(Left("foo"))
+    Decoder[Test].decode(ImmutableRecord(schema, Vector(java.lang.Double.valueOf(234.4D))), schema, DefaultFieldMapper) shouldBe Test(Right(234.4D))
   }
 
   test("decode union:T,U for Either[T,U] of top level classes") {
     val schema = AvroSchema[Test2]
-    Decoder[Test2].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Goo], Vector(new Utf8("zzz"))))), schema, DefaultNamingStrategy) shouldBe Test2(Left(Goo("zzz")))
-    Decoder[Test2].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Foo], Vector(java.lang.Boolean.valueOf(true))))), schema, DefaultNamingStrategy) shouldBe Test2(Right(Foo(true)))
+    Decoder[Test2].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Goo], Vector(new Utf8("zzz"))))), schema, DefaultFieldMapper) shouldBe Test2(Left(Goo("zzz")))
+    Decoder[Test2].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Foo], Vector(java.lang.Boolean.valueOf(true))))), schema, DefaultFieldMapper) shouldBe Test2(Right(Foo(true)))
   }
 
   test("decode union:T,U for Either[T,U] of nested classes") {
     val schema = AvroSchema[Test3]
-    Decoder[Test3].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Voo], Vector(new Utf8("zzz"))))), schema, DefaultNamingStrategy) shouldBe Test3(Left(Voo("zzz")))
-    Decoder[Test3].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Woo], Vector(java.lang.Boolean.valueOf(true))))), schema, DefaultNamingStrategy) shouldBe Test3(Right(Woo(true)))
+    Decoder[Test3].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Voo], Vector(new Utf8("zzz"))))), schema, DefaultFieldMapper) shouldBe Test3(Left(Voo("zzz")))
+    Decoder[Test3].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Woo], Vector(java.lang.Boolean.valueOf(true))))), schema, DefaultFieldMapper) shouldBe Test3(Right(Woo(true)))
   }
 
   test("use @AvroName defined on a class when choosing which Either to decode") {
@@ -57,8 +57,8 @@ class EitherDecoderTest extends FunSuite with Matchers {
     val union = SchemaBuilder.unionOf().`type`(wschema).and().`type`(tschema).endUnion()
     val schema = SchemaBuilder.record("Test4").fields().name("either").`type`(union).noDefault().endRecord()
 
-    Decoder[Test4].decode(ImmutableRecord(schema, Vector(ImmutableRecord(tschema, Vector(java.lang.Boolean.valueOf(true))))), schema, DefaultNamingStrategy) shouldBe Test4(Right(Topple(true)))
-    Decoder[Test4].decode(ImmutableRecord(schema, Vector(ImmutableRecord(wschema, Vector(new Utf8("zzz"))))), schema, DefaultNamingStrategy) shouldBe Test4(Left(Wobble("zzz")))
+    Decoder[Test4].decode(ImmutableRecord(schema, Vector(ImmutableRecord(tschema, Vector(java.lang.Boolean.valueOf(true))))), schema, DefaultFieldMapper) shouldBe Test4(Right(Topple(true)))
+    Decoder[Test4].decode(ImmutableRecord(schema, Vector(ImmutableRecord(wschema, Vector(new Utf8("zzz"))))), schema, DefaultFieldMapper) shouldBe Test4(Left(Wobble("zzz")))
   }
 
   test("use @AvroNamespace when choosing which Either to decode") {
@@ -68,8 +68,8 @@ class EitherDecoderTest extends FunSuite with Matchers {
     val union = SchemaBuilder.unionOf().`type`(appleschema).and().`type`(orangeschema).endUnion()
     val schema = SchemaBuilder.record("Test5").fields().name("either").`type`(union).noDefault().endRecord()
 
-    Decoder[Test5].decode(ImmutableRecord(schema, Vector(ImmutableRecord(orangeschema, Vector(java.lang.Boolean.valueOf(true))))), schema, DefaultNamingStrategy) shouldBe Test5(Right(Orange(true)))
-    Decoder[Test5].decode(ImmutableRecord(schema, Vector(ImmutableRecord(appleschema, Vector(new Utf8("zzz"))))), schema, DefaultNamingStrategy) shouldBe Test5(Left(Apple("zzz")))
+    Decoder[Test5].decode(ImmutableRecord(schema, Vector(ImmutableRecord(orangeschema, Vector(java.lang.Boolean.valueOf(true))))), schema, DefaultFieldMapper) shouldBe Test5(Right(Orange(true)))
+    Decoder[Test5].decode(ImmutableRecord(schema, Vector(ImmutableRecord(appleschema, Vector(new Utf8("zzz"))))), schema, DefaultFieldMapper) shouldBe Test5(Left(Apple("zzz")))
   }
 }
 

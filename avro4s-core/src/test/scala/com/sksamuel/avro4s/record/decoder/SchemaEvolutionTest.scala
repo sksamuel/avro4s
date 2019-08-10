@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record.decoder
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import com.sksamuel.avro4s.{AvroAlias, AvroDataInputStream, AvroOutputStream, AvroSchema, Decoder, DefaultNamingStrategy, RecordFormat}
+import com.sksamuel.avro4s.{AvroAlias, AvroDataInputStream, AvroOutputStream, AvroSchema, Decoder, DefaultFieldMapper, RecordFormat}
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
@@ -49,7 +49,7 @@ class SchemaEvolutionTest extends FunSuite with Matchers {
     val schema2 = SchemaBuilder.record("foo").fields().requiredString("a").optionalString("b").endRecord()
     val record = new GenericData.Record(schema1)
     record.put("a", new Utf8("hello"))
-    Decoder[DefaultStringTest].decode(record, schema2, DefaultNamingStrategy) shouldBe DefaultStringTest("hello")
+    Decoder[DefaultStringTest].decode(record, schema2, DefaultFieldMapper) shouldBe DefaultStringTest("hello")
   }
 
   test("when decoding, if the record is missing a field that is present in the schema and the type is option, then set to None") {
@@ -57,6 +57,6 @@ class SchemaEvolutionTest extends FunSuite with Matchers {
     val schema2 = SchemaBuilder.record("foo").fields().requiredString("a").optionalString("b").endRecord()
     val record = new GenericData.Record(schema1)
     record.put("a", new Utf8("hello"))
-    Decoder[OptionalStringTest].decode(record, schema2, DefaultNamingStrategy) shouldBe OptionalStringTest("hello", None)
+    Decoder[OptionalStringTest].decode(record, schema2, DefaultFieldMapper) shouldBe OptionalStringTest("hello", None)
   }
 }

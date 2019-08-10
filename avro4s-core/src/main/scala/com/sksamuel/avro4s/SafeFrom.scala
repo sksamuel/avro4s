@@ -6,7 +6,7 @@ import org.apache.avro.util.Utf8
 
 protected abstract class SafeFrom[T: Decoder] {
   val decoder: Decoder[T] = implicitly[Decoder[T]]
-  def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T]
+  def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T]
 }
 
 object SafeFrom {
@@ -20,55 +20,55 @@ object SafeFrom {
 
     if (tpe <:< typeOf[java.lang.String]) {
       new SafeFrom[T] {
-        override def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T] = {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case _: Utf8 => Some(decoder.decode(value, schema, naming))
-            case _: String => Some(decoder.decode(value, schema, naming))
+            case _: Utf8 => Some(decoder.decode(value, schema, fieldMapper))
+            case _: String => Some(decoder.decode(value, schema, fieldMapper))
             case _ => None
           }
         }
       }
     } else if (tpe <:< typeOf[Boolean]) {
       new SafeFrom[T] {
-        override def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T] = {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case true | false => Some(decoder.decode(value, schema, naming))
+            case true | false => Some(decoder.decode(value, schema, fieldMapper))
             case _ => None
           }
         }
       }
     } else if (tpe <:< typeOf[Int]) {
       new SafeFrom[T] {
-        override def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T] = {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case _: Int => Some(decoder.decode(value, schema, naming))
+            case _: Int => Some(decoder.decode(value, schema, fieldMapper))
             case _ => None
           }
         }
       }
     } else if (tpe <:< typeOf[Long]) {
       new SafeFrom[T] {
-        override def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T] = {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case _: Long => Some(decoder.decode(value, schema, naming))
+            case _: Long => Some(decoder.decode(value, schema, fieldMapper))
             case _ => None
           }
         }
       }
     } else if (tpe <:< typeOf[Double]) {
       new SafeFrom[T] {
-        override def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T] = {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case _: Double => Some(decoder.decode(value, schema, naming))
+            case _: Double => Some(decoder.decode(value, schema, fieldMapper))
             case _ => None
           }
         }
       }
     } else if (tpe <:< typeOf[Float]) {
       new SafeFrom[T] {
-        override def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T] = {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case _: Float => Some(decoder.decode(value, schema, naming))
+            case _: Float => Some(decoder.decode(value, schema, fieldMapper))
             case _ => None
           }
         }
@@ -78,9 +78,9 @@ object SafeFrom {
       tpe <:< typeOf[Iterable[_]]) {
 
       new SafeFrom[T] {
-        override def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T] = {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case _: GenericData.Array[_] => Some(decoder.decode(value, schema, naming))
+            case _: GenericData.Array[_] => Some(decoder.decode(value, schema, fieldMapper))
             case _ => None
           }
         }
@@ -89,9 +89,9 @@ object SafeFrom {
       tpe <:< typeOf[Map[_, _]]) {
 
       new SafeFrom[T] {
-        override def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T] = {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case _: java.util.Map[_, _] => Some(decoder.decode(value, schema, naming))
+            case _: java.util.Map[_, _] => Some(decoder.decode(value, schema, fieldMapper))
             case _ => None
           }
         }
@@ -99,17 +99,17 @@ object SafeFrom {
     } else {
       new SafeFrom[T] {
 
-        private val namer = Namer(manifest.runtimeClass)
-        private val typeName = namer.fullName
+        private val nameExtractor = NameExtractor(manifest.runtimeClass)
+        private val typeName = nameExtractor.fullName
 
-        override def safeFrom(value: Any, schema: Schema, naming: NamingStrategy): Option[T] = {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
             case container: GenericContainer if typeName == container.getSchema.getFullName =>
               val s = schema.getType match {
-                case Schema.Type.UNION => SchemaHelper.extractTraitSubschema(namer.fullName, schema)
+                case Schema.Type.UNION => SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema)
                 case _ => schema
               }
-              Some(decoder.decode(value, s, naming))
+              Some(decoder.decode(value, s, fieldMapper))
             case _ => None
           }
         }

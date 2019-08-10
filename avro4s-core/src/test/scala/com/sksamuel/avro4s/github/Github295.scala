@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{DefaultNamingStrategy, SchemaFor}
+import com.sksamuel.avro4s.{DefaultFieldMapper, SchemaFor}
 import org.scalatest.{FunSuite, Matchers}
 
 sealed trait InnerTrait295
@@ -13,6 +13,6 @@ case class OuterConcrete295(inner: InnerTrait295) extends OuterTrait295
 class Github295 extends FunSuite with Matchers {
   test("Cannot generate schema for a sealed trait, which concrete case class has another sealed trait as an argument #295") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github295.json"))
-    SchemaFor[OuterTrait295].schema(DefaultNamingStrategy).toString(true) shouldBe expected.toString(true)
+    SchemaFor[OuterTrait295].schema(DefaultFieldMapper).toString(true) shouldBe expected.toString(true)
   }
 }

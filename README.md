@@ -261,7 +261,7 @@ To do this, we just introduce a new instance of `SchemaFor` and put it in scope 
 
 ```scala
 implicit object IntOverride extends SchemaFor[Int] {
-  override def schema(implicit naming: NamingStrategy = DefaultNamingStrategy): Schema = SchemaBuilder.builder.stringType
+  override def schema(implicit fieldMapper: FieldMapper): Schema = SchemaBuilder.builder.stringType
 }
 
 case class Foo(a: String)
@@ -305,18 +305,18 @@ Would result in the following schema:
 }
 ```
 
-### Naming Strategy
+### Field Mapping
 
 If you are dealing with Avro data generated in other languages then it's quite likely the field names will reflect the style of that language. For example, Java may prefer `camelCaseFieldNames` but other languages may use `snake_case_field_names` or `PascalStyleFieldNames`. By default the name of the field in the case class is what will be used, and you've seen earlier that you can override a specific field with @AvroName, but doing this for every single field would be insane.
 
-So, avro4s provides `NamingStrategy` for this. You simply bring into scope an instance of NamingStrategy that will convert the scala field names into a target type field names.
+So, avro4s provides a `FieldMapper` for this. You simply bring into scope an instance of `FieldMapper` that will convert the scala field names into a target type field names.
 
 For example, lets take a scala case and generate a schema using snake case.
 
 ```scala
 package com.sksamuel
 case class Foo(userName: String, emailAddress: String)
-implicit val snake: NamingStrategy = SnakeCase
+implicit val snake: FieldMapper = SnakeCase
 val schema = AvroSchema[Foo]
 ```
 
@@ -636,7 +636,7 @@ the contents in lower case, we can do the following:
 case class Foo(a: String, b: String)
 
 implicit object FooEncoder extends Encoder[Foo] {
-  override def encode(foo: Foo, schema: Schema, naming: NamingStrategy) = {
+  override def encode(foo: Foo, schema: Schema, fieldMapper: FieldMapper) = {
     val record = new GenericData.Record(schema)
     record.put("a", foo.a.toUpperCase)
     record.put("b", foo.b.toUpperCase)
@@ -645,7 +645,7 @@ implicit object FooEncoder extends Encoder[Foo] {
 }
 
 implicit object FooDecoder extends Decoder[Foo] {
-  override def decode(value: Any, schema: Schema, naming: NamingStrategy) = {
+  override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper) = {
     val record = value.asInstanceOf[GenericRecord]
     Foo(record.get("a").toString.toLowerCase, record.get("b").toString.toLowerCase)
   }
@@ -658,17 +658,17 @@ and decoders.
 
 ```scala
 implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
-  override val schema(implicit naming: NamingStrategy = DefaultNamingStrategy) = 
+  override val schema(implicit fieldMapper: FieldMapper) = 
     Schema.create(Schema.Type.STRING)
 }
 
 implicit object DateTimeEncoder extends Encoder[LocalDateTime] {
-  override def apply(value: LocalDateTime, schema: Schema, naming: NamingStrategy) = 
+  override def apply(value: LocalDateTime, schema: Schema, fieldMapper: FieldMapper) = 
     ISODateTimeFormat.dateTime().print(value)
 }
 
 implicit object DateTimeDecoder extends Decoder[LocalDateTime] {
-  override def apply(value: Any, field: Field)(implicit naming: NamingStrategy = DefaultNamingStrategy) = 
+  override def apply(value: Any, field: Field)(implicit fieldMapper: FieldMapper) = 
     ISODateTimeFormat.dateTime().parseDateTime(value.toString)
 }
 ```

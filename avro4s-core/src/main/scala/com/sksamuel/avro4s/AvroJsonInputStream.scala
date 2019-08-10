@@ -10,7 +10,8 @@ import scala.util.Try
 
 final case class AvroJsonInputStream[T](in: InputStream,
                                         writerSchema: Schema,
-                                        readerSchema: Schema)
+                                        readerSchema: Schema,
+                                        fieldMapper: FieldMapper = DefaultFieldMapper)
                                        (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
   private val datumReader = new DefaultAwareDatumReader[GenericRecord](writerSchema, readerSchema)
@@ -23,14 +24,14 @@ final case class AvroJsonInputStream[T](in: InputStream,
   def iterator: Iterator[T] = Iterator.continually(next)
     .takeWhile(_.isSuccess)
     .map(_.get)
-    .map(decoder.decode(_, readerSchema, DefaultNamingStrategy))
+    .map(decoder.decode(_, readerSchema, fieldMapper))
 
   def tryIterator: Iterator[Try[T]] = Iterator.continually(next)
     .takeWhile(_.isSuccess)
     .map(_.get)
-    .map(record => Try(decoder.decode(record, readerSchema, DefaultNamingStrategy)))
+    .map(record => Try(decoder.decode(record, readerSchema, fieldMapper)))
 
-  def singleEntity: Try[T] = next.map(decoder.decode(_, readerSchema, DefaultNamingStrategy))
+  def singleEntity: Try[T] = next.map(decoder.decode(_, readerSchema, fieldMapper))
 
   override def close(): Unit = in.close()
 }

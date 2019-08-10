@@ -6,7 +6,7 @@ import magnolia.{Subtype, TypeName}
   * Extracts name and namespace from a TypeName.
   * Takes into consideration provided annotations.
   */
-case class Namer(typeName: TypeName, nameAnnotation: Option[String], namespaceAnnotation: Option[String], erased: Boolean) {
+case class NameExtractor(typeName: TypeName, nameAnnotation: Option[String], namespaceAnnotation: Option[String], erased: Boolean) {
 
   private val defaultNamespace = typeName.owner.replaceAll("\\.<local .*?>", "").stripSuffix(".package")
 
@@ -59,15 +59,15 @@ case class Namer(typeName: TypeName, nameAnnotation: Option[String], namespaceAn
   }
 }
 
-object Namer {
-  def apply[F[_], T](subtype: Subtype[F, T]): Namer = Namer(subtype.typeName, subtype.annotations)
+object NameExtractor {
+  def apply[F[_], T](subtype: Subtype[F, T]): NameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
 
-  def apply(typeName: TypeName, annos: Seq[Any]): Namer = {
+  def apply(typeName: TypeName, annos: Seq[Any]): NameExtractor = {
     val extractor = new AnnotationExtractors(annos)
-    Namer(typeName, extractor.name, extractor.namespace, extractor.erased)
+    NameExtractor(typeName, extractor.name, extractor.namespace, extractor.erased)
   }
 
-  def apply[A](clazz: Class[A]): Namer = {
+  def apply[A](clazz: Class[A]): NameExtractor = {
 
     import scala.reflect.runtime.universe
 
@@ -99,12 +99,6 @@ object Namer {
     }
 
     val typeName = tpe2name(tpe)
-    Namer(typeName, nameAnnotation, namespaceAnnnotation, erased)
+    NameExtractor(typeName, nameAnnotation, namespaceAnnnotation, erased)
   }
-
-  //  def apply(tpe: universe.Type): Namer = {
-  //    val annos = tpe.r
-  //    val typeName = TypeName(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, Nil)
-  //    Namer(typeName, annos)
-  //  }
 }

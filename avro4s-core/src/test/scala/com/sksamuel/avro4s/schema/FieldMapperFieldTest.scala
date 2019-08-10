@@ -1,25 +1,25 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchema, NamingStrategy, PascalCase, SnakeCase}
+import com.sksamuel.avro4s.{AvroSchema, FieldMapper, PascalCase, SnakeCase}
 import org.scalatest.{Matchers, WordSpec}
 
-class NamingStrategyFieldTest extends WordSpec with Matchers {
+class FieldMapperFieldTest extends WordSpec with Matchers {
 
-  "NamingStrategy" should {
+  "fieldMapper" should {
     "defaultNoChange" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/naming_strategy_default.json"))
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/field_mapper_default.json"))
       val schema = AvroSchema[NamingStrategyTest]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support pascal case" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/naming_strategy_pascal.json"))
-      implicit val pascal: NamingStrategy = PascalCase
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/field_mapper_pascal.json"))
+      implicit val pascal: FieldMapper = PascalCase
       val schema = AvroSchema[NamingStrategyTest]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support snake case" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/naming_strategy_snake.json"))
-      implicit val snake: NamingStrategy = SnakeCase
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/field_mapper_snake.json"))
+      implicit val snake: FieldMapper = SnakeCase
       val schema = AvroSchema[NamingStrategyTest]
       schema.toString(true) shouldBe expected.toString(true)
     }
