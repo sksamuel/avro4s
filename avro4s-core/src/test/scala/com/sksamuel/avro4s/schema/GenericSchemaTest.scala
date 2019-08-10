@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroErasedName, AvroSchema}
+import com.sksamuel.avro4s.{AvroErasedName, AvroFullTypeArgNames, AvroName, AvroSchema}
 import org.apache.avro.SchemaParseException
 import org.scalatest.{FunSuite, Matchers}
 
@@ -42,4 +42,23 @@ class GenericSchemaTest extends FunSuite with Matchers {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/generic_disabled.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
+
+  test("support @AvroName on generic type args") {
+    val schema = AvroSchema[DibDabDob]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_on_type_arg.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
 }
+
+object First {
+  case class TypeArg(a: String)
+}
+
+object Second {
+  @AvroName("wibble")
+  case class TypeArg(a: String)
+}
+
+case class Generic[T](value: T)
+
+case class DibDabDob(a: Generic[First.TypeArg], b: Generic[Second.TypeArg])

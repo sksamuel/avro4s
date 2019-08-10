@@ -1,0 +1,53 @@
+{
+  "type": "record",
+  "name": "DibDabDob",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "a",
+      "type": {
+        "type": "record",
+        "name": "Generic__TypeArg",
+        "fields": [
+          {
+            "name": "value",
+            "type": {
+              "type": "record",
+              "name": "TypeArg",
+              "namespace": "com.sksamuel.avro4s.schema.First",
+              "fields": [
+                {
+                  "name": "a",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "b",
+      "type": {
+        "type": "record",
+        "name": "Generic__wibble",
+        "fields": [
+          {
+            "name": "value",
+            "type": {
+              "type": "record",
+              "name": "wibble",
+              "namespace": "com.sksamuel.avro4s.schema.Second",
+              "fields": [
+                {
+                  "name": "a",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

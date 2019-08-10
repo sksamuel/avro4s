@@ -6,23 +6,24 @@ import magnolia.{Subtype, TypeName}
   * Extracts name and namespace from a TypeName.
   * Takes into consideration provided annotations.
   */
-case class NameExtractor(typeName: TypeName, nameAnnotation: Option[String], namespaceAnnotation: Option[String], erased: Boolean) {
+case class NameExtractor(typeInfo: TypeInfo) {
 
-  private val defaultNamespace = typeName.owner.replaceAll("\\.<local .*?>", "").stripSuffix(".package")
+  private val defaultNamespace = typeInfo.owner.replaceAll("\\.<local .*?>", "").stripSuffix(".package")
 
   // the name of the scala class without type parameters.
   // Eg, List[Int] would be List.
-  private val erasedName = typeName.short
+  private val erasedName = typeInfo.short
 
   // the name of the scala class with type parameters encoded,
   // Eg, List[Int] would be `List__Int`
   // Eg, Type[A, B] would be `Type__A_B`
+  // this method must also take into account @AvroName on the classes used as type arguments
   private val genericName = {
-    if (typeName.typeArguments.isEmpty) {
+    if (typeInfo.typeArguments.isEmpty) {
       erasedName
     } else {
-      val targs = typeName.typeArguments.map(_.short).mkString("_")
-      typeName.short + "__" + targs
+      val targs = typeInfo.typeArguments.map { typeArgInfo => NameExtractor(typeArgInfo).name }.mkString("_")
+      typeInfo.short + "__" + targs
     }
   }
 
@@ -39,7 +40,7 @@ case class NameExtractor(typeName: TypeName, nameAnnotation: Option[String], nam
     * Returns the namespace for this type to be used when creating
     * an avro record. This method takes into account @AvroNamespace.
     */
-  def namespace: String = namespaceAnnotation.getOrElse(defaultNamespace)
+  def namespace: String = typeInfo.namespaceAnnotation.getOrElse(defaultNamespace)
 
   /**
     * Returns the record name for this type to be used when creating
@@ -54,51 +55,15 @@ case class NameExtractor(typeName: TypeName, nameAnnotation: Option[String], nam
     * as @AvroName or @AvroNamespace, or @AvroErasedName, which, if present,
     * means the type parameters will not be included in the final name.
     */
-  def name: String = nameAnnotation.getOrElse {
-    if (erased) erasedName else genericName
+  def name: String = typeInfo.nameAnnotation.getOrElse {
+    if (typeInfo.erased) erasedName else genericName
   }
 }
 
 object NameExtractor {
   def apply[F[_], T](subtype: Subtype[F, T]): NameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
 
-  def apply(typeName: TypeName, annos: Seq[Any]): NameExtractor = {
-    val extractor = new AnnotationExtractors(annos)
-    NameExtractor(typeName, extractor.name, extractor.namespace, extractor.erased)
-  }
+  def apply(typeName: TypeName, annos: Seq[Any]): NameExtractor = NameExtractor(TypeInfo(typeName, annos))
 
-  def apply[A](clazz: Class[A]): NameExtractor = {
-
-    import scala.reflect.runtime.universe
-
-    val mirror = universe.runtimeMirror(clazz.getClassLoader)
-    val sym = mirror.classSymbol(clazz)
-    val tpe = sym.toType
-
-    def tpe2name(tpe: universe.Type): TypeName = {
-      TypeName(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, tpe.typeArgs.map(tpe2name))
-    }
-
-    import scala.reflect.runtime.universe._
-
-    val nameAnnotation = sym.typeSignature.typeSymbol.annotations.collectFirst {
-      case a if a.tree.tpe =:= typeOf[AvroName] =>
-        val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
-        annoValue.toString
-    }
-
-    val namespaceAnnnotation = sym.typeSignature.typeSymbol.annotations.collectFirst {
-      case a if a.tree.tpe =:= typeOf[AvroNamespace] =>
-        val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
-        annoValue.toString
-    }
-
-    val erased = sym.typeSignature.typeSymbol.annotations.exists {
-      case a if a.tree.tpe =:= typeOf[AvroErasedName] => true
-      case _ => false
-    }
-
-    val typeName = tpe2name(tpe)
-    NameExtractor(typeName, nameAnnotation, namespaceAnnnotation, erased)
-  }
+  def apply[A](clazz: Class[A]): NameExtractor = NameExtractor(TypeInfo.fromClass(clazz))
 }

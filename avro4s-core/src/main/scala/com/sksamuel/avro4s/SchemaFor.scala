@@ -162,13 +162,9 @@ object SchemaFor {
 
   implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = new SchemaFor[E] {
     override def schema(fieldMapper: FieldMapper): Schema = {
-
-      val as = tag.runtimeClass.getAnnotations
-      val nameAnnotation = as.find(_.annotationType == classOf[AvroName]).map(_.asInstanceOf[AvroName]).map(_.name)
-      val namespaceAnnotation = as.find(_.annotationType == classOf[AvroNamespace]).map(_.asInstanceOf[AvroNamespace]).map(_.namespace)
-      val nameExtractor = NameExtractor(magnolia.TypeName(tag.runtimeClass.getPackage.getName, tag.runtimeClass.getSimpleName, Nil), nameAnnotation, namespaceAnnotation, false)
+      val typeInfo = TypeInfo.fromClass(tag.runtimeClass)
+      val nameExtractor = NameExtractor(typeInfo)
       val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
-
       SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(symbols: _*)
     }
   }
@@ -370,7 +366,8 @@ object SchemaFor {
     val props = as.collect {
       case prop: AvroProp => prop.key -> prop.value
     }
-    val nameExtractor = NameExtractor(magnolia.TypeName(typeRef.pre.typeSymbol.owner.fullName, typeRef.pre.typeSymbol.name.decodedName.toString, Nil), nameAnnotation, namespaceAnnotation, false)
+
+    val nameExtractor = NameExtractor(TypeInfo.fromType(typeRef.pre))
 
     val s = SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(syms: _*)
     props.foreach { case (key, value) =>
