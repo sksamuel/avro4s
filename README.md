@@ -457,6 +457,28 @@ val schema = AvroSchema[FixedA]
 }
 ```
 
+### Controlling order of types in generated union schemas
+
+The order of types in a union is significant in Avro, e.g the schemas `type: ["int", "float"]` and `type: ["float", "int"]` are different. This can cause problems when generating schemas for sealed trait hierarchies. Ideally we would generate schemas using the source code declaration order of the types. So for example:
+
+```scala
+sealed trait Animal
+case class Dog(howFriendly: Float) extends Animal
+case class Fish(remembersYou: Boolean) extends Animal
+```
+
+Should generate a schema where the order of types in the unions is `Dog, Fish`. Unfortunately, the `SchemaFor` macro can sometimes lose track of what the declaration order is - especially with larger hierarchies. In any situation where this is happening you can use the `@AvroSortPriority` annotation to explicitly control what order the types appear in. `@AvroSortPriority` takes a single float argument, which is the priority this field should be treated with, higher priority means closer to the beginning of the union. For example:
+
+```scala
+sealed trait Animal
+@AvroSortPriority(1)
+case class Dog(howFriendly: Float) extends Animal
+@AvroSortPriority(2)
+case class Fish(remembersYou: Boolean) extends Animal
+```
+
+Would output the types in the union as `Fish,Dog`.
+
 ## Input / Output
 
 ### Serializing
