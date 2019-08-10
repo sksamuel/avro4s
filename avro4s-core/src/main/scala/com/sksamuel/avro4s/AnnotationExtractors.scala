@@ -20,6 +20,7 @@ class AnnotationExtractors(annos: Seq[Any]) {
   def aliases: Seq[String] = findAll[AvroAliasable].map(_.alias).filterNot(_.trim.isEmpty)
   def fixed: Option[Int] = findFirst[AvroFixable].map(_.size)
   def name: Option[String] = findFirst[AvroNameable].map(_.name).filterNot(_.trim.isEmpty)
+  def sortPriority: Option[Float] = findFirst[AvroSortPriority].map(_.priority)
 
   def props: Map[String, String] = findAll[AvroProperty].map { prop =>
     prop.key -> prop.value

@@ -5,8 +5,8 @@ import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
+import magnolia.{CaseClass, Magnolia, SealedTrait, Subtype}
 import com.sksamuel.avro4s.DefaultResolver.UserDefinedDefault
-import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.{:+:, CNil, Coproduct}
 
@@ -324,15 +324,21 @@ object SchemaFor {
       val tpe = runtimeMirror.weakTypeOf[T]
       val objs = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.knownDirectSubclasses.forall(_.isModuleClass)
 
+      val sortedSubtypes = ctx.subtypes.sortWith { (left: Subtype[Typeclass, T], right: Subtype[Typeclass, T]) => 
+        val leftPriority: Float = new AnnotationExtractors(left.annotations).sortPriority.getOrElse(0)
+        val rightPriority: Float = new AnnotationExtractors(right.annotations).sortPriority.getOrElse(0)
+        leftPriority > rightPriority
+      }
+
       if (objs) {
-        val symbols = ctx.subtypes.map { sub =>
+        val symbols = sortedSubtypes.map { sub =>
           val namer = Namer(sub.typeName, sub.annotations)
           namer.name
         }
         val namer = Namer(ctx.typeName, ctx.annotations)
         SchemaBuilder.enumeration(namer.name).namespace(namer.namespace).symbols(symbols: _*)
       } else {
-        val schemas = ctx.subtypes.map(_.typeclass.schema(namingStrategy))
+        val schemas = sortedSubtypes.map(_.typeclass.schema(namingStrategy))
         SchemaHelper.createSafeUnion(schemas: _*)
       }
     }
