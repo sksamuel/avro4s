@@ -9,6 +9,7 @@ script:
 - sbt +test
 
 jdk:
-- oraclejdk8
+- openjdk10
+- oraclejdk11
 
 after_success: "./snapshot_deploy.sh"
