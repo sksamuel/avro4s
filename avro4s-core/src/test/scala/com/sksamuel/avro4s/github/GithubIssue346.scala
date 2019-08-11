@@ -15,5 +15,5 @@ class GithubIssue346 extends FunSuite with Matchers {
 @AvroNamespace("com.foo")
 @AvroName("MyRenamedEnum")
 sealed trait MyEnum
-case object BAR extends MyEnum
-case object FOO extends MyEnum
+case object Hussel extends MyEnum
+case object Bussel extends MyEnum

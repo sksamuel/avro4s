@@ -3,7 +3,7 @@
   "name": "MyRenamedEnum",
   "namespace": "com.foo",
   "symbols": [
-    "BAR",
-    "FOO"
+    "Hussel",
+    "Bussel"
   ]
 }
