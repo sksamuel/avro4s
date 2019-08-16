@@ -6,7 +6,6 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait, Subtype}
-import com.sksamuel.avro4s.DefaultResolver.UserDefinedDefault
 import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.{:+:, CNil, Coproduct}
 
@@ -238,7 +237,8 @@ object SchemaFor {
 
     val field = encodedDefault match {
       case null => new Schema.Field(name, schemaWithResolvedNamespace, doc)
-      case UserDefinedDefault(_, m) => new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
+      case CustomUnionDefault(_, m) => new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
+      case CustomEnumDefault(m) => new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
       case _ => new Schema.Field(name, schemaWithResolvedNamespace, doc, encodedDefault)
     }
 

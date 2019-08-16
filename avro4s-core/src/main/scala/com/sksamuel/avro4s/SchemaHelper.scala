@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.DefaultResolver.UserDefinedDefault
 import org.apache.avro.{JsonProperties, Schema}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
@@ -104,7 +103,7 @@ object SchemaHelper {
 
     val (first, rest) = schema.getTypes.asScala.partition { t =>
       defaultType match {
-        case UserDefinedDefault(name, _) => name == t.getName
+        case CustomUnionDefault(name, _) => name == t.getName
         case _ => t.getType == defaultType
       }
     }

@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "EnumsWithSealedTraitDefault",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "cupcat",
+      "type": {
+        "type": "enum",
+        "name": "CupcatEnum",
+        "namespace": "com.sksamuel.avro4s.schema",
+        "symbols": [
+          "CuppersEnum",
+          "SnoutleyEnum"
+        ]
+      },
+      "default": "CuppersEnum"
+    }
+  ]
+}
+
