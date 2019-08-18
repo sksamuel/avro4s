@@ -21,7 +21,7 @@ object CustomDefaultResolver {
     else
       CustomUnionDefault(trimmedClassName(p), parse(write(p)).extract[Map[String, Any]].asJava)
 
-  def isEnum(value: Any) = value.getClass.getCanonicalName == "scala.Enumeration.Val"
+  def isScalaEnumeration(value: Any) = value.getClass.getCanonicalName == "scala.Enumeration.Val"
 
   private def isEnum(product: Product, schemaType: Schema.Type) =
     product.productArity == 0 && schemaType == Schema.Type.ENUM

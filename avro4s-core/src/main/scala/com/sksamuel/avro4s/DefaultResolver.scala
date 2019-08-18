@@ -41,7 +41,7 @@ object DefaultResolver {
     case x: Map[_,_] => x.asJava
     case x: Seq[_] => x.asJava
     case p: Product => customUnionDefault(p, schema)
-    case v if isEnum(v) => customScalaEnumDefault(value)
+    case v if isScalaEnumeration(v) => customScalaEnumDefault(value)
     case _ =>
       value.asInstanceOf[AnyRef]
   }
