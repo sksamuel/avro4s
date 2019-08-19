@@ -17,4 +17,4 @@ final case class ForeignKeySetting(targetEntityCode: String,
                                    targetFieldName: String) extends KeySetting
 final case class PrimaryKeySetting(attributes: Map[String, Int]) extends KeySetting
 
-case class Foo330(values: List[KeySetting]  )
+case class Foo330(values: List[KeySetting])

@@ -104,10 +104,11 @@ object SchemaHelper {
     val (first, rest) = schema.getTypes.asScala.partition { t =>
       defaultType match {
         case CustomUnionDefault(name, _) => name == t.getName
+        case CustomUnionWithEnumDefault(name, default, _) =>
+          name == t.getName
         case _ => t.getType == defaultType
       }
     }
-
     val result = Schema.createUnion(first.headOption.toSeq ++ rest: _*)
     schema.getObjectProps.asScala.foreach { case (k, v) => result.addProp(k, v) }
     result

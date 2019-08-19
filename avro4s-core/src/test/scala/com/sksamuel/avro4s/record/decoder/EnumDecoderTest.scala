@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
-import com.sksamuel.avro4s.schema.{Colours, CupcatEnum, SnoutleyEnum, Wine}
+import com.sksamuel.avro4s.{AvroEnumDefault, AvroSchema, Decoder, DefaultFieldMapper}
+import com.sksamuel.avro4s.schema.{Colours, CupcatAnnotatedEnum, CupcatEnum, CuppersAnnotatedEnum, NotCupcat, SnoutleyAnnotatedEnum, SnoutleyEnum, Wine}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.scalatest.{Matchers, WordSpec}
@@ -13,6 +13,8 @@ case class ScalaEnumClass(colour: Colours.Value)
 case class ScalaOptionEnumClass(colour: Option[Colours.Value])
 case class ScalaEnumClassWithDefault(colour: Colours.Value = Colours.Red)
 case class ScalaSealedTraitEnumWithDefault(cupcat: CupcatEnum = SnoutleyEnum)
+case class ScalaAnnotatedSealedTraitEnumWithDefault(cupcat: CupcatAnnotatedEnum = CuppersAnnotatedEnum)
+case class ScalaAnnotatedSealedTraitEnumList(@AvroEnumDefault(List(CuppersAnnotatedEnum)) cupcat: List[CupcatAnnotatedEnum])
 
 
 class EnumDecoderTest extends WordSpec with Matchers {
@@ -61,12 +63,19 @@ class EnumDecoderTest extends WordSpec with Matchers {
       record.put("colour", new EnumSymbol(schema.getField("colour").schema(), "Puce"))
       Decoder[ScalaEnumClassWithDefault].decode(record, schema, DefaultFieldMapper) shouldBe ScalaEnumClassWithDefault(Colours.Red)
     }
-    "support sealed trait enum default values" in {
+    "support sealed trait enum default values in a record" in {
       val schema = AvroSchema[ScalaSealedTraitEnumWithDefault]
       val record = new GenericData.Record(schema)
 
       record.put("cupcat", new EnumSymbol(schema.getField("cupcat").schema(), "NoVarg"))
       Decoder[ScalaSealedTraitEnumWithDefault].decode(record, schema, DefaultFieldMapper) shouldBe ScalaSealedTraitEnumWithDefault(SnoutleyEnum)
     }
+    "support annotated sealed trait enum default values" in {
+      val schema = AvroSchema[CupcatAnnotatedEnum]
+      val record = new EnumSymbol(schema, NotCupcat)
+
+      Decoder[ScalaAnnotatedSealedTraitEnumWithDefault].decode(record, schema, DefaultFieldMapper) shouldBe ScalaAnnotatedSealedTraitEnumWithDefault(CuppersAnnotatedEnum)
+    }
+
   }
 }

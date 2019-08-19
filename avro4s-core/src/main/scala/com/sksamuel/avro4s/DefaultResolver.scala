@@ -7,7 +7,7 @@ import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.{GenericEnumSymbol, GenericFixed}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
-import CustomDefaultResolver._
+import CustomDefaults._
 import scala.collection.JavaConverters._
 
 /**
@@ -40,7 +40,7 @@ object DefaultResolver {
     case x: scala.Float => java.lang.Float.valueOf(x)
     case x: Map[_,_] => x.asJava
     case x: Seq[_] => x.asJava
-    case p: Product => customUnionDefault(p, schema)
+    case p: Product => customDefault(p, schema)
     case v if isScalaEnumeration(v) => customScalaEnumDefault(value)
     case _ =>
       value.asInstanceOf[AnyRef]

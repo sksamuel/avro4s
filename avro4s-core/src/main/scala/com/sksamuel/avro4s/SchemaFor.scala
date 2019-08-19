@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
+import java.util
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait, Subtype}
@@ -125,7 +126,9 @@ object SchemaFor {
 
   implicit def seqSchemaFor[S](implicit schemaFor: SchemaFor[S]): SchemaFor[Seq[S]] = {
     new SchemaFor[Seq[S]] {
-      override def schema(fieldMapper: FieldMapper): Schema = Schema.createArray(schemaFor.schema(fieldMapper))
+      override def schema(fieldMapper: FieldMapper): Schema = {
+        Schema.createArray(schemaFor.schema(fieldMapper))
+      }
     }
   }
 
@@ -237,8 +240,11 @@ object SchemaFor {
 
     val field = encodedDefault match {
       case null => new Schema.Field(name, schemaWithResolvedNamespace, doc)
-      case CustomUnionDefault(_, m) => new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
-      case CustomEnumDefault(m) => new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
+      case CustomUnionDefault(_, m) =>
+        new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
+      case CustomEnumDefault(m) =>
+          new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
+      case CustomUnionWithEnumDefault(_, _, m) => new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
       case _ => new Schema.Field(name, schemaWithResolvedNamespace, doc, encodedDefault)
     }
 
@@ -320,6 +326,7 @@ object SchemaFor {
       val tpe = runtimeMirror.weakTypeOf[T]
       val objs = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.knownDirectSubclasses.forall(_.isModuleClass)
 
+
       val sortedSubtypes = ctx.subtypes.sortWith { (left: Subtype[Typeclass, T], right: Subtype[Typeclass, T]) => 
         val leftPriority: Float = new AnnotationExtractors(left.annotations).sortPriority.getOrElse(0)
         val rightPriority: Float = new AnnotationExtractors(right.annotations).sortPriority.getOrElse(0)
@@ -332,7 +339,11 @@ object SchemaFor {
           nameExtractor.name
         }
         val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)
-        SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(symbols: _*)
+
+        CustomDefaults.sealedTraitEnumDefaultValue(ctx).map { default =>
+          SchemaBuilder.enumeration(nameExtractor.name).defaultSymbol(default).namespace(nameExtractor.namespace).symbols(symbols: _*)
+        }.getOrElse(SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(symbols: _*))
+
       } else {
         val schemas = sortedSubtypes.map(_.typeclass.schema(fieldMapper))
         SchemaHelper.createSafeUnion(schemas: _*)
