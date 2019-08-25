@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord}
-import com.sksamuel.avro4s.schema.{Colours, Wine}
+import com.sksamuel.avro4s.schema.{Colours, CupcatEnum, SnoutleyEnum, Wine}
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.scalatest.{Matchers, WordSpec}
 
@@ -30,6 +30,16 @@ class EnumEncoderTest extends WordSpec with Matchers {
       case class Test(value: Option[Colours.Value])
       val schema = AvroSchema[Test]
       Encoder[Test].encode(Test(Some(Colours.Green)), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(new EnumSymbol(schema.getField("value").schema(), "Green")))
+    }
+    "support scala enums with defaults" in {
+      case class Test(value: Colours.Value = Colours.Red)
+      val schema = AvroSchema[Test]
+      Encoder[Test].encode(Test(), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(new EnumSymbol(schema.getField("value").schema(), "Red")))
+    }
+    "support sealed trait enums with defaults" in {
+      case class Test(value: CupcatEnum = SnoutleyEnum)
+      val schema = AvroSchema[Test]
+      Encoder[Test].encode(Test(), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(new EnumSymbol(schema.getField("value").schema(), "SnoutleyEnum")))
     }
   }
 }

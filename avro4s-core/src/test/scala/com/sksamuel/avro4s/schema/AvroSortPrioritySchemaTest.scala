@@ -15,7 +15,7 @@ class AvroSortPrioritySchemaTest extends FunSuite with Matchers {
   test("unions should be sorted by descending priority") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_sort_priority_union.json"))
     val schema = AvroSchema[FightingStyleWrapper]
-    println(schema.toString(true))
+
     schema.toString(true) shouldBe expected.toString(true)
   }
 }
