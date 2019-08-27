@@ -11,7 +11,6 @@ object DecoderHelper {
       param.typeclass.decode(value, schema.getFields.get(param.index).schema, fieldMapper)
     }.toEither
     (decodeResult, param.default) match {
-      case (Right(v : Option[_]), Some(default)) if(v.isEmpty) => default
       case (Right(v), _) => v
       case (Left(_), Some(default)) => default
       case (Left(ex), _) => throw ex
