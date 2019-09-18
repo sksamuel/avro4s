@@ -1,21 +1,11 @@
 {
   "type": "record",
-  "name": "FightingStyleWrapper",
+  "name": "FightingStyleWrapperWithDefault",
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
       "name": "fightingstyle",
       "type": [
-        {
-          "type": "record",
-          "name": "DefensiveFightingStyle",
-          "fields": [
-            {
-              "name": "has_armor",
-              "type": "boolean"
-            }
-          ]
-        },
         {
           "type": "record",
           "name": "AggressiveFightingStyle",
@@ -25,8 +15,21 @@
               "type": "float"
             }
           ]
+        },
+        {
+          "type": "record",
+          "name": "DefensiveFightingStyle",
+          "fields": [
+            {
+              "name": "has_armor",
+              "type": "boolean"
+            }
+          ]
         }
-      ]
+      ],
+      "default": {
+        "agressiveness": 10.0
+      }
     }
   ]
 }
