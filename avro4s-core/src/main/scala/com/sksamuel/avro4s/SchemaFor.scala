@@ -3,7 +3,6 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
-import java.util
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait, Subtype}
