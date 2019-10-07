@@ -1,5 +1,8 @@
 package com.sksamuel.avro4s.streams.output
 
+import com.sksamuel.avro4s.{Encoder, SchemaFor}
+import org.apache.avro.Schema.Parser
+import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
 import org.apache.avro.util.Utf8
 
 class BasicOutputStreamTest extends OutputStreamTest {
@@ -43,6 +46,22 @@ class BasicOutputStreamTest extends OutputStreamTest {
     case class Test(z: Float)
     writeRead(Test(3.4F)) { record =>
       record.get("z") shouldBe 3.4F
+    }
+  }
+
+  test("write out generic record") {
+    val schema = new Parser().parse(
+      """{"type":"record","name":"Test","fields":[{"name":"field","type":"string"}]}"""
+    )
+
+    implicit val encoder: Encoder[GenericRecord] = (r, _, _) => r
+    implicit val schemaFor: SchemaFor[GenericRecord] = _ => schema
+
+    val record: GenericRecord =
+      new GenericRecordBuilder(schema).set("field", "value").build()
+
+    writeRead(record) { rec =>
+      rec.get("field") shouldBe new Utf8("value")
     }
   }
 }
