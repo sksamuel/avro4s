@@ -118,3 +118,5 @@ sealed trait AvroFieldReflection extends StaticAnnotation {
 }
 
 case class AvroSortPriority(priority: Float) extends AvroFieldReflection
+
+case class AvroEnumDefault(default: Any) extends StaticAnnotation

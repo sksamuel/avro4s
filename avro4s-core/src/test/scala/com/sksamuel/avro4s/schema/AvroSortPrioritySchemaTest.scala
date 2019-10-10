@@ -15,7 +15,14 @@ class AvroSortPrioritySchemaTest extends FunSuite with Matchers {
   test("unions should be sorted by descending priority") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_sort_priority_union.json"))
     val schema = AvroSchema[FightingStyleWrapper]
-    println(schema.toString(true))
+
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("avrosortpriority should respect union default ordering") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_sort_priority_union_with_default.json"))
+    val schema = AvroSchema[FightingStyleWrapperWithDefault]
+
     schema.toString(true) shouldBe expected.toString(true)
   }
 }
@@ -31,9 +38,11 @@ case object NaturalNumber extends Numeric
 
 
 case class FightingStyleWrapper(fightingstyle: FightingStyle)
+case class FightingStyleWrapperWithDefault(fightingstyle: FightingStyle = AggressiveFightingStyle(10))
 
 sealed trait FightingStyle
 @AvroSortPriority(2)
 case class AggressiveFightingStyle(agressiveness: Float) extends FightingStyle
 @AvroSortPriority(10)
-case class DefensiveFightingStlye(has_armor: Boolean) extends FightingStyle
+case class DefensiveFightingStyle(has_armor: Boolean) extends FightingStyle
+

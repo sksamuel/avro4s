@@ -7,15 +7,15 @@ object Build extends AutoPlugin {
 
   object autoImport {
     val org = "com.sksamuel.avro4s"
-    val AvroVersion = "1.9.0"
+    val AvroVersion = "1.9.1"
     val Log4jVersion = "1.2.17"
     val ScalatestVersion = "3.0.8"
     val Slf4jVersion = "1.7.28"
     val Json4sVersion = "3.6.7"
-    val CatsVersion = "2.0.0-M4"
+    val CatsVersion = "2.0.0-RC2"
     val ShapelessVersion = "2.3.3"
-    val RefinedVersion = "0.9.9"
-    val MagnoliaVersion = "0.11.0"
+    val RefinedVersion = "0.9.10"
+    val MagnoliaVersion = "0.12.0"
   }
 
   import autoImport._
@@ -26,8 +26,8 @@ object Build extends AutoPlugin {
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
-    scalaVersion := "2.12.8",
-    crossScalaVersions := Seq("2.12.8", "2.13.0"),
+    scalaVersion := "2.12.10",
+    crossScalaVersions := Seq("2.12.10", "2.13.1"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(
@@ -70,7 +70,7 @@ object Build extends AutoPlugin {
     if (isTravis) {
       version := s"3.1.0.$travisBuildNumber-SNAPSHOT"
     } else {
-      version := "3.0.0"
+      version := "3.0.1"
     },
     publishTo := {
       val nexus = "https://oss.sonatype.org/"

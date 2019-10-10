@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "CupcatOptionalEnumDefault",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [{
+    "name": "cupcat",
+    "type": [{
+      "type": "enum",
+      "name": "AnotherCupcatEnum",
+      "symbols": ["AnotherSnoutleyEnum", "AnotherCuppersEnum"]
+    }, "null"],
+    "default": "AnotherSnoutleyEnum"
+  }]
+}

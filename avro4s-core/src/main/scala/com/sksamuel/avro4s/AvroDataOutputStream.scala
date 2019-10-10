@@ -36,7 +36,7 @@ case class AvroDataOutputStream[T](os: OutputStream,
       dataFileWriter.setCodec(codec)
       dataFileWriter.create(schema, os)
       (dataFileWriter, (t: T) => {
-        val record = encoder.encode(t, schema, fieldMapper).asInstanceOf[ImmutableRecord]
+        val record = encoder.encode(t, schema, fieldMapper).asInstanceOf[GenericRecord]
         dataFileWriter.append(record)
       })
   }

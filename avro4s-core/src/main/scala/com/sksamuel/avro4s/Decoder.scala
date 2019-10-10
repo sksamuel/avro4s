@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import DecoderHelper.tryDecode
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
@@ -7,7 +8,7 @@ import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.LogicalTypes.{Decimal, TimeMicros, TimeMillis}
-import org.apache.avro.generic.{GenericContainer, GenericEnumSymbol, GenericFixed, GenericRecord, IndexedRecord}
+import org.apache.avro.generic.{GenericContainer, GenericData, GenericEnumSymbol, GenericFixed, GenericRecord, IndexedRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
 import shapeless.{:+:, CNil, Coproduct, Inr}
@@ -175,7 +176,8 @@ object Decoder {
         case bytebuf: ByteBuffer => new String(bytebuf.array)
         case a: Array[Byte] => new String(a)
         case fixed: GenericFixed => new String(fixed.bytes())
-        case null => sys.error("Cannot decode <null> as a string")
+        case null =>
+          sys.error("Cannot decode <null> as a string")
         case other => sys.error(s"Cannot decode $other of type ${other.getClass} into a string")
       }
   }
@@ -223,11 +225,18 @@ object Decoder {
 
     import scala.collection.JavaConverters._
 
-    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Seq[T] = value match {
-      case array: Array[_] => array.toSeq.map(decoder.decode(_, schema.getElementType, fieldMapper))
-      case list: java.util.Collection[_] => list.asScala.map(decoder.decode(_, schema.getElementType, fieldMapper)).toSeq
-      case other => sys.error("Unsupported array " + other)
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Seq[T] = {
+      value match {
+        case array: Array[_] =>
+          array.toSeq.map(decoder.decode(_, schema.getElementType, fieldMapper))
+        case list: java.util.Collection[_] =>
+          list.asScala.map(decoder.decode(_, schema.getElementType, fieldMapper)).toSeq
+        case list: List[_] =>
+          list.map(decoder.decode(_, schema.getElementType, fieldMapper))
+        case other => sys.error("Unsupported array " + other)
+      }
     }
+
   }
 
   implicit def mapDecoder[T](implicit valueDecoder: Decoder[T]): Decoder[Map[String, T]] = new Decoder[Map[String, T]] {
@@ -332,6 +341,7 @@ object Decoder {
     } else {
       new Decoder[T] {
         override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): T = {
+
           value match {
             case record: IndexedRecord =>
               // if we are in here then we are decoding a case class so we need a record schema
@@ -376,20 +386,16 @@ object Decoder {
                 } else {
                   val k = record.getSchema.getFields.indexOf(field)
                   val value = record.get(k)
-                  val tryDecode = util.Try {
-                    p.typeclass.decode(value, schema.getFields.get(p.index).schema, fieldMapper)
-                  }.toEither
-                  (tryDecode, p.default) match {
-                    case (Right(v), _) => v
-                    case (Left(_), Some(default)) => default
-                    case (Left(ex), _) => throw ex
-                  }
+                  tryDecode(fieldMapper, schema, p, value)
                 }
               }
-
               ctx.rawConstruct(values)
-
-            case _ => sys.error(s"This decoder can only handle types of IndexedRecord or it's subtypes such as GenericRecord [was ${value.getClass}]")
+            case enum: GenericData.EnumSymbol =>
+              val res = ctx.parameters.map { p =>
+                tryDecode(fieldMapper, schema, p, value)
+              }
+              ctx.rawConstruct(res)
+            case _ => sys.error(s"This decoder can only handle types of EnumSymbol, IndexedRecord or it's subtypes such as GenericRecord [was ${value.getClass}]")
           }
         }
       }
@@ -423,8 +429,8 @@ object Decoder {
         case Schema.Type.ENUM =>
           val subtype = container match {
             case enum: GenericEnumSymbol[_] =>
-              ctx.subtypes.find { subtype => NameExtractor(subtype).name == enum.toString }
-                .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
+                ctx.subtypes.find { subtype => NameExtractor(subtype).name == enum.toString }
+                  .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
             case str: String =>
               ctx.subtypes.find { subtype => NameExtractor(subtype).name == str }
                 .getOrElse(sys.error(s"Could not find subtype for enum $str"))

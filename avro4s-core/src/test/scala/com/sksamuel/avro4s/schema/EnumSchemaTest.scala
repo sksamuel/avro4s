@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.{AvroEnumDefault, AvroSchema, AvroSortPriority, ToRecord}
 import org.scalatest.{Matchers, WordSpec}
 
 class EnumSchemaTest extends WordSpec with Matchers {
@@ -37,6 +37,27 @@ class EnumSchemaTest extends WordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_java_enum.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
+
+    "support default scala enum" in {
+      val schema = AvroSchema[ScalaEnumsWithDefault]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_scala_enum.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support a default scala enum with sealed trait" in {
+      val schema = AvroSchema[EnumsWithSealedTraitDefault]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_sealed_trait_enum.json"))
+
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "handle enum default in an option" in {
+      val schema = AvroSchema[CupcatOptionalEnumDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_optional_enum.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
   }
 }
 
@@ -46,7 +67,26 @@ case class JavaEnumOptionalWithDefault(maybewine: Option[Wine] = Some(Wine.CabSa
 object Colours extends Enumeration {
   val Red, Amber, Green = Value
 }
-
 case class ScalaEnums(colours: Colours.Value)
-
 case class ScalaOptionEnums(coloursopt: Option[Colours.Value])
+
+case class ScalaEnumsWithDefault(colours: Colours.Value = Colours.Red)
+
+sealed trait CupcatEnum
+@AvroSortPriority(0) case object SnoutleyEnum extends CupcatEnum
+@AvroSortPriority(1) case object CuppersEnum extends CupcatEnum
+case class EnumsWithSealedTraitDefault(cupcat: CupcatEnum = CuppersEnum)
+
+@AvroEnumDefault(CuppersAnnotatedEnum)
+sealed trait CupcatAnnotatedEnum
+@AvroSortPriority(0) case object SnoutleyAnnotatedEnum extends CupcatAnnotatedEnum
+@AvroSortPriority(1) case object CuppersAnnotatedEnum extends CupcatAnnotatedEnum
+
+case object NotCupcat
+
+sealed trait AnotherCupcatEnum
+@AvroSortPriority(0) case object AnotherCuppersEnum extends AnotherCupcatEnum
+@AvroSortPriority(1) case object AnotherSnoutleyEnum extends AnotherCupcatEnum
+
+case class CupcatOptionalEnumDefault(cupcat: Option[AnotherCupcatEnum] = Option(AnotherSnoutleyEnum))
+
