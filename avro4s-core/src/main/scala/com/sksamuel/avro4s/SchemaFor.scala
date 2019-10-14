@@ -290,7 +290,7 @@ object SchemaFor {
             // magnolia won't give us the type of the parameter, so we must find it in the class type
             val doc = try {
               import scala.reflect.runtime.universe
-              val mirror = universe.runtimeMirror(getClass.getClassLoader)
+              val mirror = universe.runtimeMirror(Thread.currentThread().getContextClassLoader)
               val sym = mirror.staticClass(ctx.typeName.full).primaryConstructor.asMethod.paramLists.head(param.index)
               sym.typeSignature.typeSymbol.annotations.collectFirst {
                 case a if a.tree.tpe =:= typeOf[AvroDoc] =>
@@ -321,7 +321,7 @@ object SchemaFor {
 
       import scala.reflect.runtime.universe
 
-      val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
+      val runtimeMirror = universe.runtimeMirror(Thread.currentThread().getContextClassLoader)
       val tpe = runtimeMirror.weakTypeOf[T]
       val objs = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.knownDirectSubclasses.forall(_.isModuleClass)
 
