@@ -28,7 +28,11 @@ object CustomDefaults {
         val enumType = schema.getTypes.asScala.filter(_.getType == Schema.Type.ENUM).head
         CustomUnionWithEnumDefault(enumType.getName, trimmedClassName(p), p.toString)
       } else
-        CustomUnionDefault(trimmedClassName(p), parse(write(p)).extract[Map[String, Any]].asJava)
+        CustomUnionDefault(trimmedClassName(p), parse(write(p)).extract[Map[String, Any]].mapValues {
+          case b: BigInt if b.isValidInt => b.intValue(): Any
+          case b: BigInt if b.isValidLong => b.longValue(): Any
+          case z => throw new IllegalArgumentException("Invalid default zero $z")
+        }.asJava)
     }
 
   def isUnionOfEnum(schema: Schema) = schema.getType == Schema.Type.UNION && schema.getTypes.asScala.map(_.getType).contains(Schema.Type.ENUM)
