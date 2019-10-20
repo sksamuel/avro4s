@@ -31,7 +31,7 @@ object CustomDefaults {
         CustomUnionDefault(trimmedClassName(p), parse(write(p)).extract[Map[String, Any]].mapValues {
           case b: BigInt if b.isValidInt => b.intValue(): Any
           case b: BigInt if b.isValidLong => b.longValue(): Any
-          case z => throw new IllegalArgumentException("Invalid default zero $z")
+          case z => z
         }.asJava)
     }
 
