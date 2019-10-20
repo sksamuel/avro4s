@@ -29,8 +29,8 @@ object CustomDefaults {
         CustomUnionWithEnumDefault(enumType.getName, trimmedClassName(p), p.toString)
       } else
         CustomUnionDefault(trimmedClassName(p), parse(write(p)).extract[Map[String, Any]].mapValues {
-          case b: BigInt if b.isValidInt => b.intValue(): Any
-          case b: BigInt if b.isValidLong => b.longValue(): Any
+          case b: BigInt if b.isValidInt => b.intValue: Any
+          case b: BigInt if b.isValidLong => b.longValue: Any
           case z => z
         }.asJava)
     }
