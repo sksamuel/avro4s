@@ -32,7 +32,7 @@ object CustomDefaults {
           case (name, b: BigInt) if b.isValidInt => b.intValue: Any
           case (name, b: BigInt) if b.isValidLong => b.longValue: Any
           case z => z
-        }.asJava)
+        }.toMap.asJava)
     }
 
   def isUnionOfEnum(schema: Schema) = schema.getType == Schema.Type.UNION && schema.getTypes.asScala.map(_.getType).contains(Schema.Type.ENUM)
