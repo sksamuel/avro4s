@@ -8,7 +8,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 class GithubIssue387 extends WordSpec with Matchers {
 
-  val NANOSECONDS_IN_A_MILLISECOND = 1000000
+  val NANOSECONDS_IN_A_MICROSECOND = 1000
 
   "LocalTime" must {
 
@@ -19,7 +19,7 @@ class GithubIssue387 extends WordSpec with Matchers {
         AvroSchema[LocalTime],
         DefaultFieldMapper
       )
-      encoded shouldBe localTime.toNanoOfDay / NANOSECONDS_IN_A_MILLISECOND
+      encoded shouldBe localTime.toNanoOfDay / NANOSECONDS_IN_A_MICROSECOND
     }
 
     "encode the value and truncate any precision beyond milliseconds" in {
@@ -28,10 +28,10 @@ class GithubIssue387 extends WordSpec with Matchers {
         AvroSchema[LocalTime],
         DefaultFieldMapper
       )
-      encoded shouldBe LocalTime.MAX.toNanoOfDay / NANOSECONDS_IN_A_MILLISECOND
+      encoded shouldBe LocalTime.MAX.toNanoOfDay / NANOSECONDS_IN_A_MICROSECOND
     }
 
-    "encode and decode back to an equivalent LocalTime object when Local has millisecond precision" in {
+    "encode and decode back to an equivalent LocalTime object when Local has microsecond precision" in {
       val localTime = LocalTime.now()
       val encoded = Encoder[LocalTime].encode(
         localTime,
@@ -47,7 +47,7 @@ class GithubIssue387 extends WordSpec with Matchers {
       decoded.toNanoOfDay shouldBe localTime.toNanoOfDay
     }
 
-    "encode and decode back to a LocalTime object with an equivalent time to  millisecond precision" in {
+    "encode and decode back to a LocalTime object with an equivalent time to  microsecond precision" in {
       val encoded = Encoder[LocalTime].encode(
         LocalTime.MAX,
         AvroSchema[LocalTime],
@@ -60,7 +60,7 @@ class GithubIssue387 extends WordSpec with Matchers {
       )
       decoded should not be LocalTime.MAX
       // compare to a LocalTime.MAX that has had the time precision truncated to milliseconds
-      decoded shouldBe LocalTime.ofNanoOfDay((LocalTime.MAX.toNanoOfDay / NANOSECONDS_IN_A_MILLISECOND) * NANOSECONDS_IN_A_MILLISECOND)
+      decoded shouldBe LocalTime.ofNanoOfDay((LocalTime.MAX.toNanoOfDay / NANOSECONDS_IN_A_MICROSECOND) * NANOSECONDS_IN_A_MICROSECOND)
     }
 
   }
