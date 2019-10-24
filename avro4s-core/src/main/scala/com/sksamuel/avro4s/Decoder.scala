@@ -3,7 +3,8 @@ package com.sksamuel.avro4s
 import DecoderHelper.tryDecode
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZoneOffset}
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
@@ -159,6 +160,11 @@ object Decoder {
           }
       }
     }
+  }
+
+  implicit object OffsetDateTimeDecoder extends Decoder[OffsetDateTime] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper) =
+      OffsetDateTime.parse(value.toString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
   }
 
   implicit val LocalDateTimeDecoder: Decoder[LocalDateTime] = LongDecoder.map(millis => LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.UTC))
