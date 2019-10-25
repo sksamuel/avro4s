@@ -2,11 +2,11 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.Timestamp
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait, Subtype}
-import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
+import org.apache.avro.{JsonProperties, LogicalType, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.{:+:, CNil, Coproduct}
 
 import scala.language.experimental.macros
@@ -159,6 +159,20 @@ object SchemaFor {
 
   implicit object InstantSchemaFor extends SchemaFor[Instant] {
     override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
+  }
+
+  implicit object OffsetDateTimeSchemaFor extends SchemaFor[OffsetDateTime] {
+
+    implicit object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
+      override def validate(schema: Schema): Unit = {
+        super.validate(schema)
+        if (schema.getType != Schema.Type.STRING) {
+          throw new IllegalArgumentException("Logical type iso-datetime with offset must be backed by String")
+        }
+      }
+    }
+
+    override def schema(fieldMapper: FieldMapper): Schema = OffsetDateTimeLogicalType.addToSchema(SchemaBuilder.builder().stringType())
   }
 
   implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = new SchemaFor[E] {

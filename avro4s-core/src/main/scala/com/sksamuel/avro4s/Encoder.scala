@@ -2,7 +2,8 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZoneOffset}
 import java.util
 import java.util.UUID
 
@@ -96,6 +97,11 @@ object Encoder {
 
   implicit object NoneEncoder extends Encoder[None.type] {
     override def encode(t: None.type, schema: Schema, fieldMapper: FieldMapper): AnyRef = null
+  }
+
+  implicit object OffsetDateTimeEncoder extends Encoder[OffsetDateTime] {
+    override def encode(value: OffsetDateTime, schema: Schema, fieldMapper: FieldMapper) =
+      value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
   }
 
   implicit val UUIDEncoder: Encoder[UUID] = StringEncoder.comap[UUID](_.toString)
