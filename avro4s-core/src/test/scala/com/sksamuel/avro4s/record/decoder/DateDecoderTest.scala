@@ -20,7 +20,7 @@ class DateDecoderTest extends FunSuite with Matchers {
   test("decode int to LocalTime") {
     val schema = AvroSchema[WithLocalTime]
     val record = new GenericData.Record(schema)
-    record.put("z", 46245000)
+    record.put("z", 46245000000L)
     Decoder[WithLocalTime].decode(record, schema, DefaultFieldMapper) shouldBe WithLocalTime(LocalTime.of(12, 50, 45))
   }
 

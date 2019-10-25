@@ -12,7 +12,7 @@ class DateEncoderTest extends FunSuite with Matchers {
   test("encode LocalTime as TIME-MILLIS") {
     case class Foo(s: LocalTime)
     val schema = AvroSchema[Foo]
-    Encoder[Foo].encode(Foo(LocalTime.of(12, 50, 45)), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(46245000)))
+    Encoder[Foo].encode(Foo(LocalTime.of(12, 50, 45)), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(java.lang.Long.valueOf(46245000000L)))
   }
 
   test("encode LocalDate as DATE") {

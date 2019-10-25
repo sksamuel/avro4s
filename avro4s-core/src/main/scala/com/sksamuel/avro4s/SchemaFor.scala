@@ -142,7 +142,7 @@ object SchemaFor {
   }
 
   implicit object LocalTimeSchemaFor extends SchemaFor[LocalTime] {
-    override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.timeMillis().addToSchema(SchemaBuilder.builder.intType)
+    override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType())
   }
 
   implicit object LocalDateSchemaFor extends SchemaFor[LocalDate] {
