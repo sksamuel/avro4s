@@ -617,8 +617,8 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | Float                        	| FLOAT         	|                  	| java.lang.Float |
 | UUID                         	| STRING        	| UUID             	| Utf8 |
 | LocalDate                    	| INT           	| Date             	| java.lang.Int |
-| LocalTime                    	| INT           	| Time-Millis      	| java.lang.Int |
-| LocalDateTime                	| LONG          	| Timestamp-Millis 	| java.lang.Long |
+| LocalTime                    	| INT           	| time-millis      	| java.lang.Int |
+| LocalDateTime                	| LONG          	| timestamp-nanos 	| java.lang.Long |
 | java.sql.Date                	| INT           	| Date             	| java.lang.Int |
 | Instant                      	| LONG          	| Timestamp-Millis 	| java.lang.Long |
 | Timestamp                    	| LONG          	| Timestamp-Millis 	| java.lang.Long |

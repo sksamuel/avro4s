@@ -7,7 +7,7 @@
       "name": "time",
       "type": {
         "type": "long",
-        "logicalType": "timestamp-millis"
+        "logicalType": "timestamp-nanos"
       }
     }
   ]

@@ -7,8 +7,9 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, 
 import java.util
 import java.util.UUID
 
+import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import magnolia.{CaseClass, Magnolia, SealedTrait}
-import org.apache.avro.LogicalTypes.Decimal
+import org.apache.avro.LogicalTypes.{Decimal, TimestampMicros, TimestampMillis}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.util.Utf8
@@ -108,9 +109,20 @@ object Encoder {
   implicit val LocalTimeEncoder: Encoder[LocalTime] = LongEncoder.comap[LocalTime](lt => lt.toNanoOfDay / 1000)
   implicit val LocalDateEncoder: Encoder[LocalDate] = IntEncoder.comap[LocalDate](_.toEpochDay.toInt)
   implicit val InstantEncoder: Encoder[Instant] = LongEncoder.comap[Instant](_.toEpochMilli)
-  implicit val LocalDateTimeEncoder: Encoder[LocalDateTime] = InstantEncoder.comap[LocalDateTime](_.toInstant(ZoneOffset.UTC))
   implicit val TimestampEncoder: Encoder[Timestamp] = InstantEncoder.comap[Timestamp](_.toInstant)
   implicit val DateEncoder: Encoder[Date] = LocalDateEncoder.comap[Date](_.toLocalDate)
+
+  implicit val LocalDateTimeEncoder: Encoder[LocalDateTime] = new Encoder[LocalDateTime] {
+    override def encode(t: LocalDateTime, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
+      val long = schema.getLogicalType match {
+        case _: TimestampMillis => t.toInstant(ZoneOffset.UTC).toEpochMilli
+        case _: TimestampMicros => t.toInstant(ZoneOffset.UTC).toEpochMilli * 1000L + t.getNano.toLong / 1000L
+        case TimestampNanosLogicalType => t.toEpochSecond(ZoneOffset.UTC) * 1000000000L + t.getNano.toLong
+        case _ => sys.error(s"Unsupported type for LocalDateTime: $schema")
+      }
+      java.lang.Long.valueOf(long)
+    }
+  }
 
   implicit def mapEncoder[V](implicit encoder: Encoder[V]): Encoder[Map[String, V]] = new Encoder[Map[String, V]] {
 

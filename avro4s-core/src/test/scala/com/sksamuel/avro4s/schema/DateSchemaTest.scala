@@ -29,7 +29,7 @@ class DateSchemaTest extends FunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("generate time logical type for LocalDateTime") {
+  test("generate timestamp-nanos for LocalDateTime") {
     case class LocalDateTimeTest(time: LocalDateTime)
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/localdatetime.json"))
     val schema = AvroSchema[LocalDateTimeTest]

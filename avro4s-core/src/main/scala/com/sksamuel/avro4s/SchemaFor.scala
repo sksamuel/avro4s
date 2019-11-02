@@ -149,8 +149,19 @@ object SchemaFor {
     override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType)
   }
 
+  object TimestampNanosLogicalType extends LogicalType("timestamp-nanos") {
+    override def validate(schema: Schema): Unit = {
+      super.validate(schema)
+      if (schema.getType != Schema.Type.LONG) {
+        throw new IllegalArgumentException("Logical type timestamp-nanos must be backed by long")
+      }
+    }
+  }
+
   implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
-    override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
+    override def schema(fieldMapper: FieldMapper): Schema = {
+      TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType)
+    }
   }
 
   implicit object DateSchemaFor extends SchemaFor[java.sql.Date] {
@@ -163,7 +174,7 @@ object SchemaFor {
 
   implicit object OffsetDateTimeSchemaFor extends SchemaFor[OffsetDateTime] {
 
-    implicit object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
+    object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
       override def validate(schema: Schema): Unit = {
         super.validate(schema)
         if (schema.getType != Schema.Type.STRING) {
