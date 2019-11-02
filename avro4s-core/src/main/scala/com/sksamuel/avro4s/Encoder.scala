@@ -116,7 +116,7 @@ object Encoder {
     override def encode(t: LocalDateTime, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
       val long = schema.getLogicalType match {
         case _: TimestampMillis => t.toInstant(ZoneOffset.UTC).toEpochMilli
-        case _: TimestampMicros => t.toInstant(ZoneOffset.UTC).toEpochMilli * 1000L + t.getNano.toLong / 1000L
+        case _: TimestampMicros => t.toEpochSecond(ZoneOffset.UTC) * 1000000L + t.getNano.toLong / 1000L
         case TimestampNanosLogicalType => t.toEpochSecond(ZoneOffset.UTC) * 1000000000L + t.getNano.toLong
         case _ => sys.error(s"Unsupported type for LocalDateTime: $schema")
       }

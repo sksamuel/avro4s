@@ -182,6 +182,7 @@ object Decoder {
             case i: Int => LocalDateTime.ofInstant(Instant.ofEpochMilli(i / 1000), ZoneOffset.UTC).plusNanos(i % 1000 * 1000)
             case l: Long => LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000), ZoneOffset.UTC).plusNanos(l % 1000 * 1000)
           }
+
         case TimestampNanosLogicalType =>
           value match {
             case l: Long =>
