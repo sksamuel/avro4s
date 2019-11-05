@@ -3,7 +3,9 @@ package com.sksamuel.avro4s.record.decoder
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 
+import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
+import org.apache.avro.{LogicalTypes, SchemaBuilder}
 import org.apache.avro.generic.GenericData
 import org.scalatest.{FunSuite, Matchers}
 
@@ -20,7 +22,7 @@ class DateDecoderTest extends FunSuite with Matchers {
   test("decode int to LocalTime") {
     val schema = AvroSchema[WithLocalTime]
     val record = new GenericData.Record(schema)
-    record.put("z", 46245000)
+    record.put("z", 46245000000L)
     Decoder[WithLocalTime].decode(record, schema, DefaultFieldMapper) shouldBe WithLocalTime(LocalTime.of(12, 50, 45))
   }
 
@@ -38,11 +40,28 @@ class DateDecoderTest extends FunSuite with Matchers {
     Decoder[WithDate].decode(record, schema, DefaultFieldMapper) shouldBe WithDate(Date.valueOf(LocalDate.of(2018, 9, 10)))
   }
 
-  test("decode long to LocalDateTime") {
-    val schema = AvroSchema[WithLocalDateTime]
+  test("decode timestamp-millis to LocalDateTime") {
+    val dateSchema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
+    val schema = SchemaBuilder.record("foo").fields().name("z").`type`(dateSchema).noDefault().endRecord()
     val record = new GenericData.Record(schema)
-    record.put("z", 1536580739000L)
-    Decoder[WithLocalDateTime].decode(record, schema, DefaultFieldMapper) shouldBe WithLocalDateTime(LocalDateTime.of(2018, 9, 10, 11, 58, 59))
+    record.put("z", 1572707106376L)
+    Decoder[WithLocalDateTime].decode(record, schema, DefaultFieldMapper) shouldBe WithLocalDateTime(LocalDateTime.of(2019, 11, 2, 15, 5, 6, 376000000))
+  }
+
+  test("decode timestamp-micros to LocalDateTime") {
+    val dateSchema = LogicalTypes.timestampMicros().addToSchema(SchemaBuilder.builder.longType)
+    val schema = SchemaBuilder.record("foo").fields().name("z").`type`(dateSchema).noDefault().endRecord()
+    val record = new GenericData.Record(schema)
+    record.put("z", 1572707106376001L)
+    Decoder[WithLocalDateTime].decode(record, schema, DefaultFieldMapper) shouldBe WithLocalDateTime(LocalDateTime.of(2019, 11, 2, 15, 5, 6, 376001000))
+  }
+
+  test("decode timestamp-nanos to LocalDateTime") {
+    val dateSchema = TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType)
+    val schema = SchemaBuilder.record("foo").fields().name("z").`type`(dateSchema).noDefault().endRecord()
+    val record = new GenericData.Record(schema)
+    record.put("z", 1572707106376000002L)
+    Decoder[WithLocalDateTime].decode(record, schema, DefaultFieldMapper) shouldBe WithLocalDateTime(LocalDateTime.of(2019, 11, 2, 15, 5, 6, 376000002))
   }
 
   test("decode long to Timestamp") {

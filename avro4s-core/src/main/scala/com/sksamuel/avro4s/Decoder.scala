@@ -1,13 +1,15 @@
 package com.sksamuel.avro4s
 
-import DecoderHelper.tryDecode
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZoneOffset}
 import java.util.UUID
 
+import com.sksamuel.avro4s.DecoderHelper.tryDecode
+import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import magnolia.{CaseClass, Magnolia, SealedTrait}
-import org.apache.avro.LogicalTypes.{Decimal, TimeMicros, TimeMillis}
+import org.apache.avro.LogicalTypes.{Decimal, TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
 import org.apache.avro.generic.{GenericContainer, GenericData, GenericEnumSymbol, GenericFixed, GenericRecord, IndexedRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
@@ -147,21 +149,51 @@ object Decoder {
     // avro4s stores times as either millis since midnight or micros since midnight
     override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): LocalTime = {
       schema.getLogicalType match {
-        case _: TimeMicros =>
-          value match {
-            case i: Int => LocalTime.ofNanoOfDay(i.toLong * 1000L)
-            case l: Long => LocalTime.ofNanoOfDay(l * 1000L)
-          }
         case _: TimeMillis =>
           value match {
             case i: Int => LocalTime.ofNanoOfDay(i.toLong * 1000000L)
             case l: Long => LocalTime.ofNanoOfDay(l * 1000000L)
           }
+        case _: TimeMicros =>
+          value match {
+            case i: Int => LocalTime.ofNanoOfDay(i.toLong * 1000L)
+            case l: Long => LocalTime.ofNanoOfDay(l * 1000L)
+          }
       }
     }
   }
 
-  implicit val LocalDateTimeDecoder: Decoder[LocalDateTime] = LongDecoder.map(millis => LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.UTC))
+  implicit object OffsetDateTimeDecoder extends Decoder[OffsetDateTime] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper) =
+      OffsetDateTime.parse(value.toString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+  }
+
+  implicit val LocalDateTimeDecoder: Decoder[LocalDateTime] = new Decoder[LocalDateTime] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): LocalDateTime = {
+      schema.getLogicalType match {
+        case _: TimestampMillis =>
+          value match {
+            case i: Int => LocalDateTime.ofInstant(Instant.ofEpochMilli(i.toLong), ZoneOffset.UTC)
+            case l: Long => LocalDateTime.ofInstant(Instant.ofEpochMilli(l), ZoneOffset.UTC)
+          }
+
+        case _: TimestampMicros =>
+          value match {
+            case i: Int => LocalDateTime.ofInstant(Instant.ofEpochMilli(i / 1000), ZoneOffset.UTC).plusNanos(i % 1000 * 1000)
+            case l: Long => LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000), ZoneOffset.UTC).plusNanos(l % 1000 * 1000)
+          }
+
+        case TimestampNanosLogicalType =>
+          value match {
+            case l: Long =>
+              val nanos = l % 1000000
+              LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000000), ZoneOffset.UTC).plusNanos(nanos)
+            case other => sys.error(s"Unsupported type for timestamp nanos ${other.getClass.getName}")
+          }
+      }
+    }
+  }
+
   implicit val LocalDateDecoder: Decoder[LocalDate] = LongDecoder.map(LocalDate.ofEpochDay)
   implicit val InstantDecoder: Decoder[Instant] = LongDecoder.map(Instant.ofEpochMilli)
   implicit val DateDecoder: Decoder[Date] = LocalDateDecoder.map(Date.valueOf)

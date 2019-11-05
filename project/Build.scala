@@ -10,7 +10,7 @@ object Build extends AutoPlugin {
     val AvroVersion = "1.9.1"
     val Log4jVersion = "1.2.17"
     val ScalatestVersion = "3.0.8"
-    val Slf4jVersion = "1.7.28"
+    val Slf4jVersion = "1.7.29"
     val Json4sVersion = "3.6.7"
     val CatsVersion = "2.0.0-RC2"
     val ShapelessVersion = "2.3.3"
@@ -70,7 +70,7 @@ object Build extends AutoPlugin {
     if (isTravis) {
       version := s"3.1.0.$travisBuildNumber-SNAPSHOT"
     } else {
-      version := "3.0.2"
+      version := "3.0.3"
     },
     publishTo := {
       val nexus = "https://oss.sonatype.org/"

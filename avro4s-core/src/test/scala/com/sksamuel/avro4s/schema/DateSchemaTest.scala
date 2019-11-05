@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.schema
 
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalTime}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 
 import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.{FunSuite, Matchers}
@@ -29,10 +29,10 @@ class DateSchemaTest extends FunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("generate time logical type for LocalDateTime") {
-    case class LocalTimeTest(time: LocalTime)
+  test("generate timestamp-nanos for LocalDateTime") {
+    case class LocalDateTimeTest(time: LocalDateTime)
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/localdatetime.json"))
-    val schema = AvroSchema[LocalTimeTest]
+    val schema = AvroSchema[LocalDateTimeTest]
     schema.toString(true) shouldBe expected.toString(true)
   }
 

@@ -6,8 +6,8 @@
     {
       "name": "time",
       "type": {
-        "type": "int",
-        "logicalType": "time-millis"
+        "type": "long",
+        "logicalType": "time-micros"
       }
     }
   ]
