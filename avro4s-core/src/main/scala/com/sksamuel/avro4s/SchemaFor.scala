@@ -174,7 +174,7 @@ object SchemaFor {
 
   implicit object OffsetDateTimeSchemaFor extends SchemaFor[OffsetDateTime] {
 
-    object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
+    implicit object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
       override def validate(schema: Schema): Unit = {
         super.validate(schema)
         if (schema.getType != Schema.Type.STRING) {
