@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroName, AvroSchema}
+import com.sksamuel.avro4s.{AvroName, AvroSchema, SnakeCase}
 import org.scalatest.{FunSuite, Matchers}
 
 class AvroNameSchemaTest extends FunSuite with Matchers {
@@ -36,6 +36,14 @@ class AvroNameSchemaTest extends FunSuite with Matchers {
   test("@AvroName on top level ADT type") {
     val schema = AvroSchema[Weather]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_sealed_trait.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("@AvroName shoudl override fieldmapping") { // Issue #396
+    implicit val fieldMapping = SnakeCase
+    case class Foo(@AvroName("WIBBLE") aWobble: String, bWubble: String)
+    val schema = AvroSchema[Foo]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_field_mapping.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
 }

@@ -228,7 +228,7 @@ object SchemaFor {
     val props = extractor.props
 
     // the name could have been overriden with @AvroName, and then must be encoded with the field mapper
-    val name = extractor.name.fold(fieldMapper.to(label))(fieldMapper.to)
+    val name = extractor.name.getOrElse(fieldMapper.to(label))
 
     // the default value may be none, in which case it was not defined, or Some(null), in which case it was defined
     // and set to null, or something else, in which case it's a non null value
