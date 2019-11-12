@@ -68,6 +68,10 @@ object Encoder {
     }
   }
 
+  implicit object Utf8Encoder extends Encoder[Utf8] {
+    override def encode(t: Utf8, schema: Schema, fieldMapper: FieldMapper): AnyRef = StringEncoder.encode(t.toString, schema, fieldMapper)
+  }
+
   implicit object BooleanEncoder extends Encoder[Boolean] {
     override def encode(t: Boolean, schema: Schema, fieldMapper: FieldMapper): java.lang.Boolean = java.lang.Boolean.valueOf(t)
   }

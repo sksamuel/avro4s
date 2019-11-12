@@ -214,6 +214,10 @@ object Decoder {
       }
   }
 
+  implicit object Utf8Decoder extends Decoder[Utf8] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Utf8 = new Utf8(value.toString)
+  }
+
   implicit object UUIDDecoder extends Decoder[UUID] {
     override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): UUID = {
       value match {

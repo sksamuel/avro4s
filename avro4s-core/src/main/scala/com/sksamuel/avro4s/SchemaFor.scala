@@ -6,6 +6,7 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait, Subtype}
+import org.apache.avro.util.Utf8
 import org.apache.avro.{JsonProperties, LogicalType, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.{:+:, CNil, Coproduct}
 
@@ -70,6 +71,10 @@ object SchemaFor {
   implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = const(SchemaBuilder.builder.bytesType)
   implicit val ShortSchemaFor: SchemaFor[Short] = const(IntSchemaFor.schema(DefaultFieldMapper))
   implicit val ByteSchemaFor: SchemaFor[Byte] = const(IntSchemaFor.schema(DefaultFieldMapper))
+
+  implicit object Utf8Schema extends SchemaFor[Utf8] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
+  }
 
   implicit object UUIDSchemaFor extends SchemaFor[UUID] {
     override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.uuid().addToSchema(SchemaBuilder.builder.stringType)
