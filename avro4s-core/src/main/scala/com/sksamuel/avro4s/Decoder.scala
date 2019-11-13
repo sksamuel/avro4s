@@ -407,7 +407,7 @@ object Decoder {
                   * The field mapper is used to map fields in a schema to fields in a case class by
                   * transforming the class field name to the wire name format.
                   */
-                val name = fieldMapper.to(extractor.name.getOrElse(p.label))
+                val name = extractor.name.getOrElse(fieldMapper.to(p.label))
 
                 // take into account @AvroName and use the field mapper to get the name of this parameter in the schema
                 def field = record.getSchema.getField(name)
