@@ -366,7 +366,7 @@ object Encoder {
             // find the matching parameter
             val p = klass.parameters.find { p =>
               val extractor = new AnnotationExtractors(p.annotations)
-              fieldMapper.to(extractor.name.getOrElse(p.label)) == field.name
+              extractor.name.getOrElse(fieldMapper.to(p.label)) == field.name
             }.getOrElse(sys.error(s"Could not find case class parameter for field ${field.name}"))
 
             // if we have a trait, and we call encode here, then the dispatch method will try to find the correct

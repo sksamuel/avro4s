@@ -39,13 +39,6 @@ class AvroNameSchemaTest extends FunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("@AvroName shoudl override fieldmapping") { // Issue #396
-    implicit val fieldMapping = SnakeCase
-    case class Foo(@AvroName("WIBBLE") aWobble: String, bWubble: String)
-    val schema = AvroSchema[Foo]
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_field_mapping.json"))
-    schema.toString(true) shouldBe expected.toString(true)
-  }
 }
 
 @AvroName("foofoo")

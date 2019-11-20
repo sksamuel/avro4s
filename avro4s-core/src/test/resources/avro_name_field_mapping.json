@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "Foo",
-  "namespace": "com.sksamuel.avro4s.schema.AvroNameSchemaTest",
+  "namespace": "com.sksamuel.avro4s.github.Github396",
   "fields": [
      {
        "name" : "WIBBLE",
