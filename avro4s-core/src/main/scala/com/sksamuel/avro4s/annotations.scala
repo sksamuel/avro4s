@@ -86,7 +86,6 @@ trait AvroProperty extends AvroFieldReflection {
   val value: String
 }
 
-
 /**
   * This annotation is used to disable generics in the encoding
   * of a record's name.
@@ -120,3 +119,5 @@ sealed trait AvroFieldReflection extends StaticAnnotation {
 case class AvroSortPriority(priority: Float) extends AvroFieldReflection
 
 case class AvroEnumDefault(default: Any) extends StaticAnnotation
+
+case class AvroDefault(value: String) extends StaticAnnotation

@@ -223,19 +223,22 @@ object SchemaFor {
     // the name could have been overriden with @AvroName, and then must be encoded with the field mapper
     val name = extractor.name.getOrElse(fieldMapper.to(label))
 
-    // the default value may be none, in which case it was not defined, or Some(null), in which case it was defined
-    // and set to null, or something else, in which case it's a non null value
-    val encodedDefault: AnyRef = default match {
-      case None => null
-      case Some(None) => JsonProperties.NULL_VALUE
-      case Some(null) => JsonProperties.NULL_VALUE
-      case Some(other) => DefaultResolver(other, fieldSchema)
-    }
-
     // if we have annotated with @AvroFixed then we override the type and change it to a Fixed schema
     // if someone puts @AvroFixed on a complex type, it makes no sense, but that's their cross to bear
     val schema = extractor.fixed.fold(fieldSchema) { size =>
       SchemaBuilder.fixed(name).doc(doc).namespace(extractor.namespace.getOrElse(containingNamespace)).size(size)
+    }
+
+    // if we have annotated with @AvroDefault then we override the default value resolution
+    val defaultValue = extractor.defaultValue.map(DefaultResolver.resolve(_, schema)).orElse(default)
+
+    // the default value may be none, in which case it was not defined, or Some(null), in which case it was defined
+    // and set to null, or something else, in which case it's a non null value
+    val encodedDefault: AnyRef = defaultValue match {
+      case None => null
+      case Some(None) => JsonProperties.NULL_VALUE
+      case Some(null) => JsonProperties.NULL_VALUE
+      case Some(other) => DefaultResolver(other, fieldSchema)
     }
 
     // if our default value is null, then we should change the type to be nullable even if we didn't use option

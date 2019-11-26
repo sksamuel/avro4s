@@ -8,6 +8,7 @@ import org.apache.avro.generic.{GenericEnumSymbol, GenericFixed}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
 import CustomDefaults._
+import org.apache.avro.Schema.Type._
 import scala.collection.JavaConverters._
 
 /**
@@ -20,6 +21,25 @@ import scala.collection.JavaConverters._
   * suitable for Avro and the provided schema.
   */
 object DefaultResolver {
+
+  /**
+    * Tries to transform the value into something compatible with the schema
+    *
+    * If the cleverness doesn't work, return the value as-is
+    *
+    * @param value the value to transform, as a String
+    * @param schema the target schema, determining what type we want for the value
+    * @return the value in the most compatible form possible for the schema
+    */
+  def resolve(value: String, schema: Schema): Any = schema.getType match {
+    case INT => value.toInt
+    case LONG => value.toLong
+    case FLOAT => value.toFloat
+    case DOUBLE => value.toDouble
+    case BOOLEAN => value.toBoolean
+    case STRING => value
+    case _ => value
+  }
 
   def apply(value: Any, schema: Schema): AnyRef = value match {
     case Some(x) => apply(x, schema)
@@ -38,7 +58,7 @@ object DefaultResolver {
     case x: scala.Int => java.lang.Integer.valueOf(x)
     case x: scala.Double => java.lang.Double.valueOf(x)
     case x: scala.Float => java.lang.Float.valueOf(x)
-    case x: Map[_,_] => x.asJava
+    case x: Map[_, _] => x.asJava
     case x: Seq[_] => x.asJava
     case p: Product => customDefault(p, schema)
     case v if isScalaEnumeration(v) => customScalaEnumDefault(value)

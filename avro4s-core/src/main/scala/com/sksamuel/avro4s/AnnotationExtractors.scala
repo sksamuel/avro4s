@@ -21,6 +21,7 @@ class AnnotationExtractors(annos: Seq[Any]) {
   def fixed: Option[Int] = findFirst[AvroFixable].map(_.size)
   def name: Option[String] = findFirst[AvroNameable].map(_.name).filterNot(_.trim.isEmpty)
   def sortPriority: Option[Float] = findFirst[AvroSortPriority].map(_.priority)
+  def defaultValue: Option[String] = findFirst[AvroDefault].map(_.value)
 
   def enumDefault: Option[Any] = findFirst[AvroEnumDefault].map(_.default)
 
