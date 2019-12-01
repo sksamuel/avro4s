@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroEnumDefault, AvroSchema, AvroSortPriority, ToRecord}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class EnumSchemaTest extends WordSpec with Matchers {
+class EnumSchemaTest extends AnyWordSpec with Matchers {
 
   "SchemaEncoder" should {
     "accept java enums" in {

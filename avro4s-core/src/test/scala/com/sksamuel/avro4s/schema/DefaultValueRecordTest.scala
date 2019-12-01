@@ -2,9 +2,10 @@ package com.sksamuel.avro4s.schema
 
 
 import com.sksamuel.avro4s.{AvroName, AvroSchema, FromRecord, ToRecord}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DefaultValueRecordTest extends WordSpec with Matchers {
+class DefaultValueRecordTest extends AnyWordSpec with Matchers {
 
   "Converting to and from Avro GenericRecord" should {
 

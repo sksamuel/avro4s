@@ -4,7 +4,8 @@ import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class FooString(str: String)
 case class FooDouble(d: Double)
@@ -13,7 +14,7 @@ case class FooFloat(f: Float)
 case class FooLong(l: Long)
 case class FooInt(i: Int)
 
-class BasicDecoderTest extends WordSpec with Matchers {
+class BasicDecoderTest extends AnyWordSpec with Matchers {
 
   "Decoder" should {
     "decode strings" in {

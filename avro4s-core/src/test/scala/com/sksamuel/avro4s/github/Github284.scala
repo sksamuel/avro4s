@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.{Record, RecordFormat}
-import org.scalatest.{Matchers, WordSpec}
 import org.apache.avro.specific.SpecificRecordBase
 import org.apache.avro.{AvroRuntimeException, Schema}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class Street(var name: String) extends SpecificRecordBase {
   def this() = this("")
@@ -38,7 +39,7 @@ object Street {
                               """.stripMargin)
 }
 
-final class Github284 extends WordSpec with Matchers {
+final class Github284 extends AnyWordSpec with Matchers {
   "SchemaFor" should {
     "convert case class to a Record and convert it back to original case class" in {
 

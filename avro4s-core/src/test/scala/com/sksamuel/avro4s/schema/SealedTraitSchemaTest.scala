@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroSchema, AvroName}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class SealedTraitSchemaTest extends FunSuite with Matchers {
+class SealedTraitSchemaTest extends AnyFunSuite with Matchers {
 
   test("support sealed traits of case classes") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_traits.json"))

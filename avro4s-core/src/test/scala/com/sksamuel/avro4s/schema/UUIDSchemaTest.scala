@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.schema
 import java.util.UUID
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class UUIDSchemaTest extends WordSpec with Matchers {
+class UUIDSchemaTest extends AnyWordSpec with Matchers {
 
   case class UUIDTest(uuid: UUID)
   case class UUIDSeq(uuids: Seq[UUID])

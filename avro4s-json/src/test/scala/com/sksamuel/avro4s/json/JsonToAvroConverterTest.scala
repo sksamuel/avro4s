@@ -1,11 +1,12 @@
 package com.sksamuel.avro4s.json
 
 import com.sksamuel.avro4s.{LispCase, PascalCase, SnakeCase}
-import org.scalatest.{Matchers, WordSpec}
 
 import scala.io.Source
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class JsonToAvroConverterTest extends WordSpec with Matchers {
+class JsonToAvroConverterTest extends AnyWordSpec with Matchers {
 
   "JsonToAvroConverter" should {
     "convert json to avro" in {

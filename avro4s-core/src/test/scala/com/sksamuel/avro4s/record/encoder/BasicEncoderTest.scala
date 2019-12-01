@@ -5,9 +5,10 @@ import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRe
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericFixed, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class BasicEncoderTest extends WordSpec with Matchers {
+class BasicEncoderTest extends AnyWordSpec with Matchers {
 
   "Encoder" should {
     "encode strings as UTF8" in {

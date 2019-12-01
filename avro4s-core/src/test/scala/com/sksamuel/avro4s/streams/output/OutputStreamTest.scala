@@ -6,9 +6,10 @@ import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder, SchemaFor}
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.io.DecoderFactory
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-trait OutputStreamTest extends FunSuite with Matchers {
+trait OutputStreamTest extends AnyFunSuite with Matchers {
 
   def readData[T: SchemaFor](out: ByteArrayOutputStream): GenericRecord = readData(out.toByteArray)
   def readData[T: SchemaFor](bytes: Array[Byte]): GenericRecord = {

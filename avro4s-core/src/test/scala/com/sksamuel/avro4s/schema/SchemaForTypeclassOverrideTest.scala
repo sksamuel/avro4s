@@ -2,9 +2,10 @@ package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroSchema, FieldMapper, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class SchemaForTypeclassOverrideTest extends FunSuite with Matchers {
+class SchemaForTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
   test("allow overriding built in SchemaFor implicit for a basic type") {
 

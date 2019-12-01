@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.github
 import com.sksamuel.avro4s._
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class Github396 extends FunSuite with Matchers {
+class Github396 extends AnyFunSuite with Matchers {
 
   implicit val fieldMapping = SnakeCase
 

@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroName, AvroSchema, SnakeCase}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class AvroNameSchemaTest extends FunSuite with Matchers {
+class AvroNameSchemaTest extends AnyFunSuite with Matchers {
 
   test("generate field names using @AvroName") {
     case class Foo(@AvroName("wibble") wobble: String, wubble: String)

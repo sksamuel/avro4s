@@ -4,10 +4,11 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 //noinspection ScalaDeprecation
-class DateEncoderTest extends FunSuite with Matchers {
+class DateEncoderTest extends AnyFunSuite with Matchers {
 
   test("encode LocalTime as TIME-MILLIS") {
     case class Foo(s: LocalTime)

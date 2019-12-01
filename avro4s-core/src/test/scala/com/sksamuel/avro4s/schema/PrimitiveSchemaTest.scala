@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PrimitiveSchemaTest extends WordSpec with Matchers {
+class PrimitiveSchemaTest extends AnyWordSpec with Matchers {
   "SchemaEncoder" should {
     "support top level Booleans" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_boolean.json"))

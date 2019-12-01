@@ -4,9 +4,10 @@ import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, Defaul
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class SealedTraitDecoderTest extends FunSuite with Matchers {
+class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
 
   test("support sealed traits of case classes") {
 

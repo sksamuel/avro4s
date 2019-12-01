@@ -4,9 +4,10 @@ import java.util.UUID
 
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class UUIDEncoderTest extends WordSpec with Matchers {
+class UUIDEncoderTest extends AnyWordSpec with Matchers {
 
   import scala.collection.JavaConverters._
 

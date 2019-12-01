@@ -6,12 +6,13 @@ import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema}
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 final case class SN(value: String) extends AnyVal
 final case class SimpleUser(name: String, sn: Option[SN])
 
-class GithubIssue191 extends FunSuite with Matchers {
+class GithubIssue191 extends AnyFunSuite with Matchers {
 
   test("writing out AnyVal in an option") {
     implicit val schema = AvroSchema[SimpleUser]

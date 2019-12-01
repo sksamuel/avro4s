@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.record.encoder
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder}
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class TupleEncoderTest extends FunSuite with Matchers {
+class TupleEncoderTest extends AnyFunSuite with Matchers {
 
   test("encode tuple2") {
     case class Test(z: (String, Option[Int]))

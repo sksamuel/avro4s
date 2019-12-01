@@ -5,9 +5,10 @@ import java.nio.ByteBuffer
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder}
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.{GenericFixed, GenericRecord}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class ByteArrayEncoderTest extends FunSuite with Matchers {
+class ByteArrayEncoderTest extends AnyFunSuite with Matchers {
 
   test("encode byte arrays as BYTES type") {
     case class Test(z: Array[Byte])

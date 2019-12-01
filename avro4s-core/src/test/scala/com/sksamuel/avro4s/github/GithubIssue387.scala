@@ -4,9 +4,10 @@ import java.time.LocalTime
 
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, Encoder}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class GithubIssue387 extends WordSpec with Matchers {
+class GithubIssue387 extends AnyWordSpec with Matchers {
 
   val NANOSECONDS_IN_A_MICROSECOND = 1000
 
