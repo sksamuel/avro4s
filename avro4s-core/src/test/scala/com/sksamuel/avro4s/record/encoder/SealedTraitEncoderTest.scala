@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.record.encoder
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder}
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class SealedTraitEncoderTest extends FunSuite with Matchers {
+class SealedTraitEncoderTest extends AnyFunSuite with Matchers {
 
   test("support sealed traits of case classes") {
     val schema = AvroSchema[Wrapper]

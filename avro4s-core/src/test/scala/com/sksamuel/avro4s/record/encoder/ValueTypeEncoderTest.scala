@@ -2,9 +2,10 @@ package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class ValueTypeEncoderTest extends FunSuite with Matchers {
+class ValueTypeEncoderTest extends AnyFunSuite with Matchers {
 
   test("top level value types") {
     val schema = AvroSchema[FooValueType]

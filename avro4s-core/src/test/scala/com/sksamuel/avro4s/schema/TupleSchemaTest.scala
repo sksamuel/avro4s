@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class TupleSchemaTest extends FunSuite with Matchers {
+class TupleSchemaTest extends AnyFunSuite with Matchers {
 
   case class Test2(z: (String, Int))
   case class Test3(z: (String, Int, Boolean))

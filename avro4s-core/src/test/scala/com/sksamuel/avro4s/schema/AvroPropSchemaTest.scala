@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroProp, AvroSchema}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class AvroPropSchemaTest extends WordSpec with Matchers {
+class AvroPropSchemaTest extends AnyWordSpec with Matchers {
 
   "@AvroProp" should {
     "support prop annotation on class" in {

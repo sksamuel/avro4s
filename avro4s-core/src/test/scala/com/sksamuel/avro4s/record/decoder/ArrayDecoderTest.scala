@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.record.decoder
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, Encoder, ImmutableRecord}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
-import org.scalatest.{Matchers, WordSpec}
 
 import scala.language.higherKinds
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class TestVectorBooleans(booleans: Vector[Boolean])
 case class TestArrayBooleans(booleans: Array[Boolean])
@@ -22,7 +23,7 @@ case class TestSetRecords(records: Set[Record])
 case class TestVectorRecords(records: Vector[Record])
 case class Record(str: String, double: Double)
 
-class ArrayDecoderTest extends WordSpec with Matchers {
+class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
   import scala.collection.JavaConverters._
 

@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{FunSuite, Matchers}
 
 import scala.language.higherKinds
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 sealed trait InnerTrait
 case class InnerTraitConcrete(v: Int) extends InnerTrait
@@ -12,7 +13,7 @@ case class InnerTraitConcrete2(v: Int) extends InnerTrait
 case class Inner(t: InnerTrait)
 case class Outer(inners: Seq[Inner])
 
-class GithubIssue281 extends FunSuite with Matchers {
+class GithubIssue281 extends AnyFunSuite with Matchers {
 
   test("Avro Schema for a sealed trait in a subobject #281") {
     AvroSchema[Outer].toString(true) shouldBe """{

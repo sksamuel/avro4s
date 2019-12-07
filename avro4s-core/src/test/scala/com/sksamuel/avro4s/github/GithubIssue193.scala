@@ -3,12 +3,13 @@ package com.sksamuel.avro4s.github
 import java.io.ByteArrayOutputStream
 
 import com.sksamuel.avro4s.{AvroFixed, AvroInputStream, AvroOutputStream, AvroSchema}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 case class Data(uuid: Option[UUID])
 case class UUID(@AvroFixed(8) bytes: Array[Byte])
 
-class GithubIssue193 extends FunSuite with Matchers {
+class GithubIssue193 extends AnyFunSuite with Matchers {
 
   test("Converting data with an optional fixed type field to GenericRecord fails #193") {
 

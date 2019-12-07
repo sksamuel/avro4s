@@ -4,9 +4,10 @@ import com.sksamuel.avro4s.Decoder._
 import com.sksamuel.avro4s.Encoder._
 import com.sksamuel.avro4s.{AvroSchema, FromRecord, ImmutableRecord, ToRecord}
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSpec, Matchers}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class SchemaForUtf8Test extends FunSpec with Matchers {
+class SchemaForUtf8Test extends AnyFunSpec with Matchers {
 
   describe("Serialization of objects containing Utf8 fields") {
     it("should serialize objects that contains simple Utf8 attributes") {

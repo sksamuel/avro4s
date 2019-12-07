@@ -1,8 +1,9 @@
 package com.sksamuel.avro4s.record.encoder
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class RecursiveEncoderTest extends FunSuite with Matchers {
+class RecursiveEncoderTest extends AnyFunSuite with Matchers {
 
   ignore("recursive encoding") {
     Branch(Branch(Leaf(1), Leaf(2)), Leaf(3))

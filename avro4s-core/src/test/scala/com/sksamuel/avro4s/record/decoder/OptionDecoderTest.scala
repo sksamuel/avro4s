@@ -2,7 +2,8 @@ package com.sksamuel.avro4s.record.decoder
 
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, ToRecord}
 import org.apache.avro.generic.{GenericData, GenericRecordBuilder}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class OptionBoolean(b: Option[Boolean])
 case class OptionString(s: Option[String])
@@ -21,7 +22,7 @@ case class OptionStringDefaultWithNone(s: Option[String] = Option("cupcat"), t: 
 
 case class SchemaWithoutExpectedField(t: String)
 
-class OptionDecoderTest extends WordSpec with Matchers {
+class OptionDecoderTest extends AnyWordSpec with Matchers {
 
   "Decoder" should {
     "support String options" in {

@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroSchema, FieldMapper, PascalCase, SnakeCase}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class FieldMapperFieldTest extends WordSpec with Matchers {
+class FieldMapperFieldTest extends AnyWordSpec with Matchers {
 
   "fieldMapper" should {
     "defaultNoChange" in {

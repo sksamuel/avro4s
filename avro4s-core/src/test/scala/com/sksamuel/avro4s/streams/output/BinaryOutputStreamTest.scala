@@ -4,12 +4,13 @@ import java.io.ByteArrayOutputStream
 
 import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema}
 import com.sksamuel.avro4s.Encoder
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class Work(name: String, year: Int, style: Style)
 case class Composer(name: String, birthplace: String, works: Seq[Work])
 
-class BinaryStreamsTest extends WordSpec with Matchers {
+class BinaryStreamsTest extends AnyWordSpec with Matchers {
 
   val ennio = Composer("ennio morricone", "rome", Seq(Work("legend of 1900", 1986, Style.Classical), Work("ecstasy of gold", 1969, Style.Classical)))
   val hans = Composer("hans zimmer", "frankfurt", Seq(Work("batman begins", 2007, Style.Modern), Work("dunkirk", 2017, Style.Modern)))

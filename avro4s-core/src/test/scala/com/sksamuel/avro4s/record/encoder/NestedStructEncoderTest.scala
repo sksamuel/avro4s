@@ -2,9 +2,10 @@ package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class NestedStructEncoderTest extends FunSuite with Matchers {
+class NestedStructEncoderTest extends AnyFunSuite with Matchers {
 
   test("encode nested structs") {
 

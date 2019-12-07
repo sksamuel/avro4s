@@ -7,10 +7,11 @@ import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import org.apache.avro.{LogicalTypes, SchemaBuilder}
 import org.apache.avro.generic.GenericData
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 //noinspection ScalaDeprecation
-class DateDecoderTest extends FunSuite with Matchers {
+class DateDecoderTest extends AnyFunSuite with Matchers {
 
   case class WithLocalTime(z: LocalTime)
   case class WithLocalDate(z: LocalDate)

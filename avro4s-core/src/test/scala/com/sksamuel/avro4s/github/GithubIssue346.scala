@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class GithubIssue346 extends FunSuite with Matchers {
+class GithubIssue346 extends AnyFunSuite with Matchers {
 
   test("Enum annotations failing #346") {
     val schema = AvroSchema[MyEnum]

@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ArraySchemaTest extends WordSpec with Matchers {
+class ArraySchemaTest extends AnyWordSpec with Matchers {
 
   "SchemaEncoder" should {
     "generate array type for a vector of primitives" in {

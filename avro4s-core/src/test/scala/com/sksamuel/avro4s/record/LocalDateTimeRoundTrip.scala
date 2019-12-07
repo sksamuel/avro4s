@@ -4,9 +4,10 @@ import java.time.LocalDateTime
 
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, Encoder, FieldMapper, SchemaFor}
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class LocalDateTimeRoundTrip extends FunSuite with Matchers {
+class LocalDateTimeRoundTrip extends AnyFunSuite with Matchers {
 
   test("local date time round trip") {
 

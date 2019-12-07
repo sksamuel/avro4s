@@ -4,9 +4,10 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, Encoder}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class GithubIssue389 extends WordSpec with Matchers {
+class GithubIssue389 extends AnyWordSpec with Matchers {
 
   "OffsetDateTime" must {
 

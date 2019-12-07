@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.streams.input
 
 import com.sksamuel.avro4s.schema.{Colours, Wine}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class EnumInputStreamTest extends FunSuite with Matchers with InputStreamTest {
+class EnumInputStreamTest extends AnyFunSuite with Matchers with InputStreamTest {
 
   case class JavaEnumTest(z: Wine)
   case class OptionalJavaEnumTest(z: Option[Wine])

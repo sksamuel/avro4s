@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.record.encoder
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord}
 import com.sksamuel.avro4s.schema.{Colours, CupcatEnum, SnoutleyEnum, Wine}
 import org.apache.avro.generic.GenericData.EnumSymbol
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class EnumEncoderTest extends WordSpec with Matchers {
+class EnumEncoderTest extends AnyWordSpec with Matchers {
 
   "Encoder" should {
     "encode java enums" in {

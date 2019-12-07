@@ -2,9 +2,10 @@ package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroSchema, AvroSortPriority}
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class AvroSortPrioritySchemaTest extends FunSuite with Matchers {
+class AvroSortPrioritySchemaTest extends AnyFunSuite with Matchers {
 
   test("enums should be sorted by descending priority") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_sort_priority_enum.json"))

@@ -3,10 +3,11 @@ package com.sksamuel.avro4s.record.decoder
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
 import shapeless.{:+:, CNil, Coproduct}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class CoproductDecoderTest extends FunSuite with Matchers {
+class CoproductDecoderTest extends AnyFunSuite with Matchers {
 
   test("coproducts with primitives") {
     val schema = AvroSchema[CPWrapper]

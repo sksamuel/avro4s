@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.record.encoder
 import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord, FieldMapper, SchemaFor}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Schema, SchemaBuilder}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class EncoderTypeclassOverrideTest extends FunSuite with Matchers {
+class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
   test("allow overriding built in Encoder implicit for a basic type") {
 
