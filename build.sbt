@@ -19,6 +19,7 @@ lazy val root = Project("avro4s", file("."))
 
 val `avro4s-core` = project.in(file("avro4s-core"))
   .settings(
+    sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue,
     libraryDependencies ++= Seq(
       "com.propensive" %% "magnolia" % MagnoliaVersion,
       "com.chuusai" %% "shapeless" % ShapelessVersion,
