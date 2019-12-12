@@ -5,6 +5,7 @@ import magnolia.{SealedTrait, Subtype}
 import org.json4s.native.JsonMethods.parse
 import org.json4s.native.Serialization.write
 import org.apache.avro.Schema
+import org.apache.avro.Schema.Type
 import org.json4s.DefaultFormats
 
 import scala.collection.JavaConverters._
@@ -28,11 +29,15 @@ object CustomDefaults {
         val enumType = schema.getTypes.asScala.filter(_.getType == Schema.Type.ENUM).head
         CustomUnionWithEnumDefault(enumType.getName, trimmedClassName(p), p.toString)
       } else
-        CustomUnionDefault(trimmedClassName(p), parse(write(p)).extract[Map[String, Any]].mapValues {
-          case (name, b: BigInt) if b.isValidInt => b.intValue: Any
-          case (name, b: BigInt) if b.isValidLong => b.longValue: Any
-          case z => z
-        }.toMap.asJava)
+        CustomUnionDefault(trimmedClassName(p), parse(write(p)).extract[Map[String, Any]].map {
+          case (name, b: BigInt) if b.isValidInt => name -> b.intValue
+          case (name, b: BigInt) if b.isValidLong => name -> b.longValue
+          case (name, z) if schema.getType == Type.UNION => name ->
+            schema.getTypes.asScala.find(_.getName == trimmedClassName(p)).map(_.getField(name).schema())
+              .map(DefaultResolver(z, _)).getOrElse(z)
+          case (name, z) => name -> DefaultResolver(z, schema.getField(name).schema())
+
+        }.asJava)
     }
 
   def isUnionOfEnum(schema: Schema) = schema.getType == Schema.Type.UNION && schema.getTypes.asScala.map(_.getType).contains(Schema.Type.ENUM)
