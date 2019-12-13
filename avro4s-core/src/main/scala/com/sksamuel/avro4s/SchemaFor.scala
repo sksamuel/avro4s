@@ -51,26 +51,19 @@ object SchemaFor {
 
   def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
 
-  /**
-    * Creates a [[SchemaFor]] that always returns the given constant value.
-    */
-  def const[T](_schema: Schema) = new SchemaFor[T] {
-    override def schema(fieldMapper: FieldMapper): Schema = _schema
-  }
-
-  implicit val StringSchemaFor: SchemaFor[String] = const(SchemaBuilder.builder.stringType)
-  implicit val LongSchemaFor: SchemaFor[Long] = const(SchemaBuilder.builder.longType)
-  implicit val IntSchemaFor: SchemaFor[Int] = const(SchemaBuilder.builder.intType)
-  implicit val DoubleSchemaFor: SchemaFor[Double] = const(SchemaBuilder.builder.doubleType)
-  implicit val FloatSchemaFor: SchemaFor[Float] = const(SchemaBuilder.builder.floatType)
-  implicit val BooleanSchemaFor: SchemaFor[Boolean] = const(SchemaBuilder.builder.booleanType)
-  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = const(SchemaBuilder.builder.bytesType)
-  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = const(SchemaBuilder.builder.bytesType)
-  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = const(SchemaBuilder.builder.bytesType)
-  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = const(SchemaBuilder.builder.bytesType)
-  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = const(SchemaBuilder.builder.bytesType)
-  implicit val ShortSchemaFor: SchemaFor[Short] = const(IntSchemaFor.schema(DefaultFieldMapper))
-  implicit val ByteSchemaFor: SchemaFor[Byte] = const(IntSchemaFor.schema(DefaultFieldMapper))
+  implicit val StringSchemaFor: SchemaFor[String] = _ => SchemaBuilder.builder.stringType
+  implicit val LongSchemaFor: SchemaFor[Long] = _ => SchemaBuilder.builder.longType
+  implicit val IntSchemaFor: SchemaFor[Int] = _ => SchemaBuilder.builder.intType
+  implicit val DoubleSchemaFor: SchemaFor[Double] = _ => SchemaBuilder.builder.doubleType
+  implicit val FloatSchemaFor: SchemaFor[Float] = _ => SchemaBuilder.builder.floatType
+  implicit val BooleanSchemaFor: SchemaFor[Boolean] = _ => SchemaBuilder.builder.booleanType
+  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = _ => SchemaBuilder.builder.bytesType
+  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = _ => SchemaBuilder.builder.bytesType
+  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = _ => SchemaBuilder.builder.bytesType
+  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = _ => SchemaBuilder.builder.bytesType
+  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = _ => SchemaBuilder.builder.bytesType
+  implicit val ShortSchemaFor: SchemaFor[Short] = _ => IntSchemaFor.schema(DefaultFieldMapper)
+  implicit val ByteSchemaFor: SchemaFor[Byte] = _ => IntSchemaFor.schema(DefaultFieldMapper)
 
   implicit object Utf8Schema extends SchemaFor[Utf8] {
     override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
