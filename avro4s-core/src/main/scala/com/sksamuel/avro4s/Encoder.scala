@@ -360,7 +360,10 @@ object Encoder {
       new Encoder[T] {
         override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
           // the schema passed here must be a record since we are encoding a non-value case class
-          require(schema.getType == Schema.Type.RECORD)
+          require(
+            schema.getType == Schema.Type.RECORD,
+            s"${schema.getFullName} was not of type ${Schema.Type.RECORD} but of type ${schema.getType}"
+          )
           val values = schema.getFields.asScala.map { field =>
 
             // find the matching parameter
