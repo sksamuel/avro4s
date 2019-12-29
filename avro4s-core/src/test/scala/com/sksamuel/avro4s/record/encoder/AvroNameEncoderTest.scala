@@ -52,7 +52,7 @@ class AvroNameEncoderTest extends AnyFunSuite with Matchers {
 
     record.getSchema shouldBe SchemaBuilder.record("MyStark").namespace("com.sksamuel.avro4s.record.encoder")
       .fields()
-      .name("stark").`type`(SchemaBuilder.unionOf().`type`(sansa).and().`type`(bran).endUnion()).noDefault()
+      .name("stark").`type`(SchemaBuilder.unionOf().`type`(bran).and().`type`(sansa).endUnion()).noDefault()
       .requiredString("id")
       .requiredInt("x")
       .endRecord()
