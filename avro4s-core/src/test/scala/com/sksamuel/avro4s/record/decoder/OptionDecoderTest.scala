@@ -1,7 +1,10 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, ToRecord}
-import org.apache.avro.generic.{GenericData, GenericRecordBuilder}
+import java.util
+
+import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
+import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -21,6 +24,8 @@ case class OptionEnumDefaultWithNone(s: Option[CupcatOptionEnum] = Option(Cupper
 case class OptionStringDefaultWithNone(s: Option[String] = Option("cupcat"), t: String)
 
 case class SchemaWithoutExpectedField(t: String)
+
+case class OptionOfSeqOfCaseClass(foo: Option[Seq[Foo]])
 
 class OptionDecoderTest extends AnyWordSpec with Matchers {
 
@@ -75,6 +80,32 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
       record1.put("t", "cupcat")
 
       Decoder[OptionEnumDefaultWithNone].decode(record1, schema, DefaultFieldMapper) shouldBe OptionEnumDefaultWithNone(None, "cupcat")
+    }
+    "option of seq of case class" in {
+      val schema = AvroSchema[OptionOfSeqOfCaseClass]
+      val unionSchema = schema.getField("foo").schema()
+      require(unionSchema.getType == Schema.Type.UNION)
+      val arraySchema = unionSchema.getTypes.get(1)
+      require(arraySchema.getType == Schema.Type.ARRAY)
+      val fooSchema = arraySchema.getElementType
+
+      val foo1 = new GenericData.Record(fooSchema)
+      foo1.put("b", true)
+
+      val foo2 = new GenericData.Record(fooSchema)
+      foo2.put("b", false)
+
+      val array = new GenericData.Array(arraySchema, util.Arrays.asList(foo1, foo2))
+
+      val record1 = new GenericData.Record(schema)
+      record1.put("foo", array)
+
+      Decoder[OptionOfSeqOfCaseClass].decode(record1, schema, DefaultFieldMapper) shouldBe OptionOfSeqOfCaseClass(Some(List(Foo(true), Foo(false))))
+
+      val record2 = new GenericData.Record(schema)
+      record2.put("foo", null)
+
+      Decoder[OptionOfSeqOfCaseClass].decode(record2, schema, DefaultFieldMapper) shouldBe OptionOfSeqOfCaseClass(None)
     }
 
   }
