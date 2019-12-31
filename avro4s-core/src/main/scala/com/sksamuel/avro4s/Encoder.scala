@@ -7,8 +7,9 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, 
 import java.util
 import java.util.UUID
 
+import com.sksamuel.avro4s.Encoder.Typeclass
 import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
-import magnolia.{CaseClass, Magnolia, SealedTrait}
+import magnolia.{CaseClass, Magnolia, Param, SealedTrait, TypeName}
 import org.apache.avro.LogicalTypes.{Decimal, TimestampMicros, TimestampMillis}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
@@ -276,7 +277,7 @@ object Encoder {
     override def encode(t: E, schema: Schema, fieldMapper: FieldMapper): EnumSymbol = new EnumSymbol(schema, t.toString)
   }
 
-  type Typeclass[T] = Encoder[T]
+  final type Typeclass[T] = Encoder[T]
 
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
@@ -305,44 +306,7 @@ object Encoder {
     }
   }
 
-  /**
-    * Takes the encoded values from the fields of a type T and builds
-    * an [[ImmutableRecord]] from them, using the given schema.
-    *
-    * The schema for a record must be of Type Schema.Type.RECORD but
-    * the case class may have been a subclass of a trait. In this case
-    * the schema will be a union and so we must extract the correct
-    * subschema from the union.
-    *
-    * @param fullName the full name of the record in Avro, taking into
-    *                 account Avro modifiers such as @AvroNamespace
-    *                 and @AvroErasedName. This name is used for
-    *                 extracting the specific subschema from a union schema.
-    */
-  def buildRecord(schema: Schema, values: List[AnyRef], fullName: String): AnyRef = {
-    schema.getType match {
-      case Schema.Type.UNION =>
-        val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
-        ImmutableRecord(subschema, values.toVector)
-      case Schema.Type.RECORD =>
-        ImmutableRecord(schema, values.toVector)
-      case _ =>
-        sys.error(s"Trying to encode a field from schema $schema which is neither a RECORD nor a UNION")
-    }
-  }
-
-  def combine[T](klass: CaseClass[Typeclass, T]): Encoder[T] = {
-    import scala.collection.JavaConverters._
-
-    val extractor = new AnnotationExtractors(klass.annotations)
-    val doc = extractor.doc.orNull
-    val aliases = extractor.aliases
-    val props = extractor.props
-
-    val nameExtractor = NameExtractor(klass.typeName, klass.annotations)
-    val namespace = nameExtractor.namespace
-    val name = nameExtractor.name
-
+  final def combine[T](klass: CaseClass[Typeclass, T]): Encoder[T] = {
     // An encoder for a value type just needs to pass through the given value into an encoder
     // for the backing type. At runtime, the value type class won't exist, and the input
     // will be an instance of whatever the backing field of the value class was defined to be.
@@ -357,73 +321,33 @@ object Encoder {
         }
       }
     } else {
-      new Encoder[T] {
-        override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
-          // the schema passed here must be a record since we are encoding a non-value case class
-          require(
-            schema.getType == Schema.Type.RECORD,
-            s"${schema.getFullName} was not of type ${Schema.Type.RECORD} but of type ${schema.getType}"
-          )
-          val values = schema.getFields.asScala.map { field =>
-
-            // find the matching parameter
-            val p = klass.parameters.find { p =>
-              val extractor = new AnnotationExtractors(p.annotations)
-              extractor.name.getOrElse(fieldMapper.to(p.label)) == field.name
-            }.getOrElse(sys.error(s"Could not find case class parameter for field ${field.name}"))
-
-            // if we have a trait, and we call encode here, then the dispatch method will try to find the correct
-            // schema using the namespace of the trait. If the field is annotated, the dispatch method won't know
-            // that, and it will fail to find the correct subschema.
-            // Therefore the schema, if a union, should be updated to have the namespace set here, and then
-            // changed back on it's return
-            field.schema.getType match {
-              case Schema.Type.UNION =>
-
-                val extractor = new AnnotationExtractors(p.annotations)
-                extractor.namespace.fold(p.typeclass.encode(p.dereference(t), field.schema, fieldMapper)) { namespace =>
-                  val fieldschemas = field.schema().getTypes.asScala.map(SchemaHelper.overrideNamespace(_, klass.typeName.owner))
-                  val union = SchemaBuilder.unionOf().`type`(fieldschemas.head)
-
-                  val combinedSchema = fieldschemas.tail.foldLeft(union) { (combined, next) =>
-                    combined.and().`type`(next)
-                  }.endUnion
-
-                  // if the encoded value is a record, then set it back to the original namespace
-                  p.typeclass.encode(p.dereference(t), combinedSchema, fieldMapper) match {
-                    case record: ImmutableRecord => record.copy(schema = SchemaHelper.overrideNamespace(record.schema, namespace))
-                    case other => other
-                  }
-                }
-
-              case _ =>
-                p.typeclass.encode(p.dereference(t), field.schema, fieldMapper)
-            }
-          }
-          buildRecord(schema, values.toList, name)
-        }
-      }
+      val extractor = new AnnotationExtractors(klass.annotations)
+      val nameExtractor = NameExtractor(klass.typeName, klass.annotations)
+      val name = nameExtractor.name
+      new GenericEncoder[T](name, klass.parameters, klass.typeName)
     }
   }
 
-  def dispatch[T](ctx: SealedTrait[Typeclass, T]): Encoder[T] = new Encoder[T] {
-    override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
-      ctx.dispatch(t) { subtype =>
-        val nameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
-        val fullname = nameExtractor.namespace + "." + nameExtractor.name
-        schema.getType match {
-          // we support two types of schema here - a union when subtypes are classes and a enum when the subtypes are all case objects
-          case Schema.Type.UNION =>
-            // we need to extract the subschema matching the input type
-            // note: that the schema may have a custom name and a custom namespace!
-            // note2: the field for the ADT itself may be annotated!
-            val a = ctx.annotations
-            val nameExtractor = NameExtractor(subtype.typeName, subtype.annotations ++ ctx.annotations)
-            val subschema = SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema)
-            subtype.typeclass.encode(t.asInstanceOf[subtype.SType], subschema, fieldMapper)
-          // for enums we just encode the type name in an enum symbol wrapper. simples!
-          case Schema.Type.ENUM => GenericData.get.createEnum(nameExtractor.name, schema)
-          case other => sys.error(s"Unsupported schema type $other for sealed traits")
+  final def dispatch[T](ctx: SealedTrait[Typeclass, T]): Encoder[T] = {
+    new Encoder[T] {
+      override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
+        ctx.dispatch(t) { subtype =>
+          val nameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
+          val fullname = nameExtractor.namespace + "." + nameExtractor.name
+          schema.getType match {
+            // we support two types of schema here - a union when subtypes are classes and a enum when the subtypes are all case objects
+            case Schema.Type.UNION =>
+              // we need to extract the subschema matching the input type
+              // note: that the schema may have a custom name and a custom namespace!
+              // note2: the field for the ADT itself may be annotated!
+              val a = ctx.annotations
+              val nameExtractor = NameExtractor(subtype.typeName, subtype.annotations ++ ctx.annotations)
+              val subschema = SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema)
+              subtype.typeclass.encode(t.asInstanceOf[subtype.SType], subschema, fieldMapper)
+            // for enums we just encode the type name in an enum symbol wrapper. simples!
+            case Schema.Type.ENUM => GenericData.get.createEnum(nameExtractor.name, schema)
+            case other => sys.error(s"Unsupported schema type $other for sealed traits")
+          }
         }
       }
     }
@@ -508,6 +432,85 @@ object Encoder {
           encoderS.encode(h, s, fieldMapper)
         case Inr(t) => encoderT.encode(t, schema, fieldMapper)
       }
+    }
+  }
+}
+
+class GenericEncoder[T](name: String,
+                        parameters: Seq[Param[Typeclass, T]],
+                        typeName: TypeName) extends Encoder[T] {
+
+  import scala.collection.JavaConverters._
+
+  override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
+    // the schema passed here must be a record since we are encoding a non-value case class
+    require(
+      schema.getType == Schema.Type.RECORD,
+      s"${schema.getFullName} was not of type ${Schema.Type.RECORD} but of type ${schema.getType}"
+    )
+
+    val values = schema.getFields.asScala.map { field =>
+      //       find the matching parameter
+      val p = parameters.find { p =>
+        val extractor = new AnnotationExtractors(p.annotations)
+        extractor.name.getOrElse(fieldMapper.to(p.label)) == field.name
+      }.getOrElse(sys.error(s"Could not find case class parameter for field ${field.name}"))
+
+      // if we have a trait, and we call encode here, then the dispatch method will try to find the correct
+      // schema using the namespace of the trait. If the field is annotated, the dispatch method won't know
+      // that, and it will fail to find the correct subschema.
+      // Therefore the schema, if a union, should be updated to have the namespace set here, and then
+      // changed back on it's return
+      field.schema.getType match {
+        case Schema.Type.UNION =>
+
+          val extractor = new AnnotationExtractors(p.annotations)
+          extractor.namespace.fold(p.typeclass.encode(p.dereference(t), field.schema, fieldMapper)) { namespace =>
+            val fieldschemas = field.schema().getTypes.asScala.map(SchemaHelper.overrideNamespace(_, typeName.owner))
+            val union = SchemaBuilder.unionOf().`type`(fieldschemas.head)
+
+            val combinedSchema = fieldschemas.tail.foldLeft(union) { (combined, next) =>
+              combined.and().`type`(next)
+            }.endUnion
+
+            // if the encoded value is a record, then set it back to the original namespace
+            p.typeclass.encode(p.dereference(t), combinedSchema, fieldMapper) match {
+              case record: ImmutableRecord => record.copy(schema = SchemaHelper.overrideNamespace(record.schema, namespace))
+              case other => other
+            }
+          }
+
+        case _ =>
+          p.typeclass.encode(p.dereference(t), field.schema, fieldMapper)
+      }
+    }
+
+    buildRecord(schema, values.toList, name)
+  }
+
+  /**
+    * Takes the encoded values from the fields of a type T and builds
+    * an [[ImmutableRecord]] from them, using the given schema.
+    *
+    * The schema for a record must be of Type Schema.Type.RECORD but
+    * the case class may have been a subclass of a trait. In this case
+    * the schema will be a union and so we must extract the correct
+    * subschema from the union.
+    *
+    * @param fullName the full name of the record in Avro, taking into
+    *                 account Avro modifiers such as @AvroNamespace
+    *                 and @AvroErasedName. This name is used for
+    *                 extracting the specific subschema from a union schema.
+    */
+  private def buildRecord(schema: Schema, values: List[AnyRef], fullName: String): AnyRef = {
+    schema.getType match {
+      case Schema.Type.UNION =>
+        val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
+        ImmutableRecord(subschema, values.toVector)
+      case Schema.Type.RECORD =>
+        ImmutableRecord(schema, values.toVector)
+      case _ =>
+        sys.error(s"Trying to encode a field from schema $schema which is neither a RECORD nor a UNION")
     }
   }
 }
