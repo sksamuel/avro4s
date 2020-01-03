@@ -16,6 +16,7 @@ object Build extends AutoPlugin {
     val ShapelessVersion = "2.3.3"
     val RefinedVersion = "0.9.10"
     val MagnoliaVersion = "0.12.5"
+    val ScalaMeterVersion = "0.19"
   }
 
   import autoImport._

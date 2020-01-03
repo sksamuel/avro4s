@@ -57,3 +57,20 @@ val `avro4s-refined` = project.in(file("avro4s-refined"))
       "eu.timepit" %% "refined" % RefinedVersion
     )
   )
+
+val benchmarks = project
+  .in(file("benchmarks"))
+  .dependsOn(`avro4s-core`)
+  .settings(
+    resolvers ++= Seq(
+      "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+      "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
+    ),
+    libraryDependencies ++= Seq(
+      "com.storm-enroute" %% "scalameter" % ScalaMeterVersion % Test
+    ),
+    testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
+    parallelExecution in Test := false,
+    fork in Test := true,
+    logBuffered := false
+  )
