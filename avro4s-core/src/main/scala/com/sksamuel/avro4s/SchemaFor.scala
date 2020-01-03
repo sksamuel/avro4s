@@ -43,6 +43,27 @@ object ScalePrecision {
   implicit val default = ScalePrecision(2, 8)
 }
 
+trait EnumSchemaFor {
+
+  import scala.collection.JavaConverters._
+
+  protected def addDefault[E](default: E)(schema: Schema): Schema = SchemaBuilder.
+    enumeration(schema.getName).
+    namespace(schema.getNamespace).
+    defaultSymbol(default.toString).
+    symbols(schema.getEnumSymbols.asScala.toList:_*)
+}
+
+object JavaEnumSchemaFor extends EnumSchemaFor {
+
+  def apply[E <: Enum[_]](default: E)(implicit tag: ClassTag[E]): SchemaFor[E] = SchemaFor.javaEnumSchemaFor.map[E](addDefault(default))
+}
+
+object ScalaEnumSchemaFor extends EnumSchemaFor {
+
+  def apply[E <: scala.Enumeration#Value](default: E)(implicit tag: TypeTag[E]): SchemaFor[E] = SchemaFor.scalaEnumSchemaFor.map[E](addDefault(default))
+}
+
 object SchemaFor {
 
   import scala.collection.JavaConverters._
@@ -192,7 +213,6 @@ object SchemaFor {
       SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(symbols: _*)
     }
   }
-
 
   /**
     * Builds an Avro Field with the field's Schema provided by an

@@ -340,7 +340,7 @@ Would generate the following schema:
 }
 ```
 
-### Defaults
+### Field Defaults
 
 Avro4s will take into account default values on fields. For example, the following class `case class Wibble(s: String = "foo")` would be serialized as:
 
@@ -373,6 +373,167 @@ However if you wish the scala default to be ignored, then you can annotate the f
     }
   ]
 }
+```
+
+### Enums and Enum Defaults
+
+Avro4s maps scala enums, java enums, and scala sealed traits to the AVRO `enum` type.
+For example, the following scala enum:
+```scala
+object Colours extends Enumeration {
+  val Red, Amber, Green = Value
+}
+```
+when referenced in a case class:
+```scala
+case class Car(colour: Colours.Value)
+```
+results in the following AVRO schema (e.g. using `val schema = AvroSchema[Car]`):
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green" ]
+    }
+  } ]
+}
+```
+As with any field, you can also specify a default field value:
+```scala
+case class Car(colour: Colours.Value = Colours.Red)
+```
+resulting in the following AVRO schema:
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green" ]
+    },
+    "default": "Red"
+  } ]
+}
+```
+One benefit of providing a field default is that the writer can later remove the field without
+breaking existing readers. In the `Car` example, if the writer doesn't provide a value for the
+`colour` field, the reader will default the `colour` to `Red`.
+
+But what if the writer would like to extend the `Colour` enumeration to include `Orange`:
+```scala
+object Colours extends Enumeration {
+  val Red, Amber, Green, Orange = Value
+}
+```
+resulting in the following AVRO schema?
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green", "Orange" ]
+    },
+    "default": "Red"
+  } ]
+}
+```
+If a writer creates an `Orange` `Car`:
+```scala
+Car(colours = Colours.Orange)
+```
+readers using the older schema (without the new `Orange` symbol), will fail with a backwards compatibility error.
+I.e. readers using the previous version of the `Car` schema don't know the colour `Orange`, and therefore
+can't read the new `Car` record.
+
+To enable writers to extend enums in a backwards-compatible way, AVRO allows you to specify a default enum symbol
+(in addition to the case class's default field value). 
+For example, if version 1 of the `Colours` enum specified `Amber` as the default enum symbol:
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green" ],
+      "default": "Amber"
+    },
+    "default": "Red"
+  } ]
+}
+```
+the writer could add the colour `Orange` to the enum's list of symbols without breaking older readers:
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green", "Orange" ],
+      "default": "Amber"
+    },
+    "default": "Red"
+  } ]
+}
+```
+Specifically, given `Amber` as the enum's default, an older AVRO reader that receives an `Orange` `Car` will 
+default the `Car`'s `colour` to `Amber`, the enum's default.
+
+Note that the enum's default and field's default can be, but need not be, the same.
+The field's default answers the question, "What value
+should the reader use if the writer didn't specify the field's value?"
+In the schema example above, the answer is `Red`.
+The enum default answers the question,
+"What value should the reader use if the writer specified an enum symbol that the reader doesn't recognize?"
+In the example above, the answer is `Amber`.
+
+In avro4s, enum defaults are specified in one of three ways, depending on how the enum is defined:
+
+For scala enums such as:
+```scala
+object Colours extends Enumeration {
+   val Red, Amber, Green = Value
+}
+ ```
+you can define an implicit `SchemaFor` using the `ScalaEnumSchemaFor[E].apply(default: E)` method
+where the method's `default` argument is one of the enum's values. For example:
+```scala
+implicit val schemaForColours: SchemaFor[Colours.Value] = ScalaEnumSchemaFor[Colours.Value](default = Colours.Amber)
+```
+Likewise, for java enums such as:
+```java
+public enum Wine {
+    Malbec, Shiraz, CabSav, Merlot
+}
+```
+you can define an implicit `SchemaFor` using the `JavaEnumSchemaFor[E].apply(default: E)` method
+where the method's `default` argument is one of the enum's values. For example:
+```scala
+implicit val schemaForWiness: SchemaFor[Wine] = JavaEnumSchemaFor[Wine](default = Wine.Merlot)
+```
+For sealed traits, you can define the default enum value using the `@AvroEnumDefault` annotation:
+```scala
+@AvroEnumDefault(Dog)
+sealed trait Animal
+@AvroSortPriority(0) case object Cat extends Animal
+@AvroSortPriority(1) case object Dog extends Animal
 ```
 
 ### Avro Fixed
