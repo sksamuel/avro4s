@@ -526,7 +526,7 @@ public enum Wine {
 you can define an implicit `SchemaFor` using the `JavaEnumSchemaFor[E].apply(default: E)` method
 where the method's `default` argument is one of the enum's values. For example:
 ```scala
-implicit val schemaForWiness: SchemaFor[Wine] = JavaEnumSchemaFor[Wine](default = Wine.Merlot)
+implicit val schemaForWine: SchemaFor[Wine] = JavaEnumSchemaFor[Wine](default = Wine.Merlot)
 ```
 For sealed traits, you can define the default enum value using the `@AvroEnumDefault` annotation:
 ```scala
