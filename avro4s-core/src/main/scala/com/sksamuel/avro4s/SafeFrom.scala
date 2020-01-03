@@ -4,7 +4,7 @@ import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericContainer, GenericData}
 import org.apache.avro.util.Utf8
 
-protected abstract class SafeFrom[T: Decoder] {
+protected abstract class SafeFrom[T: Decoder] extends Serializable {
   val decoder: Decoder[T] = implicitly[Decoder[T]]
   def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T]
 }
