@@ -2,6 +2,9 @@ package com.sksamuel.avro4s
 
 import magnolia.{Subtype, TypeName}
 
+import scala.collection.JavaConverters._
+import java.util
+
 /**
   * Extracts name and namespace from a TypeName.
   * Takes into consideration provided annotations.
@@ -63,7 +66,14 @@ case class NameExtractor(typeInfo: TypeInfo) {
 object NameExtractor {
   def apply[F[_], T](subtype: Subtype[F, T]): NameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
 
-  def apply(typeName: TypeName, annos: Seq[Any]): NameExtractor = NameExtractor(TypeInfo(typeName, annos))
+  // caching the name extractor instances, as it is expensive to build them. As of writing, the performance improvement
+  // on the encoding / decoding benchmarks show that this yields a roughly x 3 speedup.
+  // see https://github.com/sksamuel/avro4s/issues/422#issuecomment-570770700 for more details.
+  private val typeNameCache: scala.collection.concurrent.Map[(TypeName, Seq[Any]), NameExtractor] =
+    new util.concurrent.ConcurrentHashMap[(TypeName, Seq[Any]), NameExtractor]().asScala
+
+  def apply(typeName: TypeName, annos: Seq[Any]): NameExtractor =
+    typeNameCache.getOrElseUpdate((typeName, annos), NameExtractor(TypeInfo(typeName, annos)))
 
   def apply[A](clazz: Class[A]): NameExtractor = NameExtractor(TypeInfo.fromClass(clazz))
 }
