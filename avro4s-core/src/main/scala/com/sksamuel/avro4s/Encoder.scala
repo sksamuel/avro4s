@@ -14,7 +14,7 @@ import org.apache.avro.LogicalTypes.{Decimal, TimestampMicros, TimestampMillis}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Conversions, Schema, SchemaBuilder}
+import org.apache.avro.{Schema, SchemaBuilder}
 import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.language.experimental.macros
@@ -45,9 +45,7 @@ trait Encoder[T] extends Serializable {
     */
   def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef
 
-  def comap[S](fn: S => T): Encoder[S] = new Encoder[S] {
-    override def encode(value: S, schema: Schema, fieldMapper: FieldMapper): AnyRef = self.encode(fn(value), schema, fieldMapper)
-  }
+  def comap[S](fn: S => T): Encoder[S] = (value: S, schema: Schema, fieldMapper: FieldMapper) => self.encode(fn(value), schema, fieldMapper)
 }
 
 case class Exported[A](instance: A) extends AnyVal
@@ -130,8 +128,6 @@ object Encoder {
   }
 
   implicit def mapEncoder[V](implicit encoder: Encoder[V]): Encoder[Map[String, V]] = new Encoder[Map[String, V]] {
-
-    import scala.collection.JavaConverters._
 
     override def encode(map: Map[String, V], schema: Schema, fieldMapper: FieldMapper): java.util.Map[String, AnyRef] = {
       require(schema != null)
@@ -242,8 +238,6 @@ object Encoder {
     }
   }
 
-  private val decimalConversion = new Conversions.DecimalConversion
-
   implicit def bigDecimalEncoder(implicit roundingMode: RoundingMode = RoundingMode.UNNECESSARY): Encoder[BigDecimal] = new Encoder[BigDecimal] {
 
     import org.apache.avro.Conversions
@@ -281,31 +275,6 @@ object Encoder {
 
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
-  /**
-    * Encodes a field in a case class by using a schema for the fields type.
-    * The schema passed in here is the schema for the container type, and the fieldName
-    * is the name of the field in the avro schema.
-    *
-    * Note: The field may be a member of a subclass of a trait, in which case
-    * the schema passed in will be a union. Therefore we must extract the correct
-    * subschema from the union. We can do this by using the fullName of the
-    * containing class, and comparing to the record full names in the subschemas.
-    *
-    */
-  private def encodeField[T](t: T, fieldName: String, schema: Schema, fullName: String, encoder: Encoder[T], fieldMapper: FieldMapper): AnyRef = {
-    schema.getType match {
-      case Schema.Type.UNION =>
-        val subschema = SchemaHelper.extractTraitSubschema(fullName, schema)
-        val field = subschema.getField(fieldName)
-        encoder.encode(t, field.schema, fieldMapper)
-      case Schema.Type.RECORD =>
-        val field = schema.getField(fieldName)
-        encoder.encode(t, field.schema, fieldMapper)
-      // otherwise we are encoding a simple field
-      case _ => encoder.encode(t, schema, fieldMapper)
-    }
-  }
-
   final def combine[T](klass: CaseClass[Typeclass, T]): Encoder[T] = {
     // An encoder for a value type just needs to pass through the given value into an encoder
     // for the backing type. At runtime, the value type class won't exist, and the input
@@ -321,7 +290,6 @@ object Encoder {
         }
       }
     } else {
-      val extractor = new AnnotationExtractors(klass.annotations)
       val nameExtractor = NameExtractor(klass.typeName, klass.annotations)
       val name = nameExtractor.name
       new GenericEncoder[T](name, klass.parameters, klass.typeName)
@@ -329,23 +297,23 @@ object Encoder {
   }
 
   final def dispatch[T](ctx: SealedTrait[Typeclass, T]): Encoder[T] = {
+    // we need to extract the subschema matching the input type
+    // note: that the schema may have a custom name and a custom namespace!
+    // note2: the field for the ADT itself may be annotated!
+    val nameExtractors = ctx.subtypes.map(s => s -> NameExtractor(s.typeName, s.annotations ++ ctx.annotations)).toMap
+    val nameOf = nameExtractors.mapValues(_.name)
+    val fullNameOf = nameExtractors.mapValues(_.fullName)
+
     new Encoder[T] {
       override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
         ctx.dispatch(t) { subtype =>
-          val nameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
-          val fullname = nameExtractor.namespace + "." + nameExtractor.name
           schema.getType match {
             // we support two types of schema here - a union when subtypes are classes and a enum when the subtypes are all case objects
             case Schema.Type.UNION =>
-              // we need to extract the subschema matching the input type
-              // note: that the schema may have a custom name and a custom namespace!
-              // note2: the field for the ADT itself may be annotated!
-              val a = ctx.annotations
-              val nameExtractor = NameExtractor(subtype.typeName, subtype.annotations ++ ctx.annotations)
-              val subschema = SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema)
+              val subschema = SchemaHelper.extractTraitSubschema(fullNameOf(subtype), schema)
               subtype.typeclass.encode(t.asInstanceOf[subtype.SType], subschema, fieldMapper)
             // for enums we just encode the type name in an enum symbol wrapper. simples!
-            case Schema.Type.ENUM => GenericData.get.createEnum(nameExtractor.name, schema)
+            case Schema.Type.ENUM => GenericData.get.createEnum(nameOf(subtype), schema)
             case other => sys.error(s"Unsupported schema type $other for sealed traits")
           }
         }

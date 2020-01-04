@@ -314,9 +314,6 @@ object Decoder {
     private[this] val safeFromA: SafeFrom[A] = SafeFrom.makeSafeFrom[A]
     private[this] val safeFromB: SafeFrom[B] = SafeFrom.makeSafeFrom[B]
 
-//    private val nameA = Namer(implicitly[WeakTypeTag[A]].tpe).fullName
-//    private val nameB = Namer(implicitly[WeakTypeTag[B]].tpe).fullName
-
     private val nameA = NameExtractor(implicitly[Manifest[A]].runtimeClass).fullName
     private val nameB = NameExtractor(implicitly[Manifest[B]].runtimeClass).fullName
 
@@ -330,7 +327,7 @@ object Decoder {
       safeFromA.safeFrom(value, schema, fieldMapper).map(Left[A, B])
         .orElse(safeFromB.safeFrom(value, schema, fieldMapper).map(Right[A, B]))
         .getOrElse {
-          sys.error(s"Could not decode $value into Either[$nameB, $nameB]")
+          sys.error(s"Could not decode $value into Either[$nameA, $nameB]")
         }
     }
   }
@@ -438,44 +435,50 @@ object Decoder {
     }
   }
 
-  def dispatch[T](ctx: SealedTrait[Typeclass, T]): Decoder[T] = new Decoder[T] {
-    override def decode(container: Any, schema: Schema, fieldMapper: FieldMapper): T = {
-      schema.getType match {
-        case Schema.Type.RECORD =>
-          container match {
-            case container: GenericContainer =>
-              val subtype = ctx.subtypes.find { subtype => NameExtractor(subtype.typeName, subtype.annotations ++ ctx.annotations).fullName == container.getSchema.getFullName }
-                .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
-              subtype.typeclass.decode(container, schema, fieldMapper)
-            case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
-          }
-        // we have a union for nested ADTs and must extract the appropriate schema
-        case Schema.Type.UNION =>
-          container match {
-            case container: GenericContainer =>
-              val subschema = schema.getTypes.asScala.find(_.getFullName == container.getSchema.getFullName)
-                .getOrElse(sys.error(s"Could not find schema for ${container.getSchema.getFullName} in union schema $schema"))
-              val subtype = ctx.subtypes.find { subtype => NameExtractor(subtype.typeName, subtype.annotations).fullName == container.getSchema.getFullName }
-                .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
-              subtype.typeclass.decode(container, subschema, fieldMapper)
-            case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
-          }
-        // case objects are encoded as enums
-        // we need to take the string and create the object
-        case Schema.Type.ENUM =>
-          val subtype = container match {
-            case enum: GenericEnumSymbol[_] =>
-                ctx.subtypes.find { subtype => NameExtractor(subtype).name == enum.toString }
+  def dispatch[T](ctx: SealedTrait[Typeclass, T]): Decoder[T] = {
+    val nameExtractors = ctx.subtypes.map(s => s -> NameExtractor(s.typeName, s.annotations ++ ctx.annotations)).toMap
+    val nameOf = nameExtractors.mapValues(_.name)
+    val fullNameOf = nameExtractors.mapValues(_.fullName)
+
+    new Decoder[T] {
+      override def decode(container: Any, schema: Schema, fieldMapper: FieldMapper): T = {
+        schema.getType match {
+          case Schema.Type.RECORD =>
+            container match {
+              case container: GenericContainer =>
+                val subtype = ctx.subtypes.find { subtype => fullNameOf(subtype) == container.getSchema.getFullName }
+                  .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
+                subtype.typeclass.decode(container, schema, fieldMapper)
+              case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
+            }
+          // we have a union for nested ADTs and must extract the appropriate schema
+          case Schema.Type.UNION =>
+            container match {
+              case container: GenericContainer =>
+                val subschema = schema.getTypes.asScala.find(_.getFullName == container.getSchema.getFullName)
+                  .getOrElse(sys.error(s"Could not find schema for ${container.getSchema.getFullName} in union schema $schema"))
+                val subtype = ctx.subtypes.find { subtype => fullNameOf(subtype) == container.getSchema.getFullName }
+                  .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
+                subtype.typeclass.decode(container, subschema, fieldMapper)
+              case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
+            }
+          // case objects are encoded as enums
+          // we need to take the string and create the object
+          case Schema.Type.ENUM =>
+            val subtype = container match {
+              case enum: GenericEnumSymbol[_] =>
+                ctx.subtypes.find { subtype => nameOf(subtype) == enum.toString }
                   .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
-            case str: String =>
-              ctx.subtypes.find { subtype => NameExtractor(subtype).name == str }
-                .getOrElse(sys.error(s"Could not find subtype for enum $str"))
-          }
-          val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
-          val module = runtimeMirror.staticModule(subtype.typeName.full)
-          val companion = runtimeMirror.reflectModule(module.asModule)
-          companion.instance.asInstanceOf[T]
-        case other => sys.error(s"Unsupported sealed trait schema type $other")
+              case str: String =>
+                ctx.subtypes.find { subtype => nameOf(subtype) == str }
+                  .getOrElse(sys.error(s"Could not find subtype for enum $str"))
+            }
+            val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
+            val module = runtimeMirror.staticModule(subtype.typeName.full)
+            val companion = runtimeMirror.reflectModule(module.asModule)
+            companion.instance.asInstanceOf[T]
+          case other => sys.error(s"Unsupported sealed trait schema type $other")
+        }
       }
     }
   }

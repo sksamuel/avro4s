@@ -19,6 +19,8 @@ object SchemaHelper {
     case _ => None
   }
 
+  private val arrayTypeNamePattern: Regex = "scala.collection.immutable.::(__B)?".r
+
   def extractTraitSubschema(fullName: String, schema: Schema): Schema = matchPrimitiveName(fullName) getOrElse {
     require(schema.getType == Schema.Type.UNION, s"Can only extract subschemas from a UNION but was given $schema")
 
@@ -29,7 +31,6 @@ object SchemaHelper {
 
     // if we are looking for an array type then find "array" first
     // this is totally not FP but what the heck it's late and it's perfectly valid
-    val arrayTypeNamePattern: Regex = "scala.collection.immutable.::(__B)?".r
     arrayTypeNamePattern.findFirstMatchIn(fullName) match {
       case Some(_) => return types.asScala.find(_.getType == Schema.Type.ARRAY).getOrElse(sys.error(s"Could not find array type to match $fullName"))
       case None =>
