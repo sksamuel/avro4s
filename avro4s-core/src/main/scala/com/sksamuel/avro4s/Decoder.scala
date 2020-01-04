@@ -437,8 +437,8 @@ object Decoder {
 
   def dispatch[T](ctx: SealedTrait[Typeclass, T]): Decoder[T] = {
     val nameExtractors = ctx.subtypes.map(s => s -> NameExtractor(s.typeName, s.annotations ++ ctx.annotations)).toMap
-    val nameOf = nameExtractors.mapValues(_.name)
-    val fullNameOf = nameExtractors.mapValues(_.fullName)
+    val nameOf = nameExtractors.map(kv => kv._1 -> kv._2.name)
+    val fullNameOf = nameExtractors.map(kv => kv._1 -> kv._2.fullName)
 
     new Decoder[T] {
       override def decode(container: Any, schema: Schema, fieldMapper: FieldMapper): T = {

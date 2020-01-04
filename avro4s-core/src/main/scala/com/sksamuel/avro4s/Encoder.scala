@@ -301,8 +301,8 @@ object Encoder {
     // note: that the schema may have a custom name and a custom namespace!
     // note2: the field for the ADT itself may be annotated!
     val nameExtractors = ctx.subtypes.map(s => s -> NameExtractor(s.typeName, s.annotations ++ ctx.annotations)).toMap
-    val nameOf = nameExtractors.mapValues(_.name)
-    val fullNameOf = nameExtractors.mapValues(_.fullName)
+    val nameOf = nameExtractors.map(kv => kv._1 -> kv._2.name)
+    val fullNameOf = nameExtractors.map(kv => kv._1 -> kv._2.fullName)
 
     new Encoder[T] {
       override def encode(t: T, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
