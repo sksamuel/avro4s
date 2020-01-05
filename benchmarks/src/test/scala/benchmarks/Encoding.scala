@@ -12,14 +12,14 @@ import org.scalameter.Context
 import org.scalameter.api._
 
 object Encoding extends Bench.LocalTime with BenchmarkHelpers {
-  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 10000, exec.benchRuns -> 10000)
+  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 100000, exec.benchRuns -> 100000)
 
   def encode[T](value: T,
                 encoder: Encoder[T],
                 writer: GenericDatumWriter[GenericRecord],
                 schema: Schema): ByteBuffer = {
     val outputStream = new ByteArrayOutputStream(512)
-    val record = encoder.encode(value, schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
+    val record = encoder.encode(value).asInstanceOf[GenericRecord]
     val enc = EncoderFactory.get().directBinaryEncoder(outputStream, null)
     writer.write(record, enc)
     ByteBuffer.wrap(outputStream.toByteArray)
@@ -96,6 +96,21 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
 
     using(item) in { _ =>
       encode(s, encoder, writer, schema)
+    }
+  }
+
+  performance of "avro4s union type with type param alternative codec encoding" in {
+    val codec = Codec[RecordWithUnionAndTypeField]
+    val writer = new GenericDatumWriter[GenericRecord](codec.schema)
+
+    val s = RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t))
+
+    using(item) in { _ =>
+      val outputStream = new ByteArrayOutputStream(512)
+      val record = codec.encode(s).asInstanceOf[GenericRecord]
+      val enc = EncoderFactory.get().directBinaryEncoder(outputStream, null)
+      writer.write(record, enc)
+      ByteBuffer.wrap(outputStream.toByteArray)
     }
   }
 }

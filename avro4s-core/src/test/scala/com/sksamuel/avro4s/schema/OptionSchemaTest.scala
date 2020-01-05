@@ -14,9 +14,9 @@ class OptionSchemaTest extends AnyFunSuite with Matchers {
   }
 
   //  test("support mixing optionals with unions, merging appropriately") {
-  //    val outsideOptional = AvroSchema[OptionalUnion]
-  //    val insideOptional = AvroSchema[UnionOfOptional]
-  //    val bothOptional = AvroSchema[AllOptionals]
+  //    val outsideOptional = AvroSchemaV2[OptionalUnion]
+  //    val insideOptional = AvroSchemaV2[UnionOfOptional]
+  //    val bothOptional = AvroSchemaV2[AllOptionals]
   //
   //    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_union.json"))
   //

@@ -50,15 +50,19 @@ class BasicOutputStreamTest extends OutputStreamTest {
   }
 
   test("write out generic record") {
-    val schema = new Parser().parse(
+    val recordSchema = new Parser().parse(
       """{"type":"record","name":"Test","fields":[{"name":"field","type":"string"}]}"""
     )
+    implicit val recordSchemaFor: SchemaFor[GenericRecord] = SchemaFor(recordSchema)
 
-    implicit val encoder: Encoder[GenericRecord] = (r, _, _) => r
-    implicit val schemaFor: SchemaFor[GenericRecord] = _ => schema
+    implicit val encoder: Encoder[GenericRecord] = new Encoder[GenericRecord] {
+      def schemaFor = recordSchemaFor
 
-    val record: GenericRecord =
-      new GenericRecordBuilder(schema).set("field", "value").build()
+      def encode(value: GenericRecord): AnyRef = value
+    }
+
+
+    val record: GenericRecord = new GenericRecordBuilder(recordSchema).set("field", "value").build()
 
     writeRead(record) { rec =>
       rec.get("field") shouldBe new Utf8("value")

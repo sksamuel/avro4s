@@ -64,7 +64,7 @@ class BasicSchemasTest extends AnyWordSpec with Matchers {
     }
     // todo fix
     //    "support mutually recursive types" ignore {
-    //      val schema = AvroSchema[MutRec1]
+    //      val schema = AvroSchemaV2[MutRec1]
     //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.json"))
     //      schema.toString(true) shouldBe expected.toString(true)
     //    }

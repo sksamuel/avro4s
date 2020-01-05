@@ -2,8 +2,7 @@ package com.sksamuel.avro4s.streams.output
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema}
-import com.sksamuel.avro4s.Encoder
+import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema, Encoder}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -22,7 +21,7 @@ class BinaryStreamsTest extends AnyWordSpec with Matchers {
       implicit val encoder = Encoder[Composer]
 
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[Composer].to(baos).build(schema)
+      val output = AvroOutputStream.binary[Composer].to(baos).build()
       output.write(ennio)
       output.write(hans)
       output.close()
@@ -39,7 +38,7 @@ class BinaryStreamsTest extends AnyWordSpec with Matchers {
       implicit val encoder = Encoder[Composer]
 
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[Composer].to(baos).build(schema)
+      val output = AvroOutputStream.binary[Composer].to(baos).build()
       output.write(ennio)
       output.write(hans)
       output.close()

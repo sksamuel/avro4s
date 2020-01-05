@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{DefaultFieldMapper, SchemaFor}
+import com.sksamuel.avro4s.SchemaFor
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -20,6 +20,6 @@ case class Invert(i: InvertibleComplexWrapper) extends Complex
 
 class Github292 extends AnyFunSuite with Matchers {
   test("Introducing type-parametrised values breaks derivation for some ADTs #292") {
-    SchemaFor[Complex].schema(DefaultFieldMapper).toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github292.json")).toString(true)
+    SchemaFor[Complex].schema.toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github292.json")).toString(true)
   }
 }

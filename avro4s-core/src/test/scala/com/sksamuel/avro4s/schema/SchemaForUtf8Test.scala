@@ -1,8 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.Decoder._
-import com.sksamuel.avro4s.Encoder._
-import com.sksamuel.avro4s.{AvroSchema, FromRecord, ImmutableRecord, ToRecord}
+import com.sksamuel.avro4s.{AvroSchema, Encoder, FromRecord, ImmutableRecord, ToRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
