@@ -107,4 +107,18 @@ object Decoding extends Bench.LocalTime with BenchmarkHelpers {
       decode(bytes, decoder, reader, schema)
     }
   }
+
+  performance of "avro4s union type with type param alternative codec decoding" in {
+    implicit val mapper: FieldMapper = DefaultFieldMapper
+    val codec = Codec[RecordWithUnionAndTypeField]
+    val bytes = encode(RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t)))
+    val reader = new GenericDatumReader[GenericRecord](codec.schema)
+
+    using(item) in { _ =>
+      val dec =
+        DecoderFactory.get().binaryDecoder(new ByteBufferInputStream(Collections.singletonList(bytes.duplicate)), null)
+      val record = reader.read(null, dec)
+      codec.decode(record)
+    }
+  }
 }
