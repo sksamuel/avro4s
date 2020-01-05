@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroEnumDefault, AvroSchema, AvroSortPriority, JavaEnumSchemaFor, ScalaEnumSchemaFor, SchemaFor}
+import com.sksamuel.avro4s.{AvroEnumDefault, AvroName, AvroNamespace, AvroProp, AvroSchema, AvroSortPriority, JavaEnumSchemaFor, ScalaEnumSchemaFor, SchemaFor}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -10,6 +10,33 @@ class EnumSchemaTest extends AnyWordSpec with Matchers {
   implicit val schemaForColor: SchemaFor[Colours.Value] = ScalaEnumSchemaFor[Colours.Value](default = Colours.Amber)
 
   "SchemaEncoder" should {
+
+    //------------------------------------------------------------------------------------------------------------------
+    // java enums using the AvroJavaEnumDefault annotation
+
+    "support top level java enums using the AvroJavaName, AvroJavaNamespace, AvroJavaProp, AvroJavaEnumDefault annotations" in {
+
+      val schema = AvroSchema[WineWithAnnotations]
+      val expected = new org.apache.avro.Schema.Parser().parse(
+        """
+          |{
+          |  "type": "enum",
+          |  "name": "Wine",
+          |  "namespace": "test",
+          |  "symbols": [
+          |    "Malbec",
+          |    "Shiraz",
+          |    "CabSav",
+          |    "Merlot"
+          |  ],
+          |  "default": "CabSav",
+          |  "hello": "world"
+          |}
+          |""".stripMargin
+      )
+
+      schema.toString(true) shouldBe expected.toString(true)
+    }
 
     //------------------
     // java enums
@@ -217,8 +244,8 @@ class EnumSchemaTest extends AnyWordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
 
-    //------------------
-    // scala enums
+    //----------------------------------------
+    // scala enums using ScalaEnumSchemaFor
 
     "support top level scala enums" in {
 
@@ -418,7 +445,33 @@ class EnumSchemaTest extends AnyWordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
 
-    //------------------
+    //------------------------------------------------------------------------------------------------------------------
+    // scala enums using the AvroEnumDefault annotation
+
+    "support top level scala enums using the AvroEnumDefault annotation" in {
+
+      val schema = AvroSchema[ColoursAnnotatedEnum.Value]
+      val expected = new org.apache.avro.Schema.Parser().parse(
+        """
+          |{
+          |  "type": "enum",
+          |  "name": "Colours",
+          |  "namespace": "test",
+          |  "symbols": [
+          |    "Red",
+          |    "Amber",
+          |    "Green"
+          |  ],
+          |  "default": "Green",
+          |  "hello": "world"
+          |}
+          |""".stripMargin.trim
+      )
+
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
     // sealed trait enums
 
     "support top level sealed trait enums with no default enum value" in {
@@ -727,6 +780,14 @@ class EnumSchemaTest extends AnyWordSpec with Matchers {
 }
 
 object Colours extends Enumeration {
+  val Red, Amber, Green = Value
+}
+
+@AvroName("Colours")
+@AvroNamespace("test")
+@AvroEnumDefault(ColoursAnnotatedEnum.Green)
+@AvroProp("hello", "world")
+object ColoursAnnotatedEnum extends Enumeration {
   val Red, Amber, Green = Value
 }
 
