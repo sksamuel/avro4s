@@ -43,6 +43,27 @@ object ScalePrecision {
   implicit val default = ScalePrecision(2, 8)
 }
 
+trait EnumSchemaFor {
+
+  import scala.collection.JavaConverters._
+
+  protected def addDefault[E](default: E)(schema: Schema): Schema = SchemaBuilder.
+    enumeration(schema.getName).
+    namespace(schema.getNamespace).
+    defaultSymbol(default.toString).
+    symbols(schema.getEnumSymbols.asScala.toList:_*)
+}
+
+object JavaEnumSchemaFor extends EnumSchemaFor {
+
+  def apply[E <: Enum[_]](default: E)(implicit tag: ClassTag[E]): SchemaFor[E] = SchemaFor.javaEnumSchemaFor.map[E](addDefault(default))
+}
+
+object ScalaEnumSchemaFor extends EnumSchemaFor {
+
+  def apply[E <: scala.Enumeration#Value](default: E)(implicit tag: TypeTag[E]): SchemaFor[E] = SchemaFor.scalaEnumSchemaFor.map[E](addDefault(default))
+}
+
 object SchemaFor {
 
   import scala.collection.JavaConverters._
@@ -189,10 +210,39 @@ object SchemaFor {
       val typeInfo = TypeInfo.fromClass(tag.runtimeClass)
       val nameExtractor = NameExtractor(typeInfo)
       val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
-      SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(symbols: _*)
+
+      val maybeName = tag.runtimeClass.getAnnotations.collectFirst {
+        case annotation: AvroJavaName => annotation.value()
+      }
+
+      val maybeNamespace = tag.runtimeClass.getAnnotations.collectFirst {
+        case annotation: AvroJavaNamespace => annotation.value()
+      }
+
+      val name = maybeName.getOrElse(nameExtractor.name)
+      val namespace = maybeNamespace.getOrElse(nameExtractor.namespace)
+
+      val maybeEnumDefault = tag.runtimeClass.getDeclaredFields.collectFirst {
+        case field if field.getDeclaredAnnotations.map(_.annotationType()).contains(classOf[AvroJavaEnumDefault]) => field.getName
+      }
+
+      val schema = maybeEnumDefault.map { enumDefault =>
+        SchemaBuilder.enumeration(name).namespace(namespace).defaultSymbol(enumDefault).symbols(symbols: _*)
+      }.getOrElse {
+        SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
+      }
+
+      val props = tag.runtimeClass.getAnnotations.collect {
+        case annotation: AvroJavaProp => annotation.key() -> annotation.value()
+      }
+
+      props.foreach { case (key, value) =>
+        schema.addProp(key, value)
+      }
+
+      schema
     }
   }
-
 
   /**
     * Builds an Avro Field with the field's Schema provided by an
@@ -373,41 +423,66 @@ object SchemaFor {
     }
   }
 
+  def getAnnotationValue[T](annotationClass: Class[T], annotations: Seq[Annotation]): Option[String] = {
+    annotations.collectFirst {
+      case a: Annotation if a.tree.tpe.typeSymbol.name.toString == annotationClass.getSimpleName => a.tree.children.tail.headOption.flatMap {
+        case select: Select => Some(select.name.toString)
+        case _ => None
+      }
+    }.flatten
+  }
+
   implicit def scalaEnumSchemaFor[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = new SchemaFor[E] {
 
-    val typeRef = tag.tpe match {
-      case t@TypeRef(_, _, _) => t
+    private lazy val schema = {
+
+      val typeRef = tag.tpe match {
+        case t@TypeRef(_, _, _) => t
+      }
+
+      val valueType = typeOf[E]
+      val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
+      val syms = pre.filter { sym =>
+        !sym.isMethod &&
+          !sym.isType &&
+          sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
+      }.map { sym =>
+        sym.name.decodedName.toString.trim
+      }
+
+      val annotations: Seq[Annotation] = typeRef.pre.typeSymbol.annotations
+
+      val maybeName = getAnnotationValue(classOf[AvroName], annotations)
+      val maybeNamespace = getAnnotationValue(classOf[AvroNamespace], annotations)
+      val enumDefault = getAnnotationValue(classOf[AvroEnumDefault], annotations)
+
+      val props: Seq[(String, String)] = annotations.collect {
+        case a: Annotation if a.tree.tpe.typeSymbol.name.toString == classOf[AvroProp].getSimpleName =>
+          a.tree.children.tail match {
+            case List(key: Literal, value: Literal) => key.value.value.toString -> value.value.value.toString
+            case _ => throw new RuntimeException("Failed to process an AvroProp annotation. The annotation should contain a key and value literals.")
+          }
+      }
+
+      val nameExtractor = NameExtractor(TypeInfo.fromType(typeRef.pre))
+
+      val name = maybeName.getOrElse(nameExtractor.name)
+      val namespace = maybeNamespace.getOrElse(nameExtractor.namespace)
+
+      val schema = enumDefault.map { default =>
+        SchemaBuilder.enumeration(name).namespace(namespace).defaultSymbol(default)symbols(syms: _*)
+      }.getOrElse {
+        SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
+      }
+
+      props.foreach { case (key, value) =>
+        schema.addProp(key, value)
+      }
+
+      schema
     }
 
-    val valueType = typeOf[E]
-    val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
-    val syms = pre.filter { sym =>
-      !sym.isMethod &&
-        !sym.isType &&
-        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
-    }.map { sym =>
-      sym.name.decodedName.toString.trim
-    }
-
-    val as = typeRef.pre.typeSymbol.annotations
-    val nameAnnotation = as.collectFirst {
-      case a: AvroName => a.name
-    }
-    val namespaceAnnotation = as.collectFirst {
-      case a: AvroNamespace => a.namespace
-    }
-    val props = as.collect {
-      case prop: AvroProp => prop.key -> prop.value
-    }
-
-    val nameExtractor = NameExtractor(TypeInfo.fromType(typeRef.pre))
-
-    val s = SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(syms: _*)
-    props.foreach { case (key, value) =>
-      s.addProp(key, value)
-    }
-
-    override def schema(fieldMapper: FieldMapper): Schema = s
+    override def schema(fieldMapper: FieldMapper): Schema = schema
   }
 
   // A coproduct is a union, or a generalised either.

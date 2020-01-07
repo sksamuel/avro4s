@@ -98,6 +98,7 @@ object SchemaHelper {
       case _: java.util.Collection[_] => Schema.Type.ARRAY
       case _: java.util.Map[_,_] => Schema.Type.MAP
       case JsonProperties.NULL_VALUE => Schema.Type.NULL
+      case CustomEnumDefault(_) => Schema.Type.ENUM
       case other => other
     }
 
