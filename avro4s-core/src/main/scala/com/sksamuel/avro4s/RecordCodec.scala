@@ -10,45 +10,40 @@ import org.apache.avro.{JsonProperties, Schema, SchemaBuilder}
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
 
 class RecordCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema, fieldMapper: FieldMapper) extends Codec[T] {
 
-  private val fieldCodec = buildFieldCodecs(ctx, schema, fieldMapper)
+  private val (fieldEncoding: Array[RecordCodec.FieldCodec[T]], fieldDecoding: Array[RecordCodec.FieldCodec[T]]) = {
+    val codecs = buildFieldCodecs(ctx, schema, fieldMapper)
 
-  private val nameFor: Map[Param[Typeclass, T], String] = fieldCodec.map(kv => kv._2.param -> kv._1)
-
-  private val transient: Set[String] = ctx.parameters
-    .filter { p =>
-      new AnnotationExtractors(p.annotations).transient
-    }
-    .map(nameFor)
-    .toSet
+    val encoding = schema.getFields.asScala.map(f => codecs.find(_.field.exists(_ == f)).get).toArray
+    val decoding = ctx.parameters.map(p => codecs.find(_.param == p).get).toArray
+    (encoding, decoding)
+  }
 
   override def withSchema(schema: Schema): Codec[T] = new RecordCodec[T](ctx, schema, fieldMapper)
 
   def encode(value: T): AnyRef = {
-    val values = schema.getFields.asScala.map { field =>
-      fieldCodec(field.name).encodeFieldValue(value)
+    // hot code path. Sacrificing functional programming to the gods of performance.
+    val length = fieldEncoding.length
+    val values = new Array[AnyRef](length)
+    var i = 0
+    while (i < length) {
+      values(i) = fieldEncoding(i).encodeFieldValue(value)
+      i += 1
     }
-
-    ImmutableRecord(schema, values.toVector)
+    ImmutableRecord(schema, values)
   }
 
   def decode(value: Any): T = value match {
     case record: IndexedRecord =>
-      val values = ctx.parameters.map { p =>
-        val name = nameFor(p)
-        val codec = fieldCodec(name)
-        def field = record.getSchema.getField(name)
-
-        // does the schema contain this parameter? If not, we will be relying on defaults or options in the case class
-        if (transient(name) || field == null) {
-          codec.defaultFieldValue
-        } else {
-          val idx = record.getSchema.getFields.indexOf(field)
-          codec.decodeFieldValue(record.get(idx))
-        }
+      // hot code path. Sacrificing functional programming to the gods of performance.
+      val length = fieldDecoding.length
+      val values = new Array[Any](length)
+      var i = 0
+      while (i < length) {
+        values(i) = fieldDecoding(i).decodeFieldValue(record)
+        i += 1
       }
       ctx.rawConstruct(values)
     case _ =>
@@ -65,40 +60,41 @@ object RecordCodec {
     new RecordCodec[T](ctx, schema, fieldMapper)
   }
 
-  class FieldCodec[T](val param: Param[Typeclass, T], schema: Schema) {
+  class FieldCodec[T](val param: Param[Typeclass, T], val field: Option[Field]) {
 
-    val codec: Typeclass[param.PType] = {
+    private val codec: Typeclass[param.PType] = {
       val codec = param.typeclass
-      if (schema != codec.schema) codec.withSchema(schema) else codec
+      field.map(f => if (f.schema != codec.schema) codec.withSchema(f.schema) else codec).getOrElse(codec)
     }
+
+    private val fieldPosition = field.map(_.pos).getOrElse(-1)
 
     def encodeFieldValue(t: T): AnyRef = codec.encode(param.dereference(t))
 
-    def defaultFieldValue: param.PType = param.default match {
-      case Some(default) => default
-      // there is no default, so the field must be an option
-      case None => codec.decode(null)
-    }
-
-    def decodeFieldValue(value: AnyRef): param.PType = Try(codec.decode(value)) match {
-      case Success(v)  => v
-      case Failure(ex) => param.default.getOrElse(throw ex)
-    }
-  }
-
-  def buildFieldCodecs[T](ctx: CaseClass[Typeclass, T],
-                          schema: Schema,
-                          fieldMapper: FieldMapper): Map[String, FieldCodec[T]] = {
-    ctx.parameters.flatMap { param =>
-      val annotations = new AnnotationExtractors(param.annotations)
-      if (annotations.transient) None
-      else {
-        val name = annotations.name.getOrElse(fieldMapper.to(param.label))
-        val fieldSchema = schema.getField(name).schema()
-        Some(name -> new FieldCodec(param, fieldSchema))
+    def decodeFieldValue(record: IndexedRecord): param.PType =
+      if (fieldPosition == -1) {
+        param.default match {
+          case Some(default) => default
+          // there is no default, so the field must be an option
+          case None => codec.decode(null)
+        }
+      } else {
+        val value = record.get(fieldPosition)
+        try {
+          codec.decode(value)
+        } catch {
+          case NonFatal(ex) => param.default.getOrElse(throw ex)
+        }
       }
-    }.toMap
   }
+
+  def buildFieldCodecs[T](ctx: CaseClass[Typeclass, T], schema: Schema, fieldMapper: FieldMapper): Seq[FieldCodec[T]] =
+    ctx.parameters.map { param =>
+      val annotations = new AnnotationExtractors(param.annotations)
+      val name = annotations.name.getOrElse(fieldMapper.to(param.label))
+      val field = if (annotations.transient) None else Option(schema.getField(name))
+      new FieldCodec(param, field)
+    }
 
   private def buildSchema[T](ctx: CaseClass[Typeclass, T], fieldMapper: FieldMapper): Schema = {
     val annotations = new AnnotationExtractors(ctx.annotations)
@@ -129,10 +125,10 @@ object RecordCodec {
   }
 
   private def buildSchemaField[T](param: Param[Typeclass, T],
-                                     extractor: AnnotationExtractors,
-                                     containingNamespace: String,
-                                     fieldMapper: FieldMapper,
-                                     valueTypeDoc: Option[String]): Schema.Field = {
+                                  extractor: AnnotationExtractors,
+                                  containingNamespace: String,
+                                  fieldMapper: FieldMapper,
+                                  valueTypeDoc: Option[String]): Schema.Field = {
 
     val extractor = new AnnotationExtractors(param.annotations)
     val doc = extractor.doc.orElse(valueTypeDoc).orNull
