@@ -11,7 +11,7 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema, fieldMapper: FieldMapper) extends Codec[T] {
+class RecordCodec[T: TypeTag](ctx: CaseClass[Typeclass, T], val schema: Schema, fieldMapper: FieldMapper) extends Codec[T] with AnnotableCodec[T] {
 
   private val (fieldEncoding: Array[RecordCodec.FieldCodec[T]], fieldDecoding: Array[RecordCodec.FieldCodec[T]]) = {
     val codecs = buildFieldCodecs(ctx, schema, fieldMapper)
@@ -20,6 +20,9 @@ class RecordCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema, fieldMapp
     val decoding = ctx.parameters.map(p => codecs.find(_.param == p).get).toArray
     (encoding, decoding)
   }
+
+  def withAnnotations(annotations: Seq[Any]): RecordCodec[T] =
+    RecordCodec(ctx, fieldMapper, annotations)
 
   override def withSchema(schema: Schema): Codec[T] = new RecordCodec[T](ctx, schema, fieldMapper)
 
@@ -55,7 +58,7 @@ class RecordCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema, fieldMapp
 
 object RecordCodec {
 
-  def apply[T](ctx: CaseClass[Typeclass, T], fieldMapper: FieldMapper): RecordCodec[T] = {
+  def apply[T: TypeTag](ctx: CaseClass[Typeclass, T], fieldMapper: FieldMapper, annotations: Seq[Any] = Seq.empty): RecordCodec[T] = {
     val schema = buildSchema(ctx, fieldMapper)
     new RecordCodec[T](ctx, schema, fieldMapper)
   }
@@ -96,13 +99,13 @@ object RecordCodec {
       new FieldCodec(param, field)
     }
 
-  private def buildSchema[T](ctx: CaseClass[Typeclass, T], fieldMapper: FieldMapper): Schema = {
+  private def buildSchema[T: TypeTag](ctx: CaseClass[Typeclass, T], fieldMapper: FieldMapper): Schema = {
     val annotations = new AnnotationExtractors(ctx.annotations)
     val doc = annotations.doc.orNull
     val aliases = annotations.aliases
     val props = annotations.props
 
-    val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)
+    val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations ++ sealedTraitAnnotations)
     val namespace = nameExtractor.namespace
     val name = nameExtractor.name
 
@@ -122,6 +125,22 @@ object RecordCodec {
     props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
     record.setFields(fields.asJava)
     record
+  }
+
+  private def sealedTraitAnnotations[T: TypeTag]: Seq[Any] = {
+    import scala.reflect.runtime.currentMirror
+    import scala.tools.reflect.ToolBox
+    val toolbox = currentMirror.mkToolBox()
+
+    val sealedTraits = typeOf[T].typeSymbol.asClass.baseClasses
+      .filter(b =>
+        b.isClass && {
+          val c = b.asClass
+          c.isTrait && c.isSealed
+      })
+    sealedTraits.flatMap(_.annotations).map(_.tree).filterNot(_.tpe <:< typeOf[java.lang.annotation.Annotation]).map { t =>
+      toolbox.eval(toolbox.untypecheck(t.duplicate))
+    }
   }
 
   private def buildSchemaField[T](param: Param[Typeclass, T],

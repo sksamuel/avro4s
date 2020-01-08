@@ -1,12 +1,13 @@
 package com.sksamuel.avro4s.record
 
 import com.sksamuel.avro4s.record.CodecTest._
-import com.sksamuel.avro4s.{AvroDoc, Codec, FieldMapper, SnakeCase}
+import com.sksamuel.avro4s.{AvroDoc, AvroNamespace, Codec, FieldMapper, SnakeCase}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 object CodecTest {
 
+  @AvroNamespace("foo.bar.baz")
   sealed trait Base
   case class Foo(@AvroDoc("Some docs")
                  oneField: String,
