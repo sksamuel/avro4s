@@ -25,7 +25,7 @@ object DefaultResolver {
     case Some(x) => apply(x, schema)
     case u: Utf8 => u.toString
     case uuid: UUID => uuid.toString
-    case enum: GenericEnumSymbol[_] => enum.toString
+    case enum: GenericEnumSymbol => enum.toString
     case fixed: GenericFixed => fixed.bytes()
     case bd: BigDecimal => bd.toString()
     case byteBuffer: ByteBuffer if schema.getLogicalType.isInstanceOf[Decimal] =>

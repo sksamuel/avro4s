@@ -464,7 +464,7 @@ object Decoder {
         // we need to take the string and create the object
         case Schema.Type.ENUM =>
           val subtype = container match {
-            case enum: GenericEnumSymbol[_] =>
+            case enum: GenericEnumSymbol =>
                 ctx.subtypes.find { subtype => NameExtractor(subtype).name == enum.toString }
                   .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
             case str: String =>

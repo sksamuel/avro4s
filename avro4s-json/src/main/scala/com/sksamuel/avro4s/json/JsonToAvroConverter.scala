@@ -57,7 +57,7 @@ class JsonToAvroConverter(namespace: String,
 
   private def createStringSchema = {
     val schema = Schema.create(Schema.Type.STRING)
-    if (avroStringTypeIsString) schema.addProp("avro.java.string", "String")
+    if (avroStringTypeIsString) schema.addProp("avro.java.string", "String": Any)
     schema
   }
 
