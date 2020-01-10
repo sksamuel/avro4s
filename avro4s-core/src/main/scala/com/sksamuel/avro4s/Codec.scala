@@ -52,18 +52,15 @@ object Codec extends BaseCodecs {
 
   type Typeclass[T] = Codec[T]
 
-  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(implicit fieldMapper: FieldMapper): Codec[T] = {
+  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(implicit fieldMapper: FieldMapper): Codec[T] =
     DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion => new TypeUnionCodec(ctx)
-
-      case SealedTraitShape.ScalaEnum => ???
+      case SealedTraitShape.TypeUnion => TypeUnionCodec(ctx)
+      case SealedTraitShape.ScalaEnum => ScalaEnumCodec(ctx)
     }
-  }
 
   def combine[T: TypeTag](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper): Codec[T] =
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record => RecordCodec(ctx, fieldMapper)
-
       case CaseClassShape.ValueType => ???
     }
 }

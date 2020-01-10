@@ -1,7 +1,0 @@
-- decide on Codec vs. Encoding / Decoding -- done
-- propagation of annotations on sealed traits to subtypes -- done
-- encoding / decoding for records -- done
-- encoding / decoding for scala enums
-- encoding / decoding for all primitive types
-- encoding / decoding for value types
-- all codecs are serializable

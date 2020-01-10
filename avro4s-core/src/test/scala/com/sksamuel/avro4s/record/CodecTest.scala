@@ -17,6 +17,12 @@ object CodecTest {
   case class Bar(anotherField: String) extends Base
 
   case class Baz(fieldA: String, fieldB: String)
+
+  @AvroNamespace("foo.bar.baz")
+  sealed trait EnumBase
+  case object EnumOne extends EnumBase
+  case object EnumTwo extends EnumBase
+  case object EnumThree extends EnumBase
 }
 
 class CodecTest extends AnyFunSuite with Matchers {
@@ -30,6 +36,19 @@ class CodecTest extends AnyFunSuite with Matchers {
     val input: Base = CodecTest.Foo("a string", CodecTest.Baz("a", "b"))
 
     val output: Base = codec.decode(codec.encode(input))
+
+    output shouldBe input
+  }
+
+  test("codec should work on enums") {
+    implicit val mapper: FieldMapper = SnakeCase
+    val codec = Codec[EnumBase]
+
+    println(codec.schema.toString(true))
+
+    val input = EnumThree
+
+    val output = codec.decode(codec.encode(input))
 
     output shouldBe input
   }
