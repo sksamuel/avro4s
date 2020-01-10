@@ -61,6 +61,6 @@ object Codec extends BaseCodecs {
   def combine[T: TypeTag](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper): Codec[T] =
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record => RecordCodec(ctx, fieldMapper)
-      case CaseClassShape.ValueType => ???
+      case CaseClassShape.ValueType => ValueTypeCodec(ctx)
     }
 }
