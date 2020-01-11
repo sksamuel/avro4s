@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, Codec, DefaultFieldMapper, Encoder, FieldMapper, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2, Codec, DefaultFieldMapper, Encoder, FieldMapper, ImmutableRecord, SchemaForV2}
 import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct}
 import org.scalatest.funsuite.AnyFunSuite
@@ -18,7 +18,7 @@ class CoproductEncoderTest extends AnyFunSuite with Matchers {
 
   test("coproducts with case classes") {
     implicit val fieldMapper: FieldMapper = DefaultFieldMapper
-    val gschema = Codec[Gimble].schema
+    val gschema = AvroSchemaV2[Gimble]
     val codec = Codec[CPWrapper]
     codec.encode(CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))) shouldBe ImmutableRecord(codec.schema, Vector(ImmutableRecord(gschema, Vector(new Utf8("foo")))))
   }
