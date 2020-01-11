@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.Codec.Typeclass
-import com.sksamuel.avro4s.RecordCodec.buildFieldCodecs
 import magnolia.{CaseClass, Param}
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.IndexedRecord
@@ -11,17 +10,13 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordCodec[T: TypeTag](ctx: CaseClass[Typeclass, T], val schema: Schema, fieldMapper: FieldMapper)
+class RecordCodec[T: TypeTag](ctx: CaseClass[Typeclass, T],
+                              val schema: Schema,
+                              fieldMapper: FieldMapper,
+                              fieldEncoding: Array[RecordCodec.FieldCodec[T]],
+                              fieldDecoding: Array[RecordCodec.FieldCodec[T]])
     extends Codec[T]
     with AnnotableCodec[T] {
-
-  private val (fieldEncoding: Array[RecordCodec.FieldCodec[T]], fieldDecoding: Array[RecordCodec.FieldCodec[T]]) = {
-    val codecs = buildFieldCodecs(ctx, schema, fieldMapper)
-
-    val encoding = schema.getFields.asScala.map(f => codecs.find(_.field.exists(_ == f)).get).toArray
-    val decoding = ctx.parameters.map(p => codecs.find(_.param == p).get).toArray
-    (encoding, decoding)
-  }
 
   def withAnnotations(annotations: Seq[Any]): RecordCodec[T] = RecordCodec(ctx, fieldMapper, annotations)
 
@@ -61,7 +56,10 @@ object RecordCodec {
                         fieldMapper: FieldMapper,
                         annotations: Seq[Any] = Seq.empty): RecordCodec[T] = {
     val schema = buildSchema(ctx, fieldMapper, annotations)
-    new RecordCodec[T](ctx, schema, fieldMapper)
+    val codecs = buildFieldCodecs(ctx, schema, fieldMapper)
+    val encoding = schema.getFields.asScala.map(f => codecs.find(_.field.exists(_ == f)).get).toArray
+    val decoding = ctx.parameters.map(p => codecs.find(_.param == p).get).toArray
+    new RecordCodec[T](ctx, schema, fieldMapper, encoding, decoding)
   }
 
   class FieldCodec[T](val param: Param[Typeclass, T], val field: Option[Field]) {
