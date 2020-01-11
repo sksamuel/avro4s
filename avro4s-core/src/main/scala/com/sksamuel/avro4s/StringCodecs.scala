@@ -8,8 +8,8 @@ import org.apache.avro.util.Utf8
 
 trait StringCodecs {
 
-  sealed trait StringCodecBase extends Codec[String] with ChangeableSchemaCodec[String] {
-    def withSchema(schema: Schema): Codec[String] = schema.getType match {
+  sealed trait StringCodecBase extends Codec[String] with FieldSpecificSchemaTypeCodec[String] {
+    def withFieldSchema(schema: Schema): Codec[String] = schema.getType match {
       case Schema.Type.STRING => new StringCodec(schema)
       case Schema.Type.FIXED  => new FixedStringCodec(schema)
       case Schema.Type.BYTES  => new BytesStringCodec(schema)

@@ -5,7 +5,9 @@ import com.sksamuel.avro4s.ValueTypeCodec.UnderlyingCodec
 import magnolia.{CaseClass, Param}
 import org.apache.avro.{Schema, SchemaBuilder}
 
-class ValueTypeCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema) extends Codec[T] with ChangeableSchemaCodec[T] {
+class ValueTypeCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema)
+    extends Codec[T]
+    with FieldSpecificSchemaTypeCodec[T] {
 
   private val codec = new UnderlyingCodec(ctx.parameters.head, schema)
 
@@ -13,7 +15,7 @@ class ValueTypeCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema) extend
 
   def decode(value: Any): T = ctx.rawConstruct(List(codec.decodeUnderlying(value)))
 
-  override def withSchema(schema: Schema): Typeclass[T] = new ValueTypeCodec(ctx, schema)
+  override def withFieldSchema(schema: Schema): Typeclass[T] = new ValueTypeCodec(ctx, schema)
 }
 
 object ValueTypeCodec {
@@ -56,8 +58,9 @@ object ValueTypeCodec {
     private val codec: Typeclass[param.PType] = {
       val codec = param.typeclass
       codec match {
-        case m: ChangeableSchemaCodec[param.PType] if m.schema != schema => m.withSchema(schema)
-        case _                                                           => codec
+        case m: FieldSpecificSchemaTypeCodec[param.PType] if m.schema.getType != schema.getType =>
+          m.withFieldSchema(schema)
+        case _ => codec
       }
     }
 

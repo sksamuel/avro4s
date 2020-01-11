@@ -1,8 +1,11 @@
 package com.sksamuel.avro4s
 
+import java.nio.ByteBuffer
 import java.time.Instant
 
+import org.apache.avro.generic.{GenericData, GenericFixed}
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
+
 import scala.collection.JavaConverters._
 
 trait BaseCodecs extends StringCodecs {
@@ -38,6 +41,59 @@ trait BaseCodecs extends StringCodecs {
     def decode(value: Any): Instant = value match {
       case long: Long => Instant.ofEpochMilli(long)
       case other      => sys.error(s"Cannot convert $other to type Instant")
+    }
+  }
+
+  implicit def optionCodec[T](implicit codec: Codec[T]): Codec[Option[T]] = new Codec[Option[T]] {
+    val schema: Schema = SchemaBuilder.nullable().`type`(codec.schema)
+
+    def encode(value: Option[T]): AnyRef = value.map(codec.encode).orNull
+
+    def decode(value: Any): Option[T] = if (value == null) None else Option(codec.decode(value))
+  }
+
+  sealed trait ByteArrayCodecBase extends Codec[Array[Byte]] with FieldSpecificSchemaTypeCodec[Array[Byte]] {
+
+    def decode(value: Any): Array[Byte] = value match {
+      case buffer: ByteBuffer => buffer.array
+      case array: Array[Byte] => array
+      case fixed: GenericFixed => fixed.bytes
+    }
+
+    def withFieldSchema(schema: Schema): Codec[Array[Byte]] = schema.getType match {
+      case Schema.Type.ARRAY => byteArrayCodec
+      case Schema.Type.FIXED => new FixedByteArrayCodec(schema)
+    }
+  }
+
+  implicit object byteArrayCodec extends ByteArrayCodecBase {
+
+    val schema: Schema = SchemaBuilder.builder.bytesType
+
+    def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
+  }
+
+  class FixedByteArrayCodec(val schema: Schema) extends ByteArrayCodecBase {
+    require(schema.getType == Schema.Type.FIXED)
+
+    def encode(value: Array[Byte]): AnyRef = {
+      val bb = ByteBuffer.allocate(schema.getFixedSize).put(value)
+      GenericData.get.createFixed(null, bb.array(), schema)
+    }
+  }
+
+  implicit def arrayCodec[T](implicit codec: Codec[T]): Codec[Array[T]] = new Codec[Array[T]] {
+    import scala.collection.JavaConverters._
+
+    val schema: Schema = SchemaBuilder.array().items(codec.schema)
+
+    def encode(value: Array[T]): AnyRef = value.map(codec.encode).toList.asJava
+
+    def decode(value: Any): Array[T] = value match {
+      case array: Array[_]               => array.map(codec.decode)
+      case list: java.util.Collection[_] => list.asScala.map(codec.decode).toArray
+      case list: List[_]                 => list.map(codec.decode).toArray
+      case other                         => sys.error("Unsupported array " + other)
     }
   }
 
