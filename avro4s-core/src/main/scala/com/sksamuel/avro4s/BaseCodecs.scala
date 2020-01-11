@@ -21,6 +21,15 @@ trait BaseCodecs extends StringCodecs {
     }
   }
 
+  implicit object BooleanCodec extends Codec[Boolean] {
+
+    val schema: Schema = SchemaBuilder.builder.booleanType
+
+    def encode(value: Boolean): AnyRef = java.lang.Boolean.valueOf(value)
+
+    def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
+  }
+
   implicit object InstantCodec extends Codec[Instant] {
     def schema: Schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
 

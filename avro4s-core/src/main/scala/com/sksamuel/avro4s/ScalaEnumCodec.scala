@@ -4,7 +4,6 @@ import magnolia.{SealedTrait, Subtype}
 import org.apache.avro.generic.{GenericData, GenericEnumSymbol}
 import org.apache.avro.{Schema, SchemaBuilder}
 
-import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe
 
 class ScalaEnumCodec[T](ctx: SealedTrait[Typeclass, T],
@@ -12,23 +11,6 @@ class ScalaEnumCodec[T](ctx: SealedTrait[Typeclass, T],
                         valueForSymbol: Map[String, T],
                         val schema: Schema)
     extends Codec[T] {
-
-  override def withSchema(schema: Schema): Typeclass[T] = {
-    require(schema.getType == Schema.Type.ENUM)
-    require(schema.getEnumSymbols.size == ctx.subtypes.size)
-
-    // matching the new schema to the old could also be done via positioning of the enum symbols.
-    // this here assumes we match it by symbol name.
-    val symbols = schema.getEnumSymbols.asScala
-    require(valueForSymbol.keys.forall(symbols.contains), "enum symbols must remain the same")
-
-    val newSymbolForSubtype = symbols.map { symbol =>
-      val st = symbolForSubtype.find(entry => entry._2.toString == symbol).get._1
-      st -> GenericData.get.createEnum(symbol, schema)
-    }.toMap
-
-    new ScalaEnumCodec(ctx, newSymbolForSubtype, valueForSymbol, schema)
-  }
 
   def encode(value: T): AnyRef = ctx.dispatch(value)(symbolForSubtype)
 

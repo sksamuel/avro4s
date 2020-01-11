@@ -2,6 +2,7 @@ package com.sksamuel.avro4s
 
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.Schema
+import shapeless.{:+:, CNil, Coproduct}
 
 import scala.annotation.implicitNotFound
 import scala.reflect.runtime.universe._
@@ -20,16 +21,6 @@ trait Codec[T] extends EncoderV2[T] with DecoderV2[T] {
 
   def decode(value: Any): T
 
-  override def withSchema(schema: Schema): Codec[T] = {
-    val s = schema
-    new Codec[T] {
-      val schema = s
-
-      def encode(value: T): AnyRef = self.encode(value)
-
-      def decode(value: Any): T = self.decode(value)
-    }
-  }
 }
 
 object Codec extends BaseCodecs {
@@ -46,6 +37,14 @@ object Codec extends BaseCodecs {
     }
   }
 
+  implicit def coproductBaseCodec[S: WeakTypeTag: Manifest](implicit codec: Codec[S]): Codec[S :+: CNil] =
+    new CoproductBaseCodec(codec)
+
+  implicit def coproductEncoder[H: WeakTypeTag: Manifest, T <: Coproduct](implicit codecH: Codec[H],
+                                                                          codecT: Codec[T]): Codec[H :+: T] =
+    new CoproductCodec(codecH, codecT)
+
+
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
   def apply[T](implicit codec: Codec[T]): Codec[T] = codec
@@ -60,7 +59,7 @@ object Codec extends BaseCodecs {
 
   def combine[T: TypeTag](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper): Codec[T] =
     DatatypeShape.of(ctx) match {
-      case CaseClassShape.Record => RecordCodec(ctx, fieldMapper)
+      case CaseClassShape.Record    => RecordCodec(ctx, fieldMapper)
       case CaseClassShape.ValueType => ValueTypeCodec(ctx)
     }
 }

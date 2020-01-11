@@ -22,11 +22,6 @@ class TypeUnionCodec[T](ctx: SealedTrait[Typeclass, T],
       codec.decodeSubtype(value)
     case _ => sys.error(s"Unsupported type $value in type union decoder")
   }
-
-  override def withSchema(schema: Schema): Typeclass[T] = {
-    // implementing this method could be really tedious, as it's not clear how to propagate the new schema to the union entry codecs.
-    throw new UnsupportedOperationException("Extending type union codecs with a custom schema isn't supported")
-  }
 }
 
 object TypeUnionCodec {

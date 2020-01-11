@@ -23,10 +23,7 @@ class RecordCodec[T: TypeTag](ctx: CaseClass[Typeclass, T], val schema: Schema, 
     (encoding, decoding)
   }
 
-  def withAnnotations(annotations: Seq[Any]): RecordCodec[T] =
-    RecordCodec(ctx, fieldMapper, annotations)
-
-  override def withSchema(schema: Schema): Codec[T] = new RecordCodec[T](ctx, schema, fieldMapper)
+  def withAnnotations(annotations: Seq[Any]): RecordCodec[T] = RecordCodec(ctx, fieldMapper, annotations)
 
   def encode(value: T): AnyRef = {
     // hot code path. Sacrificing functional programming to the gods of performance.
@@ -69,9 +66,9 @@ object RecordCodec {
 
   class FieldCodec[T](val param: Param[Typeclass, T], val field: Option[Field]) {
 
-    private val codec: Typeclass[param.PType] = {
-      val codec = param.typeclass
-      field.map(f => if (f.schema != codec.schema) codec.withSchema(f.schema) else codec).getOrElse(codec)
+    private val codec: Codec[param.PType] = (param.typeclass, field) match {
+      case (m: ChangeableSchemaCodec[param.PType], Some(f)) if f.schema != m.schema => m.withSchema(f.schema)
+      case (codec, _)                                                               => codec
     }
 
     private val fieldPosition = field.map(_.pos).getOrElse(-1)

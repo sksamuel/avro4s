@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroSchema, Codec, DefaultFieldMapper, Encoder, FieldMapper, ImmutableRecord}
 import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct}
 import org.scalatest.funsuite.AnyFunSuite
@@ -9,16 +9,18 @@ import org.scalatest.matchers.should.Matchers
 class CoproductEncoderTest extends AnyFunSuite with Matchers {
 
   test("coproducts with primitives") {
-    val schema = AvroSchema[CPWrapper]
-    Encoder[CPWrapper].encode(CPWrapper(Coproduct[CPWrapper.ISBG](4)), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(4)))
-    Encoder[CPWrapper].encode(CPWrapper(Coproduct[CPWrapper.ISBG]("wibble")), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(new Utf8("wibble")))
-    Encoder[CPWrapper].encode(CPWrapper(Coproduct[CPWrapper.ISBG](true)), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true)))
+    implicit val fieldMapper: FieldMapper = DefaultFieldMapper
+    val codec = Codec[CPWrapper]
+    codec.encode(CPWrapper(Coproduct[CPWrapper.ISBG](4))) shouldBe ImmutableRecord(codec.schema, Vector(java.lang.Integer.valueOf(4)))
+    codec.encode(CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))) shouldBe ImmutableRecord(codec.schema, Vector(new Utf8("wibble")))
+    codec.encode(CPWrapper(Coproduct[CPWrapper.ISBG](true))) shouldBe ImmutableRecord(codec.schema, Vector(java.lang.Boolean.valueOf(true)))
   }
 
   test("coproducts with case classes") {
-    val schema = AvroSchema[CPWrapper]
-    val gschema = AvroSchema[Gimble]
-    Encoder[CPWrapper].encode(CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo"))), schema, DefaultFieldMapper) shouldBe ImmutableRecord(schema, Vector(ImmutableRecord(gschema, Vector(new Utf8("foo")))))
+    implicit val fieldMapper: FieldMapper = DefaultFieldMapper
+    val gschema = Codec[Gimble].schema
+    val codec = Codec[CPWrapper]
+    codec.encode(CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))) shouldBe ImmutableRecord(codec.schema, Vector(ImmutableRecord(gschema, Vector(new Utf8("foo")))))
   }
 
   test("options of coproducts") {

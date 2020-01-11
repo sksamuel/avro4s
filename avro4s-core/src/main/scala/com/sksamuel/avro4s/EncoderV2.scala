@@ -3,20 +3,9 @@ package com.sksamuel.avro4s
 import org.apache.avro.Schema
 
 trait EncoderV2[T] {
-  self =>
-
   def schema: Schema
 
   def encode(value: T): AnyRef
-
-  def withSchema(schema: Schema): EncoderV2[T] = {
-    val s = schema
-    new EncoderV2[T] {
-      val schema = s
-
-      def encode(value: T): AnyRef = self.encode(value)
-    }
-  }
 }
 
 object EncoderV2 {

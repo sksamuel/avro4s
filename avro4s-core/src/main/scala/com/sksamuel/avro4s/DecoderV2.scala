@@ -4,20 +4,10 @@ import org.apache.avro.Schema
 
 trait DecoderV2[T] {
 
-  self =>
-
   def schema: Schema
 
   def decode(value: Any): T
 
-  def withSchema(schema: Schema): DecoderV2[T] = {
-    val s = schema
-    new DecoderV2[T] {
-      val schema = s
-
-      def decode(value: Any): T = self.decode(value)
-    }
-  }
 }
 
 object DecoderV2 {
