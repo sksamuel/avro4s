@@ -136,6 +136,8 @@ trait BaseCodecs extends StringCodecs {
             case _               => sys.error(s"Unable to convert $value to BigDecimal via GenericFixed")
           }
         }
+      case _ =>
+        sys.error(s"Unable to create codec with schema type ${s.getType}, only bytes, fixed, and string supported")
     }
   }
 
