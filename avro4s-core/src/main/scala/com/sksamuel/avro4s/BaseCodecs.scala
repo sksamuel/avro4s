@@ -3,12 +3,15 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.time.Instant
 
+import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.{GenericData, GenericFixed}
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.generic.CanBuildFrom
+import scala.math.BigDecimal.RoundingMode
+import scala.math.BigDecimal.RoundingMode.RoundingMode
 import scala.reflect.ClassTag
 
 trait BaseCodecs extends StringCodecs {
@@ -75,6 +78,67 @@ trait BaseCodecs extends StringCodecs {
     def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
   }
 
+  implicit val byteBufferCodec: Codec[ByteBuffer] = new Codec[ByteBuffer] {
+    def schema: Schema = SchemaBuilder.builder.bytesType
+
+    def encode(value: ByteBuffer): AnyRef = value
+
+    def decode(value: Any): ByteBuffer = value match {
+      case b: ByteBuffer => b
+      case _             => sys.error(s"Unable to decode value $value to ByteBuffer")
+    }
+  }
+
+  implicit val charSequenceCodec: Codec[CharSequence] = new Codec[CharSequence] {
+    def schema: Schema = SchemaBuilder.builder.stringType
+
+    def encode(value: CharSequence): AnyRef = value
+
+    def decode(value: Any): CharSequence = value match {
+      case cs: CharSequence => cs
+      case _                => sys.error(s"Unable to decode value $value to CharSequence")
+    }
+  }
+
+  implicit def bigDecimalCodec(implicit roundingMode: RoundingMode = RoundingMode.UNNECESSARY,
+                               schemaFor: SchemaForV2[BigDecimal]): Codec[BigDecimal] = {
+
+    val s = schemaFor.schema
+    import org.apache.avro.Conversions
+
+    s.getType match {
+      case Schema.Type.BYTES =>
+        val decimal = s.getLogicalType.asInstanceOf[Decimal]
+        val converter = new Conversions.DecimalConversion
+        val rm = java.math.RoundingMode.valueOf(roundingMode.id)
+
+        byteBufferCodec.inmap[BigDecimal](
+          bb => converter.fromBytes(bb, s, decimal),
+          bd => converter.toBytes(bd.underlying.setScale(decimal.getScale, rm), s, decimal),
+          _ => s)
+
+      case Schema.Type.STRING =>
+        stringCodec.inmap[BigDecimal](BigDecimal.apply, _.toString, _ => s)
+
+      case Schema.Type.FIXED =>
+        val decimal = s.getLogicalType.asInstanceOf[Decimal]
+        val converter = new Conversions.DecimalConversion
+        val rm = java.math.RoundingMode.valueOf(roundingMode.id)
+
+        new Codec[BigDecimal] {
+          val schema: Schema = s
+
+          def encode(value: BigDecimal): AnyRef =
+            converter.toFixed(value.underlying.setScale(decimal.getScale, rm), s, decimal)
+
+          def decode(value: Any): BigDecimal = value match {
+            case f: GenericFixed => converter.fromFixed(f, s, decimal)
+            case _               => sys.error(s"Unable to convert $value to BigDecimal via GenericFixed")
+          }
+        }
+    }
+  }
+
   implicit object InstantCodec extends Codec[Instant] {
     def schema: Schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
 
@@ -100,6 +164,7 @@ trait BaseCodecs extends StringCodecs {
       case buffer: ByteBuffer  => buffer.array
       case array: Array[Byte]  => array
       case fixed: GenericFixed => fixed.bytes
+      case _                   => sys.error(s"Byte array codec cannot decode '$value'")
     }
 
     def forFieldWith(schema: Schema, annotations: Seq[Any]): ByteArrayCodecBase = schema.getType match {

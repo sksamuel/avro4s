@@ -26,9 +26,9 @@ trait Codec[T] extends EncoderV2[T] with DecoderV2[T] {
 object Codec extends MagnoliaGeneratedCodecs with ShapelessCoproductCodecs with BaseCodecs {
 
   implicit class CodecBifunctor[T](val codec: Codec[T]) extends AnyVal {
-    def inmap[S](map: T => S, comap: S => T): Codec[S] = {
+    def inmap[S](map: T => S, comap: S => T, f: Schema => Schema = identity): Codec[S] = {
       new Codec[S] {
-        def schema: Schema = codec.schema
+        def schema: Schema = f(codec.schema)
 
         def encode(value: S): AnyRef = codec.encode(comap(value))
 

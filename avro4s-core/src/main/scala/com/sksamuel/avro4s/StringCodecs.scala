@@ -17,7 +17,7 @@ trait StringCodecs {
     }
   }
 
-  implicit object StringCodec extends StringCodec(SchemaBuilder.builder.stringType)
+  implicit val stringCodec = new StringCodec(SchemaBuilder.builder.stringType)
 
   class StringCodec(val schema: Schema) extends StringCodecBase {
     require(schema.getType == Schema.Type.STRING)
