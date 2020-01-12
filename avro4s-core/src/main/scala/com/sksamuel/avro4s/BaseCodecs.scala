@@ -27,6 +27,21 @@ trait BaseCodecs extends StringCodecs {
     }
   }
 
+  implicit object LongCodec extends Codec[Long] {
+
+    val schema: Schema = SchemaBuilder.builder.intType
+
+    def encode(value: Long): AnyRef = java.lang.Long.valueOf(value)
+
+    def decode(value: Any): Long = value match {
+      case byte: Byte   => byte.toLong
+      case short: Short => short.toLong
+      case int: Int     => int.toLong
+      case long: Long   => long
+      case other        => sys.error(s"Cannot convert $other to type INT")
+    }
+  }
+
   implicit object DoubleCodec extends Codec[Double] {
 
     val schema: Schema = SchemaBuilder.builder.doubleType
@@ -90,7 +105,7 @@ trait BaseCodecs extends StringCodecs {
     def forFieldWith(schema: Schema, annotations: Seq[Any]): ByteArrayCodecBase = schema.getType match {
       case Schema.Type.ARRAY => byteArrayCodec
       case Schema.Type.FIXED => new FixedByteArrayCodec(schema)
-      case _ => sys.error(s"Byte array codec doesn't support schema type ${schema.getType}")
+      case _                 => sys.error(s"Byte array codec doesn't support schema type ${schema.getType}")
     }
   }
 
@@ -164,5 +179,4 @@ trait BaseCodecs extends StringCodecs {
   implicit def listCodec[T](implicit codec: Codec[T]): Codec[List[T]] = new IterableCodec(codec)
   implicit def vectorCodec[T](implicit codec: Codec[T]): Codec[Vector[T]] = new IterableCodec(codec)
   implicit def setCodec[T](implicit codec: Codec[T]): Codec[Set[T]] = new IterableCodec(codec)
-
 }

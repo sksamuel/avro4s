@@ -12,8 +12,8 @@ trait StringCodecs {
     def forFieldWith(schema: Schema, annotations: Seq[Any]): Codec[String] = schema.getType match {
       case Schema.Type.STRING => new StringCodec(schema)
       case Schema.Type.FIXED  => new FixedStringCodec(schema)
-      case Schema.Type.BYTES  => new BytesStringCodec(schema)
-      case _ => sys.error(s"Unsupported type for string schema: $schema")
+      case Schema.Type.BYTES  => new ByteStringCodec(schema)
+      case _                  => sys.error(s"Unsupported type for string schema: $schema")
     }
   }
 
@@ -50,7 +50,7 @@ trait StringCodecs {
     }
   }
 
-  class BytesStringCodec(val schema: Schema) extends Codec[String] {
+  class ByteStringCodec(val schema: Schema) extends Codec[String] {
     require(schema.getType == Schema.Type.BYTES)
 
     def encode(value: String): AnyRef = ByteBuffer.wrap(value.getBytes)

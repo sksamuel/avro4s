@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
+import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2, Decoder, DecoderV2, DefaultFieldMapper, FieldMapper}
 import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
@@ -16,52 +16,54 @@ case class FooInt(i: Int)
 
 class BasicDecoderTest extends AnyWordSpec with Matchers {
 
+  implicit val fm: FieldMapper = DefaultFieldMapper
+
   "Decoder" should {
     "decode strings" in {
-      val schema = AvroSchema[FooString]
+      val schema = AvroSchemaV2[FooString]
       val record = new GenericData.Record(schema)
       record.put("str", "hello")
-      Decoder[FooString].decode(record, schema, DefaultFieldMapper) shouldBe FooString("hello")
+      DecoderV2[FooString].decode(record) shouldBe FooString("hello")
     }
     "decode longs" in {
-      val schema = AvroSchema[FooLong]
+      val schema = AvroSchemaV2[FooLong]
       val record = new GenericData.Record(schema)
       record.put("l", 123456L)
-      Decoder[FooLong].decode(record, schema, DefaultFieldMapper) shouldBe FooLong(123456L)
+      DecoderV2[FooLong].decode(record) shouldBe FooLong(123456L)
     }
     "decode doubles" in {
-      val schema = AvroSchema[FooDouble]
+      val schema = AvroSchemaV2[FooDouble]
       val record = new GenericData.Record(schema)
       record.put("d", 123.435D)
-      Decoder[FooDouble].decode(record, schema, DefaultFieldMapper) shouldBe FooDouble(123.435D)
+      DecoderV2[FooDouble].decode(record) shouldBe FooDouble(123.435D)
     }
     "decode booleans" in {
-      val schema = AvroSchema[FooBoolean]
+      val schema = AvroSchemaV2[FooBoolean]
       val record = new GenericData.Record(schema)
       record.put("b", true)
-      Decoder[FooBoolean].decode(record, schema, DefaultFieldMapper) shouldBe FooBoolean(true)
+      DecoderV2[FooBoolean].decode(record) shouldBe FooBoolean(true)
     }
     "decode floats" in {
-      val schema = AvroSchema[FooFloat]
+      val schema = AvroSchemaV2[FooFloat]
       val record = new GenericData.Record(schema)
       record.put("f", 123.435F)
-      Decoder[FooFloat].decode(record, schema, DefaultFieldMapper) shouldBe FooFloat(123.435F)
+      DecoderV2[FooFloat].decode(record) shouldBe FooFloat(123.435F)
     }
     "decode ints" in {
-      val schema = AvroSchema[FooInt]
+      val schema = AvroSchemaV2[FooInt]
       val record = new GenericData.Record(schema)
       record.put("i", 123)
-      Decoder[FooInt].decode(record, schema, DefaultFieldMapper) shouldBe FooInt(123)
+      DecoderV2[FooInt].decode(record) shouldBe FooInt(123)
     }
     "support uppercase packages" in {
 
-      val schema = AvroSchema[ClassInUppercasePackage]
-      val decoder = Decoder[ClassInUppercasePackage]
+      val schema = AvroSchemaV2[ClassInUppercasePackage]
+      val decoder = DecoderV2[ClassInUppercasePackage]
 
       val record = new GenericData.Record(schema)
       record.put("s", new Utf8("hello"))
 
-      decoder.decode(record, schema, DefaultFieldMapper) shouldBe com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage("hello")
+      decoder.decode(record) shouldBe com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage("hello")
     }
   }
 }
