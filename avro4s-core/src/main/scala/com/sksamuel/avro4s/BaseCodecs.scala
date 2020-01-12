@@ -7,6 +7,7 @@ import org.apache.avro.generic.{GenericData, GenericFixed}
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 
 import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
 
 trait BaseCodecs extends StringCodecs {
 
@@ -55,12 +56,12 @@ trait BaseCodecs extends StringCodecs {
   sealed trait ByteArrayCodecBase extends Codec[Array[Byte]] with FieldSpecificSchemaTypeCodec[Array[Byte]] {
 
     def decode(value: Any): Array[Byte] = value match {
-      case buffer: ByteBuffer => buffer.array
-      case array: Array[Byte] => array
+      case buffer: ByteBuffer  => buffer.array
+      case array: Array[Byte]  => array
       case fixed: GenericFixed => fixed.bytes
     }
 
-    def withFieldSchema(schema: Schema): Codec[Array[Byte]] = schema.getType match {
+    def withFieldSchema(schema: Schema): ByteArrayCodecBase = schema.getType match {
       case Schema.Type.ARRAY => byteArrayCodec
       case Schema.Type.FIXED => new FixedByteArrayCodec(schema)
     }
@@ -82,7 +83,26 @@ trait BaseCodecs extends StringCodecs {
     }
   }
 
-  implicit def arrayCodec[T](implicit codec: Codec[T]): Codec[Array[T]] = new Codec[Array[T]] {
+  class ByteSeqCodec[T[_]](map: Array[Byte] => T[Byte],
+                           comap: T[Byte] => Array[Byte],
+                           codec: ByteArrayCodecBase = byteArrayCodec)
+      extends Codec[T[Byte]]
+      with FieldSpecificSchemaTypeCodec[T[Byte]] {
+
+    val schema = codec.schema
+
+    def encode(value: T[Byte]): AnyRef = codec.encode(comap(value))
+
+    def decode(value: Any): T[Byte] = map(codec.decode(value))
+
+    def withFieldSchema(schema: Schema): Codec[T[Byte]] = new ByteSeqCodec(map, comap, codec.withFieldSchema(schema))
+  }
+
+  implicit val byteSeqCodec = new ByteSeqCodec[Seq](_.toSeq, _.toArray)
+  implicit val byteListCodec = new ByteSeqCodec[List](_.toList, _.toArray)
+  implicit val byteVectorCodec = new ByteSeqCodec[Vector](_.toVector, _.toArray)
+
+  implicit def arrayCodec[T: ClassTag](implicit codec: Codec[T]): Codec[Array[T]] = new Codec[Array[T]] {
     import scala.collection.JavaConverters._
 
     val schema: Schema = SchemaBuilder.array().items(codec.schema)
