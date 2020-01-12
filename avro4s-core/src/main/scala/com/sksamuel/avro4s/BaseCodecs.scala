@@ -6,7 +6,9 @@ import java.time.Instant
 import org.apache.avro.generic.{GenericData, GenericFixed}
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
+import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 
 trait BaseCodecs extends StringCodecs {
@@ -22,6 +24,18 @@ trait BaseCodecs extends StringCodecs {
       case short: Short => short.toInt
       case int: Int     => int
       case other        => sys.error(s"Cannot convert $other to type INT")
+    }
+  }
+
+  implicit object DoubleCodec extends Codec[Double] {
+
+    val schema: Schema = SchemaBuilder.builder.doubleType
+
+    def encode(value: Double): AnyRef = java.lang.Double.valueOf(value)
+
+    def decode(value: Any): Double = value match {
+      case d: Double           => d
+      case d: java.lang.Double => d
     }
   }
 
@@ -112,26 +126,29 @@ trait BaseCodecs extends StringCodecs {
     def decode(value: Any): Array[T] = value match {
       case array: Array[_]               => array.map(codec.decode)
       case list: java.util.Collection[_] => list.asScala.map(codec.decode).toArray
-      case list: List[_]                 => list.map(codec.decode).toArray
+      case list: Iterable[_]             => list.map(codec.decode).toArray
       case other                         => sys.error("Unsupported array " + other)
     }
   }
 
-  implicit def setCodec[S](implicit codec: Codec[S]): Codec[Set[S]] = {
-    new Codec[Set[S]] {
-      val schema: Schema = Schema.createArray(codec.schema)
+  class IterableCodec[T, C[X] <: Iterable[X]](codec: Codec[T])(
+      implicit cbf: CanBuildFrom[Nothing, T, C[T @uncheckedVariance]])
+      extends Codec[C[T]] {
+    val schema: Schema = SchemaBuilder.array().items(codec.schema)
 
-      def encode(value: Set[S]): AnyRef = value.map(codec.encode).toList.asJava
+    def encode(value: C[T]): AnyRef = value.map(codec.encode).toList.asJava
 
-      def decode(value: Any): Set[S] = {
-        value match {
-          case array: Array[_]               => array.map(codec.decode).toSet
-          case list: java.util.Collection[_] => list.asScala.map(codec.decode).toSet
-          case list: List[_]                 => list.map(codec.decode).toSet
-          case other                         => sys.error("Unsupported array " + other)
-        }
-      }
+    def decode(value: Any): C[T] = value match {
+      case array: Array[_]               => array.map(codec.decode).to[C]
+      case list: java.util.Collection[_] => list.asScala.map(codec.decode).to[C]
+      case list: Iterable[_]             => list.map(codec.decode).to[C]
+      case other                         => sys.error("Unsupported array " + other)
     }
   }
+
+  implicit def seqCodec[T](implicit codec: Codec[T]): Codec[Seq[T]] = new IterableCodec(codec)
+  implicit def listCodec[T](implicit codec: Codec[T]): Codec[List[T]] = new IterableCodec(codec)
+  implicit def vectorCodec[T](implicit codec: Codec[T]): Codec[Vector[T]] = new IterableCodec(codec)
+  implicit def setCodec[T](implicit codec: Codec[T]): Codec[Set[T]] = new IterableCodec(codec)
 
 }

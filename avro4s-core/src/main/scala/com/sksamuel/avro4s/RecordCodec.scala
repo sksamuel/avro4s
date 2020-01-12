@@ -10,11 +10,11 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordCodec[T: TypeTag](ctx: CaseClass[Typeclass, T],
-                              val schema: Schema,
-                              fieldMapper: FieldMapper,
-                              fieldEncoding: Array[RecordCodec.FieldCodec[T]],
-                              fieldDecoding: Array[RecordCodec.FieldCodec[T]])
+class RecordCodec[T](ctx: CaseClass[Typeclass, T],
+                     val schema: Schema,
+                     fieldMapper: FieldMapper,
+                     fieldEncoding: Array[RecordCodec.FieldCodec[T]],
+                     fieldDecoding: Array[RecordCodec.FieldCodec[T]])
     extends Codec[T]
     with AnnotableCodec[T] {
 
@@ -52,9 +52,9 @@ class RecordCodec[T: TypeTag](ctx: CaseClass[Typeclass, T],
 
 object RecordCodec {
 
-  def apply[T: TypeTag](ctx: CaseClass[Typeclass, T],
-                        fieldMapper: FieldMapper,
-                        annotations: Seq[Any] = Seq.empty): RecordCodec[T] = {
+  def apply[T](ctx: CaseClass[Typeclass, T],
+               fieldMapper: FieldMapper,
+               annotations: Seq[Any] = Seq.empty): RecordCodec[T] = {
     val schema = buildSchema(ctx, fieldMapper, annotations)
     val codecs = buildFieldCodecs(ctx, schema, fieldMapper)
     val encoding = schema.getFields.asScala.map(f => codecs.find(_.field.exists(_ == f)).get).toArray
@@ -99,9 +99,9 @@ object RecordCodec {
       new FieldCodec(param, field)
     }
 
-  private def buildSchema[T: TypeTag](ctx: CaseClass[Typeclass, T],
-                                      fieldMapper: FieldMapper,
-                                      additionalAnnotations: Seq[Any]): Schema = {
+  private def buildSchema[T](ctx: CaseClass[Typeclass, T],
+                             fieldMapper: FieldMapper,
+                             additionalAnnotations: Seq[Any]): Schema = {
     val annotations = new AnnotationExtractors(ctx.annotations)
 
     val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations ++ additionalAnnotations)

@@ -23,7 +23,7 @@ trait Codec[T] extends EncoderV2[T] with DecoderV2[T] {
 
 }
 
-object Codec extends BaseCodecs {
+object Codec extends ADTCodec with BaseCodecs {
 
   implicit class CodecBifunctor[T](val codec: Codec[T]) extends AnyVal {
     def inmap[S](f: T => S, g: S => T): Codec[S] = {
@@ -44,22 +44,4 @@ object Codec extends BaseCodecs {
                                                                           codecT: Codec[T]): Codec[H :+: T] =
     new CoproductCodec(codecH, codecT)
 
-
-  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
-
-  def apply[T](implicit codec: Codec[T]): Codec[T] = codec
-
-  type Typeclass[T] = Codec[T]
-
-  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(implicit fieldMapper: FieldMapper): Codec[T] =
-    DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion => TypeUnionCodec(ctx)
-      case SealedTraitShape.ScalaEnum => ScalaEnumCodec(ctx)
-    }
-
-  def combine[T: TypeTag](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper): Codec[T] =
-    DatatypeShape.of(ctx) match {
-      case CaseClassShape.Record    => RecordCodec(ctx, fieldMapper)
-      case CaseClassShape.ValueType => ValueTypeCodec(ctx)
-    }
 }
