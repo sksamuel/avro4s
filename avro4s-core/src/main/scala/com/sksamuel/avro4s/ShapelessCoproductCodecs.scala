@@ -1,52 +1,52 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.ShapelessCoproductCodecs._
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericContainer, GenericData}
 import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.reflect.runtime.universe._
-import scala.util.Try
 
-class CoproductBaseCodec[S: WeakTypeTag: Manifest](codec: Codec[S]) extends Codec[S :+: CNil] {
+trait ShapelessCoproductCodecs {
 
-  import scala.collection.JavaConverters._
+  implicit def coproductBaseCodec[S: WeakTypeTag: Manifest](implicit codec: Codec[S]): Codec[S :+: CNil] =
+    new Codec[S :+: CNil] {
 
-  val schema: Schema = {
-    val base = codec.schema
-    val schemas = Try(base.getTypes.asScala).getOrElse(Seq(base))
-    Schema.createUnion(schemas.asJava)
-  }
+      val schema: Schema = SchemaHelper.createSafeUnion(codec.schema)
 
-  def encode(value: S :+: CNil): AnyRef = value match {
-    case Inl(h) => codec.encode(h)
-    case x      => sys.error(s"Unexpected value '$x' of type CNil (that doesn't exist)")
-  }
+      def encode(value: S :+: CNil): AnyRef = value match {
+        case Inl(h) => codec.encode(h)
+        case x      => sys.error(s"Unexpected value '$x' of type CNil (that doesn't exist)")
+      }
 
-  private val elementDecoder = ShapelessCoproductCodec.buildElementDecoder(codec)
+      private val elementDecoder = buildElementDecoder(codec)
 
-  def decode(value: Any): S :+: CNil =
-    if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value))
-    else sys.error(s"Unable to decode value '$value'")
+      def decode(value: Any): S :+: CNil =
+        if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value))
+        else sys.error(s"Unable to decode value '$value'")
+    }
+
+  implicit def coproductCompositeCodec[H: WeakTypeTag: Manifest, T <: Coproduct](implicit codecH: Codec[H],
+                                                                                 codecT: Codec[T]): Codec[H :+: T] =
+    new Codec[H :+: T] {
+
+      val schema: Schema = SchemaHelper.createSafeUnion(codecH.schema, codecT.schema)
+
+      def encode(value: H :+: T): AnyRef = value match {
+        case Inl(h) => codecH.encode(h)
+        case Inr(t) => codecT.encode(t)
+      }
+
+      private val elementDecoder = buildElementDecoder(codecH)
+
+      def decode(value: Any): H :+: T =
+        if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value))
+        else Inr(codecT.decode(value))
+    }
 }
 
-class CoproductCodec[H: WeakTypeTag: Manifest, T <: Coproduct](codecH: Codec[H], codecT: Codec[T])
-    extends Codec[H :+: T] {
-  val schema: Schema = SchemaHelper.createSafeUnion(codecH.schema, codecT.schema)
-
-  def encode(value: H :+: T): AnyRef = value match {
-    case Inl(h) => codecH.encode(h)
-    case Inr(t) => codecT.encode(t)
-  }
-
-  private val elementDecoder = ShapelessCoproductCodec.buildElementDecoder(codecH)
-
-  def decode(value: Any) =
-    if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value))
-    else Inr(codecT.decode(value))
-}
-
-object ShapelessCoproductCodec {
+object ShapelessCoproductCodecs {
 
   def buildElementDecoder[T: WeakTypeTag: Manifest](codec: Codec[T]): PartialFunction[Any, T] = {
     import scala.reflect.runtime.universe.typeOf

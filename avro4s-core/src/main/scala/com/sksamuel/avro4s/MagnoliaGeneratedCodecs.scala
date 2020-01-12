@@ -4,7 +4,7 @@ import magnolia.{CaseClass, Magnolia, SealedTrait}
 import scala.reflect.runtime.universe._
 import scala.language.experimental.macros
 
-trait ADTCodec {
+trait MagnoliaGeneratedCodecs {
 
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 

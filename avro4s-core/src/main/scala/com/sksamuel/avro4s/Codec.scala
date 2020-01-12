@@ -23,25 +23,18 @@ trait Codec[T] extends EncoderV2[T] with DecoderV2[T] {
 
 }
 
-object Codec extends ADTCodec with BaseCodecs {
+object Codec extends MagnoliaGeneratedCodecs with ShapelessCoproductCodecs with BaseCodecs {
 
   implicit class CodecBifunctor[T](val codec: Codec[T]) extends AnyVal {
-    def inmap[S](f: T => S, g: S => T): Codec[S] = {
+    def inmap[S](map: T => S, comap: S => T): Codec[S] = {
       new Codec[S] {
         def schema: Schema = codec.schema
 
-        def encode(value: S): AnyRef = codec.encode(g(value))
+        def encode(value: S): AnyRef = codec.encode(comap(value))
 
-        def decode(value: Any): S = f(codec.decode(value))
+        def decode(value: Any): S = map(codec.decode(value))
       }
     }
   }
-
-  implicit def coproductBaseCodec[S: WeakTypeTag: Manifest](implicit codec: Codec[S]): Codec[S :+: CNil] =
-    new CoproductBaseCodec(codec)
-
-  implicit def coproductEncoder[H: WeakTypeTag: Manifest, T <: Coproduct](implicit codecH: Codec[H],
-                                                                          codecT: Codec[T]): Codec[H :+: T] =
-    new CoproductCodec(codecH, codecT)
 
 }
