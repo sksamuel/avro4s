@@ -1,9 +1,9 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, DefaultFieldMapper, Encoder, ImmutableRecord, SchemaFor, ToRecord}
-import org.apache.avro.{Schema, SchemaBuilder}
+import com.sksamuel.avro4s._
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
+import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -14,22 +14,21 @@ class AvroNameEncoderTest extends AnyFunSuite with Matchers {
   @AvroNamespace("some.pkg")
   case class AvroNamespaceEncoderTest(foo: String)
 
+  implicit val fm: FieldMapper = DefaultFieldMapper
+
   test("encoder should take into account @AvroName on a field") {
-    val schema = AvroSchema[AvroNameEncoderTest]
-    val record = Encoder[AvroNameEncoderTest].encode(AvroNameEncoderTest("hello"), schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
+    val record = EncoderV2[AvroNameEncoderTest].encode(AvroNameEncoderTest("hello")).asInstanceOf[GenericRecord]
     record.get("bar") shouldBe new Utf8("hello")
   }
 
   test("encoding sealed traits of case objects should take into account AvroName") {
-    val schema = AvroSchema[Ship]
-    val record = Encoder[Ship].encode(Ship(Atlantic), schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
+    val record = EncoderV2[Ship].encode(Ship(Atlantic)).asInstanceOf[GenericRecord]
     record.get("location").toString shouldBe "atlantic"
   }
 
   test("encoding sealed traits of case objects should take into account @AvroNamespace") {
-    val schema = AvroSchema[WaterproofBox]
     val data = WaterproofBox(AirtightBox(Cucumber(1.23)))
-    val record = Encoder[WaterproofBox].encode(data, schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
+    val record = EncoderV2[WaterproofBox].encode(data).asInstanceOf[GenericRecord]
     val abox = record.get("airtight_box").asInstanceOf[GenericRecord]
     val contents = abox.get("contents").asInstanceOf[GenericRecord]
     contents.get("length") shouldBe 1.23
@@ -37,15 +36,14 @@ class AvroNameEncoderTest extends AnyFunSuite with Matchers {
 
   test("support encoding and decoding with empty namespaces") {
     val spaceship = Spaceship(MiserableCosmos(true))
-    val encoded = Encoder[Spaceship].encode(spaceship, SchemaFor[Spaceship].schema(DefaultFieldMapper), DefaultFieldMapper)
-    val decoded = Decoder[Spaceship].decode(encoded, SchemaFor[Spaceship].schema(DefaultFieldMapper), DefaultFieldMapper)
+    val encoded = EncoderV2[Spaceship].encode(spaceship)
+    val decoded = DecoderV2[Spaceship].decode(encoded)
     spaceship shouldBe decoded
   }
 
   test("encoding sealed traits with @AvroNamespace at the field level should work #255") {
-    val schema = AvroSchema[MyStark]
     val ms = MyStark(Sansa(1), "", 0)
-    val record = ToRecord[MyStark](schema).to(ms).asInstanceOf[ImmutableRecord]
+    val record = EncoderV2[MyStark].encode(ms).asInstanceOf[ImmutableRecord]
 
     val sansa = SchemaBuilder.record("Sansa").namespace("the.north").fields().requiredInt("i").endRecord()
     val bran = SchemaBuilder.record("Bran").namespace("the.north").fields().requiredString("s").endRecord()
@@ -62,10 +60,9 @@ class AvroNameEncoderTest extends AnyFunSuite with Matchers {
   }
 
   test("support encoding a union with @AvroNamespace at the field level") {
-    val schema = AvroSchema[Cupcat]
     val cupcat = Cupcat(Option(Snoutley("snoutley")))
 
-    val record = ToRecord[Cupcat](schema).to(cupcat).asInstanceOf[ImmutableRecord]
+    val record = EncoderV2[Cupcat].encode(cupcat).asInstanceOf[ImmutableRecord]
 
     val snoutley: Schema = SchemaBuilder.record("Snoutley").namespace("cup.cat").fields().requiredString("name").endRecord()
 
@@ -77,8 +74,6 @@ class AvroNameEncoderTest extends AnyFunSuite with Matchers {
 
     record.values.size shouldBe 1
   }
-
-
 }
 
 sealed trait Stark

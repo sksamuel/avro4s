@@ -39,6 +39,18 @@ trait BaseCodecs extends StringCodecs {
     }
   }
 
+  implicit object FloatCodec extends Codec[Float] {
+
+    val schema: Schema = SchemaBuilder.builder.doubleType
+
+    def encode(value: Float): AnyRef = java.lang.Float.valueOf(value)
+
+    def decode(value: Any): Float = value match {
+      case f: Float           => f
+      case f: java.lang.Float => f
+    }
+  }
+
   implicit object BooleanCodec extends Codec[Boolean] {
 
     val schema: Schema = SchemaBuilder.builder.booleanType
@@ -67,7 +79,7 @@ trait BaseCodecs extends StringCodecs {
     def decode(value: Any): Option[T] = if (value == null) None else Option(codec.decode(value))
   }
 
-  sealed trait ByteArrayCodecBase extends Codec[Array[Byte]] with FieldSpecificSchemaTypeCodec[Array[Byte]] {
+  sealed trait ByteArrayCodecBase extends Codec[Array[Byte]] with FieldSpecificCodec[Array[Byte]] {
 
     def decode(value: Any): Array[Byte] = value match {
       case buffer: ByteBuffer  => buffer.array
@@ -75,9 +87,10 @@ trait BaseCodecs extends StringCodecs {
       case fixed: GenericFixed => fixed.bytes
     }
 
-    def withFieldSchema(schema: Schema): ByteArrayCodecBase = schema.getType match {
+    def forFieldWith(schema: Schema, annotations: Seq[Any]): ByteArrayCodecBase = schema.getType match {
       case Schema.Type.ARRAY => byteArrayCodec
       case Schema.Type.FIXED => new FixedByteArrayCodec(schema)
+      case _ => sys.error(s"Byte array codec doesn't support schema type ${schema.getType}")
     }
   }
 
@@ -101,7 +114,7 @@ trait BaseCodecs extends StringCodecs {
                            comap: T[Byte] => Array[Byte],
                            codec: ByteArrayCodecBase = byteArrayCodec)
       extends Codec[T[Byte]]
-      with FieldSpecificSchemaTypeCodec[T[Byte]] {
+      with FieldSpecificCodec[T[Byte]] {
 
     val schema = codec.schema
 
@@ -109,7 +122,8 @@ trait BaseCodecs extends StringCodecs {
 
     def decode(value: Any): T[Byte] = map(codec.decode(value))
 
-    def withFieldSchema(schema: Schema): Codec[T[Byte]] = new ByteSeqCodec(map, comap, codec.withFieldSchema(schema))
+    def forFieldWith(schema: Schema, annotations: Seq[Any]): Codec[T[Byte]] =
+      new ByteSeqCodec(map, comap, codec.forFieldWith(schema, annotations))
   }
 
   implicit val byteSeqCodec = new ByteSeqCodec[Seq](_.toSeq, _.toArray)

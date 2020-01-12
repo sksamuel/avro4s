@@ -7,7 +7,7 @@ import org.apache.avro.{Schema, SchemaBuilder}
 
 class ValueTypeCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema)
     extends Codec[T]
-    with FieldSpecificSchemaTypeCodec[T] {
+    with FieldSpecificCodec[T] {
 
   private val codec = new UnderlyingCodec(ctx.parameters.head, schema)
 
@@ -15,19 +15,19 @@ class ValueTypeCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema)
 
   def decode(value: Any): T = ctx.rawConstruct(List(codec.decodeUnderlying(value)))
 
-  override def withFieldSchema(schema: Schema): Typeclass[T] = new ValueTypeCodec(ctx, schema)
+  override def forFieldWith(schema: Schema, annotations: Seq[Any]): Typeclass[T] = ValueTypeCodec(ctx, annotations)
 }
 
 object ValueTypeCodec {
-  def apply[T](ctx: CaseClass[Typeclass, T]): ValueTypeCodec[T] = {
-    val schema = buildSchema(ctx)
+  def apply[T](ctx: CaseClass[Typeclass, T], annotations: Seq[Any] = Seq.empty): ValueTypeCodec[T] = {
+    val schema = buildSchema(ctx, annotations)
     new ValueTypeCodec(ctx, schema)
   }
 
-  def buildSchema[T](ctx: CaseClass[Typeclass, T]): Schema = {
-    val annotations = new AnnotationExtractors(ctx.annotations)
+  def buildSchema[T](ctx: CaseClass[Typeclass, T], annotations: Seq[Any]): Schema = {
+    val annotationExtractor = new AnnotationExtractors(ctx.annotations ++ annotations) // taking over @AvroFixed and the like
 
-    val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)
+    val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations ++ annotations)
     val namespace = nameExtractor.namespace
     val name = nameExtractor.name
 
@@ -36,11 +36,11 @@ object ValueTypeCodec {
     // if we have a value type AND @AvroFixed is present on the class, then we simply return a schema of type fixed
 
     val param = ctx.parameters.head
-    annotations.fixed match {
+    annotationExtractor.fixed match {
       case Some(size) =>
         val builder =
-          SchemaBuilder.fixed(name).doc(annotations.doc.orNull).namespace(namespace).aliases(annotations.aliases: _*)
-        annotations.props.foreach { case (k, v) => builder.prop(k, v) }
+          SchemaBuilder.fixed(name).doc(annotationExtractor.doc.orNull).namespace(namespace).aliases(annotationExtractor.aliases: _*)
+        annotationExtractor.props.foreach { case (k, v) => builder.prop(k, v) }
         builder.size(size)
       case None => param.typeclass.schema
     }
@@ -58,8 +58,8 @@ object ValueTypeCodec {
     private val codec: Typeclass[param.PType] = {
       val codec = param.typeclass
       codec match {
-        case m: FieldSpecificSchemaTypeCodec[param.PType] if m.schema.getType != schema.getType =>
-          m.withFieldSchema(schema)
+        case m: FieldSpecificCodec[param.PType] @unchecked if m.schema != schema =>
+          m.forFieldWith(schema, param.annotations)
         case _ => codec
       }
     }

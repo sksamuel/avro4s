@@ -65,8 +65,8 @@ object RecordCodec {
   class FieldCodec[T](val param: Param[Typeclass, T], val field: Option[Field]) {
 
     private val codec: Codec[param.PType] = (param.typeclass, field) match {
-      case (m: FieldSpecificSchemaTypeCodec[param.PType], Some(f)) if f.schema.getType != m.schema.getType =>
-        m.withFieldSchema(f.schema)
+      case (m: FieldSpecificCodec[param.PType] @ unchecked, Some(f)) if param.annotations.nonEmpty =>
+        m.forFieldWith(f.schema, param.annotations)
       case (codec, _) => codec
     }
 
