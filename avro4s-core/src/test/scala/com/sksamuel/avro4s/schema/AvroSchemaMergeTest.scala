@@ -2,9 +2,10 @@ package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroSchemaMerge
 import org.apache.avro.SchemaBuilder
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class AvroSchemaMergeTest extends WordSpec with Matchers {
+class AvroSchemaMergeTest extends AnyWordSpec with Matchers {
   "AvroSchemaMerge" should {
     "merge schemas with union type" in {
       val schemaOne = SchemaBuilder

@@ -1,13 +1,15 @@
 package com.sksamuel.avro4s
 
-import DecoderHelper.tryDecode
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZoneOffset}
 import java.util.UUID
 
+import com.sksamuel.avro4s.DecoderHelper.tryDecode
+import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import magnolia.{CaseClass, Magnolia, SealedTrait}
-import org.apache.avro.LogicalTypes.{Decimal, TimeMicros, TimeMillis}
+import org.apache.avro.LogicalTypes.{Decimal, TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
 import org.apache.avro.generic.{GenericContainer, GenericData, GenericEnumSymbol, GenericFixed, GenericRecord, IndexedRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
@@ -147,21 +149,51 @@ object Decoder {
     // avro4s stores times as either millis since midnight or micros since midnight
     override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): LocalTime = {
       schema.getLogicalType match {
-        case _: TimeMicros =>
-          value match {
-            case i: Int => LocalTime.ofNanoOfDay(i.toLong * 1000L)
-            case l: Long => LocalTime.ofNanoOfDay(l * 1000L)
-          }
         case _: TimeMillis =>
           value match {
             case i: Int => LocalTime.ofNanoOfDay(i.toLong * 1000000L)
             case l: Long => LocalTime.ofNanoOfDay(l * 1000000L)
           }
+        case _: TimeMicros =>
+          value match {
+            case i: Int => LocalTime.ofNanoOfDay(i.toLong * 1000L)
+            case l: Long => LocalTime.ofNanoOfDay(l * 1000L)
+          }
       }
     }
   }
 
-  implicit val LocalDateTimeDecoder: Decoder[LocalDateTime] = LongDecoder.map(millis => LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.UTC))
+  implicit object OffsetDateTimeDecoder extends Decoder[OffsetDateTime] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper) =
+      OffsetDateTime.parse(value.toString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+  }
+
+  implicit val LocalDateTimeDecoder: Decoder[LocalDateTime] = new Decoder[LocalDateTime] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): LocalDateTime = {
+      schema.getLogicalType match {
+        case _: TimestampMillis =>
+          value match {
+            case i: Int => LocalDateTime.ofInstant(Instant.ofEpochMilli(i.toLong), ZoneOffset.UTC)
+            case l: Long => LocalDateTime.ofInstant(Instant.ofEpochMilli(l), ZoneOffset.UTC)
+          }
+
+        case _: TimestampMicros =>
+          value match {
+            case i: Int => LocalDateTime.ofInstant(Instant.ofEpochMilli(i / 1000), ZoneOffset.UTC).plusNanos(i % 1000 * 1000)
+            case l: Long => LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000), ZoneOffset.UTC).plusNanos(l % 1000 * 1000)
+          }
+
+        case TimestampNanosLogicalType =>
+          value match {
+            case l: Long =>
+              val nanos = l % 1000000
+              LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000000), ZoneOffset.UTC).plusNanos(nanos)
+            case other => sys.error(s"Unsupported type for timestamp nanos ${other.getClass.getName}")
+          }
+      }
+    }
+  }
+
   implicit val LocalDateDecoder: Decoder[LocalDate] = LongDecoder.map(LocalDate.ofEpochDay)
   implicit val InstantDecoder: Decoder[Instant] = LongDecoder.map(Instant.ofEpochMilli)
   implicit val DateDecoder: Decoder[Date] = LocalDateDecoder.map(Date.valueOf)
@@ -180,6 +212,10 @@ object Decoder {
           sys.error("Cannot decode <null> as a string")
         case other => sys.error(s"Cannot decode $other of type ${other.getClass} into a string")
       }
+  }
+
+  implicit object Utf8Decoder extends Decoder[Utf8] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Utf8 = new Utf8(value.toString)
   }
 
   implicit object UUIDDecoder extends Decoder[UUID] {
@@ -278,9 +314,6 @@ object Decoder {
     private[this] val safeFromA: SafeFrom[A] = SafeFrom.makeSafeFrom[A]
     private[this] val safeFromB: SafeFrom[B] = SafeFrom.makeSafeFrom[B]
 
-//    private val nameA = Namer(implicitly[WeakTypeTag[A]].tpe).fullName
-//    private val nameB = Namer(implicitly[WeakTypeTag[B]].tpe).fullName
-
     private val nameA = NameExtractor(implicitly[Manifest[A]].runtimeClass).fullName
     private val nameB = NameExtractor(implicitly[Manifest[B]].runtimeClass).fullName
 
@@ -294,7 +327,7 @@ object Decoder {
       safeFromA.safeFrom(value, schema, fieldMapper).map(Left[A, B])
         .orElse(safeFromB.safeFrom(value, schema, fieldMapper).map(Right[A, B]))
         .getOrElse {
-          sys.error(s"Could not decode $value into Either[$nameB, $nameB]")
+          sys.error(s"Could not decode $value into Either[$nameA, $nameB]")
         }
     }
   }
@@ -371,7 +404,7 @@ object Decoder {
                   * The field mapper is used to map fields in a schema to fields in a case class by
                   * transforming the class field name to the wire name format.
                   */
-                val name = fieldMapper.to(extractor.name.getOrElse(p.label))
+                val name = extractor.name.getOrElse(fieldMapper.to(p.label))
 
                 // take into account @AvroName and use the field mapper to get the name of this parameter in the schema
                 def field = record.getSchema.getField(name)
@@ -402,44 +435,50 @@ object Decoder {
     }
   }
 
-  def dispatch[T](ctx: SealedTrait[Typeclass, T]): Decoder[T] = new Decoder[T] {
-    override def decode(container: Any, schema: Schema, fieldMapper: FieldMapper): T = {
-      schema.getType match {
-        case Schema.Type.RECORD =>
-          container match {
-            case container: GenericContainer =>
-              val subtype = ctx.subtypes.find { subtype => NameExtractor(subtype.typeName, subtype.annotations ++ ctx.annotations).fullName == container.getSchema.getFullName }
-                .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
-              subtype.typeclass.decode(container, schema, fieldMapper)
-            case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
-          }
-        // we have a union for nested ADTs and must extract the appropriate schema
-        case Schema.Type.UNION =>
-          container match {
-            case container: GenericContainer =>
-              val subschema = schema.getTypes.asScala.find(_.getFullName == container.getSchema.getFullName)
-                .getOrElse(sys.error(s"Could not find schema for ${container.getSchema.getFullName} in union schema $schema"))
-              val subtype = ctx.subtypes.find { subtype => NameExtractor(subtype.typeName, subtype.annotations).fullName == container.getSchema.getFullName }
-                .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
-              subtype.typeclass.decode(container, subschema, fieldMapper)
-            case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
-          }
-        // case objects are encoded as enums
-        // we need to take the string and create the object
-        case Schema.Type.ENUM =>
-          val subtype = container match {
-            case enum: GenericEnumSymbol[_] =>
-                ctx.subtypes.find { subtype => NameExtractor(subtype).name == enum.toString }
+  def dispatch[T](ctx: SealedTrait[Typeclass, T]): Decoder[T] = {
+    val nameExtractors = ctx.subtypes.map(s => s -> NameExtractor(s.typeName, s.annotations ++ ctx.annotations)).toMap
+    val nameOf = nameExtractors.map(kv => kv._1 -> kv._2.name)
+    val fullNameOf = nameExtractors.map(kv => kv._1 -> kv._2.fullName)
+
+    new Decoder[T] {
+      override def decode(container: Any, schema: Schema, fieldMapper: FieldMapper): T = {
+        schema.getType match {
+          case Schema.Type.RECORD =>
+            container match {
+              case container: GenericContainer =>
+                val subtype = ctx.subtypes.find { subtype => fullNameOf(subtype) == container.getSchema.getFullName }
+                  .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
+                subtype.typeclass.decode(container, schema, fieldMapper)
+              case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
+            }
+          // we have a union for nested ADTs and must extract the appropriate schema
+          case Schema.Type.UNION =>
+            container match {
+              case container: GenericContainer =>
+                val subschema = schema.getTypes.asScala.find(_.getFullName == container.getSchema.getFullName)
+                  .getOrElse(sys.error(s"Could not find schema for ${container.getSchema.getFullName} in union schema $schema"))
+                val subtype = ctx.subtypes.find { subtype => fullNameOf(subtype) == container.getSchema.getFullName }
+                  .getOrElse(sys.error(s"Could not find subtype for ${container.getSchema.getFullName} in subtypes ${ctx.subtypes}"))
+                subtype.typeclass.decode(container, subschema, fieldMapper)
+              case _ => sys.error(s"Unsupported type $container in sealed trait decoder")
+            }
+          // case objects are encoded as enums
+          // we need to take the string and create the object
+          case Schema.Type.ENUM =>
+            val subtype = container match {
+              case enum: GenericEnumSymbol[_] =>
+                ctx.subtypes.find { subtype => nameOf(subtype) == enum.toString }
                   .getOrElse(sys.error(s"Could not find subtype for enum $enum"))
-            case str: String =>
-              ctx.subtypes.find { subtype => NameExtractor(subtype).name == str }
-                .getOrElse(sys.error(s"Could not find subtype for enum $str"))
-          }
-          val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
-          val module = runtimeMirror.staticModule(subtype.typeName.full)
-          val companion = runtimeMirror.reflectModule(module.asModule)
-          companion.instance.asInstanceOf[T]
-        case other => sys.error(s"Unsupported sealed trait schema type $other")
+              case str: String =>
+                ctx.subtypes.find { subtype => nameOf(subtype) == str }
+                  .getOrElse(sys.error(s"Could not find subtype for enum $str"))
+            }
+            val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
+            val module = runtimeMirror.staticModule(subtype.typeName.full)
+            val companion = runtimeMirror.reflectModule(module.asModule)
+            companion.instance.asInstanceOf[T]
+          case other => sys.error(s"Unsupported sealed trait schema type $other")
+        }
       }
     }
   }

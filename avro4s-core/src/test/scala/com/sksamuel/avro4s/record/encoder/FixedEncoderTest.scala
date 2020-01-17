@@ -2,7 +2,8 @@ package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.{AvroFixed, AvroSchema, DefaultFieldMapper, Encoder}
 import org.apache.avro.generic.{GenericFixed, GenericRecord}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 @AvroFixed(8)
 case class QuarterSHA256(bytes: Array[Byte]) extends AnyVal
@@ -15,7 +16,7 @@ case class AvroMessage(q: QuarterSHA256, payload: Array[Byte])
 case class FixedValueType(z: String) extends AnyVal
 case class OptionFixedWrapper(opt: Option[FixedValueType])
 
-class FixedEncoderTest extends FunSuite with Matchers {
+class FixedEncoderTest extends AnyFunSuite with Matchers {
 
   val m = AvroMessage(
     QuarterSHA256(Array[Byte](0, 1, 2, 3, 4, 5, 6)),

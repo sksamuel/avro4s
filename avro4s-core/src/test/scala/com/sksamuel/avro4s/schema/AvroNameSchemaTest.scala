@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroName, AvroSchema}
-import org.scalatest.{FunSuite, Matchers}
+import com.sksamuel.avro4s.{AvroName, AvroSchema, SnakeCase}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class AvroNameSchemaTest extends FunSuite with Matchers {
+class AvroNameSchemaTest extends AnyFunSuite with Matchers {
 
   test("generate field names using @AvroName") {
     case class Foo(@AvroName("wibble") wobble: String, wubble: String)
@@ -38,6 +39,7 @@ class AvroNameSchemaTest extends FunSuite with Matchers {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_sealed_trait.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
+
 }
 
 @AvroName("foofoo")

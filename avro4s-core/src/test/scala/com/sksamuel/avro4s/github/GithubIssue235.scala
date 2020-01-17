@@ -5,7 +5,8 @@ import java.io.ByteArrayOutputStream
 
 import org.apache.avro.generic.{GenericDatumReader, GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.{DecoderFactory, EncoderFactory}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 case class Label(value: String) extends AnyVal
 case class Value[A](label: Label, value: A)
@@ -42,7 +43,7 @@ object Bug {
 
 }
 
-class GithubIssue235 extends FunSuite with Matchers {
+class GithubIssue235 extends AnyFunSuite with Matchers {
   test("Broken typeclass derivation upgrading from 1.9.0 to 2.0.1 #235") {
     val o = OneOrTwoWrapper(One(Value(Label("lbl"), "foo")))
     Bug(o)

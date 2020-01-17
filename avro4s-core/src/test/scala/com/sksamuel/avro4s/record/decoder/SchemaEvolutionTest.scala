@@ -6,9 +6,10 @@ import com.sksamuel.avro4s.{AvroAlias, AvroDataInputStream, AvroOutputStream, Av
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class SchemaEvolutionTest extends FunSuite with Matchers {
+class SchemaEvolutionTest extends AnyFunSuite with Matchers {
 
   case class Version1(original: String)
   case class Version2(@AvroAlias("original") renamed: String)

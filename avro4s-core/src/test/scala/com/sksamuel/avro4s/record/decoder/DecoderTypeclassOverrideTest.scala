@@ -2,9 +2,10 @@ package com.sksamuel.avro4s.record.decoder
 
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, ImmutableRecord, FieldMapper, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class DecoderTypeclassOverrideTest extends FunSuite with Matchers {
+class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
   case class StringOverrideTest(s: String, i: Int)
 

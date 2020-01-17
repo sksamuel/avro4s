@@ -4,9 +4,10 @@ import java.io.ByteArrayOutputStream
 
 import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema}
 import org.apache.avro.file.CodecFactory
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class AvroDataOutputStreamCodecTest extends WordSpec with Matchers {
+class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
 
   case class Composer(name: String, birthplace: String, compositions: Seq[String])
   val schema = AvroSchema[Composer]
@@ -20,14 +21,6 @@ class AvroDataOutputStreamCodecTest extends WordSpec with Matchers {
       output.close()
       new String(baos.toByteArray) should include("birthplace")
       new String(baos.toByteArray) should include("compositions")
-    }
-
-    "include zstandard coded in metadata when serialized with zstandard" ignore {
-      val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.zstandardCodec(CodecFactory.DEFAULT_ZSTANDARD_LEVEL)).build(schema)
-      output.write(ennio)
-      output.close()
-      new String(baos.toByteArray) should include("zstandard")
     }
 
     "include deflate coded in metadata when serialized with deflate" in {

@@ -4,9 +4,10 @@ import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, Defaul
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class AvroNameEncoderTest extends FunSuite with Matchers {
+class AvroNameEncoderTest extends AnyFunSuite with Matchers {
 
   case class AvroNameEncoderTest(@AvroName("bar") foo: String)
 
@@ -51,7 +52,7 @@ class AvroNameEncoderTest extends FunSuite with Matchers {
 
     record.getSchema shouldBe SchemaBuilder.record("MyStark").namespace("com.sksamuel.avro4s.record.encoder")
       .fields()
-      .name("stark").`type`(SchemaBuilder.unionOf().`type`(sansa).and().`type`(bran).endUnion()).noDefault()
+      .name("stark").`type`(SchemaBuilder.unionOf().`type`(bran).and().`type`(sansa).endUnion()).noDefault()
       .requiredString("id")
       .requiredInt("x")
       .endRecord()

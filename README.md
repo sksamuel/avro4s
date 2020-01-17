@@ -340,7 +340,7 @@ Would generate the following schema:
 }
 ```
 
-### Defaults
+### Field Defaults
 
 Avro4s will take into account default values on fields. For example, the following class `case class Wibble(s: String = "foo")` would be serialized as:
 
@@ -372,6 +372,341 @@ However if you wish the scala default to be ignored, then you can annotate the f
       "type": "string"
     }
   ]
+}
+```
+
+### Enums and Enum Defaults
+
+#### AVRO Enums from Scala Enums, Java Enums, and Sealed Traits
+
+Avro4s maps scala enums, java enums, and scala sealed traits to the AVRO `enum` type.
+For example, the following scala enum:
+```scala
+object Colours extends Enumeration {
+  val Red, Amber, Green = Value
+}
+```
+when referenced in a case class:
+```scala
+case class Car(colour: Colours.Value)
+```
+results in the following AVRO schema (e.g. using `val schema = AvroSchema[Car]`):
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green" ]
+    }
+  } ]
+}
+```
+Avro4s will also convert a Java enum such as:
+```java
+public enum Wine {
+    Malbec, Shiraz, CabSav, Merlot
+}
+```
+into an AVRO `enum` type:
+```json
+{
+  "type": "enum",
+  "name": "Wine",
+  "symbols": [ "Malbec", "Shiraz", "CabSav", "Merlot" ]
+}
+```
+And likewise, avro4s will convert a sealed trait such as:
+```scala
+sealed trait Animal
+@AvroSortPriority(0) case object Cat extends Animal
+@AvroSortPriority(1) case object Dog extends Animal
+```
+into the following AVRO `enum` schema:
+```json
+{
+  "type" : "enum",
+  "name" : "Animal",
+  "symbols" : [ "Cat", "Dog" ]
+}
+```
+
+#### Field Defaults vs. Enum Defaults
+
+As with any AVRO field, you can specify an enum field's default value as follows:
+```scala
+case class Car(colour: Colours.Value = Colours.Red)
+```
+resulting in the following AVRO schema:
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green" ]
+    },
+    "default": "Red"
+  } ]
+}
+```
+One benefit of providing a field default is that the writer can later remove the field without
+breaking existing readers. In the `Car` example, if the writer doesn't provide a value for the
+`colour` field, the reader will default the `colour` to `Red`.
+
+But what if the writer would like to extend the `Colour` enumeration to include the colour `Orange`:
+```scala
+object Colours extends Enumeration {
+  val Red, Amber, Green, Orange = Value
+}
+```
+resulting in the following AVRO schema?
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green", "Orange" ]
+    },
+    "default": "Red"
+  } ]
+}
+```
+If a writer creates an `Orange` `Car`:
+```scala
+Car(colours = Colours.Orange)
+```
+readers using the older schema (the one without the new `Orange` value), will fail with a backwards compatibility error.
+I.e. readers using the previous version of the `Car` schema don't know the colour `Orange`, and therefore
+can't read the new `Car` record.
+
+To enable writers to extend enums in a backwards-compatible way, AVRO allows you to specify a default enum value 
+as part of the enum type's definition:
+```json
+{
+  "type" : "enum",
+  "name" : "Colours",
+  "symbols" : [ "Red", "Amber", "Green" ],
+  "default": "Amber"
+}
+```
+Note that an enum's default isn't the same as an enum field's default as showed below,
+where the enum default is `Amber` and the field's default is `Red`:
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green" ],
+      "default": "Amber"
+    },
+    "default": "Red"
+  } ]
+}
+```
+Note that the field's default and the enum's default need not be the same value.
+
+The field's default answers the question:
+* What value should the reader use if the writer didn't specify the field's value?
+
+In the schema example above, the answer is `Red`.
+
+The enum's default value answers the question:
+* What value should the reader use if the writer specifies an enum value that the reader doesn't recognize?
+
+In the example above, the answer is `Amber`.
+
+In summary, as long as a writer specified a the default enum value in previous versions of an enum's schema, the writer can add
+new enum values without breaking older readers. For example, we can add
+the colour `Orange` to the `Colour` enum's list of symbol/values without breaking older readers:
+```json
+{
+  "type" : "record",
+  "name" : "Car",
+  "fields" : [ {
+    "name" : "colour",
+    "type" : {
+      "type" : "enum",
+      "name" : "Colours",
+      "symbols" : [ "Red", "Amber", "Green", "Orange" ],
+      "default": "Amber"
+    },
+    "default": "Red"
+  } ]
+}
+```
+Specifically, given `Amber` as the enum's default, an older AVRO reader that receives an `Orange` `Car` will 
+default the `Car`'s `colour` to `Amber`, the enum's default.
+
+The following sections describe how to define enum defaults through avro4s for scala enums, java enums,
+and sealed traits.
+
+#### Defining Enum Defaults for Scala Enums
+
+For scala enums such as:
+```scala
+object Colours extends Enumeration {
+   val Red, Amber, Green = Value
+}
+ ```
+avro4s gives you two options:
+1) You can define an implicit `SchemaFor` using the `ScalaEnumSchemaFor[E].apply(default: E)` method
+where the method's `default` argument is one of the enum's values or ...
+2) You can use the `@AvroEnumDefault` annotation to declare the default enum value.
+
+For example, to create an implicit `SchemaFor` for an scala enum with a default enum value, 
+use the `ScalaEnumSchemaFor[E].apply(default: E)` method as follows:
+```scala
+implicit val schemaForColours: SchemaFor[Colours.Value] = ScalaEnumSchemaFor[Colours.Value](default = Colours.Amber)
+```
+resulting in the following AVRO schema:
+```json
+{
+  "type" : "enum",
+  "name" : "Colours",
+  "symbols" : [ "Red", "Amber", "Green" ],
+  "default": "Amber"
+}
+```
+Or, to declare the default enum value, you can use the `@AvroEnumDefault` annotation as follows:
+```scala
+@AvroEnumDefault(Colours.Amber)
+object Colours extends Enumeration {
+   val Red, Amber, Green = Value
+}
+```
+resulting in the same AVRO schema:
+```json
+{
+  "type" : "enum",
+  "name" : "Colours",
+  "symbols" : [ "Red", "Amber", "Green" ],
+  "default": "Amber"
+}
+```
+You can also use the following avro4s annotations to change a scala enum's name, namespace, and to add additional properties:
+* `@AvroName`
+* `@AvroNamespace`
+* `@AvroProp`
+
+For example:
+```scala
+@AvroName("MyColours")
+@AvroNamespace("my.namespace")
+@AvroEnumDefault(Colours.Green)
+@AvroProp("hello", "world")
+object Colours extends Enumeration {
+  val Red, Amber, Green = Value
+}
+```
+resulting in the following AVRO schema:
+```json
+{
+  "type" : "enum",
+  "name" : "MyColours",
+  "namespace" : "my.namespace",
+  "symbols" : [ "Red", "Amber", "Green" ],
+  "default": "Amber",
+  "hello" : "world"
+}
+```
+Note that if you're using an enum from, for example, a 3rd party library and without access to the source code, you may
+not be able to use the `@AvroEnumDefault` annotation, in which case you'll need to use the
+`ScalaEnumSchemaFor[E].apply(default: E)` method instead.
+
+#### Defining Enum Defaults for Java Enums
+
+For java enums such as:
+```java
+public enum Wine {
+  Malbec, 
+  Shiraz, 
+  CabSav, 
+  Merlot
+}
+```
+avro4s gives you two options to define an enum's default value:
+1) You can define an implicit `SchemaFor` using the `JavaEnumSchemaFor[E].apply(default: E)` method
+where the method's `default` argument is one of the enum's values or ...
+2) You can use the `@AvroJavaEnumDefault` annotation to declare the default enum value.
+
+For example, to create an implicit `SchemaFor` for an enum with a default enum value,
+use the `JavaEnumSchemaFor[E].apply(default: E)` method as follows:
+```scala
+implicit val schemaForWine: SchemaFor[Wine] = JavaEnumSchemaFor[Wine](default = Wine.Merlot)
+```
+Or, to declare the default enum value, use the `@AvroJavaEnumDefault` annotation as follows:
+```java
+public enum Wine {
+  Malbec, 
+  Shiraz, 
+  @AvroJavaEnumDefault CabSav,
+  Merlot
+}
+```
+Avro4s also supports the following java annotations for java enums:
+* `@AvroJavaName`
+* `@AvroJavaNamespace`
+* `@AvroJavaProp`
+
+Putting it all together, you can define a java enum with using avro4s's annotations as follows:
+```java
+@AvroJavaName("MyWine")
+@AvroJavaNamespace("my.namespace")
+@AvroJavaProp(key = "hello", value = "world")
+public enum Wine {
+  Malbec, 
+  Shiraz, 
+  @AvroJavaEnumDefault CabSav,
+  Merlot
+}
+```
+resulting in the following AVRO schema:
+```json
+{
+  "type": "enum",
+  "name": "MyWine",
+  "namespace": "my.namespace",
+  "symbols": [
+    "Malbec",
+    "Shiraz",
+    "CabSav",
+    "Merlot"
+  ],
+  "default": "CabSav",
+  "hello": "world"
+}
+```
+#### Defining Enum Defaults for Sealed Traits
+
+For sealed traits, you can define the trait's default enum using the `@AvroEnumDefault` annotation as follows:
+```scala
+@AvroEnumDefault(Dog)
+sealed trait Animal
+@AvroSortPriority(0) case object Cat extends Animal
+@AvroSortPriority(1) case object Dog extends Animal
+```
+resulting in the following AVRO schema:
+```json
+{
+  "type" : "enum",
+  "name" : "Animal",
+  "symbols" : [ "Cat", "Dog" ],
+  "default" : "Dog"
 }
 ```
 
@@ -617,8 +952,8 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | Float                        	| FLOAT         	|                  	| java.lang.Float |
 | UUID                         	| STRING        	| UUID             	| Utf8 |
 | LocalDate                    	| INT           	| Date             	| java.lang.Int |
-| LocalTime                    	| INT           	| Time-Millis      	| java.lang.Int |
-| LocalDateTime                	| LONG          	| Timestamp-Millis 	| java.lang.Long |
+| LocalTime                    	| INT           	| time-millis      	| java.lang.Int |
+| LocalDateTime                	| LONG          	| timestamp-nanos 	| java.lang.Long |
 | java.sql.Date                	| INT           	| Date             	| java.lang.Int |
 | Instant                      	| LONG          	| Timestamp-Millis 	| java.lang.Long |
 | Timestamp                    	| LONG          	| Timestamp-Millis 	| java.lang.Long |

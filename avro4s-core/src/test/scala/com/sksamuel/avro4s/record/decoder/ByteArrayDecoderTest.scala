@@ -4,11 +4,12 @@ import java.nio.ByteBuffer
 
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import org.apache.avro.generic.GenericData
-import org.scalatest.{FunSuite, Matchers}
 
 import scala.language.higherKinds
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class ByteArrayDecoderTest extends FunSuite with Matchers {
+class ByteArrayDecoderTest extends AnyFunSuite with Matchers {
 
   case class ArrayTest(z: Array[Byte])
   case class ByteBufferTest(z: ByteBuffer)

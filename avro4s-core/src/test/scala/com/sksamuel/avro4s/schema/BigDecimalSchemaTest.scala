@@ -2,13 +2,14 @@ package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroSchema, FieldMapper, ScalePrecision, SchemaFor}
 import org.apache.avro.Schema
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class BigDecimalSeqOption(biggies: Seq[Option[BigDecimal]])
 case class BigDecimalSeq(biggies: Seq[BigDecimal])
 case class BigDecimalDefault(decimal: BigDecimal = 964.55)
 
-class BigDecimalSchemaTest extends WordSpec with Matchers {
+class BigDecimalSchemaTest extends AnyWordSpec with Matchers {
 
   "SchemaEncoder" should {
     "accept big decimal as logical type on bytes" in {

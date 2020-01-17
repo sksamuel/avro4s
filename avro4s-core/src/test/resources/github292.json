@@ -1,6 +1,17 @@
 [
   {
     "type": "record",
+    "name": "Bar",
+    "namespace": "com.sksamuel.avro4s.github",
+    "fields": [
+      {
+        "name": "value",
+        "type": "int"
+      }
+    ]
+  },
+  {
+    "type": "record",
     "name": "Foo",
     "namespace": "com.sksamuel.avro4s.github",
     "fields": [
@@ -25,17 +36,6 @@
   },
   {
     "type": "record",
-    "name": "Bar",
-    "namespace": "com.sksamuel.avro4s.github",
-    "fields": [
-      {
-        "name": "value",
-        "type": "int"
-      }
-    ]
-  },
-  {
-    "type": "record",
     "name": "Invert",
     "namespace": "com.sksamuel.avro4s.github",
     "fields": [
@@ -48,8 +48,8 @@
             {
               "name": "unwrap",
               "type": [
-                "Foo",
-                "Bar"
+                "Bar",
+                "Foo"
               ]
             }
           ]

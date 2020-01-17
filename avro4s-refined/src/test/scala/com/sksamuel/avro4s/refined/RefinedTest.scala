@@ -5,11 +5,12 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.NonEmpty
 import org.apache.avro.Schema
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class Foo(nonEmptyStr: String Refined NonEmpty)
 
-class RefinedTest extends WordSpec with Matchers {
+class RefinedTest extends AnyWordSpec with Matchers {
 
   "refinedSchemaFor" should {
     "use the schema for the underlying type" in {

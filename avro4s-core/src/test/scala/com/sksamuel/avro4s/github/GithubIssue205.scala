@@ -1,8 +1,9 @@
 package com.sksamuel.avro4s.github
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class GithubIssue205 extends WordSpec with Matchers {
+class GithubIssue205 extends AnyWordSpec with Matchers {
 
   "SchemaFor" should {
     "work for case classes with complete path and no default value" in {

@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.schema
 import java.nio.ByteBuffer
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class ByteArraySchemaTest extends FunSuite with Matchers {
+class ByteArraySchemaTest extends AnyFunSuite with Matchers {
 
   test("encode byte arrays as BYTES type") {
     case class Test(z: Array[Byte])

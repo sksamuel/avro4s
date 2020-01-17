@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.streams.input
 import java.io.ByteArrayOutputStream
 
 import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema, Decoder, DefaultFieldMapper, Encoder, SchemaFor}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-trait InputStreamTest extends FunSuite with Matchers {
+trait InputStreamTest extends AnyFunSuite with Matchers {
 
   def readData[T: SchemaFor : Decoder](out: ByteArrayOutputStream): T = readData(out.toByteArray)
   def readData[T: SchemaFor : Decoder](bytes: Array[Byte]): T = {

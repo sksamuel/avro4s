@@ -3,14 +3,15 @@ package com.sksamuel.avro4s.record.decoder
 import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema, Decoder, DefaultFieldMapper, ImmutableRecord}
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 case class Test(either: Either[String, Double])
 case class Goo(s: String)
 case class Foo(b: Boolean)
 case class Test2(either: Either[Goo, Foo])
 
-class EitherDecoderTest extends FunSuite with Matchers {
+class EitherDecoderTest extends AnyFunSuite with Matchers {
 
   case class Voo(s: String)
   case class Woo(b: Boolean)

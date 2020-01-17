@@ -4,9 +4,10 @@ import java.io.ByteArrayOutputStream
 
 import com.sksamuel.avro4s.{AvroAlias, AvroInputStream, AvroOutputStream, AvroSchema}
 import org.apache.avro.generic.GenericData
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class Github202 extends FunSuite with Matchers {
+class Github202 extends AnyFunSuite with Matchers {
 
   test("Alias avro schema feature problem #202") {
 

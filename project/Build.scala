@@ -9,13 +9,14 @@ object Build extends AutoPlugin {
     val org = "com.sksamuel.avro4s"
     val AvroVersion = "1.9.1"
     val Log4jVersion = "1.2.17"
-    val ScalatestVersion = "3.0.8"
-    val Slf4jVersion = "1.7.28"
+    val ScalatestVersion = "3.1.0"
+    val Slf4jVersion = "1.7.30"
     val Json4sVersion = "3.6.7"
     val CatsVersion = "2.0.0-RC2"
     val ShapelessVersion = "2.3.3"
     val RefinedVersion = "0.9.10"
-    val MagnoliaVersion = "0.12.0"
+    val MagnoliaVersion = "0.12.6"
+    val ScalaMeterVersion = "0.19"
   }
 
   import autoImport._
@@ -70,7 +71,7 @@ object Build extends AutoPlugin {
     if (isTravis) {
       version := s"3.1.0.$travisBuildNumber-SNAPSHOT"
     } else {
-      version := "3.0.1"
+      version := "3.0.5"
     },
     publishTo := {
       val nexus = "https://oss.sonatype.org/"

@@ -2,9 +2,10 @@ package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroSchema
 import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class BasicSchemasTest extends WordSpec with Matchers {
+class BasicSchemasTest extends AnyWordSpec with Matchers {
 
   "SchemaEncoder" should {
     "accept booleans" in {

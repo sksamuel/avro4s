@@ -1,10 +1,11 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{FunSuite, Matchers}
 import shapeless.{:+:, CNil}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class CoproductSchemaTest extends FunSuite with Matchers {
+class CoproductSchemaTest extends AnyFunSuite with Matchers {
 
   test("coproducts") {
     val schema = AvroSchema[CPWrapper]
