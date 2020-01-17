@@ -1,4 +1,5 @@
 package com.sksamuel.avro4s
+import com.sksamuel.avro4s
 import com.sksamuel.avro4s.Codec.Typeclass
 import magnolia.{SealedTrait, Subtype}
 import org.apache.avro.Schema
@@ -9,12 +10,15 @@ class TypeUnionCodec[T](ctx: SealedTrait[Typeclass, T],
                         codecByName: Map[String, UnionEntryCodec[T]],
                         codecBySubtype: Map[Subtype[Typeclass, T], UnionEntryCodec[T]])
     extends Codec[T]
-    with FieldSpecificCodec[T] {
+    with ModifiableNamespaceCodec[T] {
 
-  def forFieldWith(schema: Schema, annotations: Seq[Any]): Codec[T] = {
-    // This is a bit hacky and explicit: we want to allow for propagation of namespace annotations from fields to
-    // type unions.
-    TypeUnionCodec(ctx, annotations.filter(_.isInstanceOf[AvroNamespaceable]))
+  def withNamespace(namespace: String): Codec[T] = TypeUnionCodec(ctx, Some(namespace))
+
+  override def withSchema(schemaFor: SchemaForV2[T], fieldMapper: FieldMapper): Typeclass[T] = {
+    val newSchema = schemaFor.schema
+    require(newSchema.getType == Schema.Type.UNION,
+            s"Schema type for record codecs must be UNION, received ${newSchema.getType}")
+    TypeUnionCodec(ctx, schemaFor, fieldMapper)
   }
 
   def encode(value: T): AnyRef = ctx.dispatch(value)(subtype => codecBySubtype(subtype).encodeSubtype(value))
@@ -32,32 +36,59 @@ class TypeUnionCodec[T](ctx: SealedTrait[Typeclass, T],
 }
 
 object TypeUnionCodec {
-  def apply[T](ctx: SealedTrait[Typeclass, T], annotations: Seq[Any] = Seq.empty): TypeUnionCodec[T] = {
-    val subtypeCodecs: Seq[UnionEntryCodec[T]] =
-      ctx.subtypes.map(st => new UnionEntryCodec(st, ctx.annotations ++ annotations))
-    val schema = buildSchema(subtypeCodecs)
+  def apply[T](ctx: SealedTrait[Typeclass, T], namespaceOverride: Option[String] = None): TypeUnionCodec[T] = {
+    val subtypeCodecs: Seq[UnionEntryCodec[T]] = ctx.subtypes.map { st =>
+      val ns = namespaceOverride.orElse(new AnnotationExtractors(st.annotations).namespace)
+      new UnionEntryCodec(st, namespace = ns)
+    }
+    val schema = buildSchema(ctx, (s: Subtype[Typeclass, T]) => s.typeclass.schema)
+    apply(ctx, subtypeCodecs, schema)
+  }
+
+  def apply[T](ctx: SealedTrait[Typeclass, T],
+               schemaFor: SchemaForV2[T],
+               fieldMapper: FieldMapper): TypeUnionCodec[T] = {
+    val schema = schemaFor.schema
+
+    val subtypeCodecs: Seq[UnionEntryCodec[T]] = ctx.subtypes.map { st =>
+      val nameExtractor = NameExtractor(st.typeName, st.annotations ++ ctx.annotations)
+      val subtraitSchema = SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema)
+      new UnionEntryCodec(st, schemaOverride = Some(subtraitSchema), fieldMapper = fieldMapper)
+    }
+    apply(ctx, subtypeCodecs, schema)
+
+  }
+
+  private def apply[T](ctx: SealedTrait[avro4s.Codec.Typeclass, T],
+                       subtypeCodecs: Seq[UnionEntryCodec[T]],
+                       schema: Schema) = {
     val codecByName: Map[String, UnionEntryCodec[T]] = subtypeCodecs.map(c => c.fullName -> c).toMap
     val codecBySubtype: Map[Subtype[Typeclass, T], UnionEntryCodec[T]] = subtypeCodecs.map(c => c.st -> c).toMap
     new TypeUnionCodec(ctx, schema, codecByName, codecBySubtype)
   }
 
-  def buildSchema[T](codecs: Seq[UnionEntryCodec[T]]): Schema = {
-    val sortedCodecs = {
-      def priority(st: Subtype[Typeclass, T]) = new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
-      codecs.sortBy(c => (priority(c.st), c.st.typeName.full))
+  def buildSchema[TC[_], T](ctx: SealedTrait[TC, T], subtypeSchema: Subtype[TC, T] => Schema): Schema = {
+    val sortedSubtypes = {
+      def priority(st: Subtype[TC, T]) = new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
+      ctx.subtypes.sortBy(st => (priority(st), st.typeName.full))
     }
-    SchemaHelper.createSafeUnion(sortedCodecs.map(_.schema): _*)
+    SchemaHelper.createSafeUnion(sortedSubtypes.map(subtypeSchema): _*)
   }
 }
 
-class UnionEntryCodec[T](val st: Subtype[Typeclass, T], annotations: Seq[Any]) {
+class UnionEntryCodec[T](val st: Subtype[Typeclass, T],
+                         namespace: Option[String] = None,
+                         schemaOverride: Option[Schema] = None,
+                         fieldMapper: FieldMapper = DefaultFieldMapper) {
 
-  private val codec: Codec[st.SType] = if (annotations.nonEmpty) {
-    st.typeclass match {
-      case ac: AnnotableCodec[st.SType] @unchecked => ac.withAnnotations(annotations)
-      case c                                       => c
+  private val codec: Codec[st.SType] = {
+    (st.typeclass, namespace, schemaOverride) match {
+      case (codec, _, Some(s)) =>
+        codec.withSchema(SchemaForV2[st.SType](s), fieldMapper)
+      case (mnc: ModifiableNamespaceCodec[st.SType] @unchecked, Some(n), _) => mnc.withNamespace(n)
+      case (codec, _, _)                                                    => codec
     }
-  } else st.typeclass
+  }
 
   val fullName = codec.schema.getFullName
 

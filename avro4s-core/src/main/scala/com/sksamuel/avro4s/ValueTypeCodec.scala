@@ -20,11 +20,11 @@ class ValueTypeCodec[T](ctx: CaseClass[Typeclass, T], val schema: Schema)
 
 object ValueTypeCodec {
   def apply[T](ctx: CaseClass[Typeclass, T], annotations: Seq[Any] = Seq.empty): ValueTypeCodec[T] = {
-    val schema = buildSchema(ctx, annotations)
+    val schema = buildSchema(ctx, annotations, (p: Param[Typeclass, T]) => p.typeclass.schema)
     new ValueTypeCodec(ctx, schema)
   }
 
-  def buildSchema[T](ctx: CaseClass[Typeclass, T], annotations: Seq[Any]): Schema = {
+  def buildSchema[TC[_], T](ctx: CaseClass[TC, T], annotations: Seq[Any], paramSchema: Param[TC, T] => Schema): Schema = {
     val annotationExtractor = new AnnotationExtractors(ctx.annotations ++ annotations) // taking over @AvroFixed and the like
 
     val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations ++ annotations)
@@ -42,7 +42,7 @@ object ValueTypeCodec {
           SchemaBuilder.fixed(name).doc(annotationExtractor.doc.orNull).namespace(namespace).aliases(annotationExtractor.aliases: _*)
         annotationExtractor.props.foreach { case (k, v) => builder.prop(k, v) }
         builder.size(size)
-      case None => param.typeclass.schema
+      case None => paramSchema(param)
     }
   }
 

@@ -11,8 +11,6 @@ import scala.math.BigDecimal.RoundingMode
 
 class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
-  implicit val fm: FieldMapper = DefaultFieldMapper
-
   import scala.collection.JavaConverters._
 
   test("use byte array for decimal") {
@@ -30,7 +28,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
   test("allow decimals to be encoded as strings") {
 
-    implicit val bigDecimalSchemaFor = SchemaForV2.schemaFor[BigDecimal](SchemaBuilder.builder.stringType)
+    implicit val bigDecimalSchemaFor = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
 
     case class Test(decimal: BigDecimal)
 
@@ -72,7 +70,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
   test("allow custom typeclass overrides") {
 
-    implicit val bigDecimalAsString = SchemaForV2.schemaFor[BigDecimal](SchemaBuilder.builder.stringType)
+    implicit val bigDecimalAsString = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
 
     case class Test(decimal: BigDecimal)
 
@@ -82,7 +80,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
   test("allow bigdecimals to be encoded as generic fixed") {
     case class Test(s: BigDecimal)
-    implicit val bigDecimalAsFixed = SchemaForV2.schemaFor[BigDecimal](
+    implicit val bigDecimalAsFixed = SchemaForV2[BigDecimal](
       LogicalTypes.decimal(10, 8).addToSchema(SchemaBuilder.fixed("BigDecimal").size(8)))
     val record = EncoderV2[Test].encode(Test(12345678)).asInstanceOf[GenericRecord]
     record.get("s").asInstanceOf[GenericData.Fixed].bytes().toList shouldBe Seq(0, 4, 98, -43, 55, 43, -114, 0)

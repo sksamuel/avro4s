@@ -10,6 +10,12 @@ import scala.reflect.runtime.universe._
 
 trait ShapelessCoproductCodecs {
 
+  private def subSchemaFor[T: Manifest](schemaFor: SchemaForV2[_]): SchemaForV2[T] = {
+    val schema = schemaFor.schema
+    val fullName = NameExtractor(manifest.runtimeClass).fullName
+    SchemaForV2[T](SchemaHelper.extractTraitSubschema(fullName, schema))
+  }
+
   implicit def coproductBaseCodec[S: WeakTypeTag: Manifest](implicit codec: Codec[S]): Codec[S :+: CNil] =
     new Codec[S :+: CNil] {
 
@@ -20,11 +26,16 @@ trait ShapelessCoproductCodecs {
         case x      => sys.error(s"Unexpected value '$x' of type CNil (that doesn't exist)")
       }
 
-      private val elementDecoder = buildElementDecoder(codec)
+      private val elementDecoder: PartialFunction[Any, S] = buildElementDecoder(codec)
 
       def decode(value: Any): S :+: CNil =
         if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value))
         else sys.error(s"Unable to decode value '$value'")
+
+      override def withSchema(schemaFor: SchemaForV2[S :+: CNil], fieldMapper: FieldMapper): Codec[S :+: CNil] =
+        coproductBaseCodec(implicitly[WeakTypeTag[S]],
+          implicitly[Manifest[S]],
+          codec.withSchema(subSchemaFor[S](schemaFor), fieldMapper))
     }
 
   implicit def coproductCompositeCodec[H: WeakTypeTag: Manifest, T <: Coproduct](implicit codecH: Codec[H],
@@ -38,11 +49,20 @@ trait ShapelessCoproductCodecs {
         case Inr(t) => codecT.encode(t)
       }
 
-      private val elementDecoder = buildElementDecoder(codecH)
+      private val elementDecoder: PartialFunction[Any, H] = buildElementDecoder(codecH)
 
       def decode(value: Any): H :+: T =
         if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value))
         else Inr(codecT.decode(value))
+
+
+      override def withSchema(schemaFor: SchemaForV2[H :+: T], fieldMapper: FieldMapper): Codec[H :+: T] =
+        coproductCompositeCodec[H, T](
+          implicitly[WeakTypeTag[H]],
+          implicitly[Manifest[H]],
+          codecH.withSchema(subSchemaFor[H](schemaFor), fieldMapper),
+          codecT.withSchema(SchemaForV2[T](schemaFor.schema), fieldMapper)
+        )
     }
 }
 

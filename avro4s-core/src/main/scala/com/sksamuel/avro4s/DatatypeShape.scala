@@ -1,12 +1,11 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.Codec.Typeclass
 import magnolia.{CaseClass, SealedTrait}
 
 import scala.reflect.runtime.universe._
 
 object DatatypeShape {
-  def of[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T]): SealedTraitShape = {
+  def of[TC[_], T: WeakTypeTag](ctx: SealedTrait[TC, T]): SealedTraitShape = {
     import scala.reflect.runtime.universe
 
     val runtimeMirror = universe.runtimeMirror(Thread.currentThread().getContextClassLoader)
@@ -16,7 +15,7 @@ object DatatypeShape {
     if(allSubtypesAreObjects) SealedTraitShape.ScalaEnum else SealedTraitShape.TypeUnion
   }
 
-  def of[T](ctx: CaseClass[Typeclass, T]): CaseClassShape =
+  def of[TC[_], T](ctx: CaseClass[TC, T]): CaseClassShape =
     if(ctx.isValueClass) CaseClassShape.ValueType else CaseClassShape.Record
 }
 

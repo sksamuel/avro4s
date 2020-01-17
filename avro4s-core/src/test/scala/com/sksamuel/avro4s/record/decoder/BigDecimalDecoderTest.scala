@@ -36,18 +36,18 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
   }
 
   it should "be able to decode strings as bigdecimals" in {
-    implicit val schemaFor = SchemaForV2.schemaFor[BigDecimal](SchemaBuilder.builder.stringType)
-    DecoderV2[BigDecimal].decode("123.45") shouldBe BigDecimal(123.45)
+    implicit val schemaFor = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
+    DecoderV2[BigDecimal].withSchema(schemaFor).decode("123.45") shouldBe BigDecimal(123.45)
   }
 
   it should "be able to decode generic fixed as bigdecimals" in {
-    implicit val schemaFor = SchemaForV2.schemaFor[BigDecimal](
+    implicit val schemaFor = SchemaForV2[BigDecimal](
       LogicalTypes.decimal(10, 8).addToSchema(SchemaBuilder.fixed("BigDecimal").size(8))
     )
 
     val fixed =
       GenericData.get().createFixed(null, Array[Byte](0, 4, 98, -43, 55, 43, -114, 0), schemaFor.schema)
-    DecoderV2[BigDecimal].decode(fixed) shouldBe BigDecimal(12345678)
+    DecoderV2[BigDecimal].withSchema(schemaFor).decode(fixed) shouldBe BigDecimal(12345678)
   }
 
 //  it should "be able to decode longs as bigdecimals" in {

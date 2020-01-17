@@ -5,6 +5,7 @@ import org.apache.avro.generic.{GenericData, GenericEnumSymbol}
 import org.apache.avro.{Schema, SchemaBuilder}
 
 import scala.reflect.runtime.universe
+import scala.collection.JavaConverters._
 
 class ScalaEnumCodec[T](ctx: SealedTrait[Typeclass, T],
                         symbolForSubtype: Map[Subtype[Typeclass, T], AnyRef],
@@ -18,26 +19,30 @@ class ScalaEnumCodec[T](ctx: SealedTrait[Typeclass, T],
     case e: GenericEnumSymbol[_] => valueForSymbol(e.toString)
     case s: String               => valueForSymbol(s)
   }
+
+  override def withSchema(schemaFor: SchemaForV2[T], fieldMapper: FieldMapper): Typeclass[T] = {
+    val newSchema = schemaFor.schema
+    require(newSchema.getType == Schema.Type.ENUM, s"Schema type for enum codecs must be ENUM, received ${newSchema.getType}")
+    val currentSymbols = valueForSymbol.keys.toSet
+    val newSymbols = newSchema.getEnumSymbols.asScala.toSet
+    require(newSymbols == currentSymbols, s"Enum codec symbols cannot be changed via schema; schema symbols are ${newSymbols.mkString(",")} - codec symbols are ${currentSymbols}")
+    super.withSchema(schemaFor, fieldMapper)
+  }
 }
 
 object ScalaEnumCodec {
 
   def apply[T](ctx: SealedTrait[Typeclass, T]) = {
-    val sortedSubtypes: Seq[Subtype[Typeclass, T]] = {
-      def priority(st: Subtype[Typeclass, T]): Float =
-        new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
-      ctx.subtypes.sortBy(st => (priority(st), st.typeName.full))
-    }
+    val subtypes: Seq[Subtype[Typeclass, T]] = sortedSubtypes(ctx)
+    val schema: Schema = buildSchema(ctx, subtypes)
 
-    val schema: Schema = buildSchema(ctx, sortedSubtypes)
-
-    val symbolForSubtype: Map[Subtype[Typeclass, T], AnyRef] = sortedSubtypes.zipWithIndex.map {
+    val symbolForSubtype: Map[Subtype[Typeclass, T], AnyRef] = subtypes.zipWithIndex.map {
       case (st, i) => st -> GenericData.get.createEnum(schema.getEnumSymbols.get(i), schema)
     }.toMap
 
     val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
     val valueForSymbol: Map[String, T] =
-      sortedSubtypes.zipWithIndex.map {
+      subtypes.zipWithIndex.map {
         case (st, i) =>
           val module = runtimeMirror.staticModule(st.typeName.full)
           val caseObject = runtimeMirror.reflectModule(module.asModule).instance.asInstanceOf[T]
@@ -47,7 +52,14 @@ object ScalaEnumCodec {
     new ScalaEnumCodec(ctx, symbolForSubtype, valueForSymbol, schema)
   }
 
-  def buildSchema[T](ctx: SealedTrait[Typeclass, T], sortedSubtypes: Seq[Subtype[Typeclass, T]]): Schema = {
+  def sortedSubtypes[TC[_], T](ctx: SealedTrait[TC, T]): Seq[Subtype[TC, T]] = {
+    def priority(st: Subtype[TC, T]) = new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
+    ctx.subtypes.sortBy(st => (priority(st), st.typeName.full))
+  }
+
+  def buildSchema[TC[_], T](ctx: SealedTrait[TC, T]): Schema = buildSchema(ctx, sortedSubtypes(ctx))
+
+  def buildSchema[TC[_], T](ctx: SealedTrait[TC, T], sortedSubtypes: Seq[Subtype[TC, T]]): Schema = {
     val symbols = sortedSubtypes.map { sub =>
       val nameExtractor = NameExtractor(sub.typeName, sub.annotations)
       nameExtractor.name
@@ -64,7 +76,7 @@ object ScalaEnumCodec {
     builderWithDefault.symbols(symbols: _*)
   }
 
-  private def sealedTraitEnumDefaultValue[T](ctx: SealedTrait[Typeclass, T]) = {
+  private def sealedTraitEnumDefaultValue[TC[_], T](ctx: SealedTrait[TC, T]) = {
     val defaultExtractor = new AnnotationExtractors(ctx.annotations)
     defaultExtractor.enumDefault.flatMap { default =>
       ctx.subtypes.flatMap { st =>

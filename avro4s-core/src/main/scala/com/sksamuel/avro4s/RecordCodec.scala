@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.Codec.Typeclass
+import com.sksamuel.avro4s.Codec.{Typeclass => CodecTC}
 import magnolia.{CaseClass, Param}
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.IndexedRecord
@@ -10,15 +10,22 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordCodec[T](ctx: CaseClass[Typeclass, T],
+class RecordCodec[T](ctx: CaseClass[CodecTC, T],
                      val schema: Schema,
                      fieldMapper: FieldMapper,
                      fieldEncoding: Array[RecordCodec.FieldCodec[T]],
                      fieldDecoding: Array[RecordCodec.FieldCodec[T]])
     extends Codec[T]
-    with AnnotableCodec[T] {
+    with ModifiableNamespaceCodec[T] {
 
-  def withAnnotations(annotations: Seq[Any]): RecordCodec[T] = RecordCodec(ctx, fieldMapper, annotations)
+  def withNamespace(namespace: String): RecordCodec[T] = RecordCodec(ctx, fieldMapper, Some(namespace))
+
+  override def withSchema(schemaFor: SchemaForV2[T], fieldMapper: FieldMapper): Codec[T] = {
+    val newSchema = schemaFor.schema
+    require(newSchema.getType == Schema.Type.RECORD,
+            s"Schema type for record codecs must be RECORD, received ${newSchema.getType}")
+    RecordCodec(ctx, fieldMapper, schemaFor.schema)
+  }
 
   def encode(value: T): AnyRef = {
     // hot code path. Sacrificing functional programming to the gods of performance.
@@ -52,22 +59,35 @@ class RecordCodec[T](ctx: CaseClass[Typeclass, T],
 
 object RecordCodec {
 
-  def apply[T](ctx: CaseClass[Typeclass, T],
-               fieldMapper: FieldMapper,
-               annotations: Seq[Any] = Seq.empty): RecordCodec[T] = {
-    val schema = buildSchema(ctx, fieldMapper, annotations)
+  def apply[T](ctx: CaseClass[CodecTC, T], fieldMapper: FieldMapper, schema: Schema): RecordCodec[T] = {
     val codecs = buildFieldCodecs(ctx, schema, fieldMapper)
     val encoding = schema.getFields.asScala.map(f => codecs.find(_.field.exists(_ == f)).get).toArray
     val decoding = ctx.parameters.map(p => codecs.find(_.param == p).get).toArray
     new RecordCodec[T](ctx, schema, fieldMapper, encoding, decoding)
   }
 
-  class FieldCodec[T](val param: Param[Typeclass, T], val field: Option[Field]) {
+  def apply[T](ctx: CaseClass[CodecTC, T],
+               fieldMapper: FieldMapper,
+               namespace: Option[String] = None): RecordCodec[T] = {
+    val schema = buildSchema(ctx, fieldMapper, namespace, (p: Param[CodecTC, T]) => p.typeclass.schema)
+    val codecs = buildFieldCodecs(ctx, schema, fieldMapper)
+    val encoding = schema.getFields.asScala.map(f => codecs.find(_.field.exists(_ == f)).get).toArray
+    val decoding = ctx.parameters.map(p => codecs.find(_.param == p).get).toArray
+    new RecordCodec[T](ctx, schema, fieldMapper, encoding, decoding)
+  }
 
-    private val codec: Codec[param.PType] = (param.typeclass, field) match {
-      case (m: FieldSpecificCodec[param.PType] @ unchecked, Some(f)) if param.annotations.nonEmpty =>
-        m.forFieldWith(f.schema, param.annotations)
-      case (codec, _) => codec
+  class FieldCodec[T](val param: Param[CodecTC, T], val field: Option[Field]) {
+
+    private val codec: Codec[param.PType] = {
+      val ns = new AnnotationExtractors(param.annotations).namespace
+      (param.typeclass, ns, field.map(_.schema)) match {
+        case (codec, _, Some(s)) if s.getType != param.typeclass.schema.getType =>
+          // we don't need to specify the field mapper, as the only codec needing it (record codec) doesn't support
+          // schema type changes. So this here will throw in that case.
+          codec.withSchema(SchemaForV2[param.PType](s))
+        case (m: ModifiableNamespaceCodec[param.PType] @unchecked, Some(ns), _) => m.withNamespace(ns)
+        case (codec, _, _)                                                      => codec
+      }
     }
 
     private val fieldPosition = field.map(_.pos).getOrElse(-1)
@@ -91,7 +111,7 @@ object RecordCodec {
       }
   }
 
-  def buildFieldCodecs[T](ctx: CaseClass[Typeclass, T], schema: Schema, fieldMapper: FieldMapper): Seq[FieldCodec[T]] =
+  def buildFieldCodecs[T](ctx: CaseClass[CodecTC, T], schema: Schema, fieldMapper: FieldMapper): Seq[FieldCodec[T]] =
     ctx.parameters.map { param =>
       val annotations = new AnnotationExtractors(param.annotations)
       val name = annotations.name.getOrElse(fieldMapper.to(param.label))
@@ -99,13 +119,14 @@ object RecordCodec {
       new FieldCodec(param, field)
     }
 
-  private def buildSchema[T](ctx: CaseClass[Typeclass, T],
-                             fieldMapper: FieldMapper,
-                             additionalAnnotations: Seq[Any]): Schema = {
+  def buildSchema[TC[_], T](ctx: CaseClass[TC, T],
+                            fieldMapper: FieldMapper,
+                            namespaceOverride: Option[String],
+                            paramSchema: Param[TC, T] => Schema): Schema = {
     val annotations = new AnnotationExtractors(ctx.annotations)
 
-    val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations ++ additionalAnnotations)
-    val namespace = nameExtractor.namespace
+    val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)
+    val namespace = namespaceOverride.getOrElse(nameExtractor.namespace)
     val name = nameExtractor.name
 
     val fields: Seq[Field] = ctx.parameters.flatMap { param =>
@@ -114,7 +135,7 @@ object RecordCodec {
       if (annotations.transient) None
       else {
         val doc = valueTypeDoc(ctx, param)
-        Some(buildSchemaField(param, annotations, namespace, fieldMapper, doc))
+        Some(buildSchemaField(param, paramSchema(param), annotations, namespace, fieldMapper, doc))
       }
     }
 
@@ -129,11 +150,12 @@ object RecordCodec {
     record
   }
 
-  private def buildSchemaField[T](param: Param[Typeclass, T],
-                                  extractor: AnnotationExtractors,
-                                  containingNamespace: String,
-                                  fieldMapper: FieldMapper,
-                                  valueTypeDoc: Option[String]): Schema.Field = {
+  private def buildSchemaField[TC[_], T](param: Param[TC, T],
+                                         baseSchema: Schema,
+                                         extractor: AnnotationExtractors,
+                                         containingNamespace: String,
+                                         fieldMapper: FieldMapper,
+                                         valueTypeDoc: Option[String]): Schema.Field = {
 
     val extractor = new AnnotationExtractors(param.annotations)
     val doc = extractor.doc.orElse(valueTypeDoc).orNull
@@ -143,8 +165,6 @@ object RecordCodec {
 
     // the name could have been overriden with @AvroName, and then must be encoded with the field mapper
     val name = extractor.name.getOrElse(fieldMapper.to(param.label))
-
-    val baseSchema = param.typeclass.schema
 
     // the default value may be none, in which case it was not defined, or Some(null), in which case it was defined
     // and set to null, or something else, in which case it's a non null value
@@ -198,7 +218,7 @@ object RecordCodec {
     field
   }
 
-  private def valueTypeDoc[T](ctx: CaseClass[Typeclass, T], param: Param[Typeclass, T]): Option[String] =
+  private def valueTypeDoc[TC[_], T](ctx: CaseClass[TC, T], param: Param[TC, T]): Option[String] =
     try {
       // if the field is a value type then we may have annotated it with @AvroDoc, and that doc should be
       // placed onto the field, not onto the record type, because there won't be a record type for a value type!

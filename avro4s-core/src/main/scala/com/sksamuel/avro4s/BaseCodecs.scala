@@ -1,24 +1,19 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
-import java.time.Instant
 
-import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.{GenericData, GenericFixed}
-import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
+import org.apache.avro.{Schema, SchemaBuilder}
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.generic.CanBuildFrom
-import scala.math.BigDecimal.RoundingMode
-import scala.math.BigDecimal.RoundingMode.RoundingMode
 import scala.reflect.ClassTag
 
-trait BaseCodecs extends StringCodecs {
+trait BaseCodecs {
 
   implicit object IntCodec extends Codec[Int] {
 
-    val schema: Schema = SchemaBuilder.builder.intType
+    val schema: Schema = SchemaForV2.IntSchema.schema
 
     def encode(value: Int): AnyRef = java.lang.Integer.valueOf(value)
 
@@ -32,7 +27,7 @@ trait BaseCodecs extends StringCodecs {
 
   implicit object LongCodec extends Codec[Long] {
 
-    val schema: Schema = SchemaBuilder.builder.intType
+    val schema: Schema = SchemaForV2.LongSchema.schema
 
     def encode(value: Long): AnyRef = java.lang.Long.valueOf(value)
 
@@ -41,13 +36,13 @@ trait BaseCodecs extends StringCodecs {
       case short: Short => short.toLong
       case int: Int     => int.toLong
       case long: Long   => long
-      case other        => sys.error(s"Cannot convert $other to type INT")
+      case other        => sys.error(s"Cannot convert $other to type LONG")
     }
   }
 
   implicit object DoubleCodec extends Codec[Double] {
 
-    val schema: Schema = SchemaBuilder.builder.doubleType
+    val schema: Schema = SchemaForV2.DoubleSchema.schema
 
     def encode(value: Double): AnyRef = java.lang.Double.valueOf(value)
 
@@ -59,7 +54,7 @@ trait BaseCodecs extends StringCodecs {
 
   implicit object FloatCodec extends Codec[Float] {
 
-    val schema: Schema = SchemaBuilder.builder.doubleType
+    val schema: Schema = SchemaForV2.FloatSchema.schema
 
     def encode(value: Float): AnyRef = java.lang.Float.valueOf(value)
 
@@ -71,15 +66,15 @@ trait BaseCodecs extends StringCodecs {
 
   implicit object BooleanCodec extends Codec[Boolean] {
 
-    val schema: Schema = SchemaBuilder.builder.booleanType
+    val schema: Schema = SchemaForV2.BooleanSchema.schema
 
     def encode(value: Boolean): AnyRef = java.lang.Boolean.valueOf(value)
 
     def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
   }
 
-  implicit val byteBufferCodec: Codec[ByteBuffer] = new Codec[ByteBuffer] {
-    def schema: Schema = SchemaBuilder.builder.bytesType
+  implicit object ByteBufferCodec extends Codec[ByteBuffer] {
+    def schema: Schema = SchemaForV2.ByteBufferSchema.schema
 
     def encode(value: ByteBuffer): AnyRef = value
 
@@ -89,8 +84,8 @@ trait BaseCodecs extends StringCodecs {
     }
   }
 
-  implicit val charSequenceCodec: Codec[CharSequence] = new Codec[CharSequence] {
-    def schema: Schema = SchemaBuilder.builder.stringType
+  implicit object CharSequenceCodec extends Codec[CharSequence] {
+    def schema: Schema = SchemaForV2.CharSequenceSchema.schema
 
     def encode(value: CharSequence): AnyRef = value
 
@@ -100,60 +95,8 @@ trait BaseCodecs extends StringCodecs {
     }
   }
 
-  implicit def bigDecimalCodec(implicit roundingMode: RoundingMode = RoundingMode.UNNECESSARY,
-                               schemaFor: SchemaForV2[BigDecimal]): Codec[BigDecimal] = {
-
-    val s = schemaFor.schema
-    import org.apache.avro.Conversions
-
-    s.getType match {
-      case Schema.Type.BYTES =>
-        val decimal = s.getLogicalType.asInstanceOf[Decimal]
-        val converter = new Conversions.DecimalConversion
-        val rm = java.math.RoundingMode.valueOf(roundingMode.id)
-
-        byteBufferCodec.inmap[BigDecimal](
-          bb => converter.fromBytes(bb, s, decimal),
-          bd => converter.toBytes(bd.underlying.setScale(decimal.getScale, rm), s, decimal),
-          _ => s)
-
-      case Schema.Type.STRING =>
-        stringCodec.inmap[BigDecimal](BigDecimal.apply, _.toString, _ => s)
-
-      case Schema.Type.FIXED =>
-        val decimal = s.getLogicalType.asInstanceOf[Decimal]
-        val converter = new Conversions.DecimalConversion
-        val rm = java.math.RoundingMode.valueOf(roundingMode.id)
-
-        new Codec[BigDecimal] {
-          val schema: Schema = s
-
-          def encode(value: BigDecimal): AnyRef =
-            converter.toFixed(value.underlying.setScale(decimal.getScale, rm), s, decimal)
-
-          def decode(value: Any): BigDecimal = value match {
-            case f: GenericFixed => converter.fromFixed(f, s, decimal)
-            case _               => sys.error(s"Unable to convert $value to BigDecimal via GenericFixed")
-          }
-        }
-      case _ =>
-        sys.error(s"Unable to create codec with schema type ${s.getType}, only bytes, fixed, and string supported")
-    }
-  }
-
-  implicit object InstantCodec extends Codec[Instant] {
-    def schema: Schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
-
-    def encode(value: Instant): AnyRef = new java.lang.Long(value.toEpochMilli)
-
-    def decode(value: Any): Instant = value match {
-      case long: Long => Instant.ofEpochMilli(long)
-      case other      => sys.error(s"Cannot convert $other to type Instant")
-    }
-  }
-
   implicit def optionCodec[T](implicit codec: Codec[T]): Codec[Option[T]] = new Codec[Option[T]] {
-    val schema: Schema = SchemaBuilder.nullable().`type`(codec.schema)
+    val schema: Schema = SchemaForV2.optionSchema(SchemaForV2[T](codec.schema)).schema
 
     def encode(value: Option[T]): AnyRef = value.map(codec.encode).orNull
 
@@ -169,48 +112,55 @@ trait BaseCodecs extends StringCodecs {
       case _                   => sys.error(s"Byte array codec cannot decode '$value'")
     }
 
-    def forFieldWith(schema: Schema, annotations: Seq[Any]): ByteArrayCodecBase = schema.getType match {
-      case Schema.Type.ARRAY => byteArrayCodec
-      case Schema.Type.FIXED => new FixedByteArrayCodec(schema)
-      case _                 => sys.error(s"Byte array codec doesn't support schema type ${schema.getType}")
-    }
+    def forFieldWith(schema: Schema, annotations: Seq[Any]): ByteArrayCodecBase = withSchema(SchemaForV2(schema))
+
+    override def withSchema(schemaFor: SchemaForV2[Array[Byte]], fieldMapper: FieldMapper): ByteArrayCodecBase =
+      schemaFor.schema.getType match {
+        case Schema.Type.ARRAY => _byteArrayCodec
+        case Schema.Type.FIXED => new FixedByteArrayCodec(schema)
+        case _                 => sys.error(s"Byte array codec doesn't support schema type ${schema.getType}")
+      }
   }
 
-  implicit object byteArrayCodec extends ByteArrayCodecBase {
+  private val _byteArrayCodec = new ByteArrayCodecBase {
 
     val schema: Schema = SchemaBuilder.builder.bytesType
 
     def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
   }
 
+  implicit val ByteArrayCodec: Codec[Array[Byte]] = _byteArrayCodec
+
   class FixedByteArrayCodec(val schema: Schema) extends ByteArrayCodecBase {
     require(schema.getType == Schema.Type.FIXED)
 
     def encode(value: Array[Byte]): AnyRef = {
-      val bb = ByteBuffer.allocate(schema.getFixedSize).put(value)
-      GenericData.get.createFixed(null, bb.array(), schema)
+      val array = new Array[Byte](schema.getFixedSize)
+      System.arraycopy(value, 0, array, 0, value.length)
+      GenericData.get.createFixed(null, array, schema)
     }
   }
 
-  class ByteSeqCodec[T[_]](map: Array[Byte] => T[Byte],
-                           comap: T[Byte] => Array[Byte],
-                           codec: ByteArrayCodecBase = byteArrayCodec)
-      extends Codec[T[Byte]]
-      with FieldSpecificCodec[T[Byte]] {
+  private class IterableByteCodec[C[X] <: Iterable[X]](cbf: CanBuildFrom[Nothing, Byte, C[Byte]],
+                                               byteArrayCodec: ByteArrayCodecBase = _byteArrayCodec)
+      extends Codec[C[Byte]]
+      with FieldSpecificCodec[C[Byte]] {
 
-    val schema = codec.schema
+    val schema = byteArrayCodec.schema
 
-    def encode(value: T[Byte]): AnyRef = codec.encode(comap(value))
+    def encode(value: C[Byte]): AnyRef = byteArrayCodec.encode(value.toArray)
 
-    def decode(value: Any): T[Byte] = map(codec.decode(value))
+    def decode(value: Any): C[Byte] = byteArrayCodec.decode(value).to[C](cbf)
 
-    def forFieldWith(schema: Schema, annotations: Seq[Any]): Codec[T[Byte]] =
-      new ByteSeqCodec(map, comap, codec.forFieldWith(schema, annotations))
+    def forFieldWith(schema: Schema, annotations: Seq[Any]): Codec[C[Byte]] =
+      new IterableByteCodec(cbf, byteArrayCodec.forFieldWith(schema, annotations))
+
+    override def withSchema(schemaFor: SchemaForV2[C[Byte]], fieldMapper: FieldMapper): Codec[C[Byte]] =
+      forFieldWith(schemaFor.schema, Seq.empty)
   }
 
-  implicit val byteSeqCodec = new ByteSeqCodec[Seq](_.toSeq, _.toArray)
-  implicit val byteListCodec = new ByteSeqCodec[List](_.toList, _.toArray)
-  implicit val byteVectorCodec = new ByteSeqCodec[Vector](_.toVector, _.toArray)
+  implicit def iterableByteCodec[C[X] <: Iterable[X]](
+      implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): Codec[C[Byte]] = new IterableByteCodec[C](cbf)
 
   implicit def arrayCodec[T: ClassTag](implicit codec: Codec[T]): Codec[Array[T]] = new Codec[Array[T]] {
     import scala.collection.JavaConverters._
@@ -227,23 +177,18 @@ trait BaseCodecs extends StringCodecs {
     }
   }
 
-  class IterableCodec[T, C[X] <: Iterable[X]](codec: Codec[T])(
-      implicit cbf: CanBuildFrom[Nothing, T, C[T @uncheckedVariance]])
-      extends Codec[C[T]] {
-    val schema: Schema = SchemaBuilder.array().items(codec.schema)
+  implicit def iterableCodec[T, C[X] <: Iterable[X]](implicit codec: Codec[T],
+                                                     cbf: CanBuildFrom[Nothing, T, C[T]]): Codec[C[T]] =
+    new Codec[C[T]] {
+      val schema: Schema = SchemaBuilder.array().items(codec.schema)
 
-    def encode(value: C[T]): AnyRef = value.map(codec.encode).toList.asJava
+      def encode(value: C[T]): AnyRef = value.map(codec.encode).toList.asJava
 
-    def decode(value: Any): C[T] = value match {
-      case array: Array[_]               => array.map(codec.decode).to[C]
-      case list: java.util.Collection[_] => list.asScala.map(codec.decode).to[C]
-      case list: Iterable[_]             => list.map(codec.decode).to[C]
-      case other                         => sys.error("Unsupported array " + other)
+      def decode(value: Any): C[T] = value match {
+        case array: Array[_]               => array.map(codec.decode)(collection.breakOut)
+        case list: java.util.Collection[_] => list.asScala.map(codec.decode)(collection.breakOut)
+        case list: Iterable[_]             => list.map(codec.decode)(collection.breakOut)
+        case other                         => sys.error("Unsupported array " + other)
+      }
     }
-  }
-
-  implicit def seqCodec[T](implicit codec: Codec[T]): Codec[Seq[T]] = new IterableCodec(codec)
-  implicit def listCodec[T](implicit codec: Codec[T]): Codec[List[T]] = new IterableCodec(codec)
-  implicit def vectorCodec[T](implicit codec: Codec[T]): Codec[Vector[T]] = new IterableCodec(codec)
-  implicit def setCodec[T](implicit codec: Codec[T]): Codec[Set[T]] = new IterableCodec(codec)
 }

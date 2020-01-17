@@ -1,12 +1,8 @@
 package com.sksamuel.avro4s
 
-import magnolia.{CaseClass, Magnolia, SealedTrait}
 import org.apache.avro.Schema
-import shapeless.{:+:, CNil, Coproduct}
 
 import scala.annotation.implicitNotFound
-import scala.reflect.runtime.universe._
-import scala.language.experimental.macros
 
 @implicitNotFound(msg = """Unable to build a codec; please check the following:
 - an implicit com.sksamuel.avro4s.FieldMapper must be in scope, and
@@ -21,14 +17,26 @@ trait Codec[T] extends EncoderV2[T] with DecoderV2[T] {
 
   def decode(value: Any): T
 
+  def withSchema(schemaFor: SchemaForV2[T], fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] = new Codec[T] {
+    val schema: Schema = schemaFor.schema
+
+    def encode(value: T): AnyRef = self.encode(value)
+
+    def decode(value: Any): T = self.decode(value)
+  }
 }
 
-object Codec extends MagnoliaGeneratedCodecs with ShapelessCoproductCodecs with BaseCodecs {
+object Codec
+    extends MagnoliaGeneratedCodecs
+    with ShapelessCoproductCodecs
+    with BaseCodecs
+    with StringCodecs
+    with BigDecimalCodecs {
 
   implicit class CodecBifunctor[T](val codec: Codec[T]) extends AnyVal {
     def inmap[S](map: T => S, comap: S => T, f: Schema => Schema = identity): Codec[S] = {
       new Codec[S] {
-        def schema: Schema = f(codec.schema)
+        val schema: Schema = f(codec.schema)
 
         def encode(value: S): AnyRef = codec.encode(comap(value))
 
@@ -36,5 +44,4 @@ object Codec extends MagnoliaGeneratedCodecs with ShapelessCoproductCodecs with 
       }
     }
   }
-
 }

@@ -12,16 +12,16 @@ trait MagnoliaGeneratedCodecs {
 
   type Typeclass[T] = Codec[T]
 
-  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(implicit fieldMapper: FieldMapper): Codec[T] =
+  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
+      implicit fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] =
     DatatypeShape.of(ctx) match {
       case SealedTraitShape.TypeUnion => TypeUnionCodec(ctx)
       case SealedTraitShape.ScalaEnum => ScalaEnumCodec(ctx)
     }
 
-  def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper): Codec[T] =
+  def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] =
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record    => RecordCodec(ctx, fieldMapper)
       case CaseClassShape.ValueType => ValueTypeCodec(ctx)
     }
-
 }
