@@ -17,7 +17,7 @@ trait Codec[T] extends EncoderV2[T] with DecoderV2[T] with SchemaAware[Codec, T]
 
   def decode(value: Any): T
 
-  def withSchema(schemaFor: SchemaForV2[T], fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] = new Codec[T] {
+  def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = new Codec[T] {
     val schema: Schema = schemaFor.schema
 
     def encode(value: T): AnyRef = self.encode(value)

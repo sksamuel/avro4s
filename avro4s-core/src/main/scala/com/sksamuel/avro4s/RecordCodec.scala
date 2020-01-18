@@ -20,11 +20,11 @@ class RecordCodec[T](ctx: CaseClass[CodecTC, T],
 
   def withNamespace(namespace: String): RecordCodec[T] = RecordCodec(ctx, fieldMapper, Some(namespace))
 
-  override def withSchema(schemaFor: SchemaForV2[T], fieldMapper: FieldMapper): Codec[T] = {
+  override def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = {
     val newSchema = schemaFor.schema
     require(newSchema.getType == Schema.Type.RECORD,
             s"Schema type for record codecs must be RECORD, received ${newSchema.getType}")
-    RecordCodec(ctx, fieldMapper, schemaFor.schema)
+    RecordCodec(ctx, schemaFor.fieldMapper, schemaFor.schema)
   }
 
   def encode(value: T): AnyRef = {

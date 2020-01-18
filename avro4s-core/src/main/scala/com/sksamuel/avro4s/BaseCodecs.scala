@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
 import org.apache.avro.generic.{GenericData, GenericFixed}
 import org.apache.avro.{Schema, SchemaBuilder}
@@ -11,89 +12,19 @@ import scala.reflect.ClassTag
 
 trait BaseCodecs {
 
-  implicit object IntCodec extends Codec[Int] {
+  implicit val IntCodec: Codec[Int] = BaseTypes.IntCodec
 
-    val schema: Schema = SchemaForV2.IntSchema.schema
+  implicit val LongCodec: Codec[Long] = BaseTypes.LongCodec
 
-    def encode(value: Int): AnyRef = java.lang.Integer.valueOf(value)
+  implicit val DoubleCodec: Codec[Double] = BaseTypes.DoubleCodec
 
-    def decode(value: Any): Int = value match {
-      case byte: Byte   => byte.toInt
-      case short: Short => short.toInt
-      case int: Int     => int
-      case other        => sys.error(s"Cannot convert $other to type INT")
-    }
-  }
+  implicit val FloatCodec: Codec[Float] = BaseTypes.FloatCodec
 
-  implicit object LongCodec extends Codec[Long] {
+  implicit val BooleanCodec: Codec[Boolean] = BaseTypes.BooleanCodec
 
-    val schema: Schema = SchemaForV2.LongSchema.schema
+  implicit val ByteBufferCodec: Codec[ByteBuffer] = BaseTypes.ByteBufferCodec
 
-    def encode(value: Long): AnyRef = java.lang.Long.valueOf(value)
-
-    def decode(value: Any): Long = value match {
-      case byte: Byte   => byte.toLong
-      case short: Short => short.toLong
-      case int: Int     => int.toLong
-      case long: Long   => long
-      case other        => sys.error(s"Cannot convert $other to type LONG")
-    }
-  }
-
-  implicit object DoubleCodec extends Codec[Double] {
-
-    val schema: Schema = SchemaForV2.DoubleSchema.schema
-
-    def encode(value: Double): AnyRef = java.lang.Double.valueOf(value)
-
-    def decode(value: Any): Double = value match {
-      case d: Double           => d
-      case d: java.lang.Double => d
-    }
-  }
-
-  implicit object FloatCodec extends Codec[Float] {
-
-    val schema: Schema = SchemaForV2.FloatSchema.schema
-
-    def encode(value: Float): AnyRef = java.lang.Float.valueOf(value)
-
-    def decode(value: Any): Float = value match {
-      case f: Float           => f
-      case f: java.lang.Float => f
-    }
-  }
-
-  implicit object BooleanCodec extends Codec[Boolean] {
-
-    val schema: Schema = SchemaForV2.BooleanSchema.schema
-
-    def encode(value: Boolean): AnyRef = java.lang.Boolean.valueOf(value)
-
-    def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
-  }
-
-  implicit object ByteBufferCodec extends Codec[ByteBuffer] {
-    def schema: Schema = SchemaForV2.ByteBufferSchema.schema
-
-    def encode(value: ByteBuffer): AnyRef = value
-
-    def decode(value: Any): ByteBuffer = value match {
-      case b: ByteBuffer => b
-      case _             => sys.error(s"Unable to decode value $value to ByteBuffer")
-    }
-  }
-
-  implicit object CharSequenceCodec extends Codec[CharSequence] {
-    def schema: Schema = SchemaForV2.CharSequenceSchema.schema
-
-    def encode(value: CharSequence): AnyRef = value
-
-    def decode(value: Any): CharSequence = value match {
-      case cs: CharSequence => cs
-      case _                => sys.error(s"Unable to decode value $value to CharSequence")
-    }
-  }
+  implicit val CharSequenceCodec: Codec[CharSequence] = BaseTypes.CharSequenceCodec
 
   implicit def optionCodec[T](implicit codec: Codec[T]): Codec[Option[T]] = new Codec[Option[T]] {
     val schema: Schema = SchemaForV2.optionSchema(SchemaForV2[T](codec.schema)).schema
@@ -114,7 +45,7 @@ trait BaseCodecs {
 
     def forFieldWith(schema: Schema, annotations: Seq[Any]): ByteArrayCodecBase = withSchema(SchemaForV2(schema))
 
-    override def withSchema(schemaFor: SchemaForV2[Array[Byte]], fieldMapper: FieldMapper): ByteArrayCodecBase =
+    override def withSchema(schemaFor: SchemaForV2[Array[Byte]]): ByteArrayCodecBase =
       schemaFor.schema.getType match {
         case Schema.Type.ARRAY => _byteArrayCodec
         case Schema.Type.FIXED => new FixedByteArrayCodec(schema)
@@ -142,7 +73,7 @@ trait BaseCodecs {
   }
 
   private class IterableByteCodec[C[X] <: Iterable[X]](cbf: CanBuildFrom[Nothing, Byte, C[Byte]],
-                                               byteArrayCodec: ByteArrayCodecBase = _byteArrayCodec)
+                                                       byteArrayCodec: ByteArrayCodecBase = _byteArrayCodec)
       extends Codec[C[Byte]]
       with FieldSpecificCodec[C[Byte]] {
 
@@ -155,7 +86,7 @@ trait BaseCodecs {
     def forFieldWith(schema: Schema, annotations: Seq[Any]): Codec[C[Byte]] =
       new IterableByteCodec(cbf, byteArrayCodec.forFieldWith(schema, annotations))
 
-    override def withSchema(schemaFor: SchemaForV2[C[Byte]], fieldMapper: FieldMapper): Codec[C[Byte]] =
+    override def withSchema(schemaFor: SchemaForV2[C[Byte]]): Codec[C[Byte]] =
       forFieldWith(schemaFor.schema, Seq.empty)
   }
 
@@ -191,4 +122,124 @@ trait BaseCodecs {
         case other                         => sys.error("Unsupported array " + other)
       }
     }
+}
+
+trait BaseEncoders {}
+
+trait BaseDecoders {}
+
+object BaseTypes {
+
+  object ByteCodec extends Codec[Byte] {
+
+    val schema: Schema = SchemaForV2.ByteSchema.schema
+
+    def encode(t: Byte): java.lang.Byte = java.lang.Byte.valueOf(t)
+
+    override def decode(value: Any): Byte = value match {
+      case b: Byte => b
+      case _       => value.asInstanceOf[Int].byteValue
+    }
+  }
+
+  object ShortCodec extends Codec[Short] {
+
+    val schema: Schema = SchemaForV2.ShortSchema.schema
+
+    def encode(t: Short): java.lang.Short = java.lang.Short.valueOf(t)
+
+    override def decode(value: Any): Short = value match {
+      case b: Byte  => b
+      case s: Short => s
+      case i: Int   => i.toShort
+    }
+  }
+
+  object IntCodec extends Codec[Int] {
+
+    val schema: Schema = SchemaForV2.IntSchema.schema
+
+    def encode(value: Int): AnyRef = java.lang.Integer.valueOf(value)
+
+    def decode(value: Any): Int = value match {
+      case byte: Byte   => byte.toInt
+      case short: Short => short.toInt
+      case int: Int     => int
+      case other        => sys.error(s"Cannot convert $other to type INT")
+    }
+  }
+
+  object LongCodec extends Codec[Long] {
+
+    val schema: Schema = SchemaForV2.LongSchema.schema
+
+    def encode(value: Long): AnyRef = java.lang.Long.valueOf(value)
+
+    def decode(value: Any): Long = value match {
+      case byte: Byte   => byte.toLong
+      case short: Short => short.toLong
+      case int: Int     => int.toLong
+      case long: Long   => long
+      case other        => sys.error(s"Cannot convert $other to type LONG")
+    }
+  }
+
+  object DoubleCodec extends Codec[Double] {
+
+    val schema: Schema = SchemaForV2.DoubleSchema.schema
+
+    def encode(value: Double): AnyRef = java.lang.Double.valueOf(value)
+
+    def decode(value: Any): Double = value match {
+      case d: Double           => d
+      case d: java.lang.Double => d
+    }
+  }
+
+  object FloatCodec extends Codec[Float] {
+
+    val schema: Schema = SchemaForV2.FloatSchema.schema
+
+    def encode(value: Float): AnyRef = java.lang.Float.valueOf(value)
+
+    def decode(value: Any): Float = value match {
+      case f: Float           => f
+      case f: java.lang.Float => f
+    }
+  }
+
+  object BooleanCodec extends Codec[Boolean] {
+
+    val schema: Schema = SchemaForV2.BooleanSchema.schema
+
+    def encode(value: Boolean): AnyRef = java.lang.Boolean.valueOf(value)
+
+    def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
+  }
+
+  object ByteBufferCodec extends Codec[ByteBuffer] {
+
+    val schema: Schema = SchemaForV2.ByteBufferSchema.schema
+
+    def encode(value: ByteBuffer): AnyRef = value
+
+    def decode(value: Any): ByteBuffer = value match {
+      case b: ByteBuffer => b
+      case _             => sys.error(s"Unable to decode value $value to ByteBuffer")
+    }
+  }
+
+  object CharSequenceCodec extends Codec[CharSequence] {
+
+    val schema: Schema = SchemaForV2.CharSequenceSchema.schema
+
+    def encode(value: CharSequence): AnyRef = value
+
+    def decode(value: Any): CharSequence = value match {
+      case cs: CharSequence => cs
+      case _                => sys.error(s"Unable to decode value $value to CharSequence")
+    }
+  }
+
+  val UUIDCodec = Codec.stringCodec.inmap[UUID](UUID.fromString, _.toString)
 }

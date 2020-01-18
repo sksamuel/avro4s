@@ -21,7 +21,7 @@ trait BigDecimalCodecs { self: BaseCodecs with StringCodecs =>
       (decimal, converter, rm)
     }
 
-    override def withSchema(schemaFor: SchemaForV2[BigDecimal], fieldMapper: FieldMapper): Codec[BigDecimal] = {
+    override def withSchema(schemaFor: SchemaForV2[BigDecimal]): Codec[BigDecimal] = {
       val schema = schemaFor.schema
       schema.getType match {
         case Schema.Type.BYTES  => new BigDecimalBytesCodec(schema, roundingMode)

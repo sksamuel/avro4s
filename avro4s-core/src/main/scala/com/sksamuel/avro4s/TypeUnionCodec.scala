@@ -14,11 +14,11 @@ class TypeUnionCodec[T](ctx: SealedTrait[Typeclass, T],
 
   def withNamespace(namespace: String): Codec[T] = TypeUnionCodec(ctx, Some(namespace))
 
-  override def withSchema(schemaFor: SchemaForV2[T], fieldMapper: FieldMapper): Typeclass[T] = {
+  override def withSchema(schemaFor: SchemaForV2[T]): Typeclass[T] = {
     val newSchema = schemaFor.schema
     require(newSchema.getType == Schema.Type.UNION,
             s"Schema type for record codecs must be UNION, received ${newSchema.getType}")
-    TypeUnionCodec(ctx, schemaFor, fieldMapper)
+    TypeUnionCodec(ctx, schemaFor)
   }
 
   def encode(value: T): AnyRef = ctx.dispatch(value)(subtype => codecBySubtype(subtype).encodeSubtype(value))
@@ -45,15 +45,14 @@ object TypeUnionCodec {
     apply(ctx, subtypeCodecs, schema)
   }
 
-  def apply[T](ctx: SealedTrait[Typeclass, T],
-               schemaFor: SchemaForV2[T],
-               fieldMapper: FieldMapper): TypeUnionCodec[T] = {
+  def apply[T](ctx: SealedTrait[Typeclass, T], schemaFor: SchemaForV2[T]): TypeUnionCodec[T] = {
     val schema = schemaFor.schema
+    val fieldMapper = schemaFor.fieldMapper
 
     val subtypeCodecs: Seq[UnionEntryCodec[T]] = ctx.subtypes.map { st =>
       val nameExtractor = NameExtractor(st.typeName, st.annotations ++ ctx.annotations)
-      val subtraitSchema = SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema)
-      new UnionEntryCodec(st, schemaOverride = Some(subtraitSchema), fieldMapper = fieldMapper)
+      val subtraitSchema = SchemaForV2(SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema), fieldMapper)
+      new UnionEntryCodec(st, schemaOverride = Some(subtraitSchema))
     }
     apply(ctx, subtypeCodecs, schema)
 
@@ -78,13 +77,11 @@ object TypeUnionCodec {
 
 class UnionEntryCodec[T](val st: Subtype[Typeclass, T],
                          namespace: Option[String] = None,
-                         schemaOverride: Option[Schema] = None,
-                         fieldMapper: FieldMapper = DefaultFieldMapper) {
+                         schemaOverride: Option[SchemaForV2[_]] = None) {
 
   private val codec: Codec[st.SType] = {
     (st.typeclass, namespace, schemaOverride) match {
-      case (codec, _, Some(s)) =>
-        codec.withSchema(SchemaForV2[st.SType](s), fieldMapper)
+      case (codec, _, Some(s))                                              => codec.withSchema(s.map(identity))
       case (mnc: ModifiableNamespaceCodec[st.SType] @unchecked, Some(n), _) => mnc.withNamespace(n)
       case (codec, _, _)                                                    => codec
     }

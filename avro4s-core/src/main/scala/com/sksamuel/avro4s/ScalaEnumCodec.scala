@@ -20,13 +20,13 @@ class ScalaEnumCodec[T](ctx: SealedTrait[Typeclass, T],
     case s: String               => valueForSymbol(s)
   }
 
-  override def withSchema(schemaFor: SchemaForV2[T], fieldMapper: FieldMapper): Typeclass[T] = {
+  override def withSchema(schemaFor: SchemaForV2[T]): Typeclass[T] = {
     val newSchema = schemaFor.schema
     require(newSchema.getType == Schema.Type.ENUM, s"Schema type for enum codecs must be ENUM, received ${newSchema.getType}")
     val currentSymbols = valueForSymbol.keys.toSet
     val newSymbols = newSchema.getEnumSymbols.asScala.toSet
     require(newSymbols == currentSymbols, s"Enum codec symbols cannot be changed via schema; schema symbols are ${newSymbols.mkString(",")} - codec symbols are ${currentSymbols}")
-    super.withSchema(schemaFor, fieldMapper)
+    super.withSchema(schemaFor)
   }
 }
 

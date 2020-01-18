@@ -8,11 +8,11 @@ trait DecoderV2[T] extends SchemaAware[DecoderV2, T] {
 
   def decode(value: Any): T
 
-  def withSchema(schemaFor: SchemaForV2[T], fieldMapper: FieldMapper = DefaultFieldMapper): DecoderV2[T]
+  def withSchema(schemaFor: SchemaForV2[T]): DecoderV2[T]
 
 }
 
-object DecoderV2 {
+object DecoderV2 extends ShapelessCoproductDecoders {
   implicit class DecoderFunctor[T](val decoder: DecoderV2[T]) extends AnyVal {
     def map[S](f: T => S, sf: Schema => Schema): DecoderV2[S] = {
       new DecoderV2[S] {
@@ -20,7 +20,7 @@ object DecoderV2 {
 
         def decode(value: Any): S = f(decoder.decode(value))
 
-        def withSchema(schemaFor: SchemaForV2[S], fieldMapper: FieldMapper): DecoderV2[S] = this
+        def withSchema(schemaFor: SchemaForV2[S]): DecoderV2[S] = this
       }
     }
   }

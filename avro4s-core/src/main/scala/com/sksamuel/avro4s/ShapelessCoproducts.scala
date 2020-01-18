@@ -26,11 +26,11 @@ trait ShapelessCoproductCodecs {
 
       def decode(value: Any): H :+: T = decodeCoproduct[H, T](value)
 
-      override def withSchema(schemaFor: SchemaForV2[H :+: T], fieldMapper: FieldMapper): Codec[H :+: T] =
+      override def withSchema(schemaFor: SchemaForV2[H :+: T]): Codec[H :+: T] =
         coproductCodec[H, T](implicitly[WeakTypeTag[H]],
                              implicitly[Manifest[H]],
-                             withSelectedSubSchema(codecH, schemaFor, fieldMapper),
-                             withFullSchema(codecT, schemaFor, fieldMapper))
+                             withSelectedSubSchema(codecH, schemaFor),
+                             withFullSchema(codecT, schemaFor))
     }
 }
 
@@ -47,12 +47,12 @@ trait ShapelessCoproductEncoders {
 
       def encode(value: H :+: T): AnyRef = encodeCoproduct[H, T](value)
 
-      override def withSchema(schemaFor: SchemaForV2[H :+: T], fieldMapper: FieldMapper): EncoderV2[H :+: T] =
+      override def withSchema(schemaFor: SchemaForV2[H :+: T]): EncoderV2[H :+: T] =
         coproductEncoder[H, T](
           implicitly[WeakTypeTag[H]],
           implicitly[Manifest[H]],
-          withSelectedSubSchema(encoderH, schemaFor, fieldMapper),
-          withFullSchema(encoderT, schemaFor, fieldMapper)
+          withSelectedSubSchema(encoderH, schemaFor),
+          withFullSchema(encoderT, schemaFor)
         )
     }
 }
@@ -72,12 +72,12 @@ trait ShapelessCoproductDecoders {
 
       def decode(value: Any): H :+: T = decodeCoproduct[H, T](value)
 
-      override def withSchema(schemaFor: SchemaForV2[H :+: T], fieldMapper: FieldMapper): DecoderV2[H :+: T] =
+      override def withSchema(schemaFor: SchemaForV2[H :+: T]): DecoderV2[H :+: T] =
         coproductDecoder[H, T](
           implicitly[WeakTypeTag[H]],
           implicitly[Manifest[H]],
-          withSelectedSubSchema(decoderH, schemaFor, fieldMapper),
-          withFullSchema(decoderT, schemaFor, fieldMapper)
+          withSelectedSubSchema(decoderH, schemaFor),
+          withFullSchema(decoderT, schemaFor)
         )
     }
 }
@@ -91,23 +91,22 @@ object ShapelessCoproducts {
 
     def decode(value: Any): CNil = sys.error(s"Unable to decode value '$value'")
 
-    override def withSchema(schemaFor: SchemaForV2[CNil], fieldMapper: FieldMapper): Codec[CNil] = this
+    override def withSchema(schemaFor: SchemaForV2[CNil]): Codec[CNil] = this
   }
 
   private[avro4s] def coproductSchema[A[_], B[_]](aware1: SchemaAware[A, _], aware2: SchemaAware[B, _]): Schema =
     SchemaHelper.createSafeUnion(aware1.schema, aware2.schema)
 
-  private[avro4s] def withSelectedSubSchema[T[_], V](aware: SchemaAware[T, V],
-                                                     schemaFor: SchemaForV2[_],
-                                                     fieldMapper: FieldMapper)(implicit m: Manifest[V]): T[V] = {
+  private[avro4s] def withSelectedSubSchema[T[_], V](aware: SchemaAware[T, V], schemaFor: SchemaForV2[_])(
+      implicit m: Manifest[V]): T[V] = {
     val schema = schemaFor.schema
     val fullName = NameExtractor(manifest.runtimeClass).fullName
     val subSchemaFor = SchemaForV2[V](SchemaHelper.extractTraitSubschema(fullName, schema))
-    aware.withSchema(subSchemaFor, fieldMapper)
+    aware.withSchema(subSchemaFor)
   }
 
-  def withFullSchema[T[_], V](aware: SchemaAware[T, V], schemaFor: SchemaForV2[_], fieldMapper: FieldMapper): T[V] =
-    aware.withSchema(schemaFor.map(identity), fieldMapper)
+  def withFullSchema[T[_], V](aware: SchemaAware[T, V], schemaFor: SchemaForV2[_]): T[V] =
+    aware.withSchema(schemaFor.map(identity))
 
   private[avro4s] def encodeCoproduct[H, T <: Coproduct](value: H :+: T)(implicit encoderH: EncoderV2[H],
                                                                          encoderT: EncoderV2[T]): AnyRef =

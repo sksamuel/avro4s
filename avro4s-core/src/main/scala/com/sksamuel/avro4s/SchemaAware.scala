@@ -6,6 +6,6 @@ trait SchemaAware[+T[_], V] {
 
   def schema: Schema
 
-  def withSchema(schemaFor: SchemaForV2[V], fieldMapper: FieldMapper = DefaultFieldMapper): T[V]
+  def withSchema(schemaFor: SchemaForV2[V]): T[V]
 
 }
