@@ -8,7 +8,7 @@ import scala.annotation.implicitNotFound
 - an implicit com.sksamuel.avro4s.FieldMapper must be in scope, and
 - the given type must be either a case class or a sealed trait with subtypes being
   case classes or case objects.""")
-trait Codec[T] extends EncoderV2[T] with DecoderV2[T] {
+trait Codec[T] extends EncoderV2[T] with DecoderV2[T] with SchemaAware[Codec, T] {
   self =>
 
   def schema: Schema

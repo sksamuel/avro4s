@@ -57,11 +57,13 @@ object SchemaForV2 {
   implicit val DoubleSchema: SchemaForV2[Double] = SchemaForV2[Double](SchemaBuilder.builder.doubleType)
   implicit val BooleanSchema: SchemaForV2[Boolean] = SchemaForV2[Boolean](SchemaBuilder.builder.booleanType)
   implicit val ByteBufferSchema: SchemaForV2[ByteBuffer] = SchemaForV2[ByteBuffer](SchemaBuilder.builder.bytesType)
-  implicit val CharSequenceSchema: SchemaForV2[CharSequence] = SchemaForV2[CharSequence](SchemaBuilder.builder.stringType)
+  implicit val CharSequenceSchema: SchemaForV2[CharSequence] =
+    SchemaForV2[CharSequence](SchemaBuilder.builder.stringType)
   implicit val forString: SchemaForV2[String] = SchemaForV2[String](SchemaBuilder.builder.stringType)
 
   implicit def optionSchema[T](schemaForItem: SchemaForV2[T]): SchemaForV2[Option[T]] =
-    schemaForItem.map[Option[T]](i => SchemaBuilder.unionOf.nullType.and.`type`(i).endUnion)
+    schemaForItem.map[Option[T]](itemSchema =>
+      SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
 
   implicit def forIterable[C[X] <: Iterable[X], T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[C[T]] =
     SchemaForV2[C[T]](SchemaBuilder.array.items(schemaForItem.schema))

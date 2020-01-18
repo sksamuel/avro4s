@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
 
-trait DecoderV2[T] {
+trait DecoderV2[T] extends SchemaAware[DecoderV2, T] {
 
   def schema: Schema
 

@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2, Decoder, DecoderV2, DefaultFieldMapper, FieldMapper}
 import com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage
+import com.sksamuel.avro4s.{AvroSchemaV2, DecoderV2, DefaultFieldMapper, FieldMapper}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.matchers.should.Matchers

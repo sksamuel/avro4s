@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
 
-trait EncoderV2[T] {
+trait EncoderV2[T] extends SchemaAware[EncoderV2, T] {
   def schema: Schema
 
   def encode(value: T): AnyRef
