@@ -75,13 +75,16 @@ object SchemaForV2 {
     schemaForItem.map[Option[T]](itemSchema =>
       SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
 
-  implicit def forIterable[C[X] <: Iterable[X], T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[C[T]] =
+  implicit def byteIterableSchema[C[X] <: Iterable[X]]: SchemaForV2[C[Byte]] =
+    SchemaForV2[C[Byte]](SchemaBuilder.builder.bytesType)
+
+  implicit def iterableSchema[C[X] <: Iterable[X], T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[C[T]] =
     SchemaForV2[C[T]](SchemaBuilder.array.items(schemaForItem.schema))
 
-  implicit def forArray[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Array[T]] =
-    forIterable(schemaForItem).map(identity)
+  implicit def arraySchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Array[T]] =
+    iterableSchema(schemaForItem).map(identity)
 
-  implicit def forBigDecimal(implicit sp: ScalePrecision = ScalePrecision.default): SchemaForV2[BigDecimal] =
+  implicit def bigDecimalSchema(implicit sp: ScalePrecision = ScalePrecision.default): SchemaForV2[BigDecimal] =
     SchemaForV2(LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.bytesType))
 
 }

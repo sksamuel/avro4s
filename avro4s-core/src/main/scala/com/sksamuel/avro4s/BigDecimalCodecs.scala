@@ -10,7 +10,7 @@ import org.apache.avro.generic.GenericFixed
 import scala.math.BigDecimal.RoundingMode
 import scala.math.BigDecimal.RoundingMode.RoundingMode
 
-trait BigDecimalCodecs { self: BaseCodecs with StringCodecs =>
+trait BigDecimalCodecs { self: BaseCodecs =>
 
   abstract class BigDecimalCodecBase(roundingMode: RoundingMode) extends Codec[BigDecimal] {
 
@@ -48,9 +48,9 @@ trait BigDecimalCodecs { self: BaseCodecs with StringCodecs =>
 
   class BigDecimalStringCodec(val schema: Schema, roundingMode: RoundingMode)
       extends BigDecimalCodecBase(roundingMode) {
-    def encode(value: BigDecimal): AnyRef = stringCodec.encode(value.toString())
+    def encode(value: BigDecimal): AnyRef = StringCodec.encode(value.toString())
 
-    def decode(value: Any): BigDecimal = BigDecimal(stringCodec.decode(value))
+    def decode(value: Any): BigDecimal = BigDecimal(StringCodec.decode(value))
   }
 
   class BigDecimalFixedCodec(val schema: Schema, roundingMode: RoundingMode) extends BigDecimalCodecBase(roundingMode) {
