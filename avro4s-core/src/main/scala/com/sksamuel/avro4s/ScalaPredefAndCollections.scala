@@ -12,8 +12,6 @@ import scala.collection.JavaConverters._
 
 trait ScalaPredefAndCollectionCodecs {
 
-  implicit val ByteArrayCodec: Codec[Array[Byte]] = ScalaPredefAndCollections.ByteArrayCodec
-
   implicit val NoneCodec: Codec[None.type] = ScalaPredefAndCollections.NoneCodec
 
   implicit def optionCodec[T](implicit codec: Codec[T]): Codec[Option[T]] = new Codec[Option[T]] {
@@ -25,18 +23,39 @@ trait ScalaPredefAndCollectionCodecs {
     def decode(value: Any): Option[T] = decodeOption(codec, value)
   }
 
-  implicit def iterableByteCodec[C[X] <: Iterable[X]](
+  private def iterableByteCodec[C[X] <: Iterable[X]](
       implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): Codec[C[Byte]] = new IterableByteCodec[C](cbf)
 
-  def iterableCodec[T, C[X] <: Iterable[X]](implicit codec: Codec[T],
-                                            cbf: CanBuildFrom[Nothing, T, C[T]]): Codec[C[T]] =
+  implicit val ByteArrayCodec: Codec[Array[Byte]] = ScalaPredefAndCollections.ByteArrayCodec
+  implicit val ByteListCodec = iterableByteCodec[List]
+  implicit val ByteSeqCodec = iterableByteCodec[Seq]
+  implicit val ByteVectorCodec = iterableByteCodec[Vector]
+
+  private def iterableCodec[T, C[X] <: Iterable[X]](codec: Codec[T])(implicit
+                                                                     cbf: CanBuildFrom[Nothing, T, C[T]]): Codec[C[T]] =
     new Codec[C[T]] {
-      val schema: Schema = SchemaBuilder.array().items(codec.schema)
+      val schema: Schema = iterableSchema(codec)
 
       def encode(value: C[T]): AnyRef = encodeIterable(codec, value)
 
       def decode(value: Any): C[T] = decodeIterable(codec, value)
     }
+
+  implicit def arrayCodec[T: ClassTag](implicit codec: Codec[T]): Codec[Array[T]] = new Codec[Array[T]] {
+    def schema: Schema = arraySchema(codec)
+
+    def encode(value: Array[T]): AnyRef = encodeArray(codec, value)
+
+    def decode(value: Any): Array[T] = decodeArray(codec, value)
+  }
+
+  implicit def listCodec[T](implicit codec: Codec[T]): Codec[List[T]] = iterableCodec(codec)
+  implicit def mapCodec[T](implicit codec: Codec[T]): Map[String, T] = ???
+  implicit def mutableSeqCodec[T](implicit codec: Codec[T]): Codec[scala.collection.mutable.Seq[T]] =
+    iterableCodec(codec)
+  implicit def seqCodec[T](implicit codec: Codec[T]): Codec[Seq[T]] = iterableCodec(codec)
+  implicit def setCodec[T](implicit codec: Codec[T]): Codec[Set[T]] = iterableCodec(codec)
+  implicit def vectorCodec[T](implicit codec: Codec[T]): Codec[Vector[T]] = iterableCodec(codec)
 }
 
 trait ScalaPredefAndCollectionEncoders {
@@ -44,12 +63,27 @@ trait ScalaPredefAndCollectionEncoders {
   implicit def iterableByteEncoder[C[X] <: Iterable[X]](
       implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): EncoderV2[C[Byte]] = new IterableByteCodec[C](cbf)
 
-  def iterableEncoder[T, C[X] <: Iterable[X]](implicit encoder: EncoderV2[T]): EncoderV2[C[T]] =
+  private def iterableEncoder[T, C[X] <: Iterable[X]](encoder: EncoderV2[T]): EncoderV2[C[T]] =
     new EncoderV2[C[T]] {
-      val schema: Schema = SchemaBuilder.array().items(encoder.schema)
+      val schema: Schema = iterableSchema(encoder)
 
       def encode(value: C[T]): AnyRef = encodeIterable(encoder, value)
     }
+
+  implicit def arrayEncoder[T: ClassTag](implicit encoder: EncoderV2[T]): EncoderV2[Array[T]] =
+    new EncoderV2[Array[T]] {
+      def schema: Schema = arraySchema(encoder)
+
+      def encode(value: Array[T]): AnyRef = encodeArray(encoder, value)
+    }
+
+  implicit def listEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[List[T]] = iterableEncoder(encoder)
+  implicit def mapEncoder[T](implicit encoder: EncoderV2[T]): Map[String, T] = ???
+  implicit def mutableSeqEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[scala.collection.mutable.Seq[T]] =
+    iterableEncoder(encoder)
+  implicit def seqEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Seq[T]] = iterableEncoder(encoder)
+  implicit def setEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Set[T]] = iterableEncoder(encoder)
+  implicit def vectorEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Vector[T]] = iterableEncoder(encoder)
 }
 
 trait ScalaPredefAndCollectionDecoders {
@@ -57,13 +91,28 @@ trait ScalaPredefAndCollectionDecoders {
   implicit def iterableByteDecoder[C[X] <: Iterable[X]](
       implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): DecoderV2[C[Byte]] = new IterableByteCodec[C](cbf)
 
-  def iterableDecoder[T, C[X] <: Iterable[X]](implicit decoder: DecoderV2[T],
-                                              cbf: CanBuildFrom[Nothing, T, C[T]]): DecoderV2[C[T]] =
+  def iterableDecoder[T, C[X] <: Iterable[X]](decoder: DecoderV2[T])(
+      implicit cbf: CanBuildFrom[Nothing, T, C[T]]): DecoderV2[C[T]] =
     new DecoderV2[C[T]] {
-      val schema: Schema = SchemaBuilder.array().items(decoder.schema)
+      val schema: Schema = iterableSchema(decoder)
 
       def decode(value: Any): C[T] = decodeIterable(decoder, value)
     }
+
+  implicit def arrayDecoder[T: ClassTag](implicit decoder: DecoderV2[T]): DecoderV2[Array[T]] =
+    new DecoderV2[Array[T]] {
+      def schema: Schema = arraySchema(decoder)
+
+      def decode(value: Any): Array[T] = decodeArray(decoder, value)
+    }
+
+  implicit def listDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[List[T]] = iterableDecoder(decoder)
+  implicit def mapDecoder[T](implicit decoder: DecoderV2[T]): Map[String, T] = ???
+  implicit def mutableSeqDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[scala.collection.mutable.Seq[T]] =
+    iterableDecoder(decoder)
+  implicit def seqDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Seq[T]] = iterableDecoder(decoder)
+  implicit def setDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Set[T]] = iterableDecoder(decoder)
+  implicit def vectorDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Vector[T]] = iterableDecoder(decoder)
 }
 
 object ScalaPredefAndCollections {
@@ -137,20 +186,8 @@ object ScalaPredefAndCollections {
   implicit def iterableByteCodec[C[X] <: Iterable[X]](
       implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): Codec[C[Byte]] = new IterableByteCodec[C](cbf)
 
-  implicit def arrayCodec[T: ClassTag](implicit codec: Codec[T]): Codec[Array[T]] = new Codec[Array[T]] {
-    import scala.collection.JavaConverters._
-
-    val schema: Schema = SchemaBuilder.array().items(codec.schema)
-
-    def encode(value: Array[T]): AnyRef = value.map(codec.encode).toList.asJava
-
-    def decode(value: Any): Array[T] = value match {
-      case array: Array[_]               => array.map(codec.decode)
-      case list: java.util.Collection[_] => list.asScala.map(codec.decode).toArray
-      case list: Iterable[_]             => list.map(codec.decode).toArray
-      case other                         => sys.error("Unsupported array " + other)
-    }
-  }
+  private[avro4s] def iterableSchema[TC[_], T](itemSchemaAware: SchemaAware[TC, T]): Schema =
+    SchemaBuilder.array().items(itemSchemaAware.schema)
 
   private[avro4s] def encodeIterable[T, C[X] <: Iterable[X]](encoder: EncoderV2[T], value: C[T]): AnyRef =
     value.map(encoder.encode).toList.asJava
@@ -160,6 +197,19 @@ object ScalaPredefAndCollections {
     case array: Array[_]               => array.map(decoder.decode)(collection.breakOut)
     case list: java.util.Collection[_] => list.asScala.map(decoder.decode)(collection.breakOut)
     case list: Iterable[_]             => list.map(decoder.decode)(collection.breakOut)
+    case other                         => sys.error("Unsupported array " + other)
+  }
+
+  private[avro4s] def arraySchema[TC[_], T](itemSchemaAware: SchemaAware[TC, T]): Schema =
+    SchemaBuilder.array().items(itemSchemaAware.schema)
+
+  private[avro4s] def encodeArray[T](encoder: EncoderV2[T], value: Array[T]): AnyRef =
+    value.map(encoder.encode).toList.asJava
+
+  private[avro4s] def decodeArray[T: ClassTag](decoder: DecoderV2[T], value: Any): Array[T] = value match {
+    case array: Array[_]               => array.map(decoder.decode)
+    case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toArray
+    case list: Iterable[_]             => list.map(decoder.decode).toArray
     case other                         => sys.error("Unsupported array " + other)
   }
 }

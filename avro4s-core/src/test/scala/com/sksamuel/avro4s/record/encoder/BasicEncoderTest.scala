@@ -22,8 +22,9 @@ class BasicEncoderTest extends AnyWordSpec with Matchers {
     "encode strings as GenericFixed and pad bytes when schema is fixed" in {
       case class Foo(s: String)
 
-      implicit val fixedStringCodec: Codec[String] =
-        new Codec.FixedStringCodec(Schema.createFixed("FixedString", null, null, 7))
+      val fixedSchema = SchemaForV2[String](Schema.createFixed("FixedString", null, null, 7))
+      implicit val fixedStringEncoder: EncoderV2[String] = EncoderV2.StringEncoder.withSchema(fixedSchema)
+
       val record = EncoderV2[Foo].encode(Foo("hello")).asInstanceOf[GenericRecord]
       record.get("s").asInstanceOf[GenericFixed].bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
       // the fixed should have the right size

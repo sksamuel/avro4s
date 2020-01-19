@@ -10,7 +10,7 @@ class TypeUnionCodec[T](ctx: SealedTrait[Typeclass, T],
                         codecByName: Map[String, UnionEntryCodec[T]],
                         codecBySubtype: Map[Subtype[Typeclass, T], UnionEntryCodec[T]])
     extends Codec[T]
-    with ModifiableNamespaceCodec[T] {
+    with NamespaceAware[Codec[T]] {
 
   def withNamespace(namespace: String): Codec[T] = TypeUnionCodec(ctx, Some(namespace))
 
@@ -81,9 +81,9 @@ class UnionEntryCodec[T](val st: Subtype[Typeclass, T],
 
   private val codec: Codec[st.SType] = {
     (st.typeclass, namespace, schemaOverride) match {
-      case (codec, _, Some(s))                                              => codec.withSchema(s.map(identity))
-      case (mnc: ModifiableNamespaceCodec[st.SType] @unchecked, Some(n), _) => mnc.withNamespace(n)
-      case (codec, _, _)                                                    => codec
+      case (codec, _, Some(s))                                           => codec.withSchema(s.map(identity))
+      case (mnc: NamespaceAware[Codec[st.SType]] @unchecked, Some(n), _) => mnc.withNamespace(n)
+      case (codec, _, _)                                                 => codec
     }
   }
 

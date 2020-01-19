@@ -16,7 +16,14 @@ trait DecoderV2[T] extends SchemaAware[DecoderV2, T] { self =>
 
 }
 
-object DecoderV2 extends ShapelessCoproductDecoders with BaseDecoders {
+object DecoderV2
+    extends MagnoliaGeneratedDecoders
+    with ShapelessCoproductDecoders
+    with ScalaPredefAndCollectionDecoders
+    with BigDecimalDecoders
+    with BaseDecoders {
+
+  def apply[T](implicit decoder: DecoderV2[T]): DecoderV2[T] = decoder
 
   private class DelegatingDecoder[T, S](decoder: DecoderV2[T], val schema: Schema, map: T => S) extends DecoderV2[S] {
 
@@ -32,6 +39,4 @@ object DecoderV2 extends ShapelessCoproductDecoders with BaseDecoders {
   implicit class DecoderFunctor[T](val decoder: DecoderV2[T]) extends AnyVal {
     def map[S](f: T => S): DecoderV2[S] = new DelegatingDecoder(decoder, decoder.schema, f)
   }
-
-  def apply[T](implicit codec: Codec[T]): DecoderV2[T] = codec
 }

@@ -27,6 +27,8 @@ object Codec
     with BaseCodecs
     with BigDecimalCodecs {
 
+  def apply[T](implicit codec: Codec[T]): Codec[T] = codec
+
   private class DelegatingCodec[T, S](codec: Codec[T], val schema: Schema, map: T => S, comap: S => T) extends Codec[S] {
 
     def encode(value: S): AnyRef = codec.encode(comap(value))

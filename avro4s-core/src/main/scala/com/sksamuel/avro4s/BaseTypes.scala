@@ -163,11 +163,14 @@ object BaseTypes {
   }
 
   private sealed trait StringCodecBase extends Codec[String] {
-    override def withSchema(schemaFor: SchemaForV2[String]): Codec[String] = schemaFor.schema.getType match {
-      case Schema.Type.STRING => new StringCodec(schema)
-      case Schema.Type.FIXED  => new FixedStringCodec(schema)
-      case Schema.Type.BYTES  => new ByteStringCodec(schema)
-      case _                  => sys.error(s"Unsupported type for string schema: $schema")
+    override def withSchema(schemaFor: SchemaForV2[String]): Codec[String] = {
+      val schema = schemaFor.schema
+      schema.getType match {
+        case Schema.Type.STRING => new StringCodec(schema)
+        case Schema.Type.FIXED  => new FixedStringCodec(schema)
+        case Schema.Type.BYTES  => new ByteStringCodec(schema)
+        case _                  => sys.error(s"Unsupported type for string schema: $schema")
+      }
     }
   }
 
@@ -188,7 +191,7 @@ object BaseTypes {
   }
 
   private class FixedStringCodec(val schema: Schema) extends StringCodecBase {
-    require(schema.getType == Schema.Type.FIXED)
+    require(schema.getType == Schema.Type.FIXED, s"Fixed string schema must be of type FIXED, got ${schema.getType}")
 
     def encode(value: String): AnyRef = {
       if (value.getBytes.length > schema.getFixedSize)

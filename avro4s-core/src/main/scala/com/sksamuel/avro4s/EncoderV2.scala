@@ -16,7 +16,14 @@ trait EncoderV2[T] extends SchemaAware[EncoderV2, T] { self =>
 
 }
 
-object EncoderV2 extends ShapelessCoproductEncoders with BaseEncoders {
+object EncoderV2
+    extends MagnoliaGeneratedEncoders
+    with ShapelessCoproductEncoders
+    with ScalaPredefAndCollectionEncoders
+    with BigDecimalEncoders
+    with BaseEncoders {
+
+  def apply[T](implicit encoder: EncoderV2[T]): EncoderV2[T] = encoder
 
   private class DelegatingEncoder[T, S](encoder: EncoderV2[T], val schema: Schema, comap: S => T) extends EncoderV2[S] {
 
@@ -32,8 +39,4 @@ object EncoderV2 extends ShapelessCoproductEncoders with BaseEncoders {
   implicit class EncoderCofunctor[T](val encoder: EncoderV2[T]) extends AnyVal {
     def comap[S](f: S => T): EncoderV2[S] = new DelegatingEncoder(encoder, encoder.schema, f)
   }
-
-  def apply[T](implicit codec: Codec[T]): EncoderV2[T] = codec
-
-
 }

@@ -49,13 +49,12 @@ object SchemaForV2 {
   def combine[T](ctx: CaseClass[Typeclass, T])(
       implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaForV2[T] = {
     val paramSchema = (p: Param[Typeclass, T]) => p.typeclass.schema
-    SchemaForV2[T](
-      DatatypeShape.of(ctx) match {
-        case CaseClassShape.Record    => RecordCodec.buildSchema(ctx, fieldMapper, None, paramSchema)
-        case CaseClassShape.ValueType => ValueTypeCodec.buildSchema(ctx, Seq.empty, paramSchema)
-      },
-      fieldMapper
-    )
+
+    DatatypeShape.of(ctx) match {
+      case CaseClassShape.Record => Records.buildSchema(ctx, fieldMapper, None, paramSchema)
+      case CaseClassShape.ValueType =>
+        SchemaForV2[T](ValueTypeCodec.buildSchema(ctx, Seq.empty, paramSchema), fieldMapper)
+    }
   }
 
   implicit val IntSchema: SchemaForV2[Int] = SchemaForV2[Int](SchemaBuilder.builder.intType)
