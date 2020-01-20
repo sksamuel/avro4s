@@ -21,6 +21,7 @@ object EncoderV2
     with ShapelessCoproductEncoders
     with ScalaPredefAndCollectionEncoders
     with BigDecimalEncoders
+    with TemporalEncoders
     with BaseEncoders {
 
   def apply[T](implicit encoder: EncoderV2[T]): EncoderV2[T] = encoder

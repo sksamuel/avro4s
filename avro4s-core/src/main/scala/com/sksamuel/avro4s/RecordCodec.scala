@@ -1,8 +1,5 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.Codec.{Typeclass => CodecTC}
-import com.sksamuel.avro4s.DecoderV2.{Typeclass => DecoderTC}
-import com.sksamuel.avro4s.EncoderV2.{Typeclass => EncoderTC}
 import com.sksamuel.avro4s.RecordFields.{FieldDecoder, FieldEncoder, RecordFieldCodec, RecordFieldDecoder}
 import com.sksamuel.avro4s.Records._
 import magnolia.{CaseClass, Param}
@@ -15,7 +12,7 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordEncoder[T](ctx: CaseClass[EncoderTC, T], schemaFor: SchemaForV2[T], fieldEncoding: Seq[FieldEncoder[T]])
+class RecordEncoder[T](ctx: CaseClass[EncoderV2, T], schemaFor: SchemaForV2[T], fieldEncoding: Seq[FieldEncoder[T]])
     extends EncoderV2[T]
     with NamespaceAware[EncoderV2[T]] {
 
@@ -31,7 +28,7 @@ class RecordEncoder[T](ctx: CaseClass[EncoderTC, T], schemaFor: SchemaForV2[T], 
   }
 }
 
-class RecordDecoder[T](ctx: CaseClass[DecoderTC, T], schemaFor: SchemaForV2[T], fieldDecoding: Seq[FieldDecoder])
+class RecordDecoder[T](ctx: CaseClass[DecoderV2, T], schemaFor: SchemaForV2[T], fieldDecoding: Seq[FieldDecoder])
     extends DecoderV2[T]
     with NamespaceAware[DecoderV2[T]] {
 
@@ -47,7 +44,7 @@ class RecordDecoder[T](ctx: CaseClass[DecoderTC, T], schemaFor: SchemaForV2[T], 
   }
 }
 
-class RecordCodec[T](ctx: CaseClass[CodecTC, T],
+class RecordCodec[T](ctx: CaseClass[Codec, T],
                      schemaFor: SchemaForV2[T],
                      fieldEncoding: Seq[RecordFields.FieldEncoder[T]],
                      fieldDecoding: Seq[RecordFields.FieldCodec[T]])
@@ -108,43 +105,43 @@ object Records {
             s"Schema type for record codecs must be RECORD, received ${newSchema.getType}")
   }
 
-  def encoder[T](ctx: CaseClass[EncoderTC, T],
+  def encoder[T](ctx: CaseClass[EncoderV2, T],
                  fieldMapper: FieldMapper,
                  namespace: Option[String] = None): RecordEncoder[T] = {
-    val schemaFor = buildSchema(ctx, fieldMapper, namespace, (p: Param[EncoderTC, T]) => p.typeclass.schema)
+    val schemaFor = buildSchema(ctx, fieldMapper, namespace, (p: Param[EncoderV2, T]) => p.typeclass.schema)
     encoder(ctx, schemaFor)
   }
 
-  def encoder[T](ctx: CaseClass[EncoderTC, T], schemaFor: SchemaForV2[T]): RecordEncoder[T] = {
+  def encoder[T](ctx: CaseClass[EncoderV2, T], schemaFor: SchemaForV2[T]): RecordEncoder[T] = {
     val encoders = buildFields(ctx, schemaFor)(new RecordFields.RecordFieldEncoder(_, _))
     val encoding = buildEncoders(encoders, schemaFor)
     new RecordEncoder[T](ctx, schemaFor, encoding)
   }
 
-  def decoder[T](ctx: CaseClass[DecoderTC, T],
+  def decoder[T](ctx: CaseClass[DecoderV2, T],
                  fieldMapper: FieldMapper,
                  namespace: Option[String] = None): RecordDecoder[T] = {
-    val schemaFor = buildSchema(ctx, fieldMapper, namespace, (p: Param[DecoderTC, T]) => p.typeclass.schema)
+    val schemaFor = buildSchema(ctx, fieldMapper, namespace, (p: Param[DecoderV2, T]) => p.typeclass.schema)
     decoder(ctx, schemaFor)
   }
 
-  def decoder[T](ctx: CaseClass[DecoderTC, T], schemaFor: SchemaForV2[T]): RecordDecoder[T] = {
+  def decoder[T](ctx: CaseClass[DecoderV2, T], schemaFor: SchemaForV2[T]): RecordDecoder[T] = {
     val decoders = buildFields(ctx, schemaFor)(new RecordFieldDecoder[T](_, _))
     val decoding = buildDecoders(decoders, ctx, (d: RecordFieldDecoder[T]) => d.param)
     new RecordDecoder[T](ctx, schemaFor, decoding)
   }
 
-  def codec[T](ctx: CaseClass[CodecTC, T], schemaFor: SchemaForV2[T]): RecordCodec[T] = {
+  def codec[T](ctx: CaseClass[Codec, T], schemaFor: SchemaForV2[T]): RecordCodec[T] = {
     val codecs = buildFields(ctx, schemaFor)(new RecordFieldCodec(_, _))
     val encoding = buildEncoders(codecs, schemaFor)
     val decoding = buildDecoders(codecs, ctx, (c: RecordFieldCodec[T]) => c.param)
     new RecordCodec[T](ctx, schemaFor, encoding, decoding)
   }
 
-  def codec[T](ctx: CaseClass[CodecTC, T],
+  def codec[T](ctx: CaseClass[Codec, T],
                fieldMapper: FieldMapper,
                namespace: Option[String] = None): RecordCodec[T] = {
-    val schemaFor = buildSchema(ctx, fieldMapper, namespace, (p: Param[CodecTC, T]) => p.typeclass.schema)
+    val schemaFor = buildSchema(ctx, fieldMapper, namespace, (p: Param[Codec, T]) => p.typeclass.schema)
     codec(ctx, schemaFor)
   }
 

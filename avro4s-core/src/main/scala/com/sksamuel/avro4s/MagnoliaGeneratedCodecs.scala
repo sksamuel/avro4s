@@ -1,6 +1,8 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.SchemaUpdate.NoUpdate
 import magnolia.{CaseClass, Magnolia, SealedTrait}
+
 import scala.reflect.runtime.universe._
 import scala.language.experimental.macros
 
@@ -13,7 +15,7 @@ trait MagnoliaGeneratedEncoders {
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
     implicit fieldMapper: FieldMapper = DefaultFieldMapper): EncoderV2[T] =
     DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion => ???
+      case SealedTraitShape.TypeUnion => TypeUnions.encoder(ctx, NoUpdate)
       case SealedTraitShape.ScalaEnum => ???
     }
 
@@ -33,7 +35,7 @@ trait MagnoliaGeneratedDecoders {
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
     implicit fieldMapper: FieldMapper = DefaultFieldMapper): DecoderV2[T] =
     DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion => ???
+      case SealedTraitShape.TypeUnion => TypeUnions.decoder(ctx, NoUpdate)
       case SealedTraitShape.ScalaEnum => ???
     }
 
@@ -53,7 +55,7 @@ trait MagnoliaGeneratedCodecs {
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
       implicit fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] =
     DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion => TypeUnionCodec(ctx)
+      case SealedTraitShape.TypeUnion => TypeUnions.codec(ctx, NoUpdate)
       case SealedTraitShape.ScalaEnum => ScalaEnumCodec(ctx)
     }
 

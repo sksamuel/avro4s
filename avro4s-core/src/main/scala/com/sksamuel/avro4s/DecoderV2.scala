@@ -21,6 +21,7 @@ object DecoderV2
     with ShapelessCoproductDecoders
     with ScalaPredefAndCollectionDecoders
     with BigDecimalDecoders
+    with TemporalDecoders
     with BaseDecoders {
 
   def apply[T](implicit decoder: DecoderV2[T]): DecoderV2[T] = decoder

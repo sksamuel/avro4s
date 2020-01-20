@@ -5,9 +5,6 @@ import org.apache.avro.Schema.Field
 import org.apache.avro.generic.IndexedRecord
 
 import scala.util.control.NonFatal
-import com.sksamuel.avro4s.Codec.{Typeclass => CodecTC}
-import com.sksamuel.avro4s.DecoderV2.{Typeclass => DecoderTC}
-import com.sksamuel.avro4s.EncoderV2.{Typeclass => EncoderTC}
 import org.apache.avro.Schema
 
 object RecordFields {
@@ -25,22 +22,22 @@ object RecordFields {
 
   trait FieldCodec[T] extends FieldEncoder[T] with FieldDecoder
 
-  class RecordFieldCodec[T](param: Param[CodecTC, T], field: Option[Field])
-      extends RecordFieldBase[CodecTC, T](param, field, (e: Codec[_]) => e.schema) with FieldCodec[T] {
+  class RecordFieldCodec[T](param: Param[Codec, T], field: Option[Field])
+      extends RecordFieldBase[Codec, T](param, field, (e: Codec[_]) => e.schema) with FieldCodec[T] {
 
     def encodeFieldValue(value: T): AnyRef = encodeFieldValue(typeclass, value)
 
     def decodeFieldValue(record: IndexedRecord): Any = decodeFieldValue(typeclass, record)
   }
 
-  class RecordFieldDecoder[T](param: Param[DecoderTC, T], field: Option[Field])
-      extends RecordFieldBase[DecoderTC, T](param, field, (e: DecoderV2[_]) => e.schema) with FieldDecoder {
+  class RecordFieldDecoder[T](param: Param[DecoderV2, T], field: Option[Field])
+      extends RecordFieldBase[DecoderV2, T](param, field, (e: DecoderV2[_]) => e.schema) with FieldDecoder {
 
     def decodeFieldValue(record: IndexedRecord): Any = decodeFieldValue(typeclass, record)
   }
 
-  class RecordFieldEncoder[T](param: Param[EncoderTC, T], field: Option[Field])
-      extends RecordFieldBase[EncoderTC, T](param, field, (e: EncoderV2[_]) => e.schema) with FieldEncoder[T] {
+  class RecordFieldEncoder[T](param: Param[EncoderV2, T], field: Option[Field])
+      extends RecordFieldBase[EncoderV2, T](param, field, (e: EncoderV2[_]) => e.schema) with FieldEncoder[T] {
 
     def encodeFieldValue(value: T): AnyRef = encodeFieldValue(typeclass, value)
   }
@@ -51,21 +48,21 @@ object RecordFields {
     * Defines how fields are encoded / decoded, and how namespaces or schema overrides are passed to the
     * underlying encoder / decoder / codec that were discovered via Magnolia derivation.
     *
-    * @tparam TC typeclass (i.e. Codec[_], Encoder[_], Decoder[_])
+    * @tparam Typeclass typeclass (i.e. Codec[_], Encoder[_], Decoder[_])
     * @tparam T type of the parent record / case class, needed for Magnolia's Param[_, _]
     */
-  class RecordFieldBase[TC[X] <: SchemaAware[TC, X], T](val param: Param[TC, T],
-                                                        val field: Option[Field],
-                                                        sf: TC[_] => Schema) {
+  abstract class RecordFieldBase[Typeclass[X] <: SchemaAware[Typeclass, X], T](val param: Param[Typeclass, T],
+                                                                               val field: Option[Field],
+                                                                               sf: Typeclass[_] => Schema) {
 
     // Propagate of namespaces and schema changes. Schema changes have precedence over namespace changes, as
     // schema changes (via .withSchema) are more flexible than namespace changes (via param annotations).
-    protected val typeclass: TC[param.PType] = {
+    protected val typeclass: Typeclass[param.PType] = {
       val namespace = new AnnotationExtractors(param.annotations).namespace
       (param.typeclass, namespace, field.map(_.schema)) match {
         case (typeclass, _, Some(s)) if s.getType != sf(typeclass).getType =>
           typeclass.withSchema(SchemaForV2[param.PType](s))
-        case (m: NamespaceAware[TC[param.PType]] @unchecked, Some(ns), _) => m.withNamespace(ns)
+        case (m: NamespaceAware[Typeclass[param.PType]] @unchecked, Some(ns), _) => m.withNamespace(ns)
         case (codec, _, _)                                                => codec
       }
     }

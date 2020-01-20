@@ -24,12 +24,14 @@ object Codec
     extends MagnoliaGeneratedCodecs
     with ShapelessCoproductCodecs
     with ScalaPredefAndCollectionCodecs
-    with BaseCodecs
-    with BigDecimalCodecs {
+    with BigDecimalCodecs
+    with TemporalCodecs
+    with BaseCodecs {
 
   def apply[T](implicit codec: Codec[T]): Codec[T] = codec
 
-  private class DelegatingCodec[T, S](codec: Codec[T], val schema: Schema, map: T => S, comap: S => T) extends Codec[S] {
+  private class DelegatingCodec[T, S](codec: Codec[T], val schema: Schema, map: T => S, comap: S => T)
+      extends Codec[S] {
 
     def encode(value: S): AnyRef = codec.encode(comap(value))
 
@@ -41,7 +43,6 @@ object Codec
       new DelegatingCodec[T, S](decoderWithSchema, schemaFor.schema, map, comap)
     }
   }
-
 
   implicit class CodecBifunctor[T](val codec: Codec[T]) extends AnyVal {
     def inmap[S](map: T => S, comap: S => T): Codec[S] = new DelegatingCodec(codec, codec.schema, map, comap)
