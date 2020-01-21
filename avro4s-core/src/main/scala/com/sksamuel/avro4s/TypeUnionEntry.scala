@@ -1,22 +1,13 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate}
+import com.sksamuel.avro4s.TypeUnions.{EntryCodec, EntryDecoder, EntryEncoder}
 import magnolia.Subtype
 
-object TypeUnionEntry {
-
-  trait EntryDecoder[T] {
-    def decodeSubtype(value: Any): T
-  }
-
-  trait EntryEncoder[T] {
-    def encodeSubtype(value: T): AnyRef
-  }
-
-  trait EntryCodec[T] extends EntryDecoder[T] with EntryEncoder[T]
+private[avro4s] object TypeUnionEntry {
 
   class UnionEntryCodec[T](st: Subtype[Codec, T], update: SchemaUpdate)
-      extends CodecBase[Codec, T](st, update)
+      extends EntryBase[Codec, T](st, update)
       with EntryCodec[T] {
 
     def decodeSubtype(value: Any): T = decodeSubtype(typeclass, value)
@@ -25,20 +16,20 @@ object TypeUnionEntry {
   }
 
   class UnionEntryEncoder[T](st: Subtype[EncoderV2, T], update: SchemaUpdate)
-      extends CodecBase[EncoderV2, T](st, update)
+      extends EntryBase[EncoderV2, T](st, update)
       with EntryEncoder[T] {
 
     def encodeSubtype(value: T): AnyRef = encodeSubtype(typeclass, value)
   }
 
   class UnionEntryDecoder[T](st: Subtype[DecoderV2, T], overrides: SchemaUpdate)
-      extends CodecBase[DecoderV2, T](st, overrides)
+      extends EntryBase[DecoderV2, T](st, overrides)
       with EntryDecoder[T] {
 
     def decodeSubtype(value: Any): T = decodeSubtype(typeclass, value)
   }
 
-  abstract class CodecBase[Typeclass[X] <: SchemaAware[Typeclass, X], T](val st: Subtype[Typeclass, T],
+  abstract class EntryBase[Typeclass[X] <: SchemaAware[Typeclass, X], T](val st: Subtype[Typeclass, T],
                                                                          update: SchemaUpdate) {
 
     protected val typeclass: Typeclass[st.SType] = {

@@ -81,6 +81,16 @@ object TypeUnions {
       case _ => sys.error(s"Unsupported type $value in type union decoder")
     }
 
+  trait EntryDecoder[T] {
+    def decodeSubtype(value: Any): T
+  }
+
+  trait EntryEncoder[T] {
+    def encodeSubtype(value: T): AnyRef
+  }
+
+  trait EntryCodec[T] extends EntryDecoder[T] with EntryEncoder[T]
+
   def codec[T](ctx: SealedTrait[Codec, T], update: SchemaUpdate): Codec[T] =
     create(ctx, update, new CodecBuilder[T])
 
