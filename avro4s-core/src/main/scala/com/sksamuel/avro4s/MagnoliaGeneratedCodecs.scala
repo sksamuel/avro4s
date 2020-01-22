@@ -16,7 +16,7 @@ trait MagnoliaGeneratedEncoders {
     implicit fieldMapper: FieldMapper = DefaultFieldMapper): EncoderV2[T] =
     DatatypeShape.of(ctx) match {
       case SealedTraitShape.TypeUnion => TypeUnions.encoder(ctx, NoUpdate)
-      case SealedTraitShape.ScalaEnum => ???
+      case SealedTraitShape.ScalaEnum => ScalaEnums.encoder(ctx)
     }
 
   def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): EncoderV2[T] =
@@ -36,7 +36,7 @@ trait MagnoliaGeneratedDecoders {
     implicit fieldMapper: FieldMapper = DefaultFieldMapper): DecoderV2[T] =
     DatatypeShape.of(ctx) match {
       case SealedTraitShape.TypeUnion => TypeUnions.decoder(ctx, NoUpdate)
-      case SealedTraitShape.ScalaEnum => ???
+      case SealedTraitShape.ScalaEnum => ScalaEnums.decoder(ctx)
     }
 
   def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): DecoderV2[T] =
@@ -56,7 +56,7 @@ trait MagnoliaGeneratedCodecs {
       implicit fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] =
     DatatypeShape.of(ctx) match {
       case SealedTraitShape.TypeUnion => TypeUnions.codec(ctx, NoUpdate)
-      case SealedTraitShape.ScalaEnum => ScalaEnumCodec(ctx)
+      case SealedTraitShape.ScalaEnum => ScalaEnums.codec(ctx)
     }
 
   def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] =

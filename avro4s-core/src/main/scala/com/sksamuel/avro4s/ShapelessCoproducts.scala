@@ -22,7 +22,7 @@ trait ShapelessCoproductCodecs {
 
       def encode(value: H :+: T): AnyRef = encodeCoproduct[H, T](value)
 
-      private implicit val elementDecoder: PartialFunction[Any, H] = buildElementDecoder(codecH)
+      private implicit val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(codecH)
 
       def decode(value: Any): H :+: T = decodeCoproduct[H, T](value)
 
@@ -68,7 +68,7 @@ trait ShapelessCoproductDecoders {
 
       val schema: Schema = coproductSchema(decoderH, decoderT)
 
-      private implicit val elementDecoder: PartialFunction[Any, H] = buildElementDecoder(decoderH)
+      private implicit val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(decoderH)
 
       def decode(value: Any): H :+: T = decodeCoproduct[H, T](value)
 
@@ -118,62 +118,4 @@ object ShapelessCoproducts {
   private[avro4s] def decodeCoproduct[H, T <: Coproduct](value: Any)(implicit elementDecoder: PartialFunction[Any, H],
                                                                      decoderT: DecoderV2[T]): H :+: T =
     if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value)) else Inr(decoderT.decode(value))
-
-  private[avro4s] def buildElementDecoder[T: WeakTypeTag: Manifest](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    import scala.reflect.runtime.universe.typeOf
-
-    val tpe = implicitly[WeakTypeTag[T]].tpe
-
-    if (tpe <:< typeOf[java.lang.String]) stringDecoder(decoder)
-    else if (tpe <:< typeOf[Boolean]) booleanDecoder(decoder)
-    else if (tpe <:< typeOf[Int]) intDecoder(decoder)
-    else if (tpe <:< typeOf[Long]) longDecoder(decoder)
-    else if (tpe <:< typeOf[Double]) doubleDecoder(decoder)
-    else if (tpe <:< typeOf[Float]) floatDecoder(decoder)
-    else if (tpe <:< typeOf[Array[_]] || tpe <:< typeOf[java.util.Collection[_]] || tpe <:< typeOf[Iterable[_]]) {
-      arrayDecoder(decoder)
-    } else if (tpe <:< typeOf[java.util.Map[_, _]] || tpe <:< typeOf[Map[_, _]]) {
-      mapDecoder(decoder)
-    } else {
-      val nameExtractor = NameExtractor(manifest.runtimeClass)
-      recordDecoder(nameExtractor.fullName, decoder)
-    }
-  }
-
-  def stringDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    case v: Utf8   => decoder.decode(v)
-    case v: String => decoder.decode(v)
-  }
-
-  def booleanDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    case v: Boolean => decoder.decode(v)
-  }
-
-  def intDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    case v: Int => decoder.decode(v)
-  }
-
-  def longDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    case v: Long => decoder.decode(v)
-  }
-
-  def doubleDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    case v: Double => decoder.decode(v)
-  }
-
-  def floatDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    case v: Float => decoder.decode(v)
-  }
-
-  def arrayDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    case v: GenericData.Array[_] => decoder.decode(v)
-  }
-
-  def mapDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    case v: java.util.Map[_, _] => decoder.decode(v)
-  }
-
-  def recordDecoder[T](typeName: String, decoder: DecoderV2[T]): PartialFunction[Any, T] = {
-    case v: GenericContainer if v.getSchema.getFullName == typeName => decoder.decode(v)
-  }
 }

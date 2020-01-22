@@ -9,6 +9,7 @@ import org.apache.avro.generic.{GenericData, GenericFixed}
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
+import scala.reflect.runtime.universe._
 
 trait ScalaPredefAndCollectionCodecs {
 
@@ -22,6 +23,20 @@ trait ScalaPredefAndCollectionCodecs {
 
     def decode(value: Any): Option[T] = decodeOption(codec, value)
   }
+
+  implicit def eitherCodec[A: Manifest: WeakTypeTag, B: Manifest: WeakTypeTag](
+      implicit leftCodec: Codec[A],
+      rightCodec: Codec[B]): Codec[Either[A, B]] =
+    new Codec[Either[A, B]] {
+      val schema: Schema = SchemaHelper.createSafeUnion(leftCodec.schema, rightCodec.schema)
+
+      def encode(value: Either[A, B]): AnyRef = encodeEither(value)
+
+      private implicit val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding.guard(leftCodec)
+      private implicit val rightGuard: PartialFunction[Any, B] = TypeGuardedDecoding.guard(rightCodec)
+
+      def decode(value: Any): Either[A, B] = decodeEither(value, manifest[A], manifest[B])
+    }
 
   private def iterableByteCodec[C[X] <: Iterable[X]](
       implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): Codec[C[Byte]] = new IterableByteCodec[C](cbf)
@@ -50,7 +65,7 @@ trait ScalaPredefAndCollectionCodecs {
   }
 
   implicit def listCodec[T](implicit codec: Codec[T]): Codec[List[T]] = iterableCodec(codec)
-  implicit def mapCodec[T](implicit codec: Codec[T]): Map[String, T] = ???
+  implicit def mapCodec[T](implicit codec: Codec[T]): Codec[Map[String, T]] = ???
   implicit def mutableSeqCodec[T](implicit codec: Codec[T]): Codec[scala.collection.mutable.Seq[T]] =
     iterableCodec(codec)
   implicit def seqCodec[T](implicit codec: Codec[T]): Codec[Seq[T]] = iterableCodec(codec)
@@ -59,6 +74,23 @@ trait ScalaPredefAndCollectionCodecs {
 }
 
 trait ScalaPredefAndCollectionEncoders {
+
+  implicit val NoneEncoder: EncoderV2[None.type] = ScalaPredefAndCollections.NoneCodec
+
+  implicit def optionEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Option[T]] = new EncoderV2[Option[T]] {
+
+    val schema: Schema = optionSchema(encoder)
+
+    def encode(value: Option[T]): AnyRef = encodeOption(encoder, value)
+  }
+
+  implicit def eitherEncoder[A, B](implicit leftEncoder: EncoderV2[A],
+                                   rightEncoder: EncoderV2[B]): EncoderV2[Either[A, B]] =
+    new EncoderV2[Either[A, B]] {
+      val schema: Schema = SchemaHelper.createSafeUnion(leftEncoder.schema, rightEncoder.schema)
+
+      def encode(value: Either[A, B]): AnyRef = encodeEither(value)
+    }
 
   implicit def iterableByteEncoder[C[X] <: Iterable[X]](
       implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): EncoderV2[C[Byte]] = new IterableByteCodec[C](cbf)
@@ -78,7 +110,7 @@ trait ScalaPredefAndCollectionEncoders {
     }
 
   implicit def listEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[List[T]] = iterableEncoder(encoder)
-  implicit def mapEncoder[T](implicit encoder: EncoderV2[T]): Map[String, T] = ???
+  implicit def mapEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Map[String, T]] = ???
   implicit def mutableSeqEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[scala.collection.mutable.Seq[T]] =
     iterableEncoder(encoder)
   implicit def seqEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Seq[T]] = iterableEncoder(encoder)
@@ -87,6 +119,26 @@ trait ScalaPredefAndCollectionEncoders {
 }
 
 trait ScalaPredefAndCollectionDecoders {
+
+  implicit val NoneCodec: DecoderV2[None.type] = ScalaPredefAndCollections.NoneCodec
+
+  implicit def optionDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Option[T]] = new DecoderV2[Option[T]] {
+
+    val schema: Schema = optionSchema(decoder)
+
+    def decode(value: Any): Option[T] = decodeOption(decoder, value)
+  }
+
+  implicit def eitherDecoder[A: Manifest: WeakTypeTag, B: Manifest: WeakTypeTag](implicit leftDecoder: DecoderV2[A],
+                                   rightDecoder: DecoderV2[B]): DecoderV2[Either[A, B]] =
+    new DecoderV2[Either[A, B]] {
+      val schema: Schema = SchemaHelper.createSafeUnion(leftDecoder.schema, rightDecoder.schema)
+
+      private implicit val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding.guard(leftDecoder)
+      private implicit val rightGuard: PartialFunction[Any, B] = TypeGuardedDecoding.guard(rightDecoder)
+
+      def decode(value: Any): Either[A, B] = decodeEither(value, manifest[A], manifest[B])
+    }
 
   implicit def iterableByteDecoder[C[X] <: Iterable[X]](
       implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): DecoderV2[C[Byte]] = new IterableByteCodec[C](cbf)
@@ -107,7 +159,7 @@ trait ScalaPredefAndCollectionDecoders {
     }
 
   implicit def listDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[List[T]] = iterableDecoder(decoder)
-  implicit def mapDecoder[T](implicit decoder: DecoderV2[T]): Map[String, T] = ???
+  implicit def mapDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Map[String, T]] = ???
   implicit def mutableSeqDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[scala.collection.mutable.Seq[T]] =
     iterableDecoder(decoder)
   implicit def seqDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Seq[T]] = iterableDecoder(decoder)
@@ -125,6 +177,26 @@ object ScalaPredefAndCollections {
 
   private[avro4s] def decodeOption[T](decoder: DecoderV2[T], value: Any): Option[T] =
     if (value == null) None else Option(decoder.decode(value))
+
+  private[avro4s] def encodeEither[A, B](value: Either[A, B])(implicit leftEncoder: EncoderV2[A],
+                                                              rightEncoder: EncoderV2[B]): AnyRef =
+    value match {
+      case Left(l)  => leftEncoder.encode(l)
+      case Right(r) => rightEncoder.encode(r)
+    }
+
+  private[avro4s] def decodeEither[A, B](value: Any, manifestA: Manifest[A], manifestB: Manifest[B])(
+      implicit leftGuard: PartialFunction[Any, A],
+      rightGuard: PartialFunction[Any, B]): Either[A, B] =
+    if (leftGuard.isDefinedAt(value)) {
+      Left(leftGuard(value))
+    } else if (rightGuard.isDefinedAt(value)) {
+      Right(rightGuard(value))
+    } else {
+      val nameA = NameExtractor(manifestA.runtimeClass).fullName
+      val nameB = NameExtractor(manifestB.runtimeClass).fullName
+      sys.error(s"Could not decode $value into Either[$nameA, $nameB]")
+    }
 
   object NoneCodec extends Codec[None.type] {
     val schema: Schema = SchemaBuilder.builder.nullType

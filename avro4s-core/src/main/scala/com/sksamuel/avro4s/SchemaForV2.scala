@@ -43,7 +43,7 @@ object SchemaForV2 {
       implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaForV2[T] =
     DatatypeShape.of(ctx) match {
       case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx, NoUpdate, fieldMapper)
-      case SealedTraitShape.ScalaEnum => SchemaForV2[T](ScalaEnumCodec.buildSchema(ctx), fieldMapper)
+      case SealedTraitShape.ScalaEnum => SchemaForV2[T](ScalaEnums.schema(ctx), fieldMapper)
     }
 
   def combine[T](ctx: CaseClass[Typeclass, T])(
@@ -74,6 +74,9 @@ object SchemaForV2 {
   implicit def optionSchema[T](schemaForItem: SchemaForV2[T]): SchemaForV2[Option[T]] =
     schemaForItem.map[Option[T]](itemSchema =>
       SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
+
+  implicit def eitherSchema[A, B](implicit leftFor: SchemaForV2[A], rightFor: SchemaForV2[B]): SchemaForV2[Either[A, B]] =
+    SchemaForV2[Either[A, B]](SchemaHelper.createSafeUnion(leftFor.schema, rightFor.schema))
 
   implicit def byteIterableSchema[C[X] <: Iterable[X]]: SchemaForV2[C[Byte]] =
     SchemaForV2[C[Byte]](SchemaBuilder.builder.bytesType)
