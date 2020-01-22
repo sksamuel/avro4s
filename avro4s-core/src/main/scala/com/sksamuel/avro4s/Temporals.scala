@@ -6,18 +6,18 @@ import org.apache.avro.{LogicalTypes, SchemaBuilder}
 
 trait TemporalCodecs {
 
-  val InstantCodec: Codec[Instant] = Temporals.InstantCodec
+  implicit val InstantCodec: Codec[Instant] = Temporals.InstantCodec
 
 }
 
 trait TemporalEncoders {
 
-  val InstantEncoder: EncoderV2[Instant] = Temporals.InstantCodec
+  implicit val InstantEncoder: EncoderV2[Instant] = Temporals.InstantCodec
 }
 
 trait TemporalDecoders {
 
-  val InstantDecoder: DecoderV2[Instant] = Temporals.InstantCodec
+  implicit val InstantDecoder: DecoderV2[Instant] = Temporals.InstantCodec
 
 }
 

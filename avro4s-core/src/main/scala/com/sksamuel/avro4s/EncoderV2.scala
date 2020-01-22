@@ -21,6 +21,7 @@ object EncoderV2
     with ShapelessCoproductEncoders
     with ScalaPredefAndCollectionEncoders
     with BigDecimalEncoders
+    with ByteIterableEncoders
     with TemporalEncoders
     with BaseEncoders {
 

@@ -2,12 +2,12 @@ package com.sksamuel.avro4s.record.decoder
 
 import java.nio.ByteBuffer
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
+import com.sksamuel.avro4s.{AvroSchemaV2, DecoderV2}
 import org.apache.avro.generic.GenericData
-
-import scala.language.higherKinds
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+
+import scala.language.higherKinds
 
 class ByteArrayDecoderTest extends AnyFunSuite with Matchers {
 
@@ -18,60 +18,60 @@ class ByteArrayDecoderTest extends AnyFunSuite with Matchers {
   case class ListTest(z: Array[Byte])
 
   test("decode byte arrays") {
-    val schema = AvroSchema[ArrayTest]
+    val schema = AvroSchemaV2[ArrayTest]
     val record = new GenericData.Record(schema)
     record.put("z", ByteBuffer.wrap(Array[Byte](1, 4, 9)))
-    Decoder[ArrayTest].decode(record, schema, DefaultFieldMapper).z.toList shouldBe List[Byte](1, 4, 9)
+    DecoderV2[ArrayTest].decode(record).z.toList shouldBe List[Byte](1, 4, 9)
   }
 
   test("decode bytebuffers to array") {
-    val schema = AvroSchema[ArrayTest]
+    val schema = AvroSchemaV2[ArrayTest]
     val record = new GenericData.Record(schema)
     record.put("z", ByteBuffer.wrap(Array[Byte](1, 4, 9)))
-    Decoder[ArrayTest].decode(record, schema, DefaultFieldMapper).z.toList shouldBe List[Byte](1, 4, 9)
+    DecoderV2[ArrayTest].decode(record).z.toList shouldBe List[Byte](1, 4, 9)
   }
 
   test("decode byte vectors") {
-    val schema = AvroSchema[VectorTest]
+    val schema = AvroSchemaV2[VectorTest]
     val record = new GenericData.Record(schema)
     record.put("z", ByteBuffer.wrap(Array[Byte](1, 4, 9)))
-    Decoder[VectorTest].decode(record, schema, DefaultFieldMapper).z shouldBe Vector[Byte](1, 4, 9)
+    DecoderV2[VectorTest].decode(record).z shouldBe Vector[Byte](1, 4, 9)
   }
 
   test("decode byte lists") {
-    val schema = AvroSchema[ListTest]
+    val schema = AvroSchemaV2[ListTest]
     val record = new GenericData.Record(schema)
     record.put("z", ByteBuffer.wrap(Array[Byte](1, 4, 9)))
-    Decoder[ListTest].decode(record, schema, DefaultFieldMapper).z shouldBe List[Byte](1, 4, 9)
+    DecoderV2[ListTest].decode(record).z shouldBe List[Byte](1, 4, 9)
   }
 
   test("decode byte seqs") {
-    val schema = AvroSchema[SeqTest]
+    val schema = AvroSchemaV2[SeqTest]
     val record = new GenericData.Record(schema)
     record.put("z", ByteBuffer.wrap(Array[Byte](1, 4, 9)))
-    Decoder[SeqTest].decode(record, schema, DefaultFieldMapper).z shouldBe Seq[Byte](1, 4, 9)
+    DecoderV2[SeqTest].decode(record).z shouldBe Seq[Byte](1, 4, 9)
   }
 
   test("decode top level byte arrays") {
-    Decoder[Array[Byte]].decode(ByteBuffer.wrap(Array[Byte](1, 4, 9)), AvroSchema[Array[Byte]], DefaultFieldMapper).toList shouldBe List[Byte](1, 4, 9)
+    DecoderV2[Array[Byte]].decode(ByteBuffer.wrap(Array[Byte](1, 4, 9))).toList shouldBe List[Byte](1, 4, 9)
   }
 
   test("decode array to bytebuffers") {
-    val schema = AvroSchema[ByteBufferTest]
+    val schema = AvroSchemaV2[ByteBufferTest]
     val record = new GenericData.Record(schema)
     record.put("z", Array[Byte](1, 4, 9))
-    Decoder[ByteBufferTest].decode(record, schema, DefaultFieldMapper).z.array().toList shouldBe List[Byte](1, 4, 9)
+    DecoderV2[ByteBufferTest].decode(record).z.array().toList shouldBe List[Byte](1, 4, 9)
   }
 
   test("decode bytebuffers") {
-    val schema = AvroSchema[ByteBufferTest]
+    val schema = AvroSchemaV2[ByteBufferTest]
     val record = new GenericData.Record(schema)
     record.put("z", ByteBuffer.wrap(Array[Byte](1, 4, 9)))
-    Decoder[ByteBufferTest].decode(record, schema, DefaultFieldMapper).z.array().toList shouldBe List[Byte](1, 4, 9)
+    DecoderV2[ByteBufferTest].decode(record).z.array().toList shouldBe List[Byte](1, 4, 9)
   }
 
   test("decode top level ByteBuffers") {
-    Decoder[ByteBuffer].decode(ByteBuffer.wrap(Array[Byte](1, 4, 9)), AvroSchema[ByteBuffer], DefaultFieldMapper).array().toList shouldBe List[Byte](1, 4, 9)
+    DecoderV2[ByteBuffer].decode(ByteBuffer.wrap(Array[Byte](1, 4, 9))).array().toList shouldBe List[Byte](1, 4, 9)
   }
 }
 

@@ -1,14 +1,11 @@
 package com.sksamuel.avro4s
 
-import java.nio.ByteBuffer
-
 import com.sksamuel.avro4s.ScalaPredefAndCollections._
 import org.apache.avro.{Schema, SchemaBuilder}
-import org.apache.avro.generic.{GenericData, GenericFixed}
 
+import scala.collection.JavaConverters._
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 
 trait ScalaPredefAndCollectionCodecs {
@@ -38,16 +35,8 @@ trait ScalaPredefAndCollectionCodecs {
       def decode(value: Any): Either[A, B] = decodeEither(value, manifest[A], manifest[B])
     }
 
-  private def iterableByteCodec[C[X] <: Iterable[X]](
-      implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): Codec[C[Byte]] = new IterableByteCodec[C](cbf)
-
-  implicit val ByteArrayCodec: Codec[Array[Byte]] = ScalaPredefAndCollections.ByteArrayCodec
-  implicit val ByteListCodec = iterableByteCodec[List]
-  implicit val ByteSeqCodec = iterableByteCodec[Seq]
-  implicit val ByteVectorCodec = iterableByteCodec[Vector]
-
-  private def iterableCodec[T, C[X] <: Iterable[X]](codec: Codec[T])(implicit
-                                                                     cbf: CanBuildFrom[Nothing, T, C[T]]): Codec[C[T]] =
+  private implicit def iterableCodec[C[X] <: Iterable[X], T](codec: Codec[T])(
+      implicit cbf: CanBuildFrom[Nothing, T, C[T]]): Codec[C[T]] =
     new Codec[C[T]] {
       val schema: Schema = iterableSchema(codec)
 
@@ -92,9 +81,6 @@ trait ScalaPredefAndCollectionEncoders {
       def encode(value: Either[A, B]): AnyRef = encodeEither(value)
     }
 
-  implicit def iterableByteEncoder[C[X] <: Iterable[X]](
-      implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): EncoderV2[C[Byte]] = new IterableByteCodec[C](cbf)
-
   private def iterableEncoder[T, C[X] <: Iterable[X]](encoder: EncoderV2[T]): EncoderV2[C[T]] =
     new EncoderV2[C[T]] {
       val schema: Schema = iterableSchema(encoder)
@@ -129,8 +115,9 @@ trait ScalaPredefAndCollectionDecoders {
     def decode(value: Any): Option[T] = decodeOption(decoder, value)
   }
 
-  implicit def eitherDecoder[A: Manifest: WeakTypeTag, B: Manifest: WeakTypeTag](implicit leftDecoder: DecoderV2[A],
-                                   rightDecoder: DecoderV2[B]): DecoderV2[Either[A, B]] =
+  implicit def eitherDecoder[A: Manifest: WeakTypeTag, B: Manifest: WeakTypeTag](
+      implicit leftDecoder: DecoderV2[A],
+      rightDecoder: DecoderV2[B]): DecoderV2[Either[A, B]] =
     new DecoderV2[Either[A, B]] {
       val schema: Schema = SchemaHelper.createSafeUnion(leftDecoder.schema, rightDecoder.schema)
 
@@ -140,10 +127,7 @@ trait ScalaPredefAndCollectionDecoders {
       def decode(value: Any): Either[A, B] = decodeEither(value, manifest[A], manifest[B])
     }
 
-  implicit def iterableByteDecoder[C[X] <: Iterable[X]](
-      implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): DecoderV2[C[Byte]] = new IterableByteCodec[C](cbf)
-
-  def iterableDecoder[T, C[X] <: Iterable[X]](decoder: DecoderV2[T])(
+  private def iterableDecoder[T, C[X] <: Iterable[X]](decoder: DecoderV2[T])(
       implicit cbf: CanBuildFrom[Nothing, T, C[T]]): DecoderV2[C[T]] =
     new DecoderV2[C[T]] {
       val schema: Schema = iterableSchema(decoder)
@@ -206,57 +190,6 @@ object ScalaPredefAndCollections {
     def decode(value: Any): None.type =
       if (value == null) None else sys.error(s"Value $value is not null, but should be decoded to None")
   }
-
-  private[avro4s] sealed trait ByteArrayCodecBase extends Codec[Array[Byte]] {
-
-    def decode(value: Any): Array[Byte] = value match {
-      case buffer: ByteBuffer  => buffer.array
-      case array: Array[Byte]  => array
-      case fixed: GenericFixed => fixed.bytes
-      case _                   => sys.error(s"Byte array codec cannot decode '$value'")
-    }
-
-    override def withSchema(schemaFor: SchemaForV2[Array[Byte]]): Codec[Array[Byte]] =
-      schemaFor.schema.getType match {
-        case Schema.Type.BYTES => ByteArrayCodec
-        case Schema.Type.FIXED => new FixedByteArrayCodec(schema)
-        case _                 => sys.error(s"Byte array codec doesn't support schema type ${schema.getType}")
-      }
-  }
-
-  val ByteArrayCodec: Codec[Array[Byte]] = new ByteArrayCodecBase {
-
-    val schema: Schema = SchemaBuilder.builder.bytesType
-
-    def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
-  }
-
-  private[avro4s] class FixedByteArrayCodec(val schema: Schema) extends ByteArrayCodecBase {
-    require(schema.getType == Schema.Type.FIXED)
-
-    def encode(value: Array[Byte]): AnyRef = {
-      val array = new Array[Byte](schema.getFixedSize)
-      System.arraycopy(value, 0, array, 0, value.length)
-      GenericData.get.createFixed(null, array, schema)
-    }
-  }
-
-  private[avro4s] class IterableByteCodec[C[X] <: Iterable[X]](cbf: CanBuildFrom[Nothing, Byte, C[Byte]],
-                                                               byteArrayCodec: Codec[Array[Byte]] = ByteArrayCodec)
-      extends Codec[C[Byte]] {
-
-    val schema = byteArrayCodec.schema
-
-    def encode(value: C[Byte]): AnyRef = byteArrayCodec.encode(value.toArray)
-
-    def decode(value: Any): C[Byte] = byteArrayCodec.decode(value).to[C](cbf)
-
-    override def withSchema(schemaFor: SchemaForV2[C[Byte]]): Codec[C[Byte]] =
-      new IterableByteCodec(cbf, byteArrayCodec.withSchema(schemaFor.map(identity)))
-  }
-
-  implicit def iterableByteCodec[C[X] <: Iterable[X]](
-      implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): Codec[C[Byte]] = new IterableByteCodec[C](cbf)
 
   private[avro4s] def iterableSchema[TC[_], T](itemSchemaAware: SchemaAware[TC, T]): Schema =
     SchemaBuilder.array().items(itemSchemaAware.schema)

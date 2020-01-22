@@ -145,8 +145,9 @@ object BaseTypes {
     def encode(value: ByteBuffer): AnyRef = value
 
     def decode(value: Any): ByteBuffer = value match {
-      case b: ByteBuffer => b
-      case _             => sys.error(s"Unable to decode value $value to ByteBuffer")
+      case b: ByteBuffer  => b
+      case a: Array[Byte] => ByteBuffer.wrap(a)
+      case _              => sys.error(s"Unable to decode value $value to ByteBuffer")
     }
   }
 

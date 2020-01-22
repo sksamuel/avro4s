@@ -58,9 +58,9 @@ object SchemaForV2 {
   }
 
   implicit val IntSchema: SchemaForV2[Int] = SchemaForV2[Int](SchemaBuilder.builder.intType)
-  implicit val ByteSchema: SchemaForV2[Byte] = IntSchema.map(identity)
-  implicit val ShortSchema: SchemaForV2[Short] = IntSchema.map(identity)
-  implicit val LongSchema: SchemaForV2[Long] = IntSchema.map(identity)
+  implicit val ByteSchema: SchemaForV2[Byte] = IntSchema.forType
+  implicit val ShortSchema: SchemaForV2[Short] = IntSchema.forType
+  implicit val LongSchema: SchemaForV2[Long] = IntSchema.forType
   implicit val FloatSchema: SchemaForV2[Float] = SchemaForV2[Float](SchemaBuilder.builder.floatType)
   implicit val DoubleSchema: SchemaForV2[Double] = SchemaForV2[Double](SchemaBuilder.builder.doubleType)
   implicit val BooleanSchema: SchemaForV2[Boolean] = SchemaForV2[Boolean](SchemaBuilder.builder.booleanType)
@@ -68,7 +68,7 @@ object SchemaForV2 {
   implicit val CharSequenceSchema: SchemaForV2[CharSequence] =
     SchemaForV2[CharSequence](SchemaBuilder.builder.stringType)
   implicit val StringSchema: SchemaForV2[String] = SchemaForV2[String](SchemaBuilder.builder.stringType)
-  implicit val UUIDSchema: SchemaForV2[UUID] = StringSchema.map(identity)
+  implicit val UUIDSchema: SchemaForV2[UUID] = StringSchema.forType
   implicit val InstantSchema: SchemaForV2[Instant] = Temporals.InstantSchema
 
   implicit def optionSchema[T](schemaForItem: SchemaForV2[T]): SchemaForV2[Option[T]] =
@@ -85,7 +85,7 @@ object SchemaForV2 {
     SchemaForV2[C[T]](SchemaBuilder.array.items(schemaForItem.schema))
 
   implicit def arraySchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Array[T]] =
-    iterableSchema(schemaForItem).map(identity)
+    iterableSchema(schemaForItem).forType
 
   implicit def bigDecimalSchema(implicit sp: ScalePrecision = ScalePrecision.default): SchemaForV2[BigDecimal] =
     SchemaForV2(LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.bytesType))

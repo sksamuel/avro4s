@@ -12,7 +12,7 @@ import org.scalameter.Context
 import org.scalameter.api._
 
 object Encoding extends Bench.LocalTime with BenchmarkHelpers {
-  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 1000000, exec.benchRuns -> 20000000)
+  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 100000, exec.benchRuns -> 100000)
 
   def encode[T](value: T,
                 encoder: Encoder[T],
@@ -24,7 +24,7 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
     writer.write(record, enc)
     ByteBuffer.wrap(outputStream.toByteArray)
   }
-/*
+
   performance of "avro4s simple field encoding" in {
 
     val schema = AvroSchema[RecordWithSimpleField]
@@ -98,7 +98,7 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
       encode(s, encoder, writer, schema)
     }
   }
-*/
+
   performance of "avro4s union type with type param alternative codec encoding" in {
     implicit val mapper: FieldMapper = DefaultFieldMapper
     val codec = Codec[RecordWithUnionAndTypeField]

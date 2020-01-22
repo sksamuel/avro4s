@@ -20,6 +20,7 @@ object DecoderV2
     extends MagnoliaGeneratedDecoders
     with ShapelessCoproductDecoders
     with ScalaPredefAndCollectionDecoders
+    with ByteIterableDecoders
     with BigDecimalDecoders
     with TemporalDecoders
     with BaseDecoders {

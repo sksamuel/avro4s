@@ -24,6 +24,7 @@ object Codec
     extends MagnoliaGeneratedCodecs
     with ShapelessCoproductCodecs
     with ScalaPredefAndCollectionCodecs
+    with ByteIterableCodecs
     with BigDecimalCodecs
     with TemporalCodecs
     with BaseCodecs {

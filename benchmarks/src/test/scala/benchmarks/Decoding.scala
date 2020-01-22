@@ -14,7 +14,7 @@ import org.scalameter.Context
 import org.scalameter.api._
 
 object Decoding extends Bench.LocalTime with BenchmarkHelpers {
-  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 1000000, exec.benchRuns -> 1000000)
+  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 100000, exec.benchRuns -> 100000)
 
   def encode[T: Encoder: SchemaFor](value: T): ByteBuffer = {
     val outputStream = new ByteArrayOutputStream(512)
