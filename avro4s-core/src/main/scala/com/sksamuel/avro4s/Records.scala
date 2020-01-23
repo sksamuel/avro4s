@@ -213,12 +213,12 @@ object Records {
 
   def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
                                          fieldMapper: FieldMapper,
-                                         namespaceOverride: Option[String],
+                                         namespaceUpdate: Option[String],
                                          paramSchema: Param[Typeclass, T] => Schema): SchemaForV2[T] = {
     val annotations = new AnnotationExtractors(ctx.annotations)
 
     val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)
-    val namespace = namespaceOverride.getOrElse(nameExtractor.namespace)
+    val namespace = namespaceUpdate.getOrElse(nameExtractor.namespace)
     val name = nameExtractor.name
 
     val fields: Seq[Field] = ctx.parameters.flatMap { param =>

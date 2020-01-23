@@ -22,7 +22,7 @@ trait MagnoliaGeneratedEncoders {
   def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): EncoderV2[T] =
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record    => Records.encoder(ctx, fieldMapper)
-      case CaseClassShape.ValueType => ???
+      case CaseClassShape.ValueType => ValueTypes.encoder(ctx, NoUpdate)
     }
 }
 
@@ -42,7 +42,7 @@ trait MagnoliaGeneratedDecoders {
   def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): DecoderV2[T] =
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record    => Records.decoder(ctx, fieldMapper)
-      case CaseClassShape.ValueType => ???
+      case CaseClassShape.ValueType => ValueTypes.decoder(ctx, NoUpdate)
     }
 }
 
@@ -62,6 +62,6 @@ trait MagnoliaGeneratedCodecs {
   def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] =
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record    => Records.codec(ctx, fieldMapper)
-      case CaseClassShape.ValueType => ValueTypeCodec(ctx)
+      case CaseClassShape.ValueType => ValueTypes.codec(ctx, NoUpdate)
     }
 }

@@ -4,8 +4,6 @@ import java.util.Collections
 
 import com.sksamuel.avro4s.ShapelessCoproducts._
 import org.apache.avro.Schema
-import org.apache.avro.generic.{GenericContainer, GenericData}
-import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.reflect.runtime.universe._
