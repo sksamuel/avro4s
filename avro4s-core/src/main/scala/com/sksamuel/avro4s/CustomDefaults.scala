@@ -42,7 +42,7 @@ object CustomDefaults {
 
   def isUnionOfEnum(schema: Schema) = schema.getType == Schema.Type.UNION && schema.getTypes.asScala.map(_.getType).contains(Schema.Type.ENUM)
 
-  def sealedTraitEnumDefaultValue[T](ctx: SealedTrait[Typeclass, T]) = {
+  def sealedTraitEnumDefaultValue[Typeclass[_], T](ctx: SealedTrait[Typeclass, T]) = {
     val defaultExtractor = new AnnotationExtractors(ctx.annotations)
     defaultExtractor.enumDefault.flatMap { default =>
       ctx.subtypes.flatMap { st: Subtype[Typeclass, T] =>
