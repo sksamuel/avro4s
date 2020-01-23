@@ -1,12 +1,13 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
-import java.time.Instant
+import java.sql.{Date, Timestamp}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
 import com.sksamuel.avro4s.SchemaUpdate.NoUpdate
 import magnolia._
-import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
+import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
@@ -69,13 +70,34 @@ object SchemaForV2 {
     SchemaForV2[CharSequence](SchemaBuilder.builder.stringType)
   implicit val StringSchema: SchemaForV2[String] = SchemaForV2[String](SchemaBuilder.builder.stringType)
   implicit val UUIDSchema: SchemaForV2[UUID] = StringSchema.forType
-  implicit val InstantSchema: SchemaForV2[Instant] = Temporals.InstantSchema
+
+  object TimestampNanosLogicalType extends LogicalType("timestamp-nanos") {
+    override def validate(schema: Schema): Unit = {
+      super.validate(schema)
+      if (schema.getType != Schema.Type.LONG) {
+        throw new IllegalArgumentException("Logical type timestamp-nanos must be backed by long")
+      }
+    }
+  }
+
+  implicit val InstantSchema: SchemaForV2[Instant] =
+    SchemaForV2[Instant](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
+  implicit val DateSchema: SchemaForV2[Date] = SchemaForV2(
+    LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType))
+  implicit val LocalDateSchema: SchemaForV2[LocalDate] = DateSchema.forType
+  implicit val LocalDateTimeSchema: SchemaForV2[LocalDateTime] = SchemaForV2(
+    TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType))
+  implicit val LocalTimeSchema: SchemaForV2[LocalTime] = SchemaForV2(
+    LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType()))
+  implicit val TimestampSchema: SchemaForV2[Timestamp] =
+    SchemaForV2[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 
   implicit def optionSchema[T](schemaForItem: SchemaForV2[T]): SchemaForV2[Option[T]] =
     schemaForItem.map[Option[T]](itemSchema =>
       SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
 
-  implicit def eitherSchema[A, B](implicit leftFor: SchemaForV2[A], rightFor: SchemaForV2[B]): SchemaForV2[Either[A, B]] =
+  implicit def eitherSchema[A, B](implicit leftFor: SchemaForV2[A],
+                                  rightFor: SchemaForV2[B]): SchemaForV2[Either[A, B]] =
     SchemaForV2[Either[A, B]](SchemaHelper.createSafeUnion(leftFor.schema, rightFor.schema))
 
   implicit def byteIterableSchema[C[X] <: Iterable[X]]: SchemaForV2[C[Byte]] =

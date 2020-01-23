@@ -55,12 +55,18 @@ object RecordFields {
                                                                                val field: Option[Field],
                                                                                sf: Typeclass[_] => Schema) {
 
+    private def typesDiffer(schemaA: Schema, schemaB: Schema): Boolean =
+      schemaA.getType != schemaB.getType || schemaA.getLogicalType != schemaB.getLogicalType || fieldsDiffer(schemaA, schemaB)
+
+    private def fieldsDiffer(schemaA: Schema, schemaB: Schema): Boolean =
+      schemaA.getType == Schema.Type.RECORD && schemaA.getFields != schemaB.getFields
+
     // Propagate of namespaces and schema changes. Schema changes have precedence over namespace changes, as
     // schema changes (via .withSchema) are more flexible than namespace changes (via param annotations).
     protected val typeclass: Typeclass[param.PType] = {
       val namespace = new AnnotationExtractors(param.annotations).namespace
       (param.typeclass, namespace, field.map(_.schema)) match {
-        case (typeclass, _, Some(s)) if s.getType != sf(typeclass).getType =>
+        case (typeclass, _, Some(s)) if typesDiffer(s, sf(typeclass)) =>
           typeclass.withSchema(SchemaForV2[param.PType](s))
         case (m: NamespaceAware[Typeclass[param.PType]] @unchecked, Some(ns), _) => m.withNamespace(ns)
         case (codec, _, _)                                                => codec

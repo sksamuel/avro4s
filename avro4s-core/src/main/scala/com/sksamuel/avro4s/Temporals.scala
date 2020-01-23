@@ -1,11 +1,11 @@
 package com.sksamuel.avro4s
 
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.time._
 
 import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
-import org.apache.avro.LogicalTypes.{TimestampMicros, TimestampMillis}
-import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
+import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
+import org.apache.avro.{Schema, SchemaBuilder}
 
 trait TemporalCodecs {
   implicit val InstantCodec: Codec[Instant] = Temporals.InstantCodec
@@ -36,15 +36,35 @@ trait TemporalDecoders {
 
 object Temporals {
 
-  val InstantSchema = SchemaForV2[Instant](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
+  val InstantCodec =
+    BaseTypes.LongCodec.inmap[Instant](Instant.ofEpochMilli, _.toEpochMilli).withSchema(SchemaForV2.InstantSchema)
 
-  val InstantCodec = BaseTypes.LongCodec.inmap[Instant](Instant.ofEpochMilli, _.toEpochMilli).withSchema(InstantSchema)
+  val LocalTimeCodec: Codec[LocalTime] = new Codec[LocalTime] {
+    val schema: Schema = SchemaForV2.LocalTimeSchema.schema
 
-  val LocalTimeCodec: Codec[LocalTime] =
-    BaseTypes.LongCodec.inmap[LocalTime](LocalTime.ofNanoOfDay, _.toNanoOfDay / 1000)
+    def encode(value: LocalTime): AnyRef = java.lang.Long.valueOf(value.toNanoOfDay / 1000)
+
+    def decode(value: Any): LocalTime = schema.getLogicalType match {
+      case _: TimeMillis =>
+        value match {
+          case i: Int  => LocalTime.ofNanoOfDay(i.toLong * 1000000L)
+          case l: Long => LocalTime.ofNanoOfDay(l * 1000000L)
+        }
+      case _: TimeMicros =>
+        value match {
+          case i: Int  => LocalTime.ofNanoOfDay(i.toLong * 1000L)
+          case l: Long => LocalTime.ofNanoOfDay(l * 1000L)
+        }
+    }
+  }
+
   val LocalDateCodec: Codec[LocalDate] =
-    BaseTypes.IntCodec.inmap[LocalDate](i => LocalDate.ofEpochDay(i.toLong), _.toEpochDay.toInt)
+    BaseTypes.IntCodec
+      .inmap[LocalDate](i => LocalDate.ofEpochDay(i.toLong), _.toEpochDay.toInt)
+      .withSchema(SchemaForV2.LocalDateSchema)
+
   val TimestampCodec: Codec[Timestamp] = InstantCodec.inmap[Timestamp](Timestamp.from, _.toInstant)
+
   val DateCodec: Codec[Date] = LocalDateCodec.inmap[Date](Date.valueOf, _.toLocalDate)
 
   val LocalDateTimeCodec: Codec[LocalDateTime] = new LocalDateTimeCodec(
