@@ -1,7 +1,5 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.Schema
-
 /**
   * Converts from instances of T into Record's.
   *
@@ -19,9 +17,8 @@ trait ToRecord[T] extends Serializable {
 }
 
 object ToRecord {
-  def apply[T: Encoder : SchemaFor]: ToRecord[T] = apply(AvroSchema[T])
-  def apply[T](schema: Schema)(implicit encoder: Encoder[T], fieldMapper: FieldMapper = DefaultFieldMapper): ToRecord[T] = new ToRecord[T] {
-    override def to(t: T): Record = encoder.encode(t, schema, fieldMapper) match {
+  def apply[T](implicit encoder: EncoderV2[T]): ToRecord[T] = new ToRecord[T] {
+    def to(t: T): Record = encoder.encode(t) match {
       case record: Record => record
       case output => sys.error(s"Cannot marshall an instance of $t to a Record (was $output)")
     }

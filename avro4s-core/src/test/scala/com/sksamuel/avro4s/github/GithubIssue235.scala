@@ -1,8 +1,8 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{Decoder, DefaultFieldMapper, Encoder, RecordFormat, SchemaFor}
 import java.io.ByteArrayOutputStream
 
+import com.sksamuel.avro4s.{DecoderV2, EncoderV2, RecordFormat, SchemaForV2}
 import org.apache.avro.generic.{GenericDatumReader, GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.{DecoderFactory, EncoderFactory}
 import org.scalatest.funsuite.AnyFunSuite
@@ -19,13 +19,13 @@ case class OneOrTwoWrapper[A](t: OneOrTwo[A])
 object Bug {
 
   def apply[T <: Product](a: T)(
-    implicit schemaFor: SchemaFor[T],
-    encoder: Encoder[T],
-    decoder: Decoder[T]
+    implicit schemaFor: SchemaForV2[T],
+    encoder: EncoderV2[T],
+    decoder: DecoderV2[T]
   ): Unit = {
 
     val format = RecordFormat[T]
-    val schema = schemaFor.schema(DefaultFieldMapper)
+    val schema = schemaFor.schema
     val datumReader = new GenericDatumReader[GenericRecord](schema)
     val datumWriter = new GenericDatumWriter[GenericRecord](schema)
 

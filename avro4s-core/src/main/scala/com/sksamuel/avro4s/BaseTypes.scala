@@ -23,9 +23,10 @@ trait BaseCodecs {
   implicit val LongCodec: Codec[Long] = BaseTypes.LongCodec
   implicit val ShortCodec: Codec[Short] = BaseTypes.ShortCodec
   implicit val StringCodec: Codec[String] = BaseTypes.StringCodec
+  implicit val Utf8Codec: Codec[Utf8] = BaseTypes.Utf8Codec
   implicit val UUIDCodec: Codec[UUID] = BaseTypes.UUIDCodec
-  implicit def javaEnumCodec[E <: Enum[E] : ClassTag]: Codec[E] = new JavaEnumCodec[E]
-  implicit def scalaEnumEncoder[E <: Enumeration#Value : TypeTag]: Codec[E] = new ScalaEnumCodec[E]
+  implicit def javaEnumCodec[E <: Enum[E]: ClassTag]: Codec[E] = new JavaEnumCodec[E]
+  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: Codec[E] = new ScalaEnumCodec[E]
 }
 
 trait BaseEncoders {
@@ -39,9 +40,10 @@ trait BaseEncoders {
   implicit val LongEncoder: EncoderV2[Long] = BaseTypes.LongCodec
   implicit val ShortEncoder: EncoderV2[Short] = BaseTypes.ShortCodec
   implicit val StringEncoder: EncoderV2[String] = BaseTypes.StringCodec
+  implicit val Utf8Encoder: EncoderV2[Utf8] = BaseTypes.Utf8Codec
   implicit val UUIDEncoder: EncoderV2[UUID] = BaseTypes.UUIDCodec
-  implicit def javaEnumEncoder[E <: Enum[E] : ClassTag]: EncoderV2[E] = new JavaEnumCodec[E]
-  implicit def scalaEnumEncoder[E <: Enumeration#Value : TypeTag]: EncoderV2[E] = new ScalaEnumCodec[E]
+  implicit def javaEnumEncoder[E <: Enum[E]: ClassTag]: EncoderV2[E] = new JavaEnumCodec[E]
+  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: EncoderV2[E] = new ScalaEnumCodec[E]
 }
 
 trait BaseDecoders {
@@ -55,9 +57,10 @@ trait BaseDecoders {
   implicit val LongDecoder: DecoderV2[Long] = BaseTypes.LongCodec
   implicit val ShortDecoder: DecoderV2[Short] = BaseTypes.ShortCodec
   implicit val StringDecoder: DecoderV2[String] = BaseTypes.StringCodec
+  implicit val Utf8Decoder: DecoderV2[Utf8] = BaseTypes.Utf8Codec
   implicit val UUIDDecoder: DecoderV2[UUID] = BaseTypes.UUIDCodec
-  implicit def javaEnumDecoder[E <: Enum[E] : ClassTag]: DecoderV2[E] = new JavaEnumCodec[E]
-  implicit def scalaEnumEncoder[E <: Enumeration#Value : TypeTag]: DecoderV2[E] = new ScalaEnumCodec[E]
+  implicit def javaEnumDecoder[E <: Enum[E]: ClassTag]: DecoderV2[E] = new JavaEnumCodec[E]
+  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: DecoderV2[E] = new ScalaEnumCodec[E]
 }
 
 object BaseTypes {
@@ -187,6 +190,19 @@ object BaseTypes {
   }
 
   val StringCodec: Codec[String] = new StringCodec(SchemaForV2.StringSchema.schema)
+
+  val Utf8Codec: Codec[Utf8] = new Codec[Utf8] {
+    val schema: Schema = SchemaForV2.Utf8Schema.schema
+
+    def encode(value: Utf8): AnyRef = value
+
+    def decode(value: Any): Utf8 = value match {
+      case u: Utf8        => u
+      case b: Array[Byte] => new Utf8(b)
+      case null           => sys.error("Cannot decode <null> as utf8")
+      case _              => new Utf8(value.toString)
+    }
+  }
 
   private class StringCodec(val schema: Schema) extends StringCodecBase {
     require(schema.getType == Schema.Type.STRING)

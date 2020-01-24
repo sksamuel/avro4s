@@ -7,6 +7,7 @@ import java.util.UUID
 
 import com.sksamuel.avro4s.SchemaUpdate.NoUpdate
 import magnolia._
+import org.apache.avro.util.Utf8
 import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 
 import scala.language.experimental.macros
@@ -68,6 +69,7 @@ object SchemaForV2 {
   implicit val CharSequenceSchema: SchemaForV2[CharSequence] =
     SchemaForV2[CharSequence](SchemaBuilder.builder.stringType)
   implicit val StringSchema: SchemaForV2[String] = SchemaForV2[String](SchemaBuilder.builder.stringType)
+  implicit val Utf8Schema: SchemaForV2[Utf8] = StringSchema.forType
   implicit val UUIDSchema: SchemaForV2[UUID] = StringSchema.forType
 
   implicit def javaEnumSchema[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaForV2[E] = {

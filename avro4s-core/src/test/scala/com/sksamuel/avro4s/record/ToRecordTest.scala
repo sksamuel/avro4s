@@ -16,6 +16,6 @@ class ToRecordTest extends AnyFunSuite with Matchers {
     val schema = AvroSchema[MySchema]
 
     val ms = MySchema(Bar(1), "", 0)
-    ToRecord[MySchema](schema).to(ms) //throws
+    ToRecord[MySchema].to(ms) //throws
   }
 }
