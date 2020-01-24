@@ -37,8 +37,6 @@ object SchemaForV2 {
 
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
-  def apply[T](implicit codec: Codec[T]): Codec[T] = codec
-
   type Typeclass[T] = SchemaForV2[T]
 
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
