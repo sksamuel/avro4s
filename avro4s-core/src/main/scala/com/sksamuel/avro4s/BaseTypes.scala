@@ -3,9 +3,14 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 import java.util.UUID
 
+import com.sksamuel.avro4s.BaseTypes.{JavaEnumCodec, ScalaEnumCodec}
 import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.{GenericData, GenericFixed}
 import org.apache.avro.util.Utf8
+
+import scala.reflect.runtime.universe._
+import scala.reflect.ClassTag
 
 trait BaseCodecs {
   implicit val BooleanCodec: Codec[Boolean] = BaseTypes.BooleanCodec
@@ -19,6 +24,8 @@ trait BaseCodecs {
   implicit val ShortCodec: Codec[Short] = BaseTypes.ShortCodec
   implicit val StringCodec: Codec[String] = BaseTypes.StringCodec
   implicit val UUIDCodec: Codec[UUID] = BaseTypes.UUIDCodec
+  implicit def javaEnumCodec[E <: Enum[E] : ClassTag]: Codec[E] = new JavaEnumCodec[E]
+  implicit def scalaEnumEncoder[E <: Enumeration#Value : TypeTag]: Codec[E] = new ScalaEnumCodec[E]
 }
 
 trait BaseEncoders {
@@ -33,6 +40,8 @@ trait BaseEncoders {
   implicit val ShortEncoder: EncoderV2[Short] = BaseTypes.ShortCodec
   implicit val StringEncoder: EncoderV2[String] = BaseTypes.StringCodec
   implicit val UUIDEncoder: EncoderV2[UUID] = BaseTypes.UUIDCodec
+  implicit def javaEnumEncoder[E <: Enum[E] : ClassTag]: EncoderV2[E] = new JavaEnumCodec[E]
+  implicit def scalaEnumEncoder[E <: Enumeration#Value : TypeTag]: EncoderV2[E] = new ScalaEnumCodec[E]
 }
 
 trait BaseDecoders {
@@ -47,6 +56,8 @@ trait BaseDecoders {
   implicit val ShortDecoder: DecoderV2[Short] = BaseTypes.ShortCodec
   implicit val StringDecoder: DecoderV2[String] = BaseTypes.StringCodec
   implicit val UUIDDecoder: DecoderV2[UUID] = BaseTypes.UUIDCodec
+  implicit def javaEnumDecoder[E <: Enum[E] : ClassTag]: DecoderV2[E] = new JavaEnumCodec[E]
+  implicit def scalaEnumEncoder[E <: Enumeration#Value : TypeTag]: DecoderV2[E] = new ScalaEnumCodec[E]
 }
 
 object BaseTypes {
@@ -222,4 +233,28 @@ object BaseTypes {
   }
 
   val UUIDCodec = StringCodec.inmap[UUID](UUID.fromString, _.toString)
+
+  class JavaEnumCodec[E <: Enum[E]](implicit tag: ClassTag[E]) extends Codec[E] {
+    val schema: Schema = SchemaForV2.javaEnumSchema.schema
+
+    def encode(value: E): AnyRef = new EnumSymbol(schema, value.name)
+
+    def decode(value: Any): E = Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], value.toString)
+  }
+
+  class ScalaEnumCodec[E <: Enumeration#Value](implicit tag: TypeTag[E]) extends Codec[E] {
+    val mirror: Mirror = runtimeMirror(getClass.getClassLoader)
+
+    val enum = tag.tpe match {
+      case TypeRef(enumType, _, _) =>
+        val moduleSymbol = enumType.termSymbol.asModule
+        mirror.reflectModule(moduleSymbol).instance.asInstanceOf[Enumeration]
+    }
+
+    val schema: Schema = SchemaForV2.scalaEnumSchema[E].schema
+
+    def encode(value: E): AnyRef = new EnumSymbol(schema, value.toString)
+
+    def decode(value: Any): E = enum.withName(value.toString).asInstanceOf[E]
+  }
 }

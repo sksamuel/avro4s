@@ -11,6 +11,7 @@ import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 
 /**
@@ -70,6 +71,49 @@ object SchemaForV2 {
     SchemaForV2[CharSequence](SchemaBuilder.builder.stringType)
   implicit val StringSchema: SchemaForV2[String] = SchemaForV2[String](SchemaBuilder.builder.stringType)
   implicit val UUIDSchema: SchemaForV2[UUID] = StringSchema.forType
+
+  implicit def javaEnumSchema[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaForV2[E] = {
+    val typeInfo = TypeInfo.fromClass(tag.runtimeClass)
+    val nameExtractor = NameExtractor(typeInfo)
+    val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
+    val schema = SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(symbols: _*)
+    SchemaForV2[E](schema)
+  }
+
+  implicit def scalaEnumSchema[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaForV2[E] = {
+    val typeRef = tag.tpe match {
+      case t@TypeRef(_, _, _) => t
+    }
+
+    val valueType = typeOf[E]
+    val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
+    val syms = pre.filter { sym =>
+      !sym.isMethod &&
+        !sym.isType &&
+        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
+    }.map { sym =>
+      sym.name.decodedName.toString.trim
+    }
+
+    val as = typeRef.pre.typeSymbol.annotations
+    val nameAnnotation = as.collectFirst {
+      case a: AvroName => a.name
+    }
+    val namespaceAnnotation = as.collectFirst {
+      case a: AvroNamespace => a.namespace
+    }
+    val props = as.collect {
+      case prop: AvroProp => prop.key -> prop.value
+    }
+
+    val nameExtractor = NameExtractor(TypeInfo.fromType(typeRef.pre))
+
+    val s = SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(syms: _*)
+    props.foreach { case (key, value) =>
+      s.addProp(key, value)
+    }
+    SchemaForV2[E](s)
+  }
 
   object TimestampNanosLogicalType extends LogicalType("timestamp-nanos") {
     override def validate(schema: Schema): Unit = {
