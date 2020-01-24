@@ -214,6 +214,7 @@ object BaseTypes {
 
     def decode(value: Any): String = value match {
       case fixed: GenericFixed => new String(fixed.bytes())
+      case a: Array[Byte]      => new String(a)
       case null                => sys.error("Cannot decode <null> as a string")
       case other               => sys.error(s"Cannot decode $other of type ${other.getClass} into a string")
     }
