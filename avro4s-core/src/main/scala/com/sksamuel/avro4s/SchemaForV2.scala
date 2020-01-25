@@ -9,6 +9,7 @@ import com.sksamuel.avro4s.SchemaUpdate.NoUpdate
 import magnolia.{CaseClass, Magnolia, Param, SealedTrait}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
+import shapeless.{:+:, CNil, Coproduct}
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
@@ -152,6 +153,13 @@ object SchemaForV2 {
 
   implicit def bigDecimalSchema(implicit sp: ScalePrecision = ScalePrecision.default): SchemaForV2[BigDecimal] =
     SchemaForV2(LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.bytesType))
+
+  implicit def singleElementSchema[H](implicit schemaFor: SchemaForV2[H]): SchemaForV2[H :+: CNil] =
+    SchemaForV2(SchemaHelper.createSafeUnion(schemaFor.schema), schemaFor.fieldMapper)
+
+  implicit def coproductSchema[H, T <: Coproduct](implicit schemaForH: SchemaForV2[H],
+                                                  schemaForT: SchemaForV2[T]): SchemaForV2[H :+: T] =
+    SchemaForV2(SchemaHelper.createSafeUnion(schemaForH.schema, schemaForT.schema), schemaForH.fieldMapper)
 
   type Typeclass[T] = SchemaForV2[T]
 
