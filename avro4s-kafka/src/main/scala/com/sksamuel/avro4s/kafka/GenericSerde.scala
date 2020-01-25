@@ -2,24 +2,30 @@ package com.sksamuel.avro4s.kafka
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{Decoder, Encoder}
-import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema, SchemaFor}
+import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 
-class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder] extends Serde[T]
-  with Deserializer[T]
-  with Serializer[T]
-  with Serializable {
+class GenericSerde[T >: Null: EncoderV2: DecoderV2: SchemaForV2]
+    extends Serde[T]
+    with Deserializer[T]
+    with Serializer[T]
+    with Serializable {
 
-  val schema: Schema = AvroSchema[T]
+  // if possible, use the decoder schema - this enables faster decoding.
+  val schema: Schema = {
+    val fromSchemaFor = SchemaForV2[T].schema
+    val fromDecoder = DecoderV2[T].schema
+    if (fromSchemaFor == fromDecoder) fromDecoder else fromSchemaFor
+  }
 
   override def serializer(): Serializer[T] = this
 
   override def deserializer(): Deserializer[T] = this
 
   override def deserialize(topic: String, data: Array[Byte]): T = {
-    if (data == null) null else {
+    if (data == null) null
+    else {
       val input = AvroInputStream.binary[T].from(data).build(schema)
       input.iterator.next()
     }
