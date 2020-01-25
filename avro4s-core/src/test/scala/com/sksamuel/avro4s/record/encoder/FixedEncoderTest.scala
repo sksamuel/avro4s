@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroFixed, AvroSchema, DefaultFieldMapper, Encoder, EncoderV2, SchemaForV2}
+import com.sksamuel.avro4s.{AvroFixed, EncoderV2, SchemaForV2}
 import org.apache.avro.generic.{GenericFixed, GenericRecord}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
