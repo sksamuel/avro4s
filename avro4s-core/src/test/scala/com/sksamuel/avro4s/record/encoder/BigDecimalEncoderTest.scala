@@ -29,6 +29,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
   test("allow decimals to be encoded as strings") {
 
     implicit val bigDecimalSchemaFor = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
+    implicit val bigDecimalEncoder = EncoderV2[BigDecimal].withSchema(bigDecimalSchemaFor)
 
     case class Test(decimal: BigDecimal)
 
@@ -71,6 +72,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
   test("allow custom typeclass overrides") {
 
     implicit val bigDecimalAsString = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
+    implicit val bigDecimalEncoder = EncoderV2[BigDecimal].withSchema(bigDecimalAsString)
 
     case class Test(decimal: BigDecimal)
 
@@ -82,6 +84,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
     case class Test(s: BigDecimal)
     implicit val bigDecimalAsFixed = SchemaForV2[BigDecimal](
       LogicalTypes.decimal(10, 8).addToSchema(SchemaBuilder.fixed("BigDecimal").size(8)))
+    implicit val bigDecimalEncoder = EncoderV2[BigDecimal].withSchema(bigDecimalAsFixed)
     val record = EncoderV2[Test].encode(Test(12345678)).asInstanceOf[GenericRecord]
     record.get("s").asInstanceOf[GenericData.Fixed].bytes().toList shouldBe Seq(0, 4, 98, -43, 55, 43, -114, 0)
   }

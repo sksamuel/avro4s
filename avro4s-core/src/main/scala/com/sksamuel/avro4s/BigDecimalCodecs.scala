@@ -21,7 +21,7 @@ trait BigDecimalCodecs {
 trait BigDecimalDecoders {
 
   implicit def bigDecimalDecoder(implicit scalePrecision: ScalePrecision = ScalePrecision.default,
-                               roundingMode: RoundingMode = RoundingMode.UNNECESSARY): DecoderV2[BigDecimal] = {
+                                 roundingMode: RoundingMode = RoundingMode.UNNECESSARY): DecoderV2[BigDecimal] = {
     val decimal = LogicalTypes.decimal(scalePrecision.precision, scalePrecision.scale)
     new BigDecimalsV2.BigDecimalBytesCodec(decimal.addToSchema(SchemaBuilder.builder.bytesType), roundingMode)
   }
@@ -35,7 +35,6 @@ trait BigDecimalEncoders {
     new BigDecimalsV2.BigDecimalBytesCodec(decimal.addToSchema(SchemaBuilder.builder.bytesType), roundingMode)
   }
 }
-
 
 object BigDecimalsV2 {
 
@@ -74,7 +73,7 @@ object BigDecimalsV2 {
   }
 
   class BigDecimalStringCodec(val schema: Schema, roundingMode: RoundingMode)
-    extends BigDecimalCodecBase(roundingMode) {
+      extends BigDecimalCodecBase(roundingMode) {
     def encode(value: BigDecimal): AnyRef = BaseTypes.StringCodec.encode(value.toString())
 
     def decode(value: Any): BigDecimal = BigDecimal(BaseTypes.StringCodec.decode(value))

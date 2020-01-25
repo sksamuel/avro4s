@@ -14,8 +14,6 @@ class AvroNameEncoderTest extends AnyFunSuite with Matchers {
   @AvroNamespace("some.pkg")
   case class AvroNamespaceEncoderTest(foo: String)
 
-  implicit val fm: FieldMapper = DefaultFieldMapper
-
   test("encoder should take into account @AvroName on a field") {
     val record = EncoderV2[AvroNameEncoderTest].encode(AvroNameEncoderTest("hello")).asInstanceOf[GenericRecord]
     record.get("bar") shouldBe new Utf8("hello")

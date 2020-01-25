@@ -9,7 +9,6 @@ import org.scalatest.wordspec.AnyWordSpec
 class ArrayEncoderTest extends AnyWordSpec with Matchers {
 
   import scala.collection.JavaConverters._
-  implicit val fm: FieldMapper = DefaultFieldMapper
 
   "Encoder" should {
     "generate array for a vector of primitives" in {

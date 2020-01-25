@@ -10,8 +10,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class BasicEncoderTest extends AnyWordSpec with Matchers {
 
-  implicit val fm: FieldMapper = DefaultFieldMapper
-
   "Encoder" should {
     "encode strings as UTF8" in {
       case class Foo(s: String)
