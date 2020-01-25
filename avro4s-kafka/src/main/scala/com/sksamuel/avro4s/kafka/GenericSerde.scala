@@ -31,7 +31,7 @@ class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder] extends Serde[T]
 
   override def serialize(topic: String, data: T): Array[Byte] = {
     val baos = new ByteArrayOutputStream()
-    val output = AvroOutputStream.binary[T].to(baos).build(schema)
+    val output = AvroOutputStream.binary[T].to(baos).build()
     output.write(data)
     output.close()
     baos.toByteArray

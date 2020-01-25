@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.SchemaUpdate.NoUpdate
-import magnolia.{CaseClass, Magnolia, SealedTrait}
+import magnolia.{CaseClass, Magnolia, Param, SealedTrait}
 
 import scala.reflect.runtime.universe._
 import scala.language.experimental.macros

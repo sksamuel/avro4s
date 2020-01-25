@@ -34,7 +34,7 @@ class RecordDecoder[T](ctx: CaseClass[DecoderV2, T], schemaFor: SchemaForV2[T], 
 
   val schema = schemaFor.schema
 
-  def decode(value: Any): T = decodeRecord(ctx, fieldDecoding, value)
+  def decode(value: Any): T = decodeRecord(ctx, schema, fieldDecoding, value)
 
   def withNamespace(namespace: String): DecoderV2[T] = decoder(ctx, schemaFor.fieldMapper, NamespaceUpdate(namespace))
 
@@ -55,7 +55,7 @@ class RecordCodec[T](ctx: CaseClass[Codec, T],
 
   def encode(value: T): AnyRef = encodeRecord(ctx, schema, fieldEncoding, value)
 
-  def decode(value: Any): T = decodeRecord(ctx, fieldDecoding, value)
+  def decode(value: Any): T = decodeRecord(ctx, schema, fieldDecoding, value)
 
   def withNamespace(namespace: String): Codec[T] = codec(ctx, schemaFor.fieldMapper, NamespaceUpdate(namespace))
 
@@ -67,6 +67,7 @@ class RecordCodec[T](ctx: CaseClass[Codec, T],
 
 object Records {
 
+  @inline
   private[avro4s] def encodeRecord[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
                                                     schema: Schema,
                                                     fieldEncoding: Seq[FieldEncoder[T]],
@@ -82,7 +83,9 @@ object Records {
     ImmutableRecord(schema, values)
   }
 
+  @inline
   private[avro4s] def decodeRecord[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
+                                                    schema: Schema,
                                                     fieldDecoding: Seq[FieldDecoder],
                                                     value: Any): T =
     value match {
@@ -91,9 +94,20 @@ object Records {
         val length = fieldDecoding.length
         val values = new Array[Any](length)
         var i = 0
-        while (i < length) {
-          values(i) = fieldDecoding(i).decodeFieldValue(record)
-          i += 1
+        // testing schema based on reference equality, as value equality on schemas is probably more expensive to check
+        // than using safe decoding.
+        if (record.getSchema eq schema) {
+          // known schema, use fast pre-computed position-based decoding
+          while (i < length) {
+            values(i) = fieldDecoding(i).fastDecodeFieldValue(record)
+            i += 1
+          }
+        } else {
+          // use safe name-based decoding
+          while (i < length) {
+            values(i) = fieldDecoding(i).safeDecodeFieldValue(record)
+            i += 1
+          }
         }
         ctx.rawConstruct(values)
       case _ =>

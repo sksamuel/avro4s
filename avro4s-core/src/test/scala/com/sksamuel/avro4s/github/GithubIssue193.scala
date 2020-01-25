@@ -15,7 +15,7 @@ class GithubIssue193 extends AnyFunSuite with Matchers {
 
     val baos = new ByteArrayOutputStream()
 
-    val output = AvroOutputStream.data[Data].to(baos).build(AvroSchema[Data])
+    val output = AvroOutputStream.data[Data].to(baos).build()
     output.write(Data(Some(UUID(Array[Byte](0, 1, 2, 3, 4, 5, 6, 7)))))
     output.write(Data(None))
     output.write(Data(Some(UUID(Array[Byte](7, 6, 5, 4, 3, 2, 1, 0)))))

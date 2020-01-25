@@ -75,7 +75,7 @@ class EnumDecoderTest extends AnyWordSpec with Matchers {
       val schema = AvroSchemaV2[CupcatAnnotatedEnum]
       val record = new EnumSymbol(schema, NotCupcat)
 
-      // TODO is this really intended to work? it decodes an enum as case class with enum field.
+      // TODO clarify is this really intended to work? it decodes an enum as case class with enum field.
       DecoderV2[ScalaAnnotatedSealedTraitEnumWithDefault].decode(record) shouldBe ScalaAnnotatedSealedTraitEnumWithDefault(CuppersAnnotatedEnum)
     }
     "support annotated sealed trait enum default values - corrected" in {

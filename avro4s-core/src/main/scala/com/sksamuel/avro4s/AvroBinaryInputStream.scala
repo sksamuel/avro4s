@@ -17,12 +17,10 @@ import scala.util.Try
   * input stream requires an instance of Decoder.
   */
 class AvroBinaryInputStream[T](in: InputStream,
-                               writerSchema: Schema,
-                               readerSchema: Schema,
-                               fieldMapper: FieldMapper = DefaultFieldMapper)
-                              (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
+                               writerSchema: Schema)
+                              (implicit decoder: DecoderV2[T]) extends AvroInputStream[T] {
 
-  private val datumReader = new GenericDatumReader[GenericRecord](writerSchema, readerSchema, new GenericData)
+  private val datumReader = new GenericDatumReader[GenericRecord](writerSchema, decoder.schema, new GenericData)
   private val avroDecoder = DecoderFactory.get().binaryDecoder(in, null)
 
   private val _iter = new Iterator[GenericRecord] {
@@ -35,7 +33,7 @@ class AvroBinaryInputStream[T](in: InputStream,
     */
   override def iterator: Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = _iter.hasNext
-    override def next(): T = decoder.decode(_iter.next, readerSchema, fieldMapper)
+    override def next(): T = decoder.decode(_iter.next())
   }
 
   /**
@@ -44,7 +42,7 @@ class AvroBinaryInputStream[T](in: InputStream,
     */
   override def tryIterator: Iterator[Try[T]] = new Iterator[Try[T]] {
     override def hasNext: Boolean = _iter.hasNext
-    override def next(): Try[T] = Try(decoder.decode(_iter.next, readerSchema, fieldMapper))
+    override def next(): Try[T] = Try(decoder.decode(_iter.next()))
   }
 
   override def close(): Unit = in.close()

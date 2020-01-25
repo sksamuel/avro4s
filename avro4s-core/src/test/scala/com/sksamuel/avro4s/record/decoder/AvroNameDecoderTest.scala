@@ -12,9 +12,9 @@ class AvroNameDecoderTest extends AnyFunSuite with Matchers {
   implicit val fm: FieldMapper = DefaultFieldMapper
 
   test("decoder should take into account @AvroName on fields") {
-    val schema = AvroSchemaV2[AvroNameDecoderTest]
-    val record = new GenericData.Record(schema)
+    val decoder = DecoderV2[AvroNameDecoderTest]
+    val record = new GenericData.Record(decoder.schema)
     record.put("bar", new Utf8("hello"))
-    DecoderV2[AvroNameDecoderTest].decode(record) shouldBe AvroNameDecoderTest("hello")
+    decoder.decode(record) shouldBe AvroNameDecoderTest("hello")
   }
 }

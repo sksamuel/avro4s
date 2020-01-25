@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record.decoder
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import com.sksamuel.avro4s.{AvroAlias, AvroDataInputStream, AvroOutputStream, AvroSchema, Decoder, DefaultFieldMapper, RecordFormat}
+import com.sksamuel.avro4s._
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
@@ -22,16 +22,15 @@ class SchemaEvolutionTest extends AnyFunSuite with Matchers {
 
   ignore("@AvroAlias should be used when a reader schema has a field missing from the write schema") {
 
-    val v1schema = AvroSchema[Version1]
+    val v1schema = AvroSchemaV2[Version1]
     val v1 = Version1("hello")
     val baos = new ByteArrayOutputStream()
-    val output = AvroOutputStream.data[Version1].to(baos).build(v1schema)
+    val output = AvroOutputStream.data[Version1].to(baos).build()
     output.write(v1)
     output.close()
 
     // we load using a v2 schema
-    val v2schema = AvroSchema[Version2]
-    val is = new AvroDataInputStream[Version2](new ByteArrayInputStream(baos.toByteArray), Some(v1schema), Some(v2schema))
+    val is = new AvroDataInputStream[Version2](new ByteArrayInputStream(baos.toByteArray), Some(v1schema))
     val v2 = is.iterator.toList.head
 
     v2.renamed shouldBe v1.original

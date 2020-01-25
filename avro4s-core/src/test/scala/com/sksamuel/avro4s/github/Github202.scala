@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.github
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{AvroAlias, AvroInputStream, AvroOutputStream, AvroSchema}
+import com.sksamuel.avro4s.{AvroAlias, AvroInputStream, AvroOutputStream, AvroSchemaV2}
 import org.apache.avro.generic.GenericData
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -18,11 +18,11 @@ class Github202 extends AnyFunSuite with Matchers {
 
     val v1 = Version1("hello")
     val baos = new ByteArrayOutputStream()
-    val output = AvroOutputStream.data[Version1].to(baos).build(AvroSchema[Version1])
+    val output = AvroOutputStream.data[Version1].to(baos).build()
     output.write(v1)
     output.close()
 
-    val is = AvroInputStream.data[Version2].from(baos.toByteArray).build(AvroSchema[Version1], AvroSchema[Version2])
+    val is = AvroInputStream.data[Version2].from(baos.toByteArray).build(AvroSchemaV2[Version1])
     val v2 = is.iterator.toList.head
     is.close()
 

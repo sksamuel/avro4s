@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record.decoder
 
 import java.util
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
+import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2, DecoderV2}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.scalatest.matchers.should.Matchers
@@ -31,58 +31,57 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
 
   "Decoder" should {
     "support String options" in {
-      val schema = AvroSchema[OptionString]
+      val schema = AvroSchemaV2[OptionString]
 
       val record1 = new GenericData.Record(schema)
       record1.put("s", "hello")
-      Decoder[OptionString].decode(record1, schema, DefaultFieldMapper) shouldBe OptionString(Some("hello"))
+      DecoderV2[OptionString].decode(record1) shouldBe OptionString(Some("hello"))
 
       val record2 = new GenericData.Record(schema)
       record2.put("s", null)
-      Decoder[OptionString].decode(record2, schema, DefaultFieldMapper) shouldBe OptionString(None)
+      DecoderV2[OptionString].decode(record2) shouldBe OptionString(None)
     }
     "support decoding required fields as Option" in {
-      val requiredStringSchema = AvroSchema[RequiredString]
+      val requiredStringSchema = AvroSchemaV2[RequiredString]
 
       val requiredStringRecord = new GenericData.Record(requiredStringSchema)
       requiredStringRecord.put("s", "hello")
-      Decoder[OptionString].decode(requiredStringRecord, requiredStringSchema, DefaultFieldMapper) shouldBe OptionString(Some("hello"))
+      DecoderV2[OptionString].decode(requiredStringRecord) shouldBe OptionString(Some("hello"))
     }
     "support boolean options" in {
-      val schema = AvroSchema[OptionBoolean]
+      val schema = AvroSchemaV2[OptionBoolean]
 
       val record1 = new GenericData.Record(schema)
       record1.put("b", true)
-      Decoder[OptionBoolean].decode(record1, schema, DefaultFieldMapper) shouldBe OptionBoolean(Some(true))
+      DecoderV2[OptionBoolean].decode(record1) shouldBe OptionBoolean(Some(true))
 
       val record2 = new GenericData.Record(schema)
       record2.put("b", null)
-      Decoder[OptionBoolean].decode(record2, schema, DefaultFieldMapper) shouldBe OptionBoolean(None)
+      DecoderV2[OptionBoolean].decode(record2) shouldBe OptionBoolean(None)
     }
     "if a field is missing, use default value" in {
-      val schema = AvroSchema[OptionStringDefault]
-
       val record1 = new GenericData.Record(AvroSchema[SchemaWithoutExpectedField])
 
-      Decoder[OptionStringDefault].decode(record1, schema, DefaultFieldMapper) shouldBe OptionStringDefault(Some("cupcat"))
+      // TODO clarify is it really desired to decode records having a different schema?
+      DecoderV2[OptionStringDefault].decode(record1) shouldBe OptionStringDefault(Some("cupcat"))
     }
     "if an enum field is missing, use default value" in {
-      val schema = AvroSchema[OptionEnumDefault]
+      val record1 = new GenericData.Record(AvroSchemaV2[SchemaWithoutExpectedField])
 
-      val record1 = new GenericData.Record(AvroSchema[SchemaWithoutExpectedField])
-      Decoder[OptionEnumDefault].decode(record1, schema, DefaultFieldMapper) shouldBe OptionEnumDefault(Some(CuppersOptionEnum))
+      // TODO clarify is it really desired to decode records having a different schema?
+      DecoderV2[OptionEnumDefault].decode(record1) shouldBe OptionEnumDefault(Some(CuppersOptionEnum))
     }
     "decode a null field to None" in {
-      val schema = AvroSchema[OptionEnumDefaultWithNone]
+      val schema = AvroSchemaV2[OptionEnumDefaultWithNone]
 
       val record1 = new GenericData.Record(schema)
       record1.put("s", null)
       record1.put("t", "cupcat")
 
-      Decoder[OptionEnumDefaultWithNone].decode(record1, schema, DefaultFieldMapper) shouldBe OptionEnumDefaultWithNone(None, "cupcat")
+      DecoderV2[OptionEnumDefaultWithNone].decode(record1) shouldBe OptionEnumDefaultWithNone(None, "cupcat")
     }
     "option of seq of case class" in {
-      val schema = AvroSchema[OptionOfSeqOfCaseClass]
+      val schema = AvroSchemaV2[OptionOfSeqOfCaseClass]
       val unionSchema = schema.getField("foo").schema()
       require(unionSchema.getType == Schema.Type.UNION)
       val arraySchema = unionSchema.getTypes.get(1)
@@ -100,12 +99,12 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
       val record1 = new GenericData.Record(schema)
       record1.put("foo", array)
 
-      Decoder[OptionOfSeqOfCaseClass].decode(record1, schema, DefaultFieldMapper) shouldBe OptionOfSeqOfCaseClass(Some(List(Foo(true), Foo(false))))
+      DecoderV2[OptionOfSeqOfCaseClass].decode(record1) shouldBe OptionOfSeqOfCaseClass(Some(List(Foo(true), Foo(false))))
 
       val record2 = new GenericData.Record(schema)
       record2.put("foo", null)
 
-      Decoder[OptionOfSeqOfCaseClass].decode(record2, schema, DefaultFieldMapper) shouldBe OptionOfSeqOfCaseClass(None)
+      DecoderV2[OptionOfSeqOfCaseClass].decode(record2) shouldBe OptionOfSeqOfCaseClass(None)
     }
 
   }

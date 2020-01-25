@@ -6,7 +6,7 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
 import com.sksamuel.avro4s.SchemaUpdate.NoUpdate
-import magnolia._
+import magnolia.{CaseClass, Magnolia, Param, SealedTrait}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 
@@ -36,32 +36,10 @@ object SchemaForV2 {
 
   def apply[T](implicit schemaFor: SchemaForV2[T]): SchemaForV2[T] = schemaFor
 
-  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
-
-  type Typeclass[T] = SchemaForV2[T]
-
-  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
-      implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaForV2[T] =
-    DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx, NoUpdate, fieldMapper)
-      case SealedTraitShape.ScalaEnum => SchemaForV2[T](ScalaEnums.schema(ctx), fieldMapper)
-    }
-
-  def combine[T](ctx: CaseClass[Typeclass, T])(
-      implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaForV2[T] = {
-    val paramSchema = (p: Param[Typeclass, T]) => p.typeclass.schema
-
-    DatatypeShape.of(ctx) match {
-      case CaseClassShape.Record => Records.buildSchema(ctx, fieldMapper, None, paramSchema)
-      case CaseClassShape.ValueType =>
-        SchemaForV2[T](ValueTypes.buildSchema(ctx, None, paramSchema), fieldMapper)
-    }
-  }
-
   implicit val IntSchema: SchemaForV2[Int] = SchemaForV2[Int](SchemaBuilder.builder.intType)
   implicit val ByteSchema: SchemaForV2[Byte] = IntSchema.forType
   implicit val ShortSchema: SchemaForV2[Short] = IntSchema.forType
-  implicit val LongSchema: SchemaForV2[Long] = IntSchema.forType
+  implicit val LongSchema: SchemaForV2[Long] = SchemaForV2[Long](SchemaBuilder.builder.longType)
   implicit val FloatSchema: SchemaForV2[Float] = SchemaForV2[Float](SchemaBuilder.builder.floatType)
   implicit val DoubleSchema: SchemaForV2[Double] = SchemaForV2[Double](SchemaBuilder.builder.doubleType)
   implicit val BooleanSchema: SchemaForV2[Boolean] = SchemaForV2[Boolean](SchemaBuilder.builder.booleanType)
@@ -82,18 +60,20 @@ object SchemaForV2 {
 
   implicit def scalaEnumSchema[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaForV2[E] = {
     val typeRef = tag.tpe match {
-      case t@TypeRef(_, _, _) => t
+      case t @ TypeRef(_, _, _) => t
     }
 
     val valueType = typeOf[E]
     val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
-    val syms = pre.filter { sym =>
-      !sym.isMethod &&
+    val syms = pre
+      .filter { sym =>
+        !sym.isMethod &&
         !sym.isType &&
         sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
-    }.map { sym =>
-      sym.name.decodedName.toString.trim
-    }
+      }
+      .map { sym =>
+        sym.name.decodedName.toString.trim
+      }
 
     val as = typeRef.pre.typeSymbol.annotations
     val nameAnnotation = as.collectFirst {
@@ -109,8 +89,9 @@ object SchemaForV2 {
     val nameExtractor = NameExtractor(TypeInfo.fromType(typeRef.pre))
 
     val s = SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(syms: _*)
-    props.foreach { case (key, value) =>
-      s.addProp(key, value)
+    props.foreach {
+      case (key, value) =>
+        s.addProp(key, value)
     }
     SchemaForV2[E](s)
   }
@@ -136,24 +117,69 @@ object SchemaForV2 {
   implicit val TimestampSchema: SchemaForV2[Timestamp] =
     SchemaForV2[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 
-  implicit def optionSchema[T](schemaForItem: SchemaForV2[T]): SchemaForV2[Option[T]] =
+  implicit def optionSchema[T](schemaForItem: SchemaForV2[T]): SchemaForV2[Option[T]] = {
     schemaForItem.map[Option[T]](itemSchema =>
       SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
+  }
 
   implicit def eitherSchema[A, B](implicit leftFor: SchemaForV2[A],
                                   rightFor: SchemaForV2[B]): SchemaForV2[Either[A, B]] =
     SchemaForV2[Either[A, B]](SchemaHelper.createSafeUnion(leftFor.schema, rightFor.schema))
 
-  implicit def byteIterableSchema[C[X] <: Iterable[X]]: SchemaForV2[C[Byte]] =
-    SchemaForV2[C[Byte]](SchemaBuilder.builder.bytesType)
+  implicit val ByteArraySchema: SchemaForV2[Array[Byte]] = SchemaForV2[Array[Byte]](SchemaBuilder.builder.bytesType)
+  implicit val ByteListSchema: SchemaForV2[List[Byte]] = ByteArraySchema.forType
+  implicit val ByteSeqSchema: SchemaForV2[Seq[Byte]] = ByteArraySchema.forType
+  implicit val ByteVectorSchema: SchemaForV2[Vector[Byte]] = ByteArraySchema.forType
 
-  implicit def iterableSchema[C[X] <: Iterable[X], T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[C[T]] =
-    SchemaForV2[C[T]](SchemaBuilder.array.items(schemaForItem.schema))
+  private def _iterableSchema[C[X] <: Iterable[X], T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[C[T]] =
+    SchemaForV2[C[T]](SchemaBuilder.array.items(schemaForItem.schema), schemaForItem.fieldMapper)
 
   implicit def arraySchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Array[T]] =
-    iterableSchema(schemaForItem).forType
+    _iterableSchema(schemaForItem).forType
+  implicit def iterableSchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Iterable[T]] =
+    _iterableSchema(schemaForItem).forType
+  implicit def listSchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[List[T]] =
+    _iterableSchema(schemaForItem).forType
+  implicit def setSchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Set[T]] =
+    _iterableSchema(schemaForItem).forType
+  implicit def vectorSchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Vector[T]] =
+    _iterableSchema(schemaForItem).forType
+  implicit def seqSchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Seq[T]] =
+    _iterableSchema(schemaForItem).forType
+
+  implicit def mapSchema[T](implicit schemaForValue: SchemaForV2[T]): SchemaForV2[Map[String, T]] =
+    SchemaForV2(SchemaBuilder.map().values(schemaForValue.schema), schemaForValue.fieldMapper)
 
   implicit def bigDecimalSchema(implicit sp: ScalePrecision = ScalePrecision.default): SchemaForV2[BigDecimal] =
     SchemaForV2(LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.bytesType))
 
+  type Typeclass[T] = SchemaForV2[T]
+
+  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
+      implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaForV2[T] =
+    DatatypeShape.of(ctx) match {
+      case SealedTraitShape.TypeUnion =>
+        if (ctx.typeName.full == "scala.Option") {
+          // TODO precedence of optionSchema isn't working correctly.
+          val valueSchema = ctx.subtypes.find(_.typeName.short == "Some").get.typeclass.schema.getField("value").schema
+          optionSchema(SchemaForV2(valueSchema, fieldMapper)).forType
+        } else {
+          TypeUnions.schema(ctx, NoUpdate, fieldMapper)
+        }
+      case SealedTraitShape.ScalaEnum => SchemaForV2[T](ScalaEnums.schema(ctx), fieldMapper)
+    }
+
+  def combine[T](ctx: CaseClass[Typeclass, T])(
+      implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaForV2[T] = {
+    val paramSchema = (p: Param[Typeclass, T]) => p.typeclass.schema
+
+    DatatypeShape.of(ctx) match {
+      case CaseClassShape.Record =>
+        Records.buildSchema(ctx, fieldMapper, None, paramSchema)
+      case CaseClassShape.ValueType =>
+        SchemaForV2[T](ValueTypes.buildSchema(ctx, None, paramSchema), fieldMapper)
+    }
+  }
+
+  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 }

@@ -13,30 +13,27 @@ import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
   * case the [[AvroBinaryInputStream]] is what you would need.
   *
   * @param os      the underlying stream that data will be written to.
-  * @param schema  the schema that will be used to encode the data, sometimes called the writer schema
   * @param codec   compression codec
   * @param encoder the avro4s [[Encoder]] that will convert each value to a GenericRecord.
   */
 case class AvroDataOutputStream[T](os: OutputStream,
-                                   schema: Schema,
-                                   codec: CodecFactory,
-                                   fieldMapper: FieldMapper = DefaultFieldMapper)
-                                  (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
+                                   codec: CodecFactory)
+                                  (implicit encoder: EncoderV2[T]) extends AvroOutputStream[T] {
 
-  val (writer, writeFn) = schema.getType match {
+  val (writer, writeFn) = encoder.schema.getType match {
     case Schema.Type.DOUBLE | Schema.Type.LONG | Schema.Type.BOOLEAN | Schema.Type.STRING | Schema.Type.INT | Schema.Type.FLOAT =>
-      val datumWriter = new GenericDatumWriter[T](schema)
+      val datumWriter = new GenericDatumWriter[T](encoder.schema)
       val dataFileWriter = new DataFileWriter[T](datumWriter)
       dataFileWriter.setCodec(codec)
-      dataFileWriter.create(schema, os)
+      dataFileWriter.create(encoder.schema, os)
       (dataFileWriter, (t: T) => dataFileWriter.append(t))
     case _ =>
-      val datumWriter = new GenericDatumWriter[GenericRecord](schema)
+      val datumWriter = new GenericDatumWriter[GenericRecord](encoder.schema)
       val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
       dataFileWriter.setCodec(codec)
-      dataFileWriter.create(schema, os)
+      dataFileWriter.create(encoder.schema, os)
       (dataFileWriter, (t: T) => {
-        val record = encoder.encode(t, schema, fieldMapper).asInstanceOf[GenericRecord]
+        val record = encoder.encode(t).asInstanceOf[GenericRecord]
         dataFileWriter.append(record)
       })
   }
