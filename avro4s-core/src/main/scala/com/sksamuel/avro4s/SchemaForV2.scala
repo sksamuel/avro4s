@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 import java.util.UUID
 
 import com.sksamuel.avro4s.SchemaUpdate.NoUpdate
@@ -106,6 +106,15 @@ object SchemaForV2 {
     }
   }
 
+  object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
+    override def validate(schema: Schema): Unit = {
+      super.validate(schema)
+      if (schema.getType != Schema.Type.STRING) {
+        throw new IllegalArgumentException("Logical type iso-datetime with offset must be backed by String")
+      }
+    }
+  }
+
   implicit val InstantSchema: SchemaForV2[Instant] =
     SchemaForV2[Instant](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
   implicit val DateSchema: SchemaForV2[Date] = SchemaForV2(
@@ -113,8 +122,10 @@ object SchemaForV2 {
   implicit val LocalDateSchema: SchemaForV2[LocalDate] = DateSchema.forType
   implicit val LocalDateTimeSchema: SchemaForV2[LocalDateTime] = SchemaForV2(
     TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType))
+  implicit val OffsetDateTimeSchema: SchemaForV2[OffsetDateTime] = SchemaForV2(
+    OffsetDateTimeLogicalType.addToSchema(SchemaBuilder.builder.stringType))
   implicit val LocalTimeSchema: SchemaForV2[LocalTime] = SchemaForV2(
-    LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType()))
+    LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType))
   implicit val TimestampSchema: SchemaForV2[Timestamp] =
     SchemaForV2[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 

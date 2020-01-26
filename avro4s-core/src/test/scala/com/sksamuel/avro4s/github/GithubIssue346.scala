@@ -1,13 +1,13 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchema}
+import com.sksamuel.avro4s.{AvroName, AvroNamespace, AvroSchemaV2}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 class GithubIssue346 extends AnyFunSuite with Matchers {
 
   test("Enum annotations failing #346") {
-    val schema = AvroSchema[MyEnum]
+    val schema = AvroSchemaV2[MyEnum]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github/github_346.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }

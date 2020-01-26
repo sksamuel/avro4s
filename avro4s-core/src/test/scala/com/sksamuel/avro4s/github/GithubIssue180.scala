@@ -1,11 +1,11 @@
 package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.github.SampleProtocol.SubPart1.InnerEnum
-import com.sksamuel.avro4s.{AvroSchema, FromRecord, ToRecord}
-
-import scala.language.higherKinds
+import com.sksamuel.avro4s.{AvroSchemaV2, FromRecord, ToRecord}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+
+import scala.language.higherKinds
 
 object TopEnum extends Enumeration {
   type TopEnumVal = Value
@@ -37,7 +37,7 @@ class Githu4bIssue180 extends AnyFunSpec with Matchers {
         ToRecord[WithTopEnum] shouldNot be(null)
       }
       it("should be able to compile `SchemaFor`") {
-        AvroSchema[WithTopEnum] shouldNot be(null)
+        AvroSchemaV2[WithTopEnum] shouldNot be(null)
       }
     }
 
@@ -50,7 +50,7 @@ class Githu4bIssue180 extends AnyFunSpec with Matchers {
         ToRecord[WithInnerEnum] shouldNot be(null)
       }
       it("should be able to compile `SchemaFor`") {
-        AvroSchema[WithInnerEnum] shouldNot be(null)
+        AvroSchemaV2[WithInnerEnum] shouldNot be(null)
       }
     }
   }

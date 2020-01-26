@@ -2,6 +2,7 @@ package com.sksamuel.avro4s
 
 import java.sql.{Date, Timestamp}
 import java.time._
+import java.time.format.DateTimeFormatter
 
 import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
@@ -14,6 +15,7 @@ trait TemporalCodecs {
   implicit val TimestampCodec: Codec[Timestamp] = Temporals.TimestampCodec
   implicit val DateCodec: Codec[Date] = Temporals.DateCodec
   implicit val LocalDateTimeCodec: Codec[LocalDateTime] = Temporals.LocalDateTimeCodec
+  implicit val OffsetDateTimeCodec: Codec[OffsetDateTime] = Temporals.OffsetDateTimeCodec
 }
 
 trait TemporalEncoders {
@@ -23,6 +25,7 @@ trait TemporalEncoders {
   implicit val TimestampEncoder: EncoderV2[Timestamp] = Temporals.TimestampCodec
   implicit val DateEncoder: EncoderV2[Date] = Temporals.DateCodec
   implicit val LocalDateTimeEncoder: EncoderV2[LocalDateTime] = Temporals.LocalDateTimeCodec
+  implicit val OffsetDateTimeEncoder: EncoderV2[OffsetDateTime] = Temporals.OffsetDateTimeCodec
 }
 
 trait TemporalDecoders {
@@ -32,6 +35,7 @@ trait TemporalDecoders {
   implicit val TimestampDecoder: DecoderV2[Timestamp] = Temporals.TimestampCodec
   implicit val DateDecoder: DecoderV2[Date] = Temporals.DateCodec
   implicit val LocalDateTimeDecoder: DecoderV2[LocalDateTime] = Temporals.LocalDateTimeCodec
+  implicit val OffsetDateTimeDecoder: DecoderV2[OffsetDateTime] = Temporals.OffsetDateTimeCodec
 }
 
 object Temporals {
@@ -111,4 +115,16 @@ object Temporals {
     override def withSchema(schemaFor: SchemaForV2[LocalDateTime]): Codec[LocalDateTime] =
       new LocalDateTimeCodec(schemaFor.schema)
   }
+
+  object OffsetDateTimeCodec extends Codec[OffsetDateTime] {
+
+    val schema: Schema = SchemaForV2.OffsetDateTimeSchema.schema
+
+    def decode(value: Any): OffsetDateTime =
+      OffsetDateTime.parse(value.toString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+
+    override def encode(value: OffsetDateTime) =
+      value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+  }
+
 }

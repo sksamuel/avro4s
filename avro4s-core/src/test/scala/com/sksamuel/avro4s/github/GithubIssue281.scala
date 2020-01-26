@@ -1,10 +1,10 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.AvroSchema
-
-import scala.language.higherKinds
+import com.sksamuel.avro4s.AvroSchemaV2
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+
+import scala.language.higherKinds
 
 sealed trait InnerTrait
 case class InnerTraitConcrete(v: Int) extends InnerTrait
@@ -16,7 +16,7 @@ case class Outer(inners: Seq[Inner])
 class GithubIssue281 extends AnyFunSuite with Matchers {
 
   test("Avro Schema for a sealed trait in a subobject #281") {
-    AvroSchema[Outer].toString(true) shouldBe """{
+    AvroSchemaV2[Outer].toString(true) shouldBe """{
                                                 |  "type" : "record",
                                                 |  "name" : "Outer",
                                                 |  "namespace" : "com.sksamuel.avro4s.github",
