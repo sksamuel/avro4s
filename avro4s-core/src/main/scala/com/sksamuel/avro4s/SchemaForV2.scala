@@ -161,6 +161,61 @@ object SchemaForV2 {
                                                   schemaForT: SchemaForV2[T]): SchemaForV2[H :+: T] =
     SchemaForV2(SchemaHelper.createSafeUnion(schemaForH.schema, schemaForT.schema), schemaForH.fieldMapper)
 
+  implicit def tuple2SchemaFor[A, B](implicit a: SchemaForV2[A], b: SchemaForV2[B]): SchemaForV2[(A, B)] = {
+    SchemaForV2(SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
+        .fields()
+        .name("_1").`type`(a.schema).noDefault()
+        .name("_2").`type`(b.schema).noDefault()
+        .endRecord(),
+      a.fieldMapper
+    )
+  }
+
+  implicit def tuple3SchemaFor[A, B, C](implicit a: SchemaForV2[A],
+                                        b: SchemaForV2[B],
+                                        c: SchemaForV2[C]): SchemaForV2[(A, B, C)] = {
+    SchemaForV2(SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
+      .fields()
+      .name("_1").`type`(a.schema).noDefault()
+      .name("_2").`type`(b.schema).noDefault()
+      .name("_3").`type`(c.schema).noDefault()
+      .endRecord(),
+      a.fieldMapper
+    )
+  }
+
+  implicit def tuple4SchemaFor[A, B, C, D](implicit a: SchemaForV2[A],
+                                          b: SchemaForV2[B],
+                                          c: SchemaForV2[C],
+                                          d: SchemaForV2[D]): SchemaForV2[(A, B, C, D)] = {
+    SchemaForV2(SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
+      .fields()
+      .name("_1").`type`(a.schema).noDefault()
+      .name("_2").`type`(b.schema).noDefault()
+      .name("_3").`type`(c.schema).noDefault()
+      .name("_4").`type`(d.schema).noDefault()
+      .endRecord(),
+      a.fieldMapper
+    )
+  }
+
+  implicit def tuple5SchemaFor[A, B, C, D, E](implicit a: SchemaForV2[A],
+                                              b: SchemaForV2[B],
+                                              c: SchemaForV2[C],
+                                              d: SchemaForV2[D],
+                                              e: SchemaForV2[E]): SchemaForV2[(A, B, C, D, E)] = {
+    SchemaForV2(SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
+      .fields()
+      .name("_1").`type`(a.schema).noDefault()
+      .name("_2").`type`(b.schema).noDefault()
+      .name("_3").`type`(c.schema).noDefault()
+      .name("_4").`type`(d.schema).noDefault()
+      .name("_5").`type`(e.schema).noDefault()
+      .endRecord(),
+      a.fieldMapper
+    )
+  }
+
   type Typeclass[T] = SchemaForV2[T]
 
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(

@@ -6,8 +6,9 @@ import java.util.UUID
 import com.sksamuel.avro4s.BaseTypes.{JavaEnumCodec, ScalaEnumCodec}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData.EnumSymbol
-import org.apache.avro.generic.{GenericData, GenericFixed}
+import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
 import org.apache.avro.util.Utf8
+import BaseTypes._
 
 import scala.reflect.runtime.universe._
 import scala.reflect.ClassTag
@@ -27,6 +28,35 @@ trait BaseCodecs {
   implicit val UUIDCodec: Codec[UUID] = BaseTypes.UUIDCodec
   implicit def javaEnumCodec[E <: Enum[E]: ClassTag]: Codec[E] = new JavaEnumCodec[E]
   implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: Codec[E] = new ScalaEnumCodec[E]
+  
+  implicit def tuple2Codec[A: Codec, B: Codec] = new Codec[(A, B)] {
+    import EncoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple2SchemaFor[A, B].schema
+    def encode(value: (A, B)): AnyRef = encodeTuple2[A, B](value, schema)
+    def decode(value: Any): (A, B) = decodeTuple2[A, B](value)
+  }
+
+  implicit def tuple3Codec[A: Codec, B: Codec, C: Codec] = new Codec[(A, B, C)] {
+    import EncoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple3SchemaFor[A, B, C].schema
+    def encode(value: (A, B, C)): AnyRef = encodeTuple3[A, B, C](value, schema)
+    def decode(value: Any): (A, B, C) = decodeTuple3[A, B, C](value)
+  }
+
+  implicit def tuple4Codec[A: Codec, B: Codec, C: Codec, D: Codec] = new Codec[(A, B, C, D)] {
+    import EncoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple4SchemaFor[A, B, C, D].schema
+    def encode(value: (A, B, C, D)): AnyRef = encodeTuple4[A, B, C, D](value, schema)
+    def decode(value: Any): (A, B, C, D) = decodeTuple4[A, B, C, D](value)
+  }
+
+  implicit def tuple5Codec[A: Codec, B: Codec, C: Codec, D: Codec, E: Codec] =
+    new Codec[(A, B, C, D, E)] {
+      import EncoderSchemaImplicits._
+      def schema: Schema = SchemaForV2.tuple5SchemaFor[A, B, C, D, E].schema
+      def encode(value: (A, B, C, D, E)): AnyRef = encodeTuple5[A, B, C, D, E](value, schema)
+      def decode(value: Any): (A, B, C, D, E) = decodeTuple5[A, B, C, D, E](value)
+    }
 }
 
 trait BaseEncoders {
@@ -44,6 +74,31 @@ trait BaseEncoders {
   implicit val UUIDEncoder: EncoderV2[UUID] = BaseTypes.UUIDCodec
   implicit def javaEnumEncoder[E <: Enum[E]: ClassTag]: EncoderV2[E] = new JavaEnumCodec[E]
   implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: EncoderV2[E] = new ScalaEnumCodec[E]
+
+  implicit def tuple2Encoder[A: EncoderV2, B: EncoderV2] = new EncoderV2[(A, B)] {
+    import EncoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple2SchemaFor[A, B].schema
+    def encode(value: (A, B)): AnyRef = encodeTuple2(value, schema)
+  }
+
+  implicit def tuple3Encoder[A: EncoderV2, B: EncoderV2, C: EncoderV2] = new EncoderV2[(A, B, C)] {
+    import EncoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple3SchemaFor[A, B, C].schema
+    def encode(value: (A, B, C)): AnyRef = encodeTuple3(value, schema)
+  }
+
+  implicit def tuple4Encoder[A: EncoderV2, B: EncoderV2, C: EncoderV2, D: EncoderV2] = new EncoderV2[(A, B, C, D)] {
+    import EncoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple4SchemaFor[A, B, C, D].schema
+    def encode(value: (A, B, C, D)): AnyRef = encodeTuple4(value, schema)
+  }
+
+  implicit def tuple5Encoder[A: EncoderV2, B: EncoderV2, C: EncoderV2, D: EncoderV2, E: EncoderV2] =
+    new EncoderV2[(A, B, C, D, E)] {
+      import EncoderSchemaImplicits._
+      def schema: Schema = SchemaForV2.tuple5SchemaFor[A, B, C, D, E].schema
+      def encode(value: (A, B, C, D, E)): AnyRef = encodeTuple5(value, schema)
+    }
 }
 
 trait BaseDecoders {
@@ -61,6 +116,30 @@ trait BaseDecoders {
   implicit val UUIDDecoder: DecoderV2[UUID] = BaseTypes.UUIDCodec
   implicit def javaEnumDecoder[E <: Enum[E]: ClassTag]: DecoderV2[E] = new JavaEnumCodec[E]
   implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: DecoderV2[E] = new ScalaEnumCodec[E]
+
+  implicit def tuple2Decoder[A: DecoderV2, B: DecoderV2] = new DecoderV2[(A, B)] {
+    import DecoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple2SchemaFor[A, B].schema
+    def decode(value: Any): (A, B) = decodeTuple2[A, B](value)
+  }
+
+  implicit def tuple3Decoder[A: DecoderV2, B: DecoderV2, C: DecoderV2] = new DecoderV2[(A, B, C)] {
+    import DecoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple3SchemaFor[A, B, C].schema
+    def decode(value: Any): (A, B, C) = decodeTuple3[A, B, C](value)
+  }
+
+  implicit def tuple4Decoder[A: DecoderV2, B: DecoderV2, C: DecoderV2, D: DecoderV2] = new DecoderV2[(A, B, C, D)] {
+    import DecoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple4SchemaFor[A, B, C, D].schema
+    def decode(value: Any): (A, B, C, D) = decodeTuple4[A, B, C, D](value)
+  }
+
+  implicit def tuple5Decoder[A: DecoderV2, B: DecoderV2, C: DecoderV2, D: DecoderV2, E: DecoderV2] = new DecoderV2[(A, B, C, D, E)] {
+    import DecoderSchemaImplicits._
+    def schema: Schema = SchemaForV2.tuple5SchemaFor[A, B, C, D, E].schema
+    def decode(value: Any): (A, B, C, D, E) = decodeTuple5[A, B, C, D, E](value)
+  }
 }
 
 object BaseTypes {
@@ -273,5 +352,106 @@ object BaseTypes {
     def encode(value: E): AnyRef = new EnumSymbol(schema, value.toString)
 
     def decode(value: Any): E = enum.withName(value.toString).asInstanceOf[E]
+  }
+
+  def decodeTuple2[A, B](value: Any)(implicit
+                                     decoderA: DecoderV2[A],
+                                     decoderB: DecoderV2[B]) = {
+    val record = value.asInstanceOf[GenericRecord]
+    (
+      decoderA.decode(record.get("_1")),
+      decoderB.decode(record.get("_2"))
+    )
+  }
+
+  def decodeTuple3[A, B, C](value: Any)(implicit
+                                        decoderA: DecoderV2[A],
+                                        decoderB: DecoderV2[B],
+                                        decoderC: DecoderV2[C]) = {
+    val record = value.asInstanceOf[GenericRecord]
+    (
+      decoderA.decode(record.get("_1")),
+      decoderB.decode(record.get("_2")),
+      decoderC.decode(record.get("_3"))
+    )
+  }
+
+  def decodeTuple4[A, B, C, D](value: Any)(implicit
+                                           decoderA: DecoderV2[A],
+                                           decoderB: DecoderV2[B],
+                                           decoderC: DecoderV2[C],
+                                           decoderD: DecoderV2[D]) = {
+    val record = value.asInstanceOf[GenericRecord]
+    (
+      decoderA.decode(record.get("_1")),
+      decoderB.decode(record.get("_2")),
+      decoderC.decode(record.get("_3")),
+      decoderD.decode(record.get("_4"))
+    )
+  }
+
+  def decodeTuple5[A, B, C, D, E](value: Any)(implicit
+                                              decoderA: DecoderV2[A],
+                                              decoderB: DecoderV2[B],
+                                              decoderC: DecoderV2[C],
+                                              decoderD: DecoderV2[D],
+                                              decoderE: DecoderV2[E]) = {
+    val record = value.asInstanceOf[GenericRecord]
+    (
+      decoderA.decode(record.get("_1")),
+      decoderB.decode(record.get("_2")),
+      decoderC.decode(record.get("_3")),
+      decoderD.decode(record.get("_4")),
+      decoderE.decode(record.get("_5"))
+    )
+  }
+
+  def encodeTuple2[A, B](value: (A, B), schema: Schema)(implicit encoderA: EncoderV2[A], encoderB: EncoderV2[B]) = {
+    ImmutableRecord(
+      schema,
+      Vector(encoderA.encode(value._1), encoderB.encode(value._2))
+    )
+  }
+
+  def encodeTuple3[A, B, C](value: (A, B, C), schema: Schema)(implicit encoderA: EncoderV2[A],
+                                                              encoderB: EncoderV2[B],
+                                                              encoderC: EncoderV2[C]) = {
+    ImmutableRecord(
+      schema,
+      Vector(encoderA.encode(value._1), encoderB.encode(value._2), encoderC.encode(value._3))
+    )
+  }
+
+  def encodeTuple4[A, B, C, D](value: (A, B, C, D), schema: Schema)(implicit encoderA: EncoderV2[A],
+                                                                    encoderB: EncoderV2[B],
+                                                                    encoderC: EncoderV2[C],
+                                                                    encoderD: EncoderV2[D]) = {
+    ImmutableRecord(
+      schema,
+      Vector(encoderA.encode(value._1), encoderB.encode(value._2), encoderC.encode(value._3), encoderD.encode(value._4))
+    )
+  }
+
+  def encodeTuple5[A, B, C, D, E](value: (A, B, C, D, E), schema: Schema)(implicit encoderA: EncoderV2[A],
+                                                                          encoderB: EncoderV2[B],
+                                                                          encoderC: EncoderV2[C],
+                                                                          encoderD: EncoderV2[D],
+                                                                          encoderE: EncoderV2[E]) = {
+    ImmutableRecord(
+      schema,
+      Vector(encoderA.encode(value._1),
+             encoderB.encode(value._2),
+             encoderC.encode(value._3),
+             encoderD.encode(value._4),
+             encoderE.encode(value._5))
+    )
+  }
+
+  private[avro4s] object EncoderSchemaImplicits {
+    implicit def schemaFromEncoder[T](implicit encoder: EncoderV2[T]): SchemaForV2[T] = SchemaForV2[T](encoder.schema)
+  }
+
+  private[avro4s] object DecoderSchemaImplicits {
+    implicit def schemaFromDecoder[T](implicit decoder: DecoderV2[T]): SchemaForV2[T] = SchemaForV2[T](decoder.schema)
   }
 }
