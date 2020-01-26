@@ -6,18 +6,17 @@ import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 
+/**
+ * The implicit schemaFor instance is used as the writer schema when deserializing, in case it needs to diverge
+ * from both writer schema used in serialize, and the desired schema in deserialize.
+ */
 class GenericSerde[T >: Null: EncoderV2: DecoderV2: SchemaForV2]
     extends Serde[T]
     with Deserializer[T]
     with Serializer[T]
     with Serializable {
 
-  // if possible, use the decoder schema - this enables faster decoding.
-  val schema: Schema = {
-    val fromSchemaFor = SchemaForV2[T].schema
-    val fromDecoder = DecoderV2[T].schema
-    if (fromSchemaFor == fromDecoder) fromDecoder else fromSchemaFor
-  }
+  val schema: Schema = SchemaForV2[T].schema
 
   override def serializer(): Serializer[T] = this
 
