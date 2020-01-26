@@ -6,7 +6,6 @@ import com.sksamuel.avro4s.ScalaPredefAndCollections._
 import org.apache.avro.{Schema, SchemaBuilder}
 
 import scala.collection.JavaConverters._
-import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 import scala.language.implicitConversions
@@ -63,7 +62,7 @@ trait ScalaPredefAndCollectionCodecs {
   }
 
   private def iterableCodec[C[X] <: Iterable[X], T](codec: Codec[T])(
-    implicit cbf: CanBuildFrom[Nothing, T, C[T]]): Codec[C[T]] =
+    implicit builder: Iterable[T] => C[T]): Codec[C[T]] =
     new Codec[C[T]] {
       val schema: Schema = iterableSchema(codec)
 
@@ -75,12 +74,12 @@ trait ScalaPredefAndCollectionCodecs {
         iterableCodec(codec.withSchema(extractIterableElementSchema(schemaFor)))
     }
 
-  implicit def listCodec[T](implicit codec: Codec[T]): Codec[List[T]] = iterableCodec(codec)
+  implicit def listCodec[T](implicit codec: Codec[T]): Codec[List[T]] = iterableCodec(codec)(_.toList)
   implicit def mutableSeqCodec[T](implicit codec: Codec[T]): Codec[scala.collection.mutable.Seq[T]] =
-    iterableCodec(codec)
-  implicit def seqCodec[T](implicit codec: Codec[T]): Codec[Seq[T]] = iterableCodec(codec)
-  implicit def setCodec[T](implicit codec: Codec[T]): Codec[Set[T]] = iterableCodec(codec)
-  implicit def vectorCodec[T](implicit codec: Codec[T]): Codec[Vector[T]] = iterableCodec(codec)
+    iterableCodec(codec)(_.toBuffer)
+  implicit def seqCodec[T](implicit codec: Codec[T]): Codec[Seq[T]] = iterableCodec(codec)(_.toSeq)
+  implicit def setCodec[T](implicit codec: Codec[T]): Codec[Set[T]] = iterableCodec(codec)(_.toSet)
+  implicit def vectorCodec[T](implicit codec: Codec[T]): Codec[Vector[T]] = iterableCodec(codec)(_.toVector)
 
   implicit def mapCodec[T](implicit codec: Codec[T]): Codec[Map[String, T]] = new Codec[Map[String, T]] {
     val schema: Schema = mapSchema(codec)
@@ -205,7 +204,7 @@ trait ScalaPredefAndCollectionDecoders {
     }
 
   private def iterableDecoder[T, C[X] <: Iterable[X]](decoder: DecoderV2[T])(
-    implicit cbf: CanBuildFrom[Nothing, T, C[T]]): DecoderV2[C[T]] =
+    implicit build: Iterable[T] => C[T]): DecoderV2[C[T]] =
     new DecoderV2[C[T]] {
       val schema: Schema = iterableSchema(decoder)
 
@@ -216,12 +215,12 @@ trait ScalaPredefAndCollectionDecoders {
     }
 
 
-  implicit def listDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[List[T]] = iterableDecoder(decoder)
+  implicit def listDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[List[T]] = iterableDecoder(decoder)(_.toList)
   implicit def mutableSeqDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[scala.collection.mutable.Seq[T]] =
-    iterableDecoder(decoder)
-  implicit def seqDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Seq[T]] = iterableDecoder(decoder)
-  implicit def setDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Set[T]] = iterableDecoder(decoder)
-  implicit def vectorDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Vector[T]] = iterableDecoder(decoder)
+    iterableDecoder(decoder)(_.toBuffer)
+  implicit def seqDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Seq[T]] = iterableDecoder(decoder)(_.toSeq)
+  implicit def setDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Set[T]] = iterableDecoder(decoder)(_.toSet)
+  implicit def vectorDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Vector[T]] = iterableDecoder(decoder)(_.toVector)
 
   implicit def mapDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Map[String, T]] =
     new DecoderV2[Map[String, T]] {
@@ -324,10 +323,10 @@ object ScalaPredefAndCollections {
 
   @inline
   private[avro4s] def decodeIterable[T, C[X] <: Iterable[X]](decoder: DecoderV2[T], value: Any)(
-      implicit cbf: CanBuildFrom[Nothing, T, C[T]]): C[T] = value match {
-    case array: Array[_]               => array.map(decoder.decode)(collection.breakOut)
-    case list: java.util.Collection[_] => list.asScala.map(decoder.decode)(collection.breakOut)
-    case list: Iterable[_]             => list.map(decoder.decode)(collection.breakOut)
+      implicit build: Iterable[T] => C[T]): C[T] = value match {
+    case array: Array[_]               => build(array.map(decoder.decode))
+    case list: java.util.Collection[_] => build(list.asScala.map(decoder.decode))
+    case list: Iterable[_]             => build(list.map(decoder.decode))
     case other                         => sys.error("Unsupported array " + other)
   }
 

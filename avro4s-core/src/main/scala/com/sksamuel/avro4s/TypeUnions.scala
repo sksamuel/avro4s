@@ -81,11 +81,11 @@ object TypeUnions {
       case _ => sys.error(s"Unsupported type $value in type union decoder")
     }
 
-  trait EntryDecoder[T] {
+  trait EntryDecoder[T] extends Serializable {
     def decodeSubtype(value: Any): T
   }
 
-  trait EntryEncoder[T] {
+  trait EntryEncoder[T] extends Serializable {
     def encodeSubtype(value: T): AnyRef
   }
 

@@ -3,47 +3,42 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 
 import com.sksamuel.avro4s.ByteIterables._
-import com.sksamuel.avro4s.Decoder.ByteArrayDecoder
 import org.apache.avro.generic.{GenericData, GenericFixed}
 import org.apache.avro.{Schema, SchemaBuilder}
-
-import scala.collection.generic.CanBuildFrom
 
 trait ByteIterableDecoders {
 
   implicit val ByteArrayDecoder: DecoderV2[Array[Byte]] = ByteIterables.ByteArrayCodec
 
   private def iterableByteDecoder[C[X] <: Iterable[X]](
-      implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): DecoderV2[C[Byte]] = new IterableByteCodec[C](cbf)
+       build: Array[Byte] => C[Byte]): DecoderV2[C[Byte]] = new IterableByteCodec[C](build)
 
 
-  implicit val ByteListDecoder: DecoderV2[List[Byte]] = iterableByteDecoder
-  implicit val ByteVectorDecoder: DecoderV2[Vector[Byte]] = iterableByteDecoder
-  implicit val ByteSeqDecoder: DecoderV2[Seq[Byte]] = iterableByteDecoder
+  implicit val ByteListDecoder: DecoderV2[List[Byte]] = iterableByteDecoder(_.toList)
+  implicit val ByteVectorDecoder: DecoderV2[Vector[Byte]] = iterableByteDecoder(_.toVector)
+  implicit val ByteSeqDecoder: DecoderV2[Seq[Byte]] = iterableByteDecoder(_.toSeq)
 }
 
 trait ByteIterableEncoders {
 
   implicit val ByteArrayEncoder: EncoderV2[Array[Byte]] = ByteIterables.ByteArrayCodec
 
-  implicit def iterableByteEncoder[C[X] <: Iterable[X]](
-      implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): EncoderV2[C[Byte]] = new IterableByteCodec[C](cbf)
+  private def iterableByteEncoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): EncoderV2[C[Byte]] = new IterableByteCodec[C](build)
 
-  implicit val ByteListEncoder: EncoderV2[List[Byte]] = iterableByteEncoder
-  implicit val ByteVectorEncoder: EncoderV2[Vector[Byte]] = iterableByteEncoder
-  implicit val ByteSeqEncoder: EncoderV2[Seq[Byte]] = iterableByteEncoder
+  implicit val ByteListEncoder: EncoderV2[List[Byte]] = iterableByteEncoder(_.toList)
+  implicit val ByteVectorEncoder: EncoderV2[Vector[Byte]] = iterableByteEncoder(_.toVector)
+  implicit val ByteSeqEncoder: EncoderV2[Seq[Byte]] = iterableByteEncoder(_.toSeq)
 }
 
 trait ByteIterableCodecs {
 
   implicit val ByteArrayCodec: Codec[Array[Byte]] = ByteIterables.ByteArrayCodec
 
-  implicit def iterableByteCodec[C[X] <: Iterable[X]](
-      implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): Codec[C[Byte]] = new IterableByteCodec[C](cbf)
+  private def iterableByteCodec[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): Codec[C[Byte]] = new IterableByteCodec[C](build)
 
-  implicit val ByteListCodec: Codec[List[Byte]] = iterableByteCodec
-  implicit val ByteVectorCodec: Codec[Vector[Byte]] = iterableByteCodec
-  implicit val ByteSeqCodec: Codec[Seq[Byte]] = iterableByteCodec
+  implicit val ByteListCodec: Codec[List[Byte]] = iterableByteCodec(_.toList)
+  implicit val ByteVectorCodec: Codec[Vector[Byte]] = iterableByteCodec(_.toVector)
+  implicit val ByteSeqCodec: Codec[Seq[Byte]] = iterableByteCodec(_.toSeq)
 }
 
 object ByteIterables {
@@ -82,7 +77,7 @@ object ByteIterables {
     }
   }
 
-  private[avro4s] class IterableByteCodec[C[X] <: Iterable[X]](cbf: CanBuildFrom[Nothing, Byte, C[Byte]],
+  private[avro4s] class IterableByteCodec[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte],
                                                                byteArrayCodec: Codec[Array[Byte]] = ByteArrayCodec)
       extends Codec[C[Byte]] {
 
@@ -90,13 +85,9 @@ object ByteIterables {
 
     def encode(value: C[Byte]): AnyRef = byteArrayCodec.encode(value.toArray)
 
-    def decode(value: Any): C[Byte] = byteArrayCodec.decode(value).to[C](cbf)
+    def decode(value: Any): C[Byte] = build(byteArrayCodec.decode(value))
 
     override def withSchema(schemaFor: SchemaForV2[C[Byte]]): Codec[C[Byte]] =
-      new IterableByteCodec(cbf, byteArrayCodec.withSchema(schemaFor.map(identity)))
+      new IterableByteCodec(build, byteArrayCodec.withSchema(schemaFor.map(identity)))
   }
-
-  private[avro4s] def iterableByteCodec[C[X] <: Iterable[X]](
-      implicit cbf: CanBuildFrom[Nothing, Byte, C[Byte]]): Codec[C[Byte]] = new IterableByteCodec[C](cbf)
-
 }

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -14,8 +14,8 @@ class Github254 extends AnyFunSuite with Matchers {
   case object c2 extends C
 
   test("NoClassDefFoundError for case class wrapping sealed trait (regression?) #254") {
-    AvroSchema[A].toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github254_a.json")).toString(true)
-    AvroSchema[List[A]].toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github254_lista.json")).toString(true)
-    AvroSchema[B].toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github254_b.json")).toString(true)
+    AvroSchemaV2[A].toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github254_a.json")).toString(true)
+    AvroSchemaV2[List[A]].toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github254_lista.json")).toString(true)
+    AvroSchemaV2[B].toString(true) shouldBe new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github254_b.json")).toString(true)
   }
 }

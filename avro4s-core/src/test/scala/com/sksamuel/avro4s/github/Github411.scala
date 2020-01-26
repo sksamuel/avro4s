@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{DefaultFieldMapper, SchemaFor}
+import com.sksamuel.avro4s.SchemaForV2
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -11,6 +11,6 @@ class Github411  extends AnyFunSuite with Matchers {
   case class Github411Class(property: DefaultValue = DefaultValue())
 
   test("schema generation with defaults in defaults") {
-    SchemaFor[Github411Class].schema(DefaultFieldMapper).toString(true)
+    SchemaForV2[Github411Class].schema.toString(true)
   }
 }

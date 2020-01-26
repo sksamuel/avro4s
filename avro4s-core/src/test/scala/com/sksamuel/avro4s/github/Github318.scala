@@ -1,9 +1,9 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{DefaultFieldMapper, SchemaFor}
-import shapeless.{:+:, CNil}
+import com.sksamuel.avro4s.SchemaForV2
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import shapeless.{:+:, CNil}
 
 sealed trait MyAdt
 object MyAdt {
@@ -16,6 +16,6 @@ class Github318 extends AnyFunSuite with Matchers {
 
   test("Error getting SchemaFor instance for Coproduct with ADT #318") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github/github_318.json"))
-    SchemaFor[CoproductWithAdt].schema(DefaultFieldMapper).toString(true) shouldBe expected.toString(true)
+    SchemaForV2[CoproductWithAdt].schema.toString(true) shouldBe expected.toString(true)
   }
 }

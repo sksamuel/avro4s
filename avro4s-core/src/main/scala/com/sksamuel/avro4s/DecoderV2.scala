@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
 
-trait DecoderV2[T] extends SchemaAware[DecoderV2, T] { self =>
+trait DecoderV2[T] extends SchemaAware[DecoderV2, T] with Serializable { self =>
 
   def schema: Schema
 
@@ -13,7 +13,6 @@ trait DecoderV2[T] extends SchemaAware[DecoderV2, T] { self =>
 
     def decode(value: Any): T = self.decode(value)
   }
-
 }
 
 object DecoderV2

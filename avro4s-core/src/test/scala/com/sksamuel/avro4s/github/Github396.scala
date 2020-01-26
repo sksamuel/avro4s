@@ -13,7 +13,7 @@ class Github396 extends AnyFunSuite with Matchers {
   case class Foo(@AvroName("WIBBLE") aWobble: String, bWubble: String)
 
   test("@AvroName should override fieldmapping for schema gen") { // Issue #396
-    val schema = AvroSchema[Foo]
+    val schema = AvroSchemaV2[Foo]
     val expected = new org.apache.avro.Schema.Parser().parse(
       getClass.getResourceAsStream(
         "/avro_name_field_mapping.json"
@@ -23,8 +23,9 @@ class Github396 extends AnyFunSuite with Matchers {
   }
 
   test("@AvroName should should override fieldmapping on decoding") {
+    implicit val fieldMapper: FieldMapper = SnakeCase
 
-    val schema = AvroSchema[Foo]
+    val schema = AvroSchemaV2[Foo]
 
     val obj = Foo("one", "two")
 
@@ -33,19 +34,20 @@ class Github396 extends AnyFunSuite with Matchers {
     record.put("b_wubble", "two")
 
 
-    Decoder[Foo].decode(record, schema, SnakeCase) shouldBe obj
+    DecoderV2[Foo].decode(record) shouldBe obj
   }
 
   test("@AvroName should override fieldmapping on encoding") {
 
-    val schema = AvroSchema[Foo]
+    implicit val fieldMapper: FieldMapper = SnakeCase
+    val schema = AvroSchemaV2[Foo]
 
     val obj = Foo("one", "two")
 
     val record = ImmutableRecord(schema, Vector(new Utf8("one"), new Utf8("two")))
 
 
-    Encoder[Foo].encode(obj, schema, SnakeCase) shouldBe record
+    EncoderV2[Foo].encode(obj) shouldBe record
   }
 
 }

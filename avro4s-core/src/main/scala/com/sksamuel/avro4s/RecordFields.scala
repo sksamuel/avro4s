@@ -9,14 +9,14 @@ import org.apache.avro.Schema
 
 object RecordFields {
 
-  trait FieldEncoder[T] {
+  trait FieldEncoder[T] extends Serializable {
 
     def field: Option[Field]
 
     def encodeFieldValue(value: T): AnyRef
   }
 
-  trait FieldDecoder {
+  trait FieldDecoder extends Serializable {
     def fastDecodeFieldValue(record: IndexedRecord): Any
 
     def safeDecodeFieldValue(record: IndexedRecord): Any
