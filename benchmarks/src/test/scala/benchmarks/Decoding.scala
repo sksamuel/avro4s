@@ -14,7 +14,7 @@ import org.scalameter.Context
 import org.scalameter.api._
 
 object Decoding extends Bench.LocalTime with BenchmarkHelpers {
-  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 1000000, exec.benchRuns -> 5000000)
+  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 100000, exec.benchRuns -> 100000)
 
   def encode[T: Encoder: SchemaFor](value: T): ByteBuffer = {
     val outputStream = new ByteArrayOutputStream(512)
@@ -36,7 +36,7 @@ object Decoding extends Bench.LocalTime with BenchmarkHelpers {
     val record = reader.read(null, dec)
     decoder.decode(record, schema, DefaultFieldMapper)
   }
-/*
+
   performance of "avro4s simple field decoding" in {
     val schema = AvroSchema[RecordWithSimpleField]
     val decoder = Decoder[RecordWithSimpleField]
@@ -107,7 +107,7 @@ object Decoding extends Bench.LocalTime with BenchmarkHelpers {
       decode(bytes, decoder, reader, schema)
     }
   }
-*/
+
   performance of "avro4s union type with type param alternative codec decoding" in {
     implicit val mapper: FieldMapper = DefaultFieldMapper
     val codec = Codec[RecordWithUnionAndTypeField]
