@@ -63,11 +63,13 @@ class TypeUnionDecoder[T](ctx: SealedTrait[DecoderV2, T],
 
 object TypeUnions {
 
+  @inline
   private[avro4s] def encodeUnion[Typeclass[_], T](ctx: SealedTrait[Typeclass, T],
                                                    encoderBySubtype: Map[Subtype[Typeclass, T], EntryEncoder[T]],
                                                    value: T): AnyRef =
     ctx.dispatch(value)(subtype => encoderBySubtype(subtype).encodeSubtype(value))
 
+  @inline
   private[avro4s] def decodeUnion[Typeclass[_], T](ctx: SealedTrait[Typeclass, T],
                                                    decoderByName: Map[String, EntryDecoder[T]],
                                                    value: Any) =

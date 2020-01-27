@@ -34,9 +34,9 @@ private[avro4s] object TypeUnionEntry {
 
     protected val typeclass: Typeclass[st.SType] = {
       (st.typeclass, update) match {
-        case (tc, FullSchemaUpdate(s))                                               => tc.withSchema(s.forType)
-        case (a: NamespaceAware[Typeclass[st.SType]] @unchecked, NamespaceUpdate(n)) => a.withNamespace(n)
-        case (tc, _)                                                                 => tc
+        case (tc, FullSchemaUpdate(s))                                                  => tc.withSchema(s.forType)
+        case (a: NamespaceAware[Typeclass[st.SType]] @unchecked, NamespaceUpdate(n, _)) => a.withNamespace(n)
+        case (tc, _)                                                                    => tc
       }
     }
 
@@ -44,8 +44,10 @@ private[avro4s] object TypeUnionEntry {
 
     val schema = typeclass.schema
 
-    protected def encodeSubtype(encoder: EncoderV2[st.SType], value: T): AnyRef = encoder.encode(st.cast(value))
+    @inline
+    protected final def encodeSubtype(encoder: EncoderV2[st.SType], value: T): AnyRef = encoder.encode(st.cast(value))
 
-    protected def decodeSubtype(decoder: DecoderV2[st.SType], value: Any): st.SType = decoder.decode(value)
+    @inline
+    protected final def decodeSubtype(decoder: DecoderV2[st.SType], value: Any): st.SType = decoder.decode(value)
   }
 }
