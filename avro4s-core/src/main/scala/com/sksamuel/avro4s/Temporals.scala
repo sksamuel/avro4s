@@ -4,9 +4,8 @@ import java.sql.{Date, Timestamp}
 import java.time._
 import java.time.format.DateTimeFormatter
 
-import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
+import com.sksamuel.avro4s.SchemaForV2.TimestampNanosLogicalType
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
-import org.apache.avro.{Schema, SchemaBuilder}
 
 trait TemporalCodecs {
   implicit val InstantCodec: Codec[Instant] = Temporals.InstantCodec
@@ -44,7 +43,7 @@ object Temporals {
     BaseTypes.LongCodec.inmap[Instant](Instant.ofEpochMilli, _.toEpochMilli).withSchema(SchemaForV2.InstantSchema)
 
   val LocalTimeCodec: Codec[LocalTime] = new Codec[LocalTime] {
-    val schema: Schema = SchemaForV2.LocalTimeSchema.schema
+    val schemaFor: SchemaForV2[LocalTime] = SchemaForV2.LocalTimeSchema
 
     def encode(value: LocalTime): AnyRef = java.lang.Long.valueOf(value.toNanoOfDay / 1000)
 
@@ -71,54 +70,53 @@ object Temporals {
 
   val DateCodec: Codec[Date] = LocalDateCodec.inmap[Date](Date.valueOf, _.toLocalDate)
 
-  val LocalDateTimeCodec: Codec[LocalDateTime] = new LocalDateTimeCodec(
-    TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType))
+  val LocalDateTimeCodec: Codec[LocalDateTime] = new LocalDateTimeCodec(SchemaForV2.LocalDateTimeSchema)
 
-  class LocalDateTimeCodec(val schema: Schema) extends Codec[LocalDateTime] {
+  class LocalDateTimeCodec(val schemaFor: SchemaForV2[LocalDateTime]) extends Codec[LocalDateTime] {
 
-    def encode(t: LocalDateTime): AnyRef = {
-      val long = schema.getLogicalType match {
-        case _: TimestampMillis        => t.toInstant(ZoneOffset.UTC).toEpochMilli
-        case _: TimestampMicros        => t.toEpochSecond(ZoneOffset.UTC) * 1000000L + t.getNano.toLong / 1000L
-        case TimestampNanosLogicalType => t.toEpochSecond(ZoneOffset.UTC) * 1000000000L + t.getNano.toLong
-        case _                         => sys.error(s"Unsupported type for LocalDateTime: $schema")
-      }
-      java.lang.Long.valueOf(long)
+    val encoder: LocalDateTime => Long = schemaFor.schema.getLogicalType match {
+      case _: TimestampMillis => _.toInstant(ZoneOffset.UTC).toEpochMilli
+      case _: TimestampMicros =>
+        t =>
+          t.toEpochSecond(ZoneOffset.UTC) * 1000000L + t.getNano.toLong / 1000L
+      case TimestampNanosLogicalType =>
+        t =>
+          t.toEpochSecond(ZoneOffset.UTC) * 1000000000L + t.getNano.toLong
+      case _ => sys.error(s"Unsupported type for LocalDateTime: ${schemaFor.schema}")
     }
 
-    def decode(value: Any): LocalDateTime = {
-      schema.getLogicalType match {
-        case _: TimestampMillis =>
-          value match {
-            case i: Int  => LocalDateTime.ofInstant(Instant.ofEpochMilli(i.toLong), ZoneOffset.UTC)
-            case l: Long => LocalDateTime.ofInstant(Instant.ofEpochMilli(l), ZoneOffset.UTC)
-          }
+    val decoder: Any => LocalDateTime = schema.getLogicalType match {
+      case _: TimestampMillis => {
+        case i: Int  => LocalDateTime.ofInstant(Instant.ofEpochMilli(i.toLong), ZoneOffset.UTC)
+        case l: Long => LocalDateTime.ofInstant(Instant.ofEpochMilli(l), ZoneOffset.UTC)
+      }
 
-        case _: TimestampMicros =>
-          value match {
-            case i: Int =>
-              LocalDateTime.ofInstant(Instant.ofEpochMilli(i / 1000), ZoneOffset.UTC).plusNanos(i % 1000 * 1000)
-            case l: Long =>
-              LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000), ZoneOffset.UTC).plusNanos(l % 1000 * 1000)
-          }
+      case _: TimestampMicros => {
+        case i: Int =>
+          LocalDateTime.ofInstant(Instant.ofEpochMilli(i / 1000), ZoneOffset.UTC).plusNanos(i % 1000 * 1000)
+        case l: Long =>
+          LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000), ZoneOffset.UTC).plusNanos(l % 1000 * 1000)
+      }
 
-        case TimestampNanosLogicalType =>
-          value match {
-            case l: Long =>
-              val nanos = l % 1000000
-              LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000000), ZoneOffset.UTC).plusNanos(nanos)
-            case other => sys.error(s"Unsupported type for timestamp nanos ${other.getClass.getName}")
-          }
+      case TimestampNanosLogicalType => {
+        case l: Long =>
+          val nanos = l % 1000000
+          LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000000), ZoneOffset.UTC).plusNanos(nanos)
+        case other => sys.error(s"Unsupported type for timestamp nanos ${other.getClass.getName}")
       }
     }
+
+    def encode(t: LocalDateTime): AnyRef = java.lang.Long.valueOf(encoder(t))
+
+    def decode(value: Any): LocalDateTime = decoder(value)
 
     override def withSchema(schemaFor: SchemaForV2[LocalDateTime]): Codec[LocalDateTime] =
-      new LocalDateTimeCodec(schemaFor.schema)
+      new LocalDateTimeCodec(schemaFor)
   }
 
   object OffsetDateTimeCodec extends Codec[OffsetDateTime] {
 
-    val schema: Schema = SchemaForV2.OffsetDateTimeSchema.schema
+    val schemaFor: SchemaForV2[OffsetDateTime] = SchemaForV2.OffsetDateTimeSchema
 
     def decode(value: Any): OffsetDateTime =
       OffsetDateTime.parse(value.toString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)

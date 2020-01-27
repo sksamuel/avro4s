@@ -3,8 +3,8 @@ package com.sksamuel.avro4s
 import java.nio.ByteBuffer
 
 import com.sksamuel.avro4s.ByteIterables._
+import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericData, GenericFixed}
-import org.apache.avro.{Schema, SchemaBuilder}
 
 trait ByteIterableDecoders {
 
@@ -55,19 +55,19 @@ object ByteIterables {
     override def withSchema(schemaFor: SchemaForV2[Array[Byte]]): Codec[Array[Byte]] =
       schemaFor.schema.getType match {
         case Schema.Type.BYTES => ByteArrayCodec
-        case Schema.Type.FIXED => new FixedByteArrayCodec(schemaFor.schema)
+        case Schema.Type.FIXED => new FixedByteArrayCodec(schemaFor)
         case _                 => sys.error(s"Byte array codec doesn't support schema type ${schemaFor.schema.getType}")
       }
   }
 
   val ByteArrayCodec: Codec[Array[Byte]] = new ByteArrayCodecBase {
 
-    val schema: Schema = SchemaBuilder.builder.bytesType
+    val schemaFor = SchemaForV2.arraySchema[Byte]
 
     def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
   }
 
-  private[avro4s] class FixedByteArrayCodec(val schema: Schema) extends ByteArrayCodecBase {
+  private[avro4s] class FixedByteArrayCodec(val schemaFor: SchemaForV2[Array[Byte]]) extends ByteArrayCodecBase {
     require(schema.getType == Schema.Type.FIXED)
 
     def encode(value: Array[Byte]): AnyRef = {
@@ -81,7 +81,7 @@ object ByteIterables {
                                                                byteArrayCodec: Codec[Array[Byte]] = ByteArrayCodec)
       extends Codec[C[Byte]] {
 
-    val schema = byteArrayCodec.schema
+    val schemaFor: SchemaForV2[C[Byte]] = byteArrayCodec.schemaFor.forType
 
     def encode(value: C[Byte]): AnyRef = byteArrayCodec.encode(value.toArray)
 

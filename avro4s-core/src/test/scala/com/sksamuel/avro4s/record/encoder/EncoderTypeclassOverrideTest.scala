@@ -1,8 +1,8 @@
 package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.{AvroSchemaV2, EncoderV2, ImmutableRecord, SchemaForV2}
+import org.apache.avro.SchemaBuilder
 import org.apache.avro.util.Utf8
-import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -13,7 +13,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     implicit val StringAsBooleanSchemaFor = SchemaForV2[String](SchemaBuilder.builder().booleanType())
 
     implicit val StringAsBooleanEncoder = new EncoderV2[String] {
-      val schema: Schema = StringAsBooleanSchemaFor.schema
+      val schemaFor: SchemaForV2[String] = StringAsBooleanSchemaFor
 
       def encode(value: String): AnyRef = java.lang.Boolean.valueOf(true)
     }
@@ -32,7 +32,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit val FooOverrideEncoder = new EncoderV2[Foo] {
 
-      val schema: Schema = FooOverrideSchemaFor.schema
+      val schemaFor: SchemaForV2[Foo] = FooOverrideSchemaFor
 
       def encode(value: Foo): AnyRef = value.b.toString + ":" + value.i
     }
@@ -53,7 +53,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit object FooValueTypeEncoder extends EncoderV2[FooValueType] {
 
-      def schema: Schema = FooValueTypeSchemaFor.schema
+      val schemaFor: SchemaForV2[FooValueType] = FooValueTypeSchemaFor
 
       def encode(value: FooValueType): AnyRef = java.lang.Integer.valueOf(value.s.toInt)
     }
@@ -72,7 +72,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit object FooValueTypeEncoder extends EncoderV2[FooValueType] {
 
-      def schema: Schema = FooValueTypeSchemaFor.schema
+      def schemaFor = FooValueTypeSchemaFor
 
       def encode(value: FooValueType): AnyRef = java.lang.Integer.valueOf(value.s.toInt)
     }

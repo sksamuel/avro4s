@@ -12,11 +12,9 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordEncoder[T](ctx: CaseClass[EncoderV2, T], schemaFor: SchemaForV2[T], fieldEncoding: Seq[FieldEncoder[T]])
+class RecordEncoder[T](ctx: CaseClass[EncoderV2, T], val schemaFor: SchemaForV2[T], fieldEncoding: Seq[FieldEncoder[T]])
     extends EncoderV2[T]
     with NamespaceAware[EncoderV2[T]] {
-
-  val schema = schemaFor.schema
 
   def encode(value: T): AnyRef = encodeRecord(ctx, schema, fieldEncoding, value)
 
@@ -28,11 +26,9 @@ class RecordEncoder[T](ctx: CaseClass[EncoderV2, T], schemaFor: SchemaForV2[T], 
   }
 }
 
-class RecordDecoder[T](ctx: CaseClass[DecoderV2, T], schemaFor: SchemaForV2[T], fieldDecoding: Seq[FieldDecoder])
+class RecordDecoder[T](ctx: CaseClass[DecoderV2, T], val schemaFor: SchemaForV2[T], fieldDecoding: Seq[FieldDecoder])
     extends DecoderV2[T]
     with NamespaceAware[DecoderV2[T]] {
-
-  val schema = schemaFor.schema
 
   def decode(value: Any): T = decodeRecord(ctx, schema, fieldDecoding, value)
 
@@ -45,13 +41,11 @@ class RecordDecoder[T](ctx: CaseClass[DecoderV2, T], schemaFor: SchemaForV2[T], 
 }
 
 class RecordCodec[T](ctx: CaseClass[Codec, T],
-                     schemaFor: SchemaForV2[T],
+                     val schemaFor: SchemaForV2[T],
                      fieldEncoding: Seq[RecordFields.FieldEncoder[T]],
                      fieldDecoding: Seq[RecordFields.FieldCodec[T]])
     extends Codec[T]
     with NamespaceAware[Codec[T]] {
-
-  val schema = schemaFor.schema
 
   def encode(value: T): AnyRef = encodeRecord(ctx, schema, fieldEncoding, value)
 

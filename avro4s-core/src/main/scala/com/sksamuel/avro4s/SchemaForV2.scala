@@ -129,6 +129,8 @@ object SchemaForV2 {
   implicit val TimestampSchema: SchemaForV2[Timestamp] =
     SchemaForV2[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 
+  implicit val noneSchema: SchemaForV2[None.type] = SchemaForV2[None.type](SchemaBuilder.builder.nullType)
+
   implicit def optionSchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Option[T]] = {
     schemaForItem.map[Option[T]](itemSchema =>
       SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))

@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.decoder
 
 import com.sksamuel.avro4s._
-import org.apache.avro.{Schema, SchemaBuilder}
+import org.apache.avro.SchemaBuilder
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -20,7 +20,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit val StringAsBooleanDecoder = new DecoderV2[String] {
 
-      val schema: Schema = StringAsBooleanSchemaFor.schema
+      val schemaFor: SchemaForV2[String] = StringAsBooleanSchemaFor
 
       override def decode(value: Any): String = value match {
         case true => "a"
@@ -44,7 +44,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit val FooOverrideEncoder = new DecoderV2[Foo] {
 
-      val schema: Schema = FooOverrideSchemaFor.schema
+      val schemaFor: SchemaForV2[Foo] = FooOverrideSchemaFor
 
       override def decode(value: Any): Foo = value match {
         case string: String =>
@@ -68,7 +68,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit val FooValueTypeOverrideDecoder = new DecoderV2[FooValueType] {
 
-      val schema = FooValueTypeOverrideSchemaFor.schema
+      val schemaFor: SchemaForV2[FooValueType] = FooValueTypeOverrideSchemaFor
 
       override def decode(value: Any): FooValueType = value match {
         case i: Int => FooValueType(i.toString)
@@ -91,7 +91,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit val FooValueTypeOverrideDecoder = new DecoderV2[FooValueType] {
 
-      val schema: Schema = FooValueTypeOverrideSchemaFor.schema
+      val schemaFor: SchemaForV2[FooValueType] = FooValueTypeOverrideSchemaFor
 
       override def decode(value: Any): FooValueType = value match {
         case i: Int => FooValueType(i.toString)

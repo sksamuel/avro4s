@@ -16,8 +16,7 @@ object ScalaEnums {
 
   private type Builder[Typeclass[_], T] = CodecData[Typeclass, T] => Typeclass[T]
 
-  private def create[Typeclass[_], T](ctx: SealedTrait[Typeclass, T],
-                                              builder: Builder[Typeclass, T]): Typeclass[T] = {
+  private def create[Typeclass[_], T](ctx: SealedTrait[Typeclass, T], builder: Builder[Typeclass, T]): Typeclass[T] = {
     val subtypes: Seq[Subtype[Typeclass, T]] = sortedSubtypes(ctx)
     val schema: Schema = buildSchema(ctx, subtypes)
 
@@ -34,14 +33,13 @@ object ScalaEnums {
           schema.getEnumSymbols.get(i) -> caseObject
       }.toMap
 
-    val data = new CodecData[Typeclass, T](ctx, symbolForSubtype, valueForSymbol, schema)
+    val data = new CodecData[Typeclass, T](ctx, symbolForSubtype, valueForSymbol, SchemaForV2[T](schema))
     builder(data)
   }
 
-  private abstract class BaseCodec[Typeclass[_], T](data: CodecData[Typeclass, T])
-      extends SchemaAware[Typeclass, T] {
+  private abstract class BaseCodec[Typeclass[_], T](data: CodecData[Typeclass, T]) extends SchemaAware[Typeclass, T] {
 
-    val schema = data.schema
+    val schemaFor = data.schemaFor
 
     import data._
 
@@ -90,9 +88,9 @@ object ScalaEnums {
   }
 
   private class CodecData[Typeclass[_], T](val ctx: SealedTrait[Typeclass, T],
-                                   val symbolForSubtype: Map[Subtype[Typeclass, T], AnyRef],
-                                   val valueForSymbol: Map[String, T],
-                                   val schema: Schema)
+                                           val symbolForSubtype: Map[Subtype[Typeclass, T], AnyRef],
+                                           val valueForSymbol: Map[String, T],
+                                           val schemaFor: SchemaForV2[T])
 
   private def sortedSubtypes[TC[_], T](ctx: SealedTrait[TC, T]): Seq[Subtype[TC, T]] = {
     def priority(st: Subtype[TC, T]) = new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
@@ -101,7 +99,8 @@ object ScalaEnums {
 
   def schema[Typeclass[_], T](ctx: SealedTrait[Typeclass, T]): Schema = buildSchema(ctx, sortedSubtypes(ctx))
 
-  private def buildSchema[Typeclass[_], T](ctx: SealedTrait[Typeclass, T], sortedSubtypes: Seq[Subtype[Typeclass, T]]): Schema = {
+  private def buildSchema[Typeclass[_], T](ctx: SealedTrait[Typeclass, T],
+                                           sortedSubtypes: Seq[Subtype[Typeclass, T]]): Schema = {
     val symbols = sortedSubtypes.map { sub =>
       val nameExtractor = NameExtractor(sub.typeName, sub.annotations)
       nameExtractor.name

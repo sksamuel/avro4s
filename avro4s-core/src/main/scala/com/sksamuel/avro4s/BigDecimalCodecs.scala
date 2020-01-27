@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericFixed
-import org.apache.avro.{Conversions, LogicalTypes, Schema, SchemaBuilder}
+import org.apache.avro.{Conversions, Schema}
 
 import scala.math.BigDecimal.RoundingMode
 import scala.math.BigDecimal.RoundingMode.RoundingMode
@@ -12,28 +12,23 @@ import scala.math.BigDecimal.RoundingMode.RoundingMode
 trait BigDecimalCodecs {
 
   implicit def bigDecimalCodec(implicit scalePrecision: ScalePrecision = ScalePrecision.default,
-                               roundingMode: RoundingMode = RoundingMode.UNNECESSARY): Codec[BigDecimal] = {
-    val decimal = LogicalTypes.decimal(scalePrecision.precision, scalePrecision.scale)
-    new BigDecimalsV2.BigDecimalBytesCodec(decimal.addToSchema(SchemaBuilder.builder.bytesType), roundingMode)
-  }
+                               roundingMode: RoundingMode = RoundingMode.UNNECESSARY): Codec[BigDecimal] =
+    new BigDecimalsV2.BigDecimalBytesCodec(SchemaForV2.bigDecimalSchema, roundingMode)
 }
 
 trait BigDecimalDecoders {
 
   implicit def bigDecimalDecoder(implicit scalePrecision: ScalePrecision = ScalePrecision.default,
-                                 roundingMode: RoundingMode = RoundingMode.UNNECESSARY): DecoderV2[BigDecimal] = {
-    val decimal = LogicalTypes.decimal(scalePrecision.precision, scalePrecision.scale)
-    new BigDecimalsV2.BigDecimalBytesCodec(decimal.addToSchema(SchemaBuilder.builder.bytesType), roundingMode)
-  }
+                                 roundingMode: RoundingMode = RoundingMode.UNNECESSARY): DecoderV2[BigDecimal] =
+    new BigDecimalsV2.BigDecimalBytesCodec(SchemaForV2.bigDecimalSchema, roundingMode)
+
 }
 
 trait BigDecimalEncoders {
 
   implicit def bigDecimalEncoder(implicit scalePrecision: ScalePrecision = ScalePrecision.default,
-                                 roundingMode: RoundingMode = RoundingMode.UNNECESSARY): EncoderV2[BigDecimal] = {
-    val decimal = LogicalTypes.decimal(scalePrecision.precision, scalePrecision.scale)
-    new BigDecimalsV2.BigDecimalBytesCodec(decimal.addToSchema(SchemaBuilder.builder.bytesType), roundingMode)
-  }
+                                 roundingMode: RoundingMode = RoundingMode.UNNECESSARY): EncoderV2[BigDecimal] =
+    new BigDecimalsV2.BigDecimalBytesCodec(SchemaForV2.bigDecimalSchema, roundingMode)
 }
 
 object BigDecimalsV2 {
@@ -47,19 +42,18 @@ object BigDecimalsV2 {
       (decimal, converter, rm)
     }
 
-    override def withSchema(schemaFor: SchemaForV2[BigDecimal]): Codec[BigDecimal] = {
-      val schema = schemaFor.schema
-      schema.getType match {
-        case Schema.Type.BYTES  => new BigDecimalBytesCodec(schema, roundingMode)
-        case Schema.Type.STRING => new BigDecimalStringCodec(schema, roundingMode)
-        case Schema.Type.FIXED  => new BigDecimalFixedCodec(schema, roundingMode)
+    override def withSchema(schemaFor: SchemaForV2[BigDecimal]): Codec[BigDecimal] =
+      schemaFor.schema.getType match {
+        case Schema.Type.BYTES  => new BigDecimalBytesCodec(schemaFor, roundingMode)
+        case Schema.Type.STRING => new BigDecimalStringCodec(schemaFor, roundingMode)
+        case Schema.Type.FIXED  => new BigDecimalFixedCodec(schemaFor, roundingMode)
         case t =>
           sys.error(s"Unable to create codec with schema type $t, only bytes, fixed, and string supported")
       }
-    }
   }
 
-  class BigDecimalBytesCodec(val schema: Schema, roundingMode: RoundingMode) extends BigDecimalCodecBase(roundingMode) {
+  class BigDecimalBytesCodec(val schemaFor: SchemaForV2[BigDecimal], roundingMode: RoundingMode)
+      extends BigDecimalCodecBase(roundingMode) {
 
     val (decimal, converter, rm) = encoderUtils
 
@@ -72,14 +66,14 @@ object BigDecimalsV2 {
     }
   }
 
-  class BigDecimalStringCodec(val schema: Schema, roundingMode: RoundingMode)
+  class BigDecimalStringCodec(val schemaFor: SchemaForV2[BigDecimal], roundingMode: RoundingMode)
       extends BigDecimalCodecBase(roundingMode) {
     def encode(value: BigDecimal): AnyRef = BaseTypes.StringCodec.encode(value.toString())
 
     def decode(value: Any): BigDecimal = BigDecimal(BaseTypes.StringCodec.decode(value))
   }
 
-  class BigDecimalFixedCodec(val schema: Schema, roundingMode: RoundingMode) extends BigDecimalCodecBase(roundingMode) {
+  class BigDecimalFixedCodec(val schemaFor: SchemaForV2[BigDecimal], roundingMode: RoundingMode) extends BigDecimalCodecBase(roundingMode) {
     val (decimal, converter, rm) = encoderUtils
 
     def encode(value: BigDecimal): AnyRef =

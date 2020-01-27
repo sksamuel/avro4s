@@ -16,7 +16,7 @@ trait ShapelessCoproductCodecs {
                                                                               codecT: Codec[T]): Codec[H :+: T] =
     new Codec[H :+: T] {
 
-      val schema: Schema = coproductSchema(codecH, codecT)
+      val schemaFor: SchemaForV2[H :+: T] = SchemaForV2.coproductSchema(codecH.schemaFor, codecT.schemaFor)
 
       def encode(value: H :+: T): AnyRef = encodeCoproduct[H, T](value)
 
@@ -41,7 +41,7 @@ trait ShapelessCoproductEncoders {
       encoderT: EncoderV2[T]): EncoderV2[H :+: T] =
     new EncoderV2[H :+: T] {
 
-      val schema: Schema = coproductSchema(encoderH, encoderT)
+      val schemaFor: SchemaForV2[H :+: T] = SchemaForV2.coproductSchema(encoderH.schemaFor, encoderT.schemaFor)
 
       def encode(value: H :+: T): AnyRef = encodeCoproduct[H, T](value)
 
@@ -64,7 +64,7 @@ trait ShapelessCoproductDecoders {
       decoderT: DecoderV2[T]): DecoderV2[H :+: T] =
     new DecoderV2[H :+: T] {
 
-      val schema: Schema = coproductSchema(decoderH, decoderT)
+      val schemaFor: SchemaForV2[H :+: T] = SchemaForV2.coproductSchema(decoderH.schemaFor, decoderT.schemaFor)
 
       private implicit val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(decoderH)
 
@@ -83,7 +83,7 @@ trait ShapelessCoproductDecoders {
 object ShapelessCoproducts {
 
   object CNilCodec extends Codec[CNil] {
-    val schema: Schema = Schema.createUnion(Collections.emptyList[Schema]())
+    val schemaFor: SchemaForV2[CNil] = SchemaForV2(Schema.createUnion(Collections.emptyList[Schema]()))
 
     def encode(value: CNil): AnyRef = sys.error(s"Unexpected value '$value' of type CNil (that doesn't exist)")
 
@@ -91,9 +91,6 @@ object ShapelessCoproducts {
 
     override def withSchema(schemaFor: SchemaForV2[CNil]): Codec[CNil] = this
   }
-
-  private[avro4s] def coproductSchema[A[_], B[_]](aware1: SchemaAware[A, _], aware2: SchemaAware[B, _]): Schema =
-    SchemaHelper.createSafeUnion(aware1.schema, aware2.schema)
 
   private[avro4s] def withSelectedSubSchema[T[_], V](aware: SchemaAware[T, V], schemaFor: SchemaForV2[_])(
       implicit m: Manifest[V]): T[V] = {

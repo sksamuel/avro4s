@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s.streams.output
 
-import com.sksamuel.avro4s.{Encoder, EncoderV2, SchemaFor, SchemaForV2}
-import org.apache.avro.Schema
+import com.sksamuel.avro4s.{EncoderV2, SchemaForV2}
 import org.apache.avro.Schema.Parser
 import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
 import org.apache.avro.util.Utf8
@@ -54,17 +53,16 @@ class BasicOutputStreamTest extends OutputStreamTest {
     val recordSchema = new Parser().parse(
       """{"type":"record","name":"Test","fields":[{"name":"field","type":"string"}]}"""
     )
+    implicit val recordSchemaFor: SchemaForV2[GenericRecord] = SchemaForV2(recordSchema)
 
     implicit val encoder: EncoderV2[GenericRecord] = new EncoderV2[GenericRecord] {
-      def schema: Schema = recordSchema
+      def schemaFor = recordSchemaFor
 
       def encode(value: GenericRecord): AnyRef = value
     }
 
-    implicit val schemaFor: SchemaForV2[GenericRecord] = SchemaForV2(recordSchema)
 
-    val record: GenericRecord =
-      new GenericRecordBuilder(recordSchema).set("field", "value").build()
+    val record: GenericRecord = new GenericRecordBuilder(recordSchema).set("field", "value").build()
 
     writeRead(record) { rec =>
       rec.get("field") shouldBe new Utf8("value")

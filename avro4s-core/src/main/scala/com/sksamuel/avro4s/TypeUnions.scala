@@ -8,7 +8,7 @@ import org.apache.avro.Schema
 import org.apache.avro.generic.GenericContainer
 
 class TypeUnionCodec[T](ctx: SealedTrait[Codec, T],
-                        val schema: Schema,
+                        val schemaFor: SchemaForV2[T],
                         codecByName: Map[String, EntryDecoder[T]],
                         codecBySubtype: Map[Subtype[Codec, T], EntryEncoder[T]])
     extends Codec[T]
@@ -27,7 +27,7 @@ class TypeUnionCodec[T](ctx: SealedTrait[Codec, T],
 }
 
 class TypeUnionEncoder[T](ctx: SealedTrait[EncoderV2, T],
-                          val schema: Schema,
+                          val schemaFor: SchemaForV2[T],
                           encoderBySubtype: Map[Subtype[EncoderV2, T], EntryEncoder[T]])
     extends EncoderV2[T]
     with NamespaceAware[EncoderV2[T]] {
@@ -43,7 +43,7 @@ class TypeUnionEncoder[T](ctx: SealedTrait[EncoderV2, T],
 }
 
 class TypeUnionDecoder[T](ctx: SealedTrait[DecoderV2, T],
-                          val schema: Schema,
+                          val schemaFor: SchemaForV2[T],
                           decoderByName: Map[String, EntryDecoder[T]])
     extends DecoderV2[T]
     with NamespaceAware[DecoderV2[T]] {
@@ -108,7 +108,7 @@ object TypeUnions {
 
     def entrySchema: Entry[T] => Schema
 
-    def constructor: (SealedTrait[Typeclass, T], Seq[Entry[T]], Schema) => Typeclass[T]
+    def constructor: (SealedTrait[Typeclass, T], Seq[Entry[T]], SchemaForV2[T]) => Typeclass[T]
   }
 
   private class CodecBuilder[T] extends Builder[Codec, T, UnionEntryCodec] {
@@ -117,10 +117,10 @@ object TypeUnions {
 
     val entrySchema = _.schema
 
-    val constructor = { (ctx, subtypeCodecs, schema) =>
+    val constructor = { (ctx, subtypeCodecs, schemaFor) =>
       val codecByName = subtypeCodecs.map(c => c.fullName -> c).toMap
       val codecBySubtype = subtypeCodecs.map(c => c.st -> c).toMap
-      new TypeUnionCodec(ctx, schema, codecByName, codecBySubtype)
+      new TypeUnionCodec(ctx, schemaFor, codecByName, codecBySubtype)
     }
   }
 
@@ -129,9 +129,9 @@ object TypeUnions {
 
     val entrySchema = _.schema
 
-    val constructor = { (ctx, subtypeEncoder, schema) =>
+    val constructor = { (ctx, subtypeEncoder, schemaFor) =>
       val encoderBySubtype = subtypeEncoder.map(c => c.st -> c).toMap
-      new TypeUnionEncoder(ctx, schema, encoderBySubtype)
+      new TypeUnionEncoder(ctx, schemaFor, encoderBySubtype)
     }
   }
 
@@ -140,9 +140,9 @@ object TypeUnions {
 
     val entrySchema = _.schema
 
-    val constructor = { (ctx, subtypeDecoder, schema) =>
+    val constructor = { (ctx, subtypeDecoder, schemaFor) =>
       val decoderByName = subtypeDecoder.map(decoder => decoder.fullName -> decoder).toMap
-      new TypeUnionDecoder(ctx, schema, decoderByName)
+      new TypeUnionDecoder(ctx, schemaFor, decoderByName)
     }
   }
 
@@ -161,7 +161,7 @@ object TypeUnions {
 
     val entrySchema = _.schema
 
-    def constructor: (SealedTrait[SchemaForV2, T], Seq[SchemaForV2[T]], Schema) => SchemaForV2[T] =
+    def constructor: (SealedTrait[SchemaForV2, T], Seq[SchemaForV2[T]], SchemaForV2[T]) => SchemaForV2[T] =
       (_, schemaFors, _) => SchemaForV2[T](SchemaHelper.createSafeUnion(schemaFors.map(_.schema): _*), fieldMapper)
   }
 
@@ -208,9 +208,9 @@ object TypeUnions {
   def buildSchema[Typeclass[_], T, E[_]](ctx: SealedTrait[Typeclass, T],
                                          update: SchemaUpdate,
                                          entries: Seq[E[T]],
-                                         builder: Builder[Typeclass, T, E]): Schema = {
+                                         builder: Builder[Typeclass, T, E]): SchemaForV2[T] = {
     update match {
-      case FullSchemaUpdate(s) => s.schema
+      case FullSchemaUpdate(s) => s.forType
       case _ =>
         val entryMap = ctx.subtypes.zip(entries).toMap
         val sortedSubtypes = {
@@ -218,7 +218,7 @@ object TypeUnions {
             new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
           ctx.subtypes.sortBy(st => (priority(st), st.typeName.full))
         }
-        SchemaHelper.createSafeUnion(sortedSubtypes.map(entryMap).map(builder.entrySchema): _*)
+        SchemaForV2(SchemaHelper.createSafeUnion(sortedSubtypes.map(entryMap).map(builder.entrySchema): _*))
     }
   }
 }

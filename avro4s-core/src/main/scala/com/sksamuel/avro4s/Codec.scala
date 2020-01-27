@@ -11,12 +11,13 @@ trait Codec[T] extends EncoderV2[T] with DecoderV2[T] with SchemaAware[Codec, T]
 
   def decode(value: Any): T
 
-  override def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = new Codec[T] {
-    val schema: Schema = schemaFor.schema
-
-    def encode(value: T): AnyRef = self.encode(value)
-
-    def decode(value: Any): T = self.decode(value)
+  override def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = {
+    val sf = schemaFor
+    new Codec[T] {
+      val schemaFor: SchemaForV2[T] = sf
+      def encode(value: T): AnyRef = self.encode(value)
+      def decode(value: Any): T = self.decode(value)
+    }
   }
 }
 
@@ -31,7 +32,7 @@ object Codec
 
   def apply[T](implicit codec: Codec[T]): Codec[T] = codec
 
-  private class DelegatingCodec[T, S](codec: Codec[T], val schema: Schema, map: T => S, comap: S => T)
+  private class DelegatingCodec[T, S](codec: Codec[T], val schemaFor: SchemaForV2[S], map: T => S, comap: S => T)
       extends Codec[S] {
 
     def encode(value: S): AnyRef = codec.encode(comap(value))
@@ -40,12 +41,12 @@ object Codec
 
     override def withSchema(schemaFor: SchemaForV2[S]): Codec[S] = {
       // pass through decoder transformation.
-      val decoderWithSchema = codec.withSchema(schemaFor.map(identity))
-      new DelegatingCodec[T, S](decoderWithSchema, schemaFor.schema, map, comap)
+      val decoderWithSchema = codec.withSchema(schemaFor.forType)
+      new DelegatingCodec[T, S](decoderWithSchema, schemaFor.forType, map, comap)
     }
   }
 
   implicit class CodecBifunctor[T](val codec: Codec[T]) extends AnyVal {
-    def inmap[S](map: T => S, comap: S => T): Codec[S] = new DelegatingCodec(codec, codec.schema, map, comap)
+    def inmap[S](map: T => S, comap: S => T): Codec[S] = new DelegatingCodec(codec, codec.schemaFor.forType, map, comap)
   }
 }
