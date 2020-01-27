@@ -5,7 +5,7 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 import java.util.UUID
 
-import com.sksamuel.avro4s.SchemaUpdate.NoUpdate
+import com.sksamuel.avro4s.SchemaUpdate.UseFieldMapper
 import magnolia.{CaseClass, Magnolia, Param, SealedTrait}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
@@ -234,7 +234,7 @@ object SchemaForV2 {
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
       implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaForV2[T] =
     DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx, NoUpdate, fieldMapper)
+      case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx, UseFieldMapper(fieldMapper))
       case SealedTraitShape.ScalaEnum => SchemaForV2[T](ScalaEnums.schema(ctx), fieldMapper)
     }
 

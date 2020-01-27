@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, NoUpdate}
+import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, UseFieldMapper}
 import com.sksamuel.avro4s.ValueTypes._
 import magnolia.{CaseClass, Param}
 import org.apache.avro.{Schema, SchemaBuilder}
@@ -15,7 +15,8 @@ class ValueTypeCodec[T](ctx: CaseClass[Codec, T], codec: ValueFieldCodec[T])
 
   def decode(value: Any): T = decodeValueType(ctx, codec, value)
 
-  def withNamespace(namespace: String): Codec[T] = ValueTypes.codec(ctx, NamespaceUpdate(namespace))
+  def withNamespace(namespace: String): Codec[T] =
+    ValueTypes.codec(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
   override def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = ValueTypes.codec(ctx, FullSchemaUpdate(schemaFor))
 }
@@ -28,7 +29,8 @@ class ValueTypeEncoder[T](ctx: CaseClass[EncoderV2, T], encoder: ValueFieldEncod
 
   def encode(value: T): AnyRef = encoder.encodeValue(value)
 
-  def withNamespace(namespace: String): EncoderV2[T] = ValueTypes.encoder(ctx, NamespaceUpdate(namespace))
+  def withNamespace(namespace: String): EncoderV2[T] =
+    ValueTypes.encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
   override def withSchema(schemaFor: SchemaForV2[T]): EncoderV2[T] =
     ValueTypes.encoder(ctx, FullSchemaUpdate(schemaFor))
@@ -42,7 +44,8 @@ class ValueTypeDecoder[T](ctx: CaseClass[DecoderV2, T], decoder: ValueFieldDecod
 
   def decode(value: Any): T = decodeValueType(ctx, decoder, value)
 
-  def withNamespace(namespace: String): DecoderV2[T] = ValueTypes.decoder(ctx, NamespaceUpdate(namespace))
+  def withNamespace(namespace: String): DecoderV2[T] =
+    ValueTypes.decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
   override def withSchema(schemaFor: SchemaForV2[T]): DecoderV2[T] =
     ValueTypes.decoder(ctx, FullSchemaUpdate(schemaFor))
@@ -103,9 +106,9 @@ object ValueTypes {
       schemaUpdate: SchemaUpdate,
       builder: Builder[Typeclass, T, ValueProcessor]): Typeclass[T] = {
     val schema = schemaUpdate match {
-      case FullSchemaUpdate(s) => s.forType[T]
-      case NamespaceUpdate(ns) => SchemaForV2(buildSchema(ctx, Some(ns), builder.paramSchema)).forType[T]
-      case NoUpdate            => SchemaForV2(buildSchema(ctx, None, builder.paramSchema)).forType[T]
+      case FullSchemaUpdate(s)    => s.forType[T]
+      case NamespaceUpdate(ns, _) => SchemaForV2(buildSchema(ctx, Some(ns), builder.paramSchema)).forType[T]
+      case UseFieldMapper(_)      => SchemaForV2(buildSchema(ctx, None, builder.paramSchema)).forType[T]
     }
     val processor = builder.processorConstructor(ctx.parameters.head, schema)
     builder.constructor(ctx, processor)
@@ -164,7 +167,8 @@ object ValueTypes {
     def decodeValue(value: Any): Any
   }
 
-  private[avro4s] class ValueFieldEncoder[T](p: Param[EncoderV2, T], schemaFor: SchemaForV2[T]) extends Base(p, schemaFor) {
+  private[avro4s] class ValueFieldEncoder[T](p: Param[EncoderV2, T], schemaFor: SchemaForV2[T])
+      extends Base(p, schemaFor) {
     def encodeValue(value: T): AnyRef = encode(typeclass, value)
   }
 

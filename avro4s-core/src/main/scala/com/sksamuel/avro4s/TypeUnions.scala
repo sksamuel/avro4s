@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, NoUpdate}
+import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, UseFieldMapper}
 import com.sksamuel.avro4s.TypeUnionEntry._
 import com.sksamuel.avro4s.TypeUnions._
 import magnolia.{SealedTrait, Subtype}
@@ -14,7 +14,8 @@ class TypeUnionCodec[T](ctx: SealedTrait[Codec, T],
     extends Codec[T]
     with NamespaceAware[Codec[T]] {
 
-  def withNamespace(namespace: String): Codec[T] = TypeUnions.codec(ctx, NamespaceUpdate(namespace))
+  def withNamespace(namespace: String): Codec[T] =
+    TypeUnions.codec(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
   override def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = {
     validateNewSchema(schemaFor)
@@ -32,7 +33,8 @@ class TypeUnionEncoder[T](ctx: SealedTrait[EncoderV2, T],
     extends EncoderV2[T]
     with NamespaceAware[EncoderV2[T]] {
 
-  def withNamespace(namespace: String): EncoderV2[T] = TypeUnions.encoder(ctx, NamespaceUpdate(namespace))
+  def withNamespace(namespace: String): EncoderV2[T] =
+    TypeUnions.encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
   override def withSchema(schemaFor: SchemaForV2[T]): EncoderV2[T] = {
     validateNewSchema(schemaFor)
@@ -48,7 +50,8 @@ class TypeUnionDecoder[T](ctx: SealedTrait[DecoderV2, T],
     extends DecoderV2[T]
     with NamespaceAware[DecoderV2[T]] {
 
-  def withNamespace(namespace: String): DecoderV2[T] = TypeUnions.decoder(ctx, NamespaceUpdate(namespace))
+  def withNamespace(namespace: String): DecoderV2[T] =
+    TypeUnions.decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
   override def withSchema(schemaFor: SchemaForV2[T]): DecoderV2[T] = {
     validateNewSchema(schemaFor)
@@ -100,8 +103,8 @@ object TypeUnions {
   def decoder[T](ctx: SealedTrait[DecoderV2, T], update: SchemaUpdate): DecoderV2[T] =
     create(ctx, update, new DecoderBuilder[T])
 
-  def schema[T](ctx: SealedTrait[SchemaForV2, T], update: SchemaUpdate, fieldMapper: FieldMapper): SchemaForV2[T] =
-    create(ctx, update, new SchemaForBuilder[T](fieldMapper))
+  def schema[T](ctx: SealedTrait[SchemaForV2, T], update: SchemaUpdate): SchemaForV2[T] =
+    create(ctx, update, new SchemaForBuilder[T](update.fieldMapper))
 
   private trait Builder[Typeclass[_], T, Entry[_]] {
     def entryConstructor: (Subtype[Typeclass, T], SchemaUpdate) => Entry[T]
@@ -150,12 +153,12 @@ object TypeUnions {
 
     def entryConstructor: (Subtype[SchemaForV2, T], SchemaUpdate) => SchemaForV2[T] = { (st, u) =>
       u match {
-        case NamespaceUpdate(ns) =>
+        case NamespaceUpdate(ns, fm) =>
           val oldSchemaFor = st.typeclass
-          SchemaForV2(SchemaHelper.overrideNamespace(oldSchemaFor.schema, ns), fieldMapper)
+          SchemaForV2(SchemaHelper.overrideNamespace(oldSchemaFor.schema, ns), fm)
 
         case FullSchemaUpdate(schemaFor) => schemaFor.forType[T]
-        case NoUpdate                    => st.typeclass.forType[T]
+        case UseFieldMapper(fm)          => st.typeclass.copy[T](fieldMapper = fm)
       }
     }
 
@@ -169,9 +172,9 @@ object TypeUnions {
                                             update: SchemaUpdate,
                                             builder: Builder[Typeclass, T, E]): Typeclass[T] = {
     val extendedUpdate = update match {
-      case NoUpdate =>
+      case UseFieldMapper(fm) =>
         val ns = new AnnotationExtractors(ctx.annotations).namespace
-        ns.fold[SchemaUpdate](NoUpdate)(NamespaceUpdate.apply)
+        ns.fold[SchemaUpdate](UseFieldMapper(fm))(NamespaceUpdate(_, fm))
       case _ => update
     }
     val subtypeEntries = buildSubtypeEntries(ctx, extendedUpdate, builder)

@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.RecordFields._
 import com.sksamuel.avro4s.Records._
-import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, NoUpdate}
+import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, UseFieldMapper}
 import magnolia.{CaseClass, Param}
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.IndexedRecord
@@ -18,11 +18,11 @@ class RecordEncoder[T](ctx: CaseClass[EncoderV2, T], val schemaFor: SchemaForV2[
 
   def encode(value: T): AnyRef = encodeRecord(ctx, schema, fieldEncoding, value)
 
-  def withNamespace(namespace: String): EncoderV2[T] = encoder(ctx, schemaFor.fieldMapper, NamespaceUpdate(namespace))
+  def withNamespace(namespace: String): EncoderV2[T] = encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
   override def withSchema(schemaFor: SchemaForV2[T]): EncoderV2[T] = {
     verifyNewSchema(schemaFor)
-    encoder(ctx, schemaFor.fieldMapper, FullSchemaUpdate(schemaFor))
+    encoder(ctx, FullSchemaUpdate(schemaFor))
   }
 }
 
@@ -32,11 +32,12 @@ class RecordDecoder[T](ctx: CaseClass[DecoderV2, T], val schemaFor: SchemaForV2[
 
   def decode(value: Any): T = decodeRecord(ctx, schema, fieldDecoding, value)
 
-  def withNamespace(namespace: String): DecoderV2[T] = decoder(ctx, schemaFor.fieldMapper, NamespaceUpdate(namespace))
+  def withNamespace(namespace: String): DecoderV2[T] =
+    decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
   override def withSchema(schemaFor: SchemaForV2[T]): DecoderV2[T] = {
     verifyNewSchema(schemaFor)
-    decoder(ctx, schemaFor.fieldMapper, FullSchemaUpdate(schemaFor))
+    decoder(ctx, FullSchemaUpdate(schemaFor))
   }
 }
 
@@ -51,11 +52,11 @@ class RecordCodec[T](ctx: CaseClass[Codec, T],
 
   def decode(value: Any): T = decodeRecord(ctx, schema, fieldDecoding, value)
 
-  def withNamespace(namespace: String): Codec[T] = codec(ctx, schemaFor.fieldMapper, NamespaceUpdate(namespace))
+  def withNamespace(namespace: String): Codec[T] = codec(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
   override def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = {
     verifyNewSchema(schemaFor)
-    codec(ctx, schemaFor.fieldMapper, FullSchemaUpdate(schemaFor))
+    codec(ctx, FullSchemaUpdate(schemaFor))
   }
 }
 
@@ -162,9 +163,8 @@ object Records {
 
   private def create[Typeclass[_], T, E[_]](ctx: CaseClass[Typeclass, T],
                                             update: SchemaUpdate,
-                                            fieldMapper: FieldMapper,
                                             builder: Builder[Typeclass, T, E]): Typeclass[T] = {
-    val schemaFor = buildSchema(ctx, fieldMapper, update, builder)
+    val schemaFor = buildSchema(ctx, update, builder)
     val fieldProcessors = buildFields(ctx, schemaFor, builder)
     builder.constructor(ctx, fieldProcessors, schemaFor)
   }
@@ -174,18 +174,14 @@ object Records {
     require(schemaType == Schema.Type.RECORD, s"Schema type for record codecs must be RECORD, received $schemaType")
   }
 
-  def encoder[T](ctx: CaseClass[EncoderV2, T],
-                 fieldMapper: FieldMapper,
-                 update: SchemaUpdate = NoUpdate): EncoderV2[T] =
-    create(ctx, update, fieldMapper, new EncoderBuilder[T])
+  def encoder[T](ctx: CaseClass[EncoderV2, T], update: SchemaUpdate): EncoderV2[T] =
+    create(ctx, update, new EncoderBuilder[T])
 
-  def decoder[T](ctx: CaseClass[DecoderV2, T],
-                 fieldMapper: FieldMapper,
-                 update: SchemaUpdate = NoUpdate): DecoderV2[T] =
-    create(ctx, update, fieldMapper, new DecoderBuilder[T])
+  def decoder[T](ctx: CaseClass[DecoderV2, T], update: SchemaUpdate): DecoderV2[T] =
+    create(ctx, update, new DecoderBuilder[T])
 
-  def codec[T](ctx: CaseClass[Codec, T], fieldMapper: FieldMapper, update: SchemaUpdate = NoUpdate): Codec[T] =
-    create(ctx, update, fieldMapper, new CodecBuilder[T])
+  def codec[T](ctx: CaseClass[Codec, T], update: SchemaUpdate): Codec[T] =
+    create(ctx, update, new CodecBuilder[T])
 
   private def buildEncoders[T](encoders: Seq[FieldEncoder[T]], schemaFor: SchemaForV2[T]): Seq[FieldEncoder[T]] =
     schemaFor.schema.getFields.asScala.map(f => encoders.find(e => e.field.contains(f)).get).toVector
@@ -209,14 +205,11 @@ object Records {
   }
 
   def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
-                                         fieldMapper: FieldMapper,
                                          update: SchemaUpdate,
-                                         builder: Builder[Typeclass, T, F]): SchemaForV2[T] = {
-    update match {
-      case FullSchemaUpdate(s)        => s.forType[T]
-      case NamespaceUpdate(namespace) => buildSchema(ctx, fieldMapper, Some(namespace), builder.paramSchema)
-      case _                          => buildSchema(ctx, fieldMapper, None, builder.paramSchema)
-    }
+                                         builder: Builder[Typeclass, T, F]): SchemaForV2[T] = update match {
+    case FullSchemaUpdate(s)                     => s.forType[T]
+    case NamespaceUpdate(namespace, fieldMapper) => buildSchema(ctx, fieldMapper, Some(namespace), builder.paramSchema)
+    case UseFieldMapper(fieldMapper)                   => buildSchema(ctx, fieldMapper, None, builder.paramSchema)
   }
 
   def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
