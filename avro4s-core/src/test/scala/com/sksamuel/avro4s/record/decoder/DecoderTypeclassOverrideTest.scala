@@ -40,7 +40,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
   test("allow overriding built in Decoder implicit for a complex type") {
 
-    implicit val FooOverrideSchemaFor = new SchemaForV2[Foo](SchemaBuilder.builder().stringType())
+    implicit val FooOverrideSchemaFor = SchemaForV2[Foo](SchemaBuilder.builder().stringType())
 
     implicit val FooOverrideEncoder = new DecoderV2[Foo] {
 

@@ -129,7 +129,7 @@ object SchemaForV2 {
   implicit val TimestampSchema: SchemaForV2[Timestamp] =
     SchemaForV2[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 
-  implicit def optionSchema[T](schemaForItem: SchemaForV2[T]): SchemaForV2[Option[T]] = {
+  implicit def optionSchema[T](implicit schemaForItem: SchemaForV2[T]): SchemaForV2[Option[T]] = {
     schemaForItem.map[Option[T]](itemSchema =>
       SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
   }
@@ -232,14 +232,7 @@ object SchemaForV2 {
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
       implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaForV2[T] =
     DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion =>
-        if (ctx.typeName.full == "scala.Option") {
-          // TODO precedence of optionSchema isn't working correctly.
-          val valueSchema = ctx.subtypes.find(_.typeName.short == "Some").get.typeclass.schema.getField("value").schema
-          optionSchema(SchemaForV2(valueSchema, fieldMapper)).forType
-        } else {
-          TypeUnions.schema(ctx, NoUpdate, fieldMapper)
-        }
+      case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx, NoUpdate, fieldMapper)
       case SealedTraitShape.ScalaEnum => SchemaForV2[T](ScalaEnums.schema(ctx), fieldMapper)
     }
 
