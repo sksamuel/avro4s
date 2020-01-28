@@ -6,7 +6,7 @@ import scala.reflect.runtime.universe._
 
 object TypeGuardedDecoding {
 
-  def guard[T: WeakTypeTag: Manifest](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  def guard[T: WeakTypeTag: Manifest](decoder: Decoder[T]): PartialFunction[Any, T] = {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
@@ -27,40 +27,40 @@ object TypeGuardedDecoding {
     }
   }
 
-  private def stringDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  private def stringDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: Utf8   => decoder.decode(v)
     case v: String => decoder.decode(v)
   }
 
-  private def booleanDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  private def booleanDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: Boolean => decoder.decode(v)
   }
 
-  private def intDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  private def intDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: Int => decoder.decode(v)
   }
 
-  private def longDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  private def longDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: Long => decoder.decode(v)
   }
 
-  private def doubleDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  private def doubleDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: Double => decoder.decode(v)
   }
 
-  private def floatDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  private def floatDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: Float => decoder.decode(v)
   }
 
-  private def arrayDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  private def arrayDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: GenericData.Array[_] => decoder.decode(v)
   }
 
-  private def mapDecoder[T](decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  private def mapDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: java.util.Map[_, _] => decoder.decode(v)
   }
 
-  private def recordDecoder[T](typeName: String, decoder: DecoderV2[T]): PartialFunction[Any, T] = {
+  private def recordDecoder[T](typeName: String, decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: GenericContainer if v.getSchema.getFullName == typeName => decoder.decode(v)
   }
 }

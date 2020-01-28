@@ -16,7 +16,7 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
     wobble.put("str", new Utf8("foo"))
     record.put("wibble", wobble)
 
-    val wrapper = DecoderV2[Wrapper].decode(record)
+    val wrapper = Decoder[Wrapper].decode(record)
     wrapper shouldBe Wrapper(Wobble("foo"))
   }
 
@@ -28,7 +28,7 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
     tobble.put("place", new Utf8("bar"))
     record.put("tibble", tobble)
 
-    val trapper = DecoderV2[Trapper].decode(record)
+    val trapper = Decoder[Trapper].decode(record)
     trapper shouldBe Trapper(Tobble("foo", "bar"))
   }
 
@@ -40,7 +40,7 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
     nabble.put("age", java.lang.Integer.valueOf(44))
     record.put("nibble", nabble)
 
-    val napper = DecoderV2[Napper].decode(record)
+    val napper = Decoder[Napper].decode(record)
     napper shouldBe Napper(Nabble("foo", 44))
   }
 
@@ -50,7 +50,7 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
     nabble.put("str", new Utf8("foo"))
     nabble.put("age", java.lang.Integer.valueOf(44))
 
-    DecoderV2[Nibble].decode(nabble) shouldBe Nabble("foo", 44)
+    Decoder[Nibble].decode(nabble) shouldBe Nabble("foo", 44)
   }
 
   test("use @AvroNamespace when choosing which type to decode") {
@@ -60,8 +60,8 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
     val union = SchemaBuilder.unionOf().`type`(appleschema).and().`type`(orangeschema).endUnion()
     val schema = SchemaBuilder.record("Buy").fields().name("fruit").`type`(union).noDefault().endRecord()
 
-    DecoderV2[Buy].decode(ImmutableRecord(schema, Vector(ImmutableRecord(appleschema, Vector(java.lang.Double.valueOf(0.3)))))) shouldBe Buy(Apple(0.3))
-    DecoderV2[Buy].decode(ImmutableRecord(schema, Vector(ImmutableRecord(orangeschema, Vector(new Utf8("bright orange")))))) shouldBe Buy(Orange("bright orange"))
+    Decoder[Buy].decode(ImmutableRecord(schema, Vector(ImmutableRecord(appleschema, Vector(java.lang.Double.valueOf(0.3)))))) shouldBe Buy(Apple(0.3))
+    Decoder[Buy].decode(ImmutableRecord(schema, Vector(ImmutableRecord(orangeschema, Vector(new Utf8("bright orange")))))) shouldBe Buy(Orange("bright orange"))
   }
 
   test("use @AvroNamespace and @AvroName with sealed traits of case objects") {
@@ -73,8 +73,8 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
     val record2 = new GenericData.Record(schema)
     record2.put("thing", "widget")
 
-    DecoderV2[ThingHolder].decode(record1) shouldBe ThingHolder(WhimWham)
-    DecoderV2[ThingHolder].decode(record2) shouldBe ThingHolder(Widget)
+    Decoder[ThingHolder].decode(record1) shouldBe ThingHolder(WhimWham)
+    Decoder[ThingHolder].decode(record2) shouldBe ThingHolder(Widget)
   }
 
   test("use @AvroNamespace and @AvroName with sealed traits of case objects in a round trip") {
@@ -83,7 +83,7 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
 
     val value = ThingHolder(WhimWham)
     val encodedRecord: GenericRecord = EncoderV2[ThingHolder].encode(value).asInstanceOf[GenericRecord]
-    val decoded = DecoderV2[ThingHolder].decode(encodedRecord)
+    val decoded = Decoder[ThingHolder].decode(encodedRecord)
     decoded shouldBe value
   }
 

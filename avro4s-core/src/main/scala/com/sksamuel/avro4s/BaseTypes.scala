@@ -102,41 +102,41 @@ trait BaseEncoders {
 }
 
 trait BaseDecoders {
-  implicit val BooleanDecoder: DecoderV2[Boolean] = BaseTypes.BooleanCodec
-  implicit val ByteBufferDecoder: DecoderV2[ByteBuffer] = BaseTypes.ByteBufferCodec
-  implicit val ByteDecoder: DecoderV2[Byte] = BaseTypes.ByteCodec
-  implicit val CharSequenceDecoder: DecoderV2[CharSequence] = BaseTypes.CharSequenceCodec
-  implicit val DoubleDecoder: DecoderV2[Double] = BaseTypes.DoubleCodec
-  implicit val FloatDecoder: DecoderV2[Float] = BaseTypes.FloatCodec
-  implicit val IntDecoder: DecoderV2[Int] = BaseTypes.IntCodec
-  implicit val LongDecoder: DecoderV2[Long] = BaseTypes.LongCodec
-  implicit val ShortDecoder: DecoderV2[Short] = BaseTypes.ShortCodec
-  implicit val StringDecoder: DecoderV2[String] = BaseTypes.StringCodec
-  implicit val Utf8Decoder: DecoderV2[Utf8] = BaseTypes.Utf8Codec
-  implicit val UUIDDecoder: DecoderV2[UUID] = BaseTypes.UUIDCodec
-  implicit def javaEnumDecoder[E <: Enum[E]: ClassTag]: DecoderV2[E] = new JavaEnumCodec[E]
-  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: DecoderV2[E] = new ScalaEnumCodec[E]
+  implicit val BooleanDecoder: Decoder[Boolean] = BaseTypes.BooleanCodec
+  implicit val ByteBufferDecoder: Decoder[ByteBuffer] = BaseTypes.ByteBufferCodec
+  implicit val ByteDecoder: Decoder[Byte] = BaseTypes.ByteCodec
+  implicit val CharSequenceDecoder: Decoder[CharSequence] = BaseTypes.CharSequenceCodec
+  implicit val DoubleDecoder: Decoder[Double] = BaseTypes.DoubleCodec
+  implicit val FloatDecoder: Decoder[Float] = BaseTypes.FloatCodec
+  implicit val IntDecoder: Decoder[Int] = BaseTypes.IntCodec
+  implicit val LongDecoder: Decoder[Long] = BaseTypes.LongCodec
+  implicit val ShortDecoder: Decoder[Short] = BaseTypes.ShortCodec
+  implicit val StringDecoder: Decoder[String] = BaseTypes.StringCodec
+  implicit val Utf8Decoder: Decoder[Utf8] = BaseTypes.Utf8Codec
+  implicit val UUIDDecoder: Decoder[UUID] = BaseTypes.UUIDCodec
+  implicit def javaEnumDecoder[E <: Enum[E]: ClassTag]: Decoder[E] = new JavaEnumCodec[E]
+  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: Decoder[E] = new ScalaEnumCodec[E]
 
-  implicit def tuple2Decoder[A: DecoderV2, B: DecoderV2] = new DecoderV2[(A, B)] {
+  implicit def tuple2Decoder[A: Decoder, B: Decoder] = new Decoder[(A, B)] {
     import DecoderSchemaImplicits._
     def schemaFor: SchemaForV2[(A, B)] = SchemaForV2.tuple2SchemaFor[A, B]
     def decode(value: Any): (A, B) = decodeTuple2[A, B](value)
   }
 
-  implicit def tuple3Decoder[A: DecoderV2, B: DecoderV2, C: DecoderV2] = new DecoderV2[(A, B, C)] {
+  implicit def tuple3Decoder[A: Decoder, B: Decoder, C: Decoder] = new Decoder[(A, B, C)] {
     import DecoderSchemaImplicits._
     def schemaFor: SchemaForV2[(A, B, C)] = SchemaForV2.tuple3SchemaFor[A, B, C]
     def decode(value: Any): (A, B, C) = decodeTuple3[A, B, C](value)
   }
 
-  implicit def tuple4Decoder[A: DecoderV2, B: DecoderV2, C: DecoderV2, D: DecoderV2] = new DecoderV2[(A, B, C, D)] {
+  implicit def tuple4Decoder[A: Decoder, B: Decoder, C: Decoder, D: Decoder] = new Decoder[(A, B, C, D)] {
     import DecoderSchemaImplicits._
     def schemaFor: SchemaForV2[(A, B, C, D)] = SchemaForV2.tuple4SchemaFor[A, B, C, D]
     def decode(value: Any): (A, B, C, D) = decodeTuple4[A, B, C, D](value)
   }
 
-  implicit def tuple5Decoder[A: DecoderV2, B: DecoderV2, C: DecoderV2, D: DecoderV2, E: DecoderV2] =
-    new DecoderV2[(A, B, C, D, E)] {
+  implicit def tuple5Decoder[A: Decoder, B: Decoder, C: Decoder, D: Decoder, E: Decoder] =
+    new Decoder[(A, B, C, D, E)] {
       import DecoderSchemaImplicits._
       def schemaFor: SchemaForV2[(A, B, C, D, E)] = SchemaForV2.tuple5SchemaFor[A, B, C, D, E]
       def decode(value: Any): (A, B, C, D, E) = decodeTuple5[A, B, C, D, E](value)
@@ -330,8 +330,8 @@ object BaseTypes {
   }
 
   def decodeTuple2[A, B](value: Any)(implicit
-                                     decoderA: DecoderV2[A],
-                                     decoderB: DecoderV2[B]) = {
+                                     decoderA: Decoder[A],
+                                     decoderB: Decoder[B]) = {
     val record = value.asInstanceOf[GenericRecord]
     (
       decoderA.decode(record.get("_1")),
@@ -340,9 +340,9 @@ object BaseTypes {
   }
 
   def decodeTuple3[A, B, C](value: Any)(implicit
-                                        decoderA: DecoderV2[A],
-                                        decoderB: DecoderV2[B],
-                                        decoderC: DecoderV2[C]) = {
+                                        decoderA: Decoder[A],
+                                        decoderB: Decoder[B],
+                                        decoderC: Decoder[C]) = {
     val record = value.asInstanceOf[GenericRecord]
     (
       decoderA.decode(record.get("_1")),
@@ -352,10 +352,10 @@ object BaseTypes {
   }
 
   def decodeTuple4[A, B, C, D](value: Any)(implicit
-                                           decoderA: DecoderV2[A],
-                                           decoderB: DecoderV2[B],
-                                           decoderC: DecoderV2[C],
-                                           decoderD: DecoderV2[D]) = {
+                                           decoderA: Decoder[A],
+                                           decoderB: Decoder[B],
+                                           decoderC: Decoder[C],
+                                           decoderD: Decoder[D]) = {
     val record = value.asInstanceOf[GenericRecord]
     (
       decoderA.decode(record.get("_1")),
@@ -366,11 +366,11 @@ object BaseTypes {
   }
 
   def decodeTuple5[A, B, C, D, E](value: Any)(implicit
-                                              decoderA: DecoderV2[A],
-                                              decoderB: DecoderV2[B],
-                                              decoderC: DecoderV2[C],
-                                              decoderD: DecoderV2[D],
-                                              decoderE: DecoderV2[E]) = {
+                                              decoderA: Decoder[A],
+                                              decoderB: Decoder[B],
+                                              decoderC: Decoder[C],
+                                              decoderD: Decoder[D],
+                                              decoderE: Decoder[E]) = {
     val record = value.asInstanceOf[GenericRecord]
     (
       decoderA.decode(record.get("_1")),
@@ -427,6 +427,6 @@ object BaseTypes {
   }
 
   private[avro4s] object DecoderSchemaImplicits {
-    implicit def schemaFromDecoder[T](implicit decoder: DecoderV2[T]): SchemaForV2[T] = SchemaForV2[T](decoder.schema)
+    implicit def schemaFromDecoder[T](implicit decoder: Decoder[T]): SchemaForV2[T] = SchemaForV2[T](decoder.schema)
   }
 }

@@ -28,15 +28,15 @@ object RecordFields {
       extends RecordFieldBase[Codec, T](param, field, (e: Codec[_]) => e.schema)
       with FieldCodec[T] {
 
-    def encodeFieldValue(value: T): AnyRef = fastEncodeFieldValue(typeclass, value)
+    def encodeFieldValue(value: T): AnyRef = encodeFieldValue(typeclass, value)
 
     def fastDecodeFieldValue(record: IndexedRecord): Any = fastDecodeFieldValue(typeclass, record)
 
     def safeDecodeFieldValue(record: IndexedRecord): Any = safeDecodeFieldValue(typeclass, record)
   }
 
-  class RecordFieldDecoder[T](param: Param[DecoderV2, T], field: Option[Field])
-      extends RecordFieldBase[DecoderV2, T](param, field, (e: DecoderV2[_]) => e.schema)
+  class RecordFieldDecoder[T](param: Param[Decoder, T], field: Option[Field])
+      extends RecordFieldBase[Decoder, T](param, field, (e: Decoder[_]) => e.schema)
       with FieldDecoder {
 
     def fastDecodeFieldValue(record: IndexedRecord): Any = fastDecodeFieldValue(typeclass, record)
@@ -48,7 +48,7 @@ object RecordFields {
       extends RecordFieldBase[EncoderV2, T](param, field, (e: EncoderV2[_]) => e.schema)
       with FieldEncoder[T] {
 
-    def encodeFieldValue(value: T): AnyRef = fastEncodeFieldValue(typeclass, value)
+    def encodeFieldValue(value: T): AnyRef = encodeFieldValue(typeclass, value)
   }
 
   /**
@@ -86,16 +86,16 @@ object RecordFields {
     private val fieldPosition = field.map(_.pos).getOrElse(-1)
 
     @inline
-    protected final def fastEncodeFieldValue(encoder: EncoderV2[param.PType], value: T): AnyRef =
+    protected final def encodeFieldValue(encoder: EncoderV2[param.PType], value: T): AnyRef =
       encoder.encode(param.dereference(value))
 
     @inline
-    protected final def fastDecodeFieldValue(decoder: DecoderV2[param.PType], record: IndexedRecord): param.PType =
+    protected final def fastDecodeFieldValue(decoder: Decoder[param.PType], record: IndexedRecord): param.PType =
       if (fieldPosition == -1) defaultFieldValue(decoder)
       else tryDecode(decoder, record.get(fieldPosition))
 
     @inline
-    protected final def safeDecodeFieldValue(decoder: DecoderV2[param.PType], record: IndexedRecord): param.PType =
+    protected final def safeDecodeFieldValue(decoder: Decoder[param.PType], record: IndexedRecord): param.PType =
       if (fieldPosition == -1) defaultFieldValue(decoder)
       else {
         val schemaField = record.getSchema.getField(field.get.name)
@@ -103,14 +103,14 @@ object RecordFields {
       }
 
     @inline
-    private def defaultFieldValue(decoder: DecoderV2[param.PType]) = param.default match {
+    private def defaultFieldValue(decoder: Decoder[param.PType]) = param.default match {
       case Some(default) => default
       // there is no default, so the field must be an option
       case None => decoder.decode(null)
     }
 
     @inline
-    private def tryDecode(decoder: DecoderV2[param.PType], value: Any) =
+    private def tryDecode(decoder: Decoder[param.PType], value: Any) =
       try {
         decoder.decode(value)
       } catch {

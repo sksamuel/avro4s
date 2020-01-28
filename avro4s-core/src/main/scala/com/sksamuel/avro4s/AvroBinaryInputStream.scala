@@ -18,7 +18,7 @@ import scala.util.Try
   */
 class AvroBinaryInputStream[T](in: InputStream,
                                writerSchema: Schema)
-                              (implicit decoder: DecoderV2[T]) extends AvroInputStream[T] {
+                              (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
   private val datumReader = new GenericDatumReader[GenericRecord](writerSchema, decoder.schema, new GenericData)
   private val avroDecoder = DecoderFactory.get().binaryDecoder(in, null)

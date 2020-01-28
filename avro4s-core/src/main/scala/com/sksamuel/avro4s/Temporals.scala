@@ -28,13 +28,13 @@ trait TemporalEncoders {
 }
 
 trait TemporalDecoders {
-  implicit val InstantDecoder: DecoderV2[Instant] = Temporals.InstantCodec
-  implicit val LocalTimeDecoder: DecoderV2[LocalTime] = Temporals.LocalTimeCodec
-  implicit val LocalDateDecoder: DecoderV2[LocalDate] = Temporals.LocalDateCodec
-  implicit val TimestampDecoder: DecoderV2[Timestamp] = Temporals.TimestampCodec
-  implicit val DateDecoder: DecoderV2[Date] = Temporals.DateCodec
-  implicit val LocalDateTimeDecoder: DecoderV2[LocalDateTime] = Temporals.LocalDateTimeCodec
-  implicit val OffsetDateTimeDecoder: DecoderV2[OffsetDateTime] = Temporals.OffsetDateTimeCodec
+  implicit val InstantDecoder: Decoder[Instant] = Temporals.InstantCodec
+  implicit val LocalTimeDecoder: Decoder[LocalTime] = Temporals.LocalTimeCodec
+  implicit val LocalDateDecoder: Decoder[LocalDate] = Temporals.LocalDateCodec
+  implicit val TimestampDecoder: Decoder[Timestamp] = Temporals.TimestampCodec
+  implicit val DateDecoder: Decoder[Date] = Temporals.DateCodec
+  implicit val LocalDateTimeDecoder: Decoder[LocalDateTime] = Temporals.LocalDateTimeCodec
+  implicit val OffsetDateTimeDecoder: Decoder[OffsetDateTime] = Temporals.OffsetDateTimeCodec
 }
 
 object Temporals {

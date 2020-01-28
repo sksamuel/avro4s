@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchemaV2, DecoderV2}
+import com.sksamuel.avro4s.{AvroSchemaV2, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite
@@ -12,7 +12,7 @@ class ValueTypeDecoderTest extends AnyFunSuite with Matchers {
   case class OptionTest(foo: Option[FooValueType])
 
   test("top level value types") {
-    val actual = DecoderV2[FooValueType].decode("hello")
+    val actual = Decoder[FooValueType].decode("hello")
     actual shouldBe FooValueType("hello")
   }
 
@@ -22,7 +22,7 @@ class ValueTypeDecoderTest extends AnyFunSuite with Matchers {
     val record1 = new GenericData.Record(schema)
     record1.put("foo", new Utf8("hello"))
 
-    DecoderV2[Test].decode(record1) shouldBe Test(FooValueType("hello"))
+    Decoder[Test].decode(record1) shouldBe Test(FooValueType("hello"))
   }
 
   test("support value types inside Options") {
@@ -31,7 +31,7 @@ class ValueTypeDecoderTest extends AnyFunSuite with Matchers {
     val record1 = new GenericData.Record(schema)
     record1.put("foo", new Utf8("hello"))
 
-    DecoderV2[OptionTest].decode(record1) shouldBe OptionTest(Some(FooValueType("hello")))
+    Decoder[OptionTest].decode(record1) shouldBe OptionTest(Some(FooValueType("hello")))
   }
 }
 

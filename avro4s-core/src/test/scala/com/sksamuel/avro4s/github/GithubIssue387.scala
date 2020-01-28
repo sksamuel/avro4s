@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.github
 
 import java.time.LocalTime
 
-import com.sksamuel.avro4s.{DecoderV2, EncoderV2}
+import com.sksamuel.avro4s.{Decoder, EncoderV2}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -26,14 +26,14 @@ class GithubIssue387 extends AnyWordSpec with Matchers {
     "encode and decode back to an equivalent LocalTime object when Local has microsecond precision" in {
       val localTime = LocalTime.now()
       val encoded = EncoderV2[LocalTime].encode(localTime)
-      val decoded = DecoderV2[LocalTime].decode(encoded)
+      val decoded = Decoder[LocalTime].decode(encoded)
       decoded shouldBe localTime
       decoded.toNanoOfDay shouldBe localTime.toNanoOfDay
     }
 
     "encode and decode back to a LocalTime object with an equivalent time to  microsecond precision" in {
       val encoded = EncoderV2[LocalTime].encode(LocalTime.MAX)
-      val decoded = DecoderV2[LocalTime].decode(encoded)
+      val decoded = Decoder[LocalTime].decode(encoded)
       decoded should not be LocalTime.MAX
       // compare to a LocalTime.MAX that has had the time precision truncated to milliseconds
       decoded shouldBe LocalTime.ofNanoOfDay((LocalTime.MAX.toNanoOfDay / NANOSECONDS_IN_A_MICROSECOND) * NANOSECONDS_IN_A_MICROSECOND)

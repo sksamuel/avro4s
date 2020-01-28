@@ -159,22 +159,22 @@ trait ScalaPredefAndCollectionEncoders {
 
 trait ScalaPredefAndCollectionDecoders {
 
-  implicit val NoneCodec: DecoderV2[None.type] = ScalaPredefAndCollections.NoneCodec
+  implicit val NoneCodec: Decoder[None.type] = ScalaPredefAndCollections.NoneCodec
 
-  implicit def optionDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Option[T]] = new DecoderV2[Option[T]] {
+  implicit def optionDecoder[T](implicit decoder: Decoder[T]): Decoder[Option[T]] = new Decoder[Option[T]] {
 
     val schemaFor = SchemaForV2.optionSchema(decoder.schemaFor)
 
     def decode(value: Any): Option[T] = decodeOption(decoder, value)
 
-    override def withSchema(schemaFor: SchemaForV2[Option[T]]): DecoderV2[Option[T]] =
+    override def withSchema(schemaFor: SchemaForV2[Option[T]]): Decoder[Option[T]] =
       optionDecoder(decoder.withSchema(extractOptionSchema(schemaFor)))
   }
 
   implicit def eitherDecoder[A: Manifest: WeakTypeTag, B: Manifest: WeakTypeTag](
-      implicit leftDecoder: DecoderV2[A],
-      rightDecoder: DecoderV2[B]): DecoderV2[Either[A, B]] =
-    new DecoderV2[Either[A, B]] {
+                                                                                  implicit leftDecoder: Decoder[A],
+                                                                                  rightDecoder: Decoder[B]): Decoder[Either[A, B]] =
+    new Decoder[Either[A, B]] {
       val schemaFor: SchemaForV2[Either[A, B]] = SchemaForV2.eitherSchema(leftDecoder.schemaFor, rightDecoder.schemaFor)
 
       private implicit val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding.guard(leftDecoder)
@@ -182,7 +182,7 @@ trait ScalaPredefAndCollectionDecoders {
 
       def decode(value: Any): Either[A, B] = decodeEither(value, manifest[A], manifest[B])
 
-      override def withSchema(schemaFor: SchemaForV2[Either[A, B]]): DecoderV2[Either[A, B]] =
+      override def withSchema(schemaFor: SchemaForV2[Either[A, B]]): Decoder[Either[A, B]] =
         eitherDecoder(
           manifest[A],
           weakTypeTag[A],
@@ -193,42 +193,42 @@ trait ScalaPredefAndCollectionDecoders {
         )
     }
 
-  implicit def arrayDecoder[T: ClassTag](implicit decoder: DecoderV2[T]): DecoderV2[Array[T]] =
-    new DecoderV2[Array[T]] {
+  implicit def arrayDecoder[T: ClassTag](implicit decoder: Decoder[T]): Decoder[Array[T]] =
+    new Decoder[Array[T]] {
       def schemaFor: SchemaForV2[Array[T]] = SchemaForV2.arraySchema(decoder.schemaFor)
 
       def decode(value: Any): Array[T] = decodeArray(decoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[Array[T]]): DecoderV2[Array[T]] =
+      override def withSchema(schemaFor: SchemaForV2[Array[T]]): Decoder[Array[T]] =
         arrayDecoder(implicitly[ClassTag[T]], decoder.withSchema(extractArrayElementSchema(schemaFor)))
     }
 
-  private def iterableDecoder[T, C[X] <: Iterable[X]](decoder: DecoderV2[T])(
-    implicit build: Iterable[T] => C[T]): DecoderV2[C[T]] =
-    new DecoderV2[C[T]] {
+  private def iterableDecoder[T, C[X] <: Iterable[X]](decoder: Decoder[T])(
+    implicit build: Iterable[T] => C[T]): Decoder[C[T]] =
+    new Decoder[C[T]] {
       val schemaFor: SchemaForV2[C[T]] = SchemaForV2.iterableSchema(decoder.schemaFor).forType
 
       def decode(value: Any): C[T] = decodeIterable(decoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[C[T]]): DecoderV2[C[T]] =
+      override def withSchema(schemaFor: SchemaForV2[C[T]]): Decoder[C[T]] =
         iterableDecoder(decoder.withSchema(extractIterableElementSchema(schemaFor)))
     }
 
 
-  implicit def listDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[List[T]] = iterableDecoder(decoder)(_.toList)
-  implicit def mutableSeqDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[scala.collection.mutable.Seq[T]] =
+  implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] = iterableDecoder(decoder)(_.toList)
+  implicit def mutableSeqDecoder[T](implicit decoder: Decoder[T]): Decoder[scala.collection.mutable.Seq[T]] =
     iterableDecoder(decoder)(_.toBuffer)
-  implicit def seqDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Seq[T]] = iterableDecoder(decoder)(_.toSeq)
-  implicit def setDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Set[T]] = iterableDecoder(decoder)(_.toSet)
-  implicit def vectorDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Vector[T]] = iterableDecoder(decoder)(_.toVector)
+  implicit def seqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] = iterableDecoder(decoder)(_.toSeq)
+  implicit def setDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] = iterableDecoder(decoder)(_.toSet)
+  implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] = iterableDecoder(decoder)(_.toVector)
 
-  implicit def mapDecoder[T](implicit decoder: DecoderV2[T]): DecoderV2[Map[String, T]] =
-    new DecoderV2[Map[String, T]] {
+  implicit def mapDecoder[T](implicit decoder: Decoder[T]): Decoder[Map[String, T]] =
+    new Decoder[Map[String, T]] {
       val schemaFor: SchemaForV2[Map[String, T]] = SchemaForV2.mapSchema(decoder.schemaFor)
 
       def decode(value: Any): Map[String, T] = decodeMap(decoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[Map[String, T]]): DecoderV2[Map[String, T]] =
+      override def withSchema(schemaFor: SchemaForV2[Map[String, T]]): Decoder[Map[String, T]] =
         mapDecoder(decoder.withSchema(extractMapValueSchema(schemaFor)))
     }
 }
@@ -250,7 +250,7 @@ object ScalaPredefAndCollections {
     if (value.isEmpty) null else encoder.encode(value.get)
 
   @inline
-  private[avro4s] def decodeOption[T](decoder: DecoderV2[T], value: Any): Option[T] =
+  private[avro4s] def decodeOption[T](decoder: Decoder[T], value: Any): Option[T] =
     if (value == null) None else Option(decoder.decode(value))
 
   @inline
@@ -316,7 +316,7 @@ object ScalaPredefAndCollections {
     value.map(encoder.encode).toList.asJava
 
   @inline
-  private[avro4s] def decodeIterable[T, C[X] <: Iterable[X]](decoder: DecoderV2[T], value: Any)(
+  private[avro4s] def decodeIterable[T, C[X] <: Iterable[X]](decoder: Decoder[T], value: Any)(
       implicit build: Iterable[T] => C[T]): C[T] = value match {
     case array: Array[_]               => build(array.map(decoder.decode))
     case list: java.util.Collection[_] => build(list.asScala.map(decoder.decode))
@@ -335,7 +335,7 @@ object ScalaPredefAndCollections {
     value.map(encoder.encode).toList.asJava
 
   @inline
-  private[avro4s] def decodeArray[T: ClassTag](decoder: DecoderV2[T], value: Any): Array[T] = value match {
+  private[avro4s] def decodeArray[T: ClassTag](decoder: Decoder[T], value: Any): Array[T] = value match {
     case array: Array[_]               => array.map(decoder.decode)
     case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toArray
     case list: Iterable[_]             => list.map(decoder.decode).toArray
@@ -356,7 +356,7 @@ object ScalaPredefAndCollections {
   }
 
   @inline
-  private[avro4s] def decodeMap[T](decoder: DecoderV2[T], value: Any): Map[String, T] = value match {
+  private[avro4s] def decodeMap[T](decoder: Decoder[T], value: Any): Map[String, T] = value match {
     case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> decoder.decode(v) }
   }
 }

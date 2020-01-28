@@ -16,7 +16,7 @@ class RecordEncoder[T](ctx: CaseClass[EncoderV2, T], val schemaFor: SchemaForV2[
     extends EncoderV2[T]
     with NamespaceAware[EncoderV2[T]] {
 
-  def encode(value: T): AnyRef = encodeRecord(ctx, schema, fieldEncoding, value)
+  def encode(value: T): AnyRef = encodeRecord(schema, fieldEncoding, value)
 
   def withNamespace(namespace: String): EncoderV2[T] = encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
@@ -26,16 +26,16 @@ class RecordEncoder[T](ctx: CaseClass[EncoderV2, T], val schemaFor: SchemaForV2[
   }
 }
 
-class RecordDecoder[T](ctx: CaseClass[DecoderV2, T], val schemaFor: SchemaForV2[T], fieldDecoding: Seq[FieldDecoder])
-    extends DecoderV2[T]
-    with NamespaceAware[DecoderV2[T]] {
+class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaForV2[T], fieldDecoding: Seq[FieldDecoder])
+    extends Decoder[T]
+    with NamespaceAware[Decoder[T]] {
 
   def decode(value: Any): T = decodeRecord(ctx, schema, fieldDecoding, value)
 
-  def withNamespace(namespace: String): DecoderV2[T] =
+  def withNamespace(namespace: String): Decoder[T] =
     decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): DecoderV2[T] = {
+  override def withSchema(schemaFor: SchemaForV2[T]): Decoder[T] = {
     verifyNewSchema(schemaFor)
     decoder(ctx, FullSchemaUpdate(schemaFor))
   }
@@ -48,7 +48,7 @@ class RecordCodec[T](ctx: CaseClass[Codec, T],
     extends Codec[T]
     with NamespaceAware[Codec[T]] {
 
-  def encode(value: T): AnyRef = encodeRecord(ctx, schema, fieldEncoding, value)
+  def encode(value: T): AnyRef = encodeRecord(schema, fieldEncoding, value)
 
   def decode(value: Any): T = decodeRecord(ctx, schema, fieldDecoding, value)
 
@@ -63,10 +63,7 @@ class RecordCodec[T](ctx: CaseClass[Codec, T],
 object Records {
 
   @inline
-  private[avro4s] def encodeRecord[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
-                                                    schema: Schema,
-                                                    fieldEncoding: Seq[FieldEncoder[T]],
-                                                    value: T): AnyRef = {
+  private[avro4s] def encodeRecord[T](schema: Schema, fieldEncoding: Seq[FieldEncoder[T]], value: T): AnyRef = {
     // hot code path. Sacrificing functional programming to the gods of performance.
     val length = fieldEncoding.length
     val values = new Array[AnyRef](length)
@@ -148,7 +145,7 @@ object Records {
     }
   }
 
-  private class DecoderBuilder[T] extends Builder[DecoderV2, T, RecordFieldDecoder] {
+  private class DecoderBuilder[T] extends Builder[Decoder, T, RecordFieldDecoder] {
     val fieldConstructor = new RecordFieldDecoder(_, _)
 
     val paramSchema = _.typeclass.schema
@@ -177,7 +174,7 @@ object Records {
   def encoder[T](ctx: CaseClass[EncoderV2, T], update: SchemaUpdate): EncoderV2[T] =
     create(ctx, update, new EncoderBuilder[T])
 
-  def decoder[T](ctx: CaseClass[DecoderV2, T], update: SchemaUpdate): DecoderV2[T] =
+  def decoder[T](ctx: CaseClass[Decoder, T], update: SchemaUpdate): Decoder[T] =
     create(ctx, update, new DecoderBuilder[T])
 
   def codec[T](ctx: CaseClass[Codec, T], update: SchemaUpdate): Codec[T] =
@@ -209,7 +206,7 @@ object Records {
                                          builder: Builder[Typeclass, T, F]): SchemaForV2[T] = update match {
     case FullSchemaUpdate(s)                     => s.forType[T]
     case NamespaceUpdate(namespace, fieldMapper) => buildSchema(ctx, fieldMapper, Some(namespace), builder.paramSchema)
-    case UseFieldMapper(fieldMapper)                   => buildSchema(ctx, fieldMapper, None, builder.paramSchema)
+    case UseFieldMapper(fieldMapper)             => buildSchema(ctx, fieldMapper, None, builder.paramSchema)
   }
 
   def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],

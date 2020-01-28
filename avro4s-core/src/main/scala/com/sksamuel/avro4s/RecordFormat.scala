@@ -13,7 +13,7 @@ trait RecordFormat[T] extends ToRecord[T] with FromRecord[T] with Serializable
   */
 object RecordFormat {
 
-  def apply[T: EncoderV2 : DecoderV2]: RecordFormat[T] = new RecordFormat[T] {
+  def apply[T: EncoderV2 : Decoder]: RecordFormat[T] = new RecordFormat[T] {
     private val fromRecord = FromRecord[T]
     private val toRecord = ToRecord[T]
 

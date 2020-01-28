@@ -35,7 +35,7 @@ class AvroNameEncoderTest extends AnyFunSuite with Matchers {
   test("support encoding and decoding with empty namespaces") {
     val spaceship = Spaceship(MiserableCosmos(true))
     val encoded = EncoderV2[Spaceship].encode(spaceship)
-    val decoded = DecoderV2[Spaceship].decode(encoded)
+    val decoded = Decoder[Spaceship].decode(encoded)
     spaceship shouldBe decoded
   }
 

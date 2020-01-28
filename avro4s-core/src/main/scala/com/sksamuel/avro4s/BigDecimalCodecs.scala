@@ -19,7 +19,7 @@ trait BigDecimalCodecs {
 trait BigDecimalDecoders {
 
   implicit def bigDecimalDecoder(implicit scalePrecision: ScalePrecision = ScalePrecision.default,
-                                 roundingMode: RoundingMode = RoundingMode.UNNECESSARY): DecoderV2[BigDecimal] =
+                                 roundingMode: RoundingMode = RoundingMode.UNNECESSARY): Decoder[BigDecimal] =
     new BigDecimalsV2.BigDecimalBytesCodec(SchemaForV2.bigDecimalSchema, roundingMode)
 
 }

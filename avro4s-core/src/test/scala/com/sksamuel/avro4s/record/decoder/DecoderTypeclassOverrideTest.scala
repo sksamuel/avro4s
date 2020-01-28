@@ -18,7 +18,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit val StringAsBooleanSchemaFor = SchemaForV2[String](SchemaBuilder.builder().booleanType())
 
-    implicit val StringAsBooleanDecoder = new DecoderV2[String] {
+    implicit val StringAsBooleanDecoder = new Decoder[String] {
 
       val schemaFor: SchemaForV2[String] = StringAsBooleanSchemaFor
 
@@ -32,17 +32,17 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     val schema = AvroSchemaV2[StringOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true), java.lang.Integer.valueOf(123)))
-    DecoderV2[StringOverrideTest].decode(record1) shouldBe StringOverrideTest("a", 123)
+    Decoder[StringOverrideTest].decode(record1) shouldBe StringOverrideTest("a", 123)
 
     val record2 = ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(false), java.lang.Integer.valueOf(123)))
-    DecoderV2[StringOverrideTest].decode(record2) shouldBe StringOverrideTest("b", 123)
+    Decoder[StringOverrideTest].decode(record2) shouldBe StringOverrideTest("b", 123)
   }
 
   test("allow overriding built in Decoder implicit for a complex type") {
 
     implicit val FooOverrideSchemaFor = SchemaForV2[Foo](SchemaBuilder.builder().stringType())
 
-    implicit val FooOverrideEncoder = new DecoderV2[Foo] {
+    implicit val FooOverrideEncoder = new Decoder[Foo] {
 
       val schemaFor: SchemaForV2[Foo] = FooOverrideSchemaFor
 
@@ -56,17 +56,17 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     val schema = AvroSchemaV2[FooOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector("a", "true:123"))
-    DecoderV2[FooOverrideTest].decode(record1) shouldBe FooOverrideTest("a", Foo(true, 123))
+    Decoder[FooOverrideTest].decode(record1) shouldBe FooOverrideTest("a", Foo(true, 123))
 
     val record2 = ImmutableRecord(schema, Vector("b", "false:555"))
-    DecoderV2[FooOverrideTest].decode(record2) shouldBe FooOverrideTest("b", Foo(false, 555))
+    Decoder[FooOverrideTest].decode(record2) shouldBe FooOverrideTest("b", Foo(false, 555))
   }
 
   test("allow overriding built in Decoder implicit for a value type") {
 
     implicit val FooValueTypeOverrideSchemaFor = SchemaForV2[FooValueType](SchemaBuilder.builder().intType())
 
-    implicit val FooValueTypeOverrideDecoder = new DecoderV2[FooValueType] {
+    implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {
 
       val schemaFor: SchemaForV2[FooValueType] = FooValueTypeOverrideSchemaFor
 
@@ -79,17 +79,17 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     val schema = AvroSchema[ValueTypeOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector("a", java.lang.Integer.valueOf(123)))
-    DecoderV2[ValueTypeOverrideTest].decode(record1) shouldBe ValueTypeOverrideTest("a", FooValueType("123"))
+    Decoder[ValueTypeOverrideTest].decode(record1) shouldBe ValueTypeOverrideTest("a", FooValueType("123"))
 
     val record2 = ImmutableRecord(schema, Vector("b", java.lang.Integer.valueOf(555)))
-    DecoderV2[ValueTypeOverrideTest].decode(record2) shouldBe ValueTypeOverrideTest("b", FooValueType("555"))
+    Decoder[ValueTypeOverrideTest].decode(record2) shouldBe ValueTypeOverrideTest("b", FooValueType("555"))
   }
 
   test("allow overriding built in Decoder implicit for a top level value type") {
 
     implicit val FooValueTypeOverrideSchemaFor = SchemaForV2[FooValueType](SchemaBuilder.builder().intType())
 
-    implicit val FooValueTypeOverrideDecoder = new DecoderV2[FooValueType] {
+    implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {
 
       val schemaFor: SchemaForV2[FooValueType] = FooValueTypeOverrideSchemaFor
 
@@ -99,7 +99,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
       }
     }
 
-    DecoderV2[FooValueType].decode(java.lang.Integer.valueOf(555)) shouldBe FooValueType("555")
-    DecoderV2[FooValueType].decode(java.lang.Integer.valueOf(1234)) shouldBe FooValueType("1234")
+    Decoder[FooValueType].decode(java.lang.Integer.valueOf(555)) shouldBe FooValueType("555")
+    Decoder[FooValueType].decode(java.lang.Integer.valueOf(1234)) shouldBe FooValueType("1234")
   }
 }

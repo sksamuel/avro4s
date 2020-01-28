@@ -44,16 +44,16 @@ class TypeUnionEncoder[T](ctx: SealedTrait[EncoderV2, T],
   def encode(value: T): AnyRef = encodeUnion(ctx, encoderBySubtype, value)
 }
 
-class TypeUnionDecoder[T](ctx: SealedTrait[DecoderV2, T],
+class TypeUnionDecoder[T](ctx: SealedTrait[Decoder, T],
                           val schemaFor: SchemaForV2[T],
                           decoderByName: Map[String, EntryDecoder[T]])
-    extends DecoderV2[T]
-    with NamespaceAware[DecoderV2[T]] {
+    extends Decoder[T]
+    with NamespaceAware[Decoder[T]] {
 
-  def withNamespace(namespace: String): DecoderV2[T] =
+  def withNamespace(namespace: String): Decoder[T] =
     TypeUnions.decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): DecoderV2[T] = {
+  override def withSchema(schemaFor: SchemaForV2[T]): Decoder[T] = {
     validateNewSchema(schemaFor)
     TypeUnions.decoder(ctx, FullSchemaUpdate(schemaFor))
   }
@@ -102,7 +102,7 @@ object TypeUnions {
   def encoder[T](ctx: SealedTrait[EncoderV2, T], update: SchemaUpdate): EncoderV2[T] =
     create(ctx, update, new EncoderBuilder[T])
 
-  def decoder[T](ctx: SealedTrait[DecoderV2, T], update: SchemaUpdate): DecoderV2[T] =
+  def decoder[T](ctx: SealedTrait[Decoder, T], update: SchemaUpdate): Decoder[T] =
     create(ctx, update, new DecoderBuilder[T])
 
   def schema[T](ctx: SealedTrait[SchemaForV2, T], update: SchemaUpdate): SchemaForV2[T] =
@@ -140,7 +140,7 @@ object TypeUnions {
     }
   }
 
-  private class DecoderBuilder[T] extends Builder[DecoderV2, T, UnionEntryDecoder] {
+  private class DecoderBuilder[T] extends Builder[Decoder, T, UnionEntryDecoder] {
     val entryConstructor = new UnionEntryDecoder[T](_, _)
 
     val entrySchema = _.schema

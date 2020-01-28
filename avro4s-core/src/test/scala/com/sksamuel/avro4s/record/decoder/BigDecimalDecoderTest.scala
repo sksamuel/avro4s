@@ -19,7 +19,7 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
     val bytes =
       new Conversions.DecimalConversion().toBytes(BigDecimal(123.45).bigDecimal, null, LogicalTypes.decimal(8, 2))
     record.put("decimal", bytes)
-    DecoderV2[WithBigDecimal].decode(record) shouldBe WithBigDecimal(BigDecimal(123.45))
+    Decoder[WithBigDecimal].decode(record) shouldBe WithBigDecimal(BigDecimal(123.45))
   }
 
   it should "support optional big decimals" in {
@@ -28,16 +28,16 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
       new Conversions.DecimalConversion().toBytes(BigDecimal(123.45).bigDecimal, null, LogicalTypes.decimal(8, 2))
     val record = new GenericData.Record(schema)
     record.put("big", bytes)
-    DecoderV2[OptionalBigDecimal].decode(record) shouldBe OptionalBigDecimal(Option(BigDecimal(123.45)))
+    Decoder[OptionalBigDecimal].decode(record) shouldBe OptionalBigDecimal(Option(BigDecimal(123.45)))
 
     val emptyRecord = new GenericData.Record(schema)
     emptyRecord.put("big", null)
-    DecoderV2[OptionalBigDecimal].decode(emptyRecord) shouldBe OptionalBigDecimal(None)
+    Decoder[OptionalBigDecimal].decode(emptyRecord) shouldBe OptionalBigDecimal(None)
   }
 
   it should "be able to decode strings as bigdecimals" in {
     val schemaFor = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
-    DecoderV2[BigDecimal].withSchema(schemaFor).decode("123.45") shouldBe BigDecimal(123.45)
+    Decoder[BigDecimal].withSchema(schemaFor).decode("123.45") shouldBe BigDecimal(123.45)
   }
 
   it should "be able to decode generic fixed as bigdecimals" in {
@@ -47,7 +47,7 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
 
     val fixed =
       GenericData.get().createFixed(null, Array[Byte](0, 4, 98, -43, 55, 43, -114, 0), schemaFor.schema)
-    DecoderV2[BigDecimal].withSchema(schemaFor).decode(fixed) shouldBe BigDecimal(12345678)
+    Decoder[BigDecimal].withSchema(schemaFor).decode(fixed) shouldBe BigDecimal(12345678)
   }
 
 //  it should "be able to decode longs as bigdecimals" in {

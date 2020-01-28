@@ -8,15 +8,15 @@ import org.apache.avro.generic.{GenericData, GenericFixed}
 
 trait ByteIterableDecoders {
 
-  implicit val ByteArrayDecoder: DecoderV2[Array[Byte]] = ByteIterables.ByteArrayCodec
+  implicit val ByteArrayDecoder: Decoder[Array[Byte]] = ByteIterables.ByteArrayCodec
 
   private def iterableByteDecoder[C[X] <: Iterable[X]](
-       build: Array[Byte] => C[Byte]): DecoderV2[C[Byte]] = new IterableByteCodec[C](build)
+       build: Array[Byte] => C[Byte]): Decoder[C[Byte]] = new IterableByteCodec[C](build)
 
 
-  implicit val ByteListDecoder: DecoderV2[List[Byte]] = iterableByteDecoder(_.toList)
-  implicit val ByteVectorDecoder: DecoderV2[Vector[Byte]] = iterableByteDecoder(_.toVector)
-  implicit val ByteSeqDecoder: DecoderV2[Seq[Byte]] = iterableByteDecoder(_.toSeq)
+  implicit val ByteListDecoder: Decoder[List[Byte]] = iterableByteDecoder(_.toList)
+  implicit val ByteVectorDecoder: Decoder[Vector[Byte]] = iterableByteDecoder(_.toVector)
+  implicit val ByteSeqDecoder: Decoder[Seq[Byte]] = iterableByteDecoder(_.toSeq)
 }
 
 trait ByteIterableEncoders {

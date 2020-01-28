@@ -100,7 +100,6 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
   }
 
   performance of "avro4s union type with type param alternative codec encoding" in {
-    implicit val mapper: FieldMapper = DefaultFieldMapper
     val codec = Codec[RecordWithUnionAndTypeField]
     val writer = new GenericDatumWriter[GenericRecord](codec.schema)
 

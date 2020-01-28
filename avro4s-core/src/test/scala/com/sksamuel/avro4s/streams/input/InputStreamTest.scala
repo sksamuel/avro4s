@@ -8,8 +8,8 @@ import org.scalatest.matchers.should.Matchers
 
 trait InputStreamTest extends AnyFunSuite with Matchers {
 
-  def readData[T: SchemaForV2: DecoderV2](out: ByteArrayOutputStream): T = readData(out.toByteArray)
-  def readData[T: SchemaForV2: DecoderV2](bytes: Array[Byte]): T = {
+  def readData[T: SchemaForV2: Decoder](out: ByteArrayOutputStream): T = readData(out.toByteArray)
+  def readData[T: SchemaForV2: Decoder](bytes: Array[Byte]): T = {
     AvroInputStream.data.from(bytes).build(implicitly[SchemaForV2[T]].schema).iterator.next()
   }
 
@@ -21,8 +21,8 @@ trait InputStreamTest extends AnyFunSuite with Matchers {
     out
   }
 
-  def readBinary[T: SchemaForV2: DecoderV2](out: ByteArrayOutputStream): T = readBinary(out.toByteArray)
-  def readBinary[T: SchemaForV2: DecoderV2](bytes: Array[Byte]): T = {
+  def readBinary[T: SchemaForV2: Decoder](out: ByteArrayOutputStream): T = readBinary(out.toByteArray)
+  def readBinary[T: SchemaForV2: Decoder](bytes: Array[Byte]): T = {
     AvroInputStream.binary.from(bytes).build(implicitly[SchemaForV2[T]].schema).iterator.next()
   }
 
@@ -34,7 +34,7 @@ trait InputStreamTest extends AnyFunSuite with Matchers {
     out
   }
 
-  def writeRead[T: EncoderV2: DecoderV2: SchemaForV2](t: T): Unit = {
+  def writeRead[T: EncoderV2: Decoder: SchemaForV2](t: T): Unit = {
     {
       val out = writeData(t)
       readData(out) shouldBe t
@@ -45,7 +45,7 @@ trait InputStreamTest extends AnyFunSuite with Matchers {
     }
   }
 
-  def writeRead[T: EncoderV2: DecoderV2: SchemaForV2](t: T, expected: T): Unit = {
+  def writeRead[T: EncoderV2: Decoder: SchemaForV2](t: T, expected: T): Unit = {
     {
       val out = writeData(t)
       readData(out) shouldBe expected

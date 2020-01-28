@@ -36,18 +36,18 @@ class ValueTypeEncoder[T](ctx: CaseClass[EncoderV2, T], encoder: ValueFieldEncod
     ValueTypes.encoder(ctx, FullSchemaUpdate(schemaFor))
 }
 
-class ValueTypeDecoder[T](ctx: CaseClass[DecoderV2, T], decoder: ValueFieldDecoder[T])
-    extends DecoderV2[T]
-    with NamespaceAware[DecoderV2[T]] {
+class ValueTypeDecoder[T](ctx: CaseClass[Decoder, T], decoder: ValueFieldDecoder[T])
+    extends Decoder[T]
+    with NamespaceAware[Decoder[T]] {
 
   val schemaFor = decoder.schemaFor
 
   def decode(value: Any): T = decodeValueType(ctx, decoder, value)
 
-  def withNamespace(namespace: String): DecoderV2[T] =
+  def withNamespace(namespace: String): Decoder[T] =
     ValueTypes.decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): DecoderV2[T] =
+  override def withSchema(schemaFor: SchemaForV2[T]): Decoder[T] =
     ValueTypes.decoder(ctx, FullSchemaUpdate(schemaFor))
 }
 
@@ -65,7 +65,7 @@ object ValueTypes {
   def encoder[T](ctx: CaseClass[EncoderV2, T], schemaUpdate: SchemaUpdate): EncoderV2[T] =
     create(ctx, schemaUpdate, new EncoderBuilder)
 
-  def decoder[T](ctx: CaseClass[DecoderV2, T], schemaUpdate: SchemaUpdate): DecoderV2[T] =
+  def decoder[T](ctx: CaseClass[Decoder, T], schemaUpdate: SchemaUpdate): Decoder[T] =
     create(ctx, schemaUpdate, new DecoderBuilder)
 
   private[avro4s] trait Builder[Typeclass[_], T, ValueProcessor[_]] {
@@ -85,7 +85,7 @@ object ValueTypes {
     val constructor: (CaseClass[Codec, T], ValueFieldCodec[T]) => Codec[T] = new ValueTypeCodec(_, _)
   }
 
-  private[avro4s] class DecoderBuilder[T] extends Builder[DecoderV2, T, ValueFieldDecoder] {
+  private[avro4s] class DecoderBuilder[T] extends Builder[Decoder, T, ValueFieldDecoder] {
     val processorConstructor = new ValueFieldDecoder[T](_, _)
 
     val paramSchema = _.typeclass.schemaFor.schema
@@ -160,7 +160,7 @@ object ValueTypes {
       encoder.encode(param.dereference(value))
 
     @inline
-    protected final def decode(decoder: DecoderV2[param.PType], value: Any): param.PType = decoder.decode(value)
+    protected final def decode(decoder: Decoder[param.PType], value: Any): param.PType = decoder.decode(value)
   }
 
   private[avro4s] trait ValueDecoder {
@@ -172,7 +172,7 @@ object ValueTypes {
     def encodeValue(value: T): AnyRef = encode(typeclass, value)
   }
 
-  private[avro4s] class ValueFieldDecoder[T](param: Param[DecoderV2, T], schemaFor: SchemaForV2[T])
+  private[avro4s] class ValueFieldDecoder[T](param: Param[Decoder, T], schemaFor: SchemaForV2[T])
       extends Base(param, schemaFor)
       with ValueDecoder {
     def decodeValue(value: Any): Any = decode(typeclass, value)

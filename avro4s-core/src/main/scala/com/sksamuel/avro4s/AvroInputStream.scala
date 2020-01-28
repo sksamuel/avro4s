@@ -33,19 +33,19 @@ object AvroInputStream {
     * Creates a new [[AvroInputStreamBuilder]] that will read from binary
     * encoded files.
     */
-  def binary[T: DecoderV2]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](BinaryFormat)
+  def binary[T: Decoder]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](BinaryFormat)
 
   /**
     * Creates a new [[AvroInputStreamBuilder]] that will read from binary
     * encoded files with the schema present.
     */
-  def data[T: DecoderV2]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](DataFormat)
+  def data[T: Decoder]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](DataFormat)
 
   /**
     * Creates a new [[AvroInputStreamBuilder]] that will read from json
     * encoded files.
     */
-  def json[T: DecoderV2]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](JsonFormat)
+  def json[T: Decoder]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](JsonFormat)
 }
 
 sealed trait AvroFormat
@@ -53,7 +53,7 @@ object BinaryFormat extends AvroFormat
 object JsonFormat extends AvroFormat
 object DataFormat extends AvroFormat
 
-class AvroInputStreamBuilder[T: DecoderV2](format: AvroFormat) {
+class AvroInputStreamBuilder[T: Decoder](format: AvroFormat) {
   def from(path: Path): AvroInputStreamBuilderWithSource[T] = from(Files.newInputStream(path))
   def from(path: String): AvroInputStreamBuilderWithSource[T] = from(Paths.get(path))
   def from(file: File): AvroInputStreamBuilderWithSource[T] = from(file.toPath)
@@ -62,7 +62,7 @@ class AvroInputStreamBuilder[T: DecoderV2](format: AvroFormat) {
   def from(buffer: ByteBuffer): AvroInputStreamBuilderWithSource[T] = from(new ByteArrayInputStream(buffer.array))
 }
 
-class AvroInputStreamBuilderWithSource[T: DecoderV2](format: AvroFormat, in: InputStream) {
+class AvroInputStreamBuilderWithSource[T: Decoder](format: AvroFormat, in: InputStream) {
 
   /**
     * Builds an [[AvroInputStream]] with the specified writer schema.

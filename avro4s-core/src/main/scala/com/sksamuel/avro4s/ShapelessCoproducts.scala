@@ -57,12 +57,12 @@ trait ShapelessCoproductEncoders {
 
 trait ShapelessCoproductDecoders {
 
-  implicit val CNilDecoder: DecoderV2[CNil] = ShapelessCoproducts.CNilCodec
+  implicit val CNilDecoder: Decoder[CNil] = ShapelessCoproducts.CNilCodec
 
   implicit final def coproductDecoder[H: WeakTypeTag: Manifest, T <: Coproduct](
-      implicit decoderH: DecoderV2[H],
-      decoderT: DecoderV2[T]): DecoderV2[H :+: T] =
-    new DecoderV2[H :+: T] {
+                                                                                 implicit decoderH: Decoder[H],
+                                                                                 decoderT: Decoder[T]): Decoder[H :+: T] =
+    new Decoder[H :+: T] {
 
       val schemaFor: SchemaForV2[H :+: T] = SchemaForV2.coproductSchema(decoderH.schemaFor, decoderT.schemaFor)
 
@@ -70,7 +70,7 @@ trait ShapelessCoproductDecoders {
 
       def decode(value: Any): H :+: T = decodeCoproduct[H, T](value)
 
-      override def withSchema(schemaFor: SchemaForV2[H :+: T]): DecoderV2[H :+: T] =
+      override def withSchema(schemaFor: SchemaForV2[H :+: T]): Decoder[H :+: T] =
         coproductDecoder[H, T](
           implicitly[WeakTypeTag[H]],
           implicitly[Manifest[H]],
@@ -111,6 +111,6 @@ object ShapelessCoproducts {
     }
 
   private[avro4s] def decodeCoproduct[H, T <: Coproduct](value: Any)(implicit elementDecoder: PartialFunction[Any, H],
-                                                                     decoderT: DecoderV2[T]): H :+: T =
+                                                                     decoderT: Decoder[T]): H :+: T =
     if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value)) else Inr(decoderT.decode(value))
 }

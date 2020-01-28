@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchemaV2, DecoderV2}
+import com.sksamuel.avro4s.{AvroSchemaV2, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite
@@ -10,14 +10,14 @@ import shapeless.{:+:, CNil, Coproduct}
 class CoproductDecoderTest extends AnyFunSuite with Matchers {
 
   test("coproducts with primitives") {
-    val decoder = DecoderV2[CPWrapper]
+    val decoder = Decoder[CPWrapper]
     val record = new GenericData.Record(decoder.schema)
     record.put("u", new Utf8("wibble"))
     decoder.decode(record) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
   }
 
   test("coproducts with case classes") {
-    val decoder = DecoderV2[CPWrapper]
+    val decoder = Decoder[CPWrapper]
     val gimble = new GenericData.Record(AvroSchemaV2[Gimble])
     gimble.put("x", new Utf8("foo"))
     val record = new GenericData.Record(decoder.schema)
@@ -26,7 +26,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("coproducts with options") {
-    val codec = DecoderV2[CPWithOption]
+    val codec = Decoder[CPWithOption]
     val gimble = new GenericData.Record(AvroSchemaV2[Gimble])
     gimble.put("x", new Utf8("foo"))
     val record = new GenericData.Record(codec.schema)

@@ -10,7 +10,7 @@ import scala.util.Try
 
 final case class AvroJsonInputStream[T](in: InputStream,
                                         writerSchema: Schema)
-                                       (implicit decoder: DecoderV2[T]) extends AvroInputStream[T] {
+                                       (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
   private val datumReader = new DefaultAwareDatumReader[GenericRecord](writerSchema, decoder.schema)
   private val jsonDecoder = DecoderFactory.get.jsonDecoder(writerSchema, in)
