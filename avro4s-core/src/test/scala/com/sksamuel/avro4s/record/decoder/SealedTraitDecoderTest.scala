@@ -82,7 +82,7 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
     val schema = SchemaBuilder.record("ThingHolder").fields().name("thing").`type`(thingySchema).noDefault().endRecord()
 
     val value = ThingHolder(WhimWham)
-    val encodedRecord: GenericRecord = EncoderV2[ThingHolder].encode(value).asInstanceOf[GenericRecord]
+    val encodedRecord: GenericRecord = Encoder[ThingHolder].encode(value).asInstanceOf[GenericRecord]
     val decoded = Decoder[ThingHolder].decode(encodedRecord)
     decoded shouldBe value
   }

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.streams.output
 
-import com.sksamuel.avro4s.{EncoderV2, SchemaForV2}
+import com.sksamuel.avro4s.{Encoder, SchemaForV2}
 import org.apache.avro.Schema.Parser
 import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
 import org.apache.avro.util.Utf8
@@ -55,7 +55,7 @@ class BasicOutputStreamTest extends OutputStreamTest {
     )
     implicit val recordSchemaFor: SchemaForV2[GenericRecord] = SchemaForV2(recordSchema)
 
-    implicit val encoder: EncoderV2[GenericRecord] = new EncoderV2[GenericRecord] {
+    implicit val encoder: Encoder[GenericRecord] = new Encoder[GenericRecord] {
       def schemaFor = recordSchemaFor
 
       def encode(value: GenericRecord): AnyRef = value

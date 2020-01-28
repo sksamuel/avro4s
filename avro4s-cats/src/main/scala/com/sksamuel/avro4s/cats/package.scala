@@ -9,46 +9,50 @@ package object cats {
 
   import scala.collection.JavaConverters._
 
-  implicit def nonEmptyListSchemaFor[T](schemaFor: SchemaFor[T]): SchemaFor[NonEmptyList[T]] = {
-    new SchemaFor[NonEmptyList[T]] {
-      override def schema(fieldMapper: FieldMapper): Schema = Schema.createArray(schemaFor.schema(fieldMapper))
-    }
-  }
+  implicit def nonEmptyListSchemaFor[T](schemaFor: SchemaForV2[T]): SchemaForV2[NonEmptyList[T]] =
+    SchemaForV2(Schema.createArray(schemaFor.schema))
 
-  implicit def nonEmptyVectorSchemaFor[T](schemaFor: SchemaFor[T]): SchemaFor[NonEmptyVector[T]] = {
-    new SchemaFor[NonEmptyVector[T]] {
-      override def schema(fieldMapper: FieldMapper): Schema = Schema.createArray(schemaFor.schema(fieldMapper))
-    }
-  }
+  implicit def nonEmptyVectorSchemaFor[T](schemaFor: SchemaForV2[T]): SchemaForV2[NonEmptyVector[T]] =
+    SchemaForV2(Schema.createArray(schemaFor.schema))
 
   implicit def nonEmptyListEncoder[T](encoder: Encoder[T]) = new Encoder[NonEmptyList[T]] {
-    override def encode(ts: NonEmptyList[T], schema: Schema, fieldMapper: FieldMapper): java.util.List[AnyRef] = {
+
+    val schemaFor: SchemaForV2[NonEmptyList[T]] = nonEmptyListSchemaFor(encoder.schemaFor)
+
+    override def encode(ts: NonEmptyList[T]): java.util.List[AnyRef] = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType, fieldMapper)).toList.asJava
+      ts.map(encoder.encode).toList.asJava
     }
   }
 
   implicit def nonEmptyVectorEncoder[T](encoder: Encoder[T]) = new Encoder[NonEmptyVector[T]] {
-    override def encode(ts: NonEmptyVector[T], schema: Schema, fieldMapper: FieldMapper): java.util.List[AnyRef] = {
+
+    val schemaFor: SchemaForV2[NonEmptyVector[T]] = nonEmptyVectorSchemaFor(encoder.schemaFor)
+
+    override def encode(ts: NonEmptyVector[T]): java.util.List[AnyRef] = {
       require(schema != null)
-      ts.map(encoder.encode(_, schema.getElementType, fieldMapper)).toVector.asJava
+      ts.map(encoder.encode).toVector.asJava
     }
   }
 
   implicit def nonEmptyListDecoder[T](decoder: Decoder[T]) = new Decoder[NonEmptyList[T]] {
-    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): NonEmptyList[T] = value match {
-      case array: Array[_] =>
-        val list = array.toList.map(decoder.decode(_, schema, fieldMapper))
-        NonEmptyList.fromListUnsafe(list)
-      case list: java.util.Collection[_] => NonEmptyList.fromListUnsafe(list.asScala.map(decoder.decode(_, schema, fieldMapper)).toList)
+
+    val schemaFor: SchemaForV2[NonEmptyList[T]] = nonEmptyListSchemaFor(decoder.schemaFor)
+
+    override def decode(value: Any): NonEmptyList[T] = value match {
+      case array: Array[_] => NonEmptyList.fromListUnsafe(array.toList.map(decoder.decode))
+      case list: java.util.Collection[_] => NonEmptyList.fromListUnsafe(list.asScala.map(decoder.decode).toList)
       case other => sys.error("Unsupported type " + other)
     }
   }
 
   implicit def nonEmptyVectorDecoder[T](decoder: Decoder[T]) = new Decoder[NonEmptyVector[T]] {
-    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): NonEmptyVector[T] = value match {
-      case array: Array[_] => NonEmptyVector.fromVectorUnsafe(array.toVector.map(decoder.decode(_, schema, fieldMapper)))
-      case list: java.util.Collection[_] => NonEmptyVector.fromVectorUnsafe(list.asScala.map(decoder.decode(_, schema, fieldMapper)).toVector)
+
+    val schemaFor: SchemaForV2[NonEmptyVector[T]] = nonEmptyVectorSchemaFor(decoder.schemaFor)
+
+    override def decode(value: Any): NonEmptyVector[T] = value match {
+      case array: Array[_] => NonEmptyVector.fromVectorUnsafe(array.toVector.map(decoder.decode))
+      case list: java.util.Collection[_] => NonEmptyVector.fromVectorUnsafe(list.asScala.map(decoder.decode).toVector)
       case other => sys.error("Unsupported type " + other)
     }
   }

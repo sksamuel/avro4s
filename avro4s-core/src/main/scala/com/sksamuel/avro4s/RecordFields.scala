@@ -44,8 +44,8 @@ object RecordFields {
     def safeDecodeFieldValue(record: IndexedRecord): Any = safeDecodeFieldValue(typeclass, record)
   }
 
-  class RecordFieldEncoder[T](param: Param[EncoderV2, T], field: Option[Field])
-      extends RecordFieldBase[EncoderV2, T](param, field, (e: EncoderV2[_]) => e.schema)
+  class RecordFieldEncoder[T](param: Param[Encoder, T], field: Option[Field])
+      extends RecordFieldBase[Encoder, T](param, field, (e: Encoder[_]) => e.schema)
       with FieldEncoder[T] {
 
     def encodeFieldValue(value: T): AnyRef = encodeFieldValue(typeclass, value)
@@ -86,7 +86,7 @@ object RecordFields {
     private val fieldPosition = field.map(_.pos).getOrElse(-1)
 
     @inline
-    protected final def encodeFieldValue(encoder: EncoderV2[param.PType], value: T): AnyRef =
+    protected final def encodeFieldValue(encoder: Encoder[param.PType], value: T): AnyRef =
       encoder.encode(param.dereference(value))
 
     @inline

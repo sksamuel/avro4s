@@ -6,7 +6,7 @@ import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 
 class DefaultAvroOutputStream[T](os: OutputStream,
                                  serializer: org.apache.avro.io.Encoder)
-                                (implicit encoder: EncoderV2[T]) extends AvroOutputStream[T] {
+                                (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
 
   private val datumWriter = new GenericDatumWriter[GenericRecord](encoder.schema)
 

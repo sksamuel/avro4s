@@ -47,7 +47,7 @@ class Github396 extends AnyFunSuite with Matchers {
     val record = ImmutableRecord(schema, Vector(new Utf8("one"), new Utf8("two")))
 
 
-    EncoderV2[Foo].encode(obj) shouldBe record
+    Encoder[Foo].encode(obj) shouldBe record
   }
 
 }

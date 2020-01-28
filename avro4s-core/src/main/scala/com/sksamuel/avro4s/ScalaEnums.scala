@@ -10,7 +10,7 @@ object ScalaEnums {
 
   def codec[T](ctx: SealedTrait[Codec, T]): Codec[T] = create(ctx, new EnumCodec[T](_))
 
-  def encoder[T](ctx: SealedTrait[EncoderV2, T]): EncoderV2[T] = create(ctx, new EnumEncoder[T](_))
+  def encoder[T](ctx: SealedTrait[Encoder, T]): Encoder[T] = create(ctx, new EnumEncoder[T](_))
 
   def decoder[T](ctx: SealedTrait[Decoder, T]): Decoder[T] = create(ctx, new EnumDecoder[T](_))
 
@@ -79,9 +79,9 @@ object ScalaEnums {
     }
   }
 
-  private class EnumEncoder[T](data: CodecData[EncoderV2, T]) extends BaseCodec[EncoderV2, T](data) with EncoderV2[T] {
+  private class EnumEncoder[T](data: CodecData[Encoder, T]) extends BaseCodec[Encoder, T](data) with Encoder[T] {
 
-    override def withSchema(schemaFor: SchemaForV2[T]): EncoderV2[T] = {
+    override def withSchema(schemaFor: SchemaForV2[T]): Encoder[T] = {
       validateSchema(schemaFor)
       super.withSchema(schemaFor)
     }

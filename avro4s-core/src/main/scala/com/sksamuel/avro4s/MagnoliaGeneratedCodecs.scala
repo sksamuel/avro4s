@@ -10,16 +10,16 @@ trait MagnoliaGeneratedEncoders {
 
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
-  type Typeclass[T] = EncoderV2[T]
+  type Typeclass[T] = Encoder[T]
 
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
-      implicit fieldMapper: FieldMapper = DefaultFieldMapper): EncoderV2[T] =
+      implicit fieldMapper: FieldMapper = DefaultFieldMapper): Encoder[T] =
     DatatypeShape.of(ctx) match {
       case SealedTraitShape.TypeUnion => TypeUnions.encoder(ctx, UseFieldMapper(fieldMapper))
       case SealedTraitShape.ScalaEnum => ScalaEnums.encoder(ctx)
     }
 
-  def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): EncoderV2[T] =
+  def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): Encoder[T] =
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record    => Records.encoder(ctx, UseFieldMapper(fieldMapper))
       case CaseClassShape.ValueType => ValueTypes.encoder(ctx, UseFieldMapper(fieldMapper))

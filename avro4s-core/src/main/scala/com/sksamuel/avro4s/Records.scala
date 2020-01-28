@@ -12,15 +12,15 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordEncoder[T](ctx: CaseClass[EncoderV2, T], val schemaFor: SchemaForV2[T], fieldEncoding: Seq[FieldEncoder[T]])
-    extends EncoderV2[T]
-    with NamespaceAware[EncoderV2[T]] {
+class RecordEncoder[T](ctx: CaseClass[Encoder, T], val schemaFor: SchemaForV2[T], fieldEncoding: Seq[FieldEncoder[T]])
+    extends Encoder[T]
+    with NamespaceAware[Encoder[T]] {
 
   def encode(value: T): AnyRef = encodeRecord(schema, fieldEncoding, value)
 
-  def withNamespace(namespace: String): EncoderV2[T] = encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
+  def withNamespace(namespace: String): Encoder[T] = encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): EncoderV2[T] = {
+  override def withSchema(schemaFor: SchemaForV2[T]): Encoder[T] = {
     verifyNewSchema(schemaFor)
     encoder(ctx, FullSchemaUpdate(schemaFor))
   }
@@ -132,7 +132,7 @@ object Records {
     }
   }
 
-  private class EncoderBuilder[T] extends Builder[EncoderV2, T, RecordFieldEncoder] {
+  private class EncoderBuilder[T] extends Builder[Encoder, T, RecordFieldEncoder] {
     val fieldConstructor = new RecordFieldEncoder(_, _)
 
     val paramSchema = _.typeclass.schema
@@ -171,7 +171,7 @@ object Records {
     require(schemaType == Schema.Type.RECORD, s"Schema type for record codecs must be RECORD, received $schemaType")
   }
 
-  def encoder[T](ctx: CaseClass[EncoderV2, T], update: SchemaUpdate): EncoderV2[T] =
+  def encoder[T](ctx: CaseClass[Encoder, T], update: SchemaUpdate): Encoder[T] =
     create(ctx, update, new EncoderBuilder[T])
 
   def decoder[T](ctx: CaseClass[Decoder, T], update: SchemaUpdate): Decoder[T] =

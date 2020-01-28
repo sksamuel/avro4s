@@ -59,7 +59,7 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
     "support array for a scala.collection.immutable.Seq of primitives" in {
       case class Test(seq: Seq[String])
       val schema = AvroSchemaV2[Test]
-      EncoderV2[Test].encode(Test(Vector("a", "34", "fgD"))) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("a"), new Utf8("34"), new Utf8("fgD")).asJava))
+      Encoder[Test].encode(Test(Vector("a", "34", "fgD"))) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("a"), new Utf8("34"), new Utf8("fgD")).asJava))
     }
 
     "support array for an Array of primitives" in {

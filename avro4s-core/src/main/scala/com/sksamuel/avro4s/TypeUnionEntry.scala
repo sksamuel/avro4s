@@ -15,8 +15,8 @@ private[avro4s] object TypeUnionEntry {
     def encodeSubtype(value: T): AnyRef = encodeSubtype(typeclass, value)
   }
 
-  class UnionEntryEncoder[T](st: Subtype[EncoderV2, T], update: SchemaUpdate)
-      extends EntryBase[EncoderV2, T](st, update)
+  class UnionEntryEncoder[T](st: Subtype[Encoder, T], update: SchemaUpdate)
+      extends EntryBase[Encoder, T](st, update)
       with EntryEncoder[T] {
 
     def encodeSubtype(value: T): AnyRef = encodeSubtype(typeclass, value)
@@ -45,7 +45,7 @@ private[avro4s] object TypeUnionEntry {
     val schema = typeclass.schema
 
     @inline
-    protected final def encodeSubtype(encoder: EncoderV2[st.SType], value: T): AnyRef = encoder.encode(st.cast(value))
+    protected final def encodeSubtype(encoder: Encoder[st.SType], value: T): AnyRef = encoder.encode(st.cast(value))
 
     @inline
     protected final def decodeSubtype(decoder: Decoder[st.SType], value: Any): st.SType = decoder.decode(value)

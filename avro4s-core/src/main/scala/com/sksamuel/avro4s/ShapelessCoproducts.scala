@@ -34,18 +34,18 @@ trait ShapelessCoproductCodecs {
 
 trait ShapelessCoproductEncoders {
 
-  implicit final val CNilEncoder: EncoderV2[CNil] = ShapelessCoproducts.CNilCodec
+  implicit final val CNilEncoder: Encoder[CNil] = ShapelessCoproducts.CNilCodec
 
   implicit final def coproductEncoder[H: WeakTypeTag: Manifest, T <: Coproduct](
-      implicit encoderH: EncoderV2[H],
-      encoderT: EncoderV2[T]): EncoderV2[H :+: T] =
-    new EncoderV2[H :+: T] {
+                                                                                 implicit encoderH: Encoder[H],
+                                                                                 encoderT: Encoder[T]): Encoder[H :+: T] =
+    new Encoder[H :+: T] {
 
       val schemaFor: SchemaForV2[H :+: T] = SchemaForV2.coproductSchema(encoderH.schemaFor, encoderT.schemaFor)
 
       def encode(value: H :+: T): AnyRef = encodeCoproduct[H, T](value)
 
-      override def withSchema(schemaFor: SchemaForV2[H :+: T]): EncoderV2[H :+: T] =
+      override def withSchema(schemaFor: SchemaForV2[H :+: T]): Encoder[H :+: T] =
         coproductEncoder[H, T](
           implicitly[WeakTypeTag[H]],
           implicitly[Manifest[H]],
@@ -103,8 +103,8 @@ object ShapelessCoproducts {
   def withFullSchema[T[_], V](aware: SchemaAware[T, V], schemaFor: SchemaForV2[_]): T[V] =
     aware.withSchema(schemaFor.map(identity))
 
-  private[avro4s] def encodeCoproduct[H, T <: Coproduct](value: H :+: T)(implicit encoderH: EncoderV2[H],
-                                                                         encoderT: EncoderV2[T]): AnyRef =
+  private[avro4s] def encodeCoproduct[H, T <: Coproduct](value: H :+: T)(implicit encoderH: Encoder[H],
+                                                                         encoderT: Encoder[T]): AnyRef =
     value match {
       case Inl(h) => encoderH.encode(h)
       case Inr(t) => encoderT.encode(t)

@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
 
-trait Codec[T] extends EncoderV2[T] with Decoder[T] with SchemaAware[Codec, T] {
+trait Codec[T] extends Encoder[T] with Decoder[T] with SchemaAware[Codec, T] {
   self =>
 
   def schema: Schema

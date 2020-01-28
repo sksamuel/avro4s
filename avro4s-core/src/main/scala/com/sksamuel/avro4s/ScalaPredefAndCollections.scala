@@ -95,64 +95,64 @@ trait ScalaPredefAndCollectionCodecs {
 
 trait ScalaPredefAndCollectionEncoders {
 
-  implicit val NoneEncoder: EncoderV2[None.type] = ScalaPredefAndCollections.NoneCodec
+  implicit val NoneEncoder: Encoder[None.type] = ScalaPredefAndCollections.NoneCodec
 
-  implicit def optionEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Option[T]] = new EncoderV2[Option[T]] {
+  implicit def optionEncoder[T](implicit encoder: Encoder[T]): Encoder[Option[T]] = new Encoder[Option[T]] {
 
     val schemaFor: SchemaForV2[Option[T]] = SchemaForV2.optionSchema(encoder.schemaFor)
 
     def encode(value: Option[T]): AnyRef = encodeOption(encoder, value)
 
-    override def withSchema(schemaFor: SchemaForV2[Option[T]]): EncoderV2[Option[T]] =
+    override def withSchema(schemaFor: SchemaForV2[Option[T]]): Encoder[Option[T]] =
       optionEncoder(encoder.withSchema(extractOptionSchema(schemaFor)))
   }
 
-  implicit def eitherEncoder[A, B](implicit leftEncoder: EncoderV2[A],
-                                   rightEncoder: EncoderV2[B]): EncoderV2[Either[A, B]] =
-    new EncoderV2[Either[A, B]] {
+  implicit def eitherEncoder[A, B](implicit leftEncoder: Encoder[A],
+                                   rightEncoder: Encoder[B]): Encoder[Either[A, B]] =
+    new Encoder[Either[A, B]] {
       val schemaFor: SchemaForV2[Either[A, B]] = SchemaForV2.eitherSchema(leftEncoder.schemaFor, rightEncoder.schemaFor)
 
       def encode(value: Either[A, B]): AnyRef = encodeEither(value)
 
-      override def withSchema(schemaFor: SchemaForV2[Either[A, B]]): EncoderV2[Either[A, B]] =
+      override def withSchema(schemaFor: SchemaForV2[Either[A, B]]): Encoder[Either[A, B]] =
         eitherEncoder(leftEncoder.withSchema(extractEitherLeftSchema(schemaFor)),
                       rightEncoder.withSchema(extractEitherRightSchema(schemaFor)))
     }
 
-  implicit def arrayEncoder[T: ClassTag](implicit encoder: EncoderV2[T]): EncoderV2[Array[T]] =
-    new EncoderV2[Array[T]] {
+  implicit def arrayEncoder[T: ClassTag](implicit encoder: Encoder[T]): Encoder[Array[T]] =
+    new Encoder[Array[T]] {
       val schemaFor: SchemaForV2[Array[T]] = SchemaForV2.arraySchema(encoder.schemaFor)
 
       def encode(value: Array[T]): AnyRef = encodeArray(encoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[Array[T]]): EncoderV2[Array[T]] =
+      override def withSchema(schemaFor: SchemaForV2[Array[T]]): Encoder[Array[T]] =
         arrayEncoder(implicitly[ClassTag[T]], encoder.withSchema(extractArrayElementSchema(schemaFor)))
     }
 
-  private def iterableEncoder[T, C[X] <: Iterable[X]](encoder: EncoderV2[T]): EncoderV2[C[T]] =
-    new EncoderV2[C[T]] {
+  private def iterableEncoder[T, C[X] <: Iterable[X]](encoder: Encoder[T]): Encoder[C[T]] =
+    new Encoder[C[T]] {
       val schemaFor: SchemaForV2[C[T]] = SchemaForV2.iterableSchema(encoder.schemaFor).forType
 
       def encode(value: C[T]): AnyRef = encodeIterable(encoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[C[T]]): EncoderV2[C[T]] =
+      override def withSchema(schemaFor: SchemaForV2[C[T]]): Encoder[C[T]] =
         iterableEncoder(encoder.withSchema(extractIterableElementSchema(schemaFor)))
     }
 
-  implicit def listEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[List[T]] = iterableEncoder(encoder)
-  implicit def mutableSeqEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[scala.collection.mutable.Seq[T]] =
+  implicit def listEncoder[T](implicit encoder: Encoder[T]): Encoder[List[T]] = iterableEncoder(encoder)
+  implicit def mutableSeqEncoder[T](implicit encoder: Encoder[T]): Encoder[scala.collection.mutable.Seq[T]] =
     iterableEncoder(encoder)
-  implicit def seqEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Seq[T]] = iterableEncoder(encoder)
-  implicit def setEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Set[T]] = iterableEncoder(encoder)
-  implicit def vectorEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Vector[T]] = iterableEncoder(encoder)
+  implicit def seqEncoder[T](implicit encoder: Encoder[T]): Encoder[Seq[T]] = iterableEncoder(encoder)
+  implicit def setEncoder[T](implicit encoder: Encoder[T]): Encoder[Set[T]] = iterableEncoder(encoder)
+  implicit def vectorEncoder[T](implicit encoder: Encoder[T]): Encoder[Vector[T]] = iterableEncoder(encoder)
 
-  implicit def mapEncoder[T](implicit encoder: EncoderV2[T]): EncoderV2[Map[String, T]] =
-    new EncoderV2[Map[String, T]] {
+  implicit def mapEncoder[T](implicit encoder: Encoder[T]): Encoder[Map[String, T]] =
+    new Encoder[Map[String, T]] {
       val schemaFor: SchemaForV2[Map[String, T]] = SchemaForV2.mapSchema(encoder.schemaFor)
 
       def encode(value: Map[String, T]): AnyRef = encodeMap(encoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[Map[String, T]]): EncoderV2[Map[String, T]] =
+      override def withSchema(schemaFor: SchemaForV2[Map[String, T]]): Encoder[Map[String, T]] =
         mapEncoder(encoder.withSchema(extractMapValueSchema(schemaFor)))
     }
 }
@@ -246,7 +246,7 @@ object ScalaPredefAndCollections {
   }
 
   @inline
-  private[avro4s] def encodeOption[T](encoder: EncoderV2[T], value: Option[T]): AnyRef =
+  private[avro4s] def encodeOption[T](encoder: Encoder[T], value: Option[T]): AnyRef =
     if (value.isEmpty) null else encoder.encode(value.get)
 
   @inline
@@ -254,8 +254,8 @@ object ScalaPredefAndCollections {
     if (value == null) None else Option(decoder.decode(value))
 
   @inline
-  private[avro4s] def encodeEither[A, B](value: Either[A, B])(implicit leftEncoder: EncoderV2[A],
-                                                              rightEncoder: EncoderV2[B]): AnyRef =
+  private[avro4s] def encodeEither[A, B](value: Either[A, B])(implicit leftEncoder: Encoder[A],
+                                                              rightEncoder: Encoder[B]): AnyRef =
     value match {
       case Left(l)  => leftEncoder.encode(l)
       case Right(r) => rightEncoder.encode(r)
@@ -312,7 +312,7 @@ object ScalaPredefAndCollections {
   }
 
   @inline
-  private[avro4s] def encodeIterable[T, C[X] <: Iterable[X]](encoder: EncoderV2[T], value: C[T]): AnyRef =
+  private[avro4s] def encodeIterable[T, C[X] <: Iterable[X]](encoder: Encoder[T], value: C[T]): AnyRef =
     value.map(encoder.encode).toList.asJava
 
   @inline
@@ -331,7 +331,7 @@ object ScalaPredefAndCollections {
   }
 
   @inline
-  private[avro4s] def encodeArray[T](encoder: EncoderV2[T], value: Array[T]): AnyRef =
+  private[avro4s] def encodeArray[T](encoder: Encoder[T], value: Array[T]): AnyRef =
     value.map(encoder.encode).toList.asJava
 
   @inline
@@ -349,7 +349,7 @@ object ScalaPredefAndCollections {
   }
 
   @inline
-  private[avro4s] def encodeMap[T](encoder: EncoderV2[T], value: Map[String, T]): AnyRef = {
+  private[avro4s] def encodeMap[T](encoder: Encoder[T], value: Map[String, T]): AnyRef = {
     val map = new util.HashMap[String, AnyRef]
     value.foreach { case (k, v) => map.put(k, encoder.encode(v)) }
     map

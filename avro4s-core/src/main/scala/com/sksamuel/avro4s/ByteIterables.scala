@@ -21,13 +21,13 @@ trait ByteIterableDecoders {
 
 trait ByteIterableEncoders {
 
-  implicit val ByteArrayEncoder: EncoderV2[Array[Byte]] = ByteIterables.ByteArrayCodec
+  implicit val ByteArrayEncoder: Encoder[Array[Byte]] = ByteIterables.ByteArrayCodec
 
-  private def iterableByteEncoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): EncoderV2[C[Byte]] = new IterableByteCodec[C](build)
+  private def iterableByteEncoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): Encoder[C[Byte]] = new IterableByteCodec[C](build)
 
-  implicit val ByteListEncoder: EncoderV2[List[Byte]] = iterableByteEncoder(_.toList)
-  implicit val ByteVectorEncoder: EncoderV2[Vector[Byte]] = iterableByteEncoder(_.toVector)
-  implicit val ByteSeqEncoder: EncoderV2[Seq[Byte]] = iterableByteEncoder(_.toSeq)
+  implicit val ByteListEncoder: Encoder[List[Byte]] = iterableByteEncoder(_.toList)
+  implicit val ByteVectorEncoder: Encoder[Vector[Byte]] = iterableByteEncoder(_.toVector)
+  implicit val ByteSeqEncoder: Encoder[Seq[Byte]] = iterableByteEncoder(_.toSeq)
 }
 
 trait ByteIterableCodecs {

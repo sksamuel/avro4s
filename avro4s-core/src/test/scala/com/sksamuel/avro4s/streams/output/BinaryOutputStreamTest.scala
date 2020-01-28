@@ -2,8 +2,7 @@ package com.sksamuel.avro4s.streams.output
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema}
-import com.sksamuel.avro4s.Encoder
+import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchemaV2, Encoder}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -18,7 +17,7 @@ class BinaryStreamsTest extends AnyWordSpec with Matchers {
   "Avro binary streams" should {
     "not write schemas" in {
 
-      implicit val schema = AvroSchema[Composer]
+      implicit val schema = AvroSchemaV2[Composer]
       implicit val encoder = Encoder[Composer]
 
       val baos = new ByteArrayOutputStream()
@@ -35,7 +34,7 @@ class BinaryStreamsTest extends AnyWordSpec with Matchers {
     }
     "read and write" in {
 
-      implicit val schema = AvroSchema[Composer]
+      implicit val schema = AvroSchemaV2[Composer]
       implicit val encoder = Encoder[Composer]
 
       val baos = new ByteArrayOutputStream()

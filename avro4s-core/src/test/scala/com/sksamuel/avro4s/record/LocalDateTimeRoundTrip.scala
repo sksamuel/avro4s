@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record
 
 import java.time.LocalDateTime
 
-import com.sksamuel.avro4s.{Decoder, EncoderV2}
+import com.sksamuel.avro4s.{Decoder, Encoder}
 import org.apache.avro.{LogicalTypes, SchemaBuilder}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -13,7 +13,7 @@ class LocalDateTimeRoundTrip extends AnyFunSuite with Matchers {
 
     val localDateTime = LocalDateTime.of(2018, 1, 1, 23, 30, 5, 328187943)
 
-    val encodedLocalDateTime = EncoderV2[LocalDateTime].encode(localDateTime)
+    val encodedLocalDateTime = Encoder[LocalDateTime].encode(localDateTime)
 
     Decoder[LocalDateTime].decode(encodedLocalDateTime) shouldEqual localDateTime
   }
@@ -24,7 +24,7 @@ class LocalDateTimeRoundTrip extends AnyFunSuite with Matchers {
 
     val schema = LogicalTypes.timestampMicros().addToSchema(SchemaBuilder.builder().longType())
 
-    val encodedLocalDateTime = EncoderV2[LocalDateTime].encode(localDateTime)
+    val encodedLocalDateTime = Encoder[LocalDateTime].encode(localDateTime)
 
     Decoder[LocalDateTime].decode(encodedLocalDateTime) shouldEqual localDateTime
   }

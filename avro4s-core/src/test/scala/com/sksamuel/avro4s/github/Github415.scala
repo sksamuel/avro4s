@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.github
 
 import java.io.{FileOutputStream, ObjectOutputStream}
 
-import com.sksamuel.avro4s.EncoderV2
+import com.sksamuel.avro4s.Encoder
 import com.sksamuel.avro4s.github.Github415.PlaybackSession
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.must.Matchers
@@ -13,7 +13,7 @@ class Github415 extends AnyFunSuite with Matchers {
     // TODO clarify is it necessary to be able to serialize encoders / decoders of unserializable classes?
     val fileOut = new FileOutputStream("remove_me")
     val out = new ObjectOutputStream(fileOut)
-    out.writeObject(EncoderV2[PlaybackSession])
+    out.writeObject(Encoder[PlaybackSession])
   }
 }
 

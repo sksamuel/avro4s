@@ -33,23 +33,23 @@ object AvroOutputStream {
     * you want the smallest messages possible at the cost of not having the schema available
     * in the messages for downstream clients.
     */
-  def binary[T: EncoderV2] = new AvroOutputStreamBuilder[T](BinaryFormat)
+  def binary[T: Encoder] = new AvroOutputStreamBuilder[T](BinaryFormat)
 
-  def json[T: EncoderV2] = new AvroOutputStreamBuilder[T](JsonFormat)
+  def json[T: Encoder] = new AvroOutputStreamBuilder[T](JsonFormat)
 
-  def data[T: EncoderV2] = new AvroOutputStreamBuilder[T](DataFormat)
+  def data[T: Encoder] = new AvroOutputStreamBuilder[T](DataFormat)
 }
 
-class AvroOutputStreamBuilder[T: EncoderV2](format: AvroFormat) {
+class AvroOutputStreamBuilder[T: Encoder](format: AvroFormat) {
   def to(path: Path): AvroOutputStreamBuilderWithSource[T] = to(Files.newOutputStream(path))
   def to(path: String): AvroOutputStreamBuilderWithSource[T] = to(Paths.get(path))
   def to(file: File): AvroOutputStreamBuilderWithSource[T] = to(file.toPath)
   def to(out: OutputStream): AvroOutputStreamBuilderWithSource[T] = new AvroOutputStreamBuilderWithSource(format, out)
 }
 
-class AvroOutputStreamBuilderWithSource[T: EncoderV2](format: AvroFormat,
-                                                      out: OutputStream,
-                                                      codec: CodecFactory = CodecFactory.nullCodec) {
+class AvroOutputStreamBuilderWithSource[T: Encoder](format: AvroFormat,
+                                                    out: OutputStream,
+                                                    codec: CodecFactory = CodecFactory.nullCodec) {
 
   def withCodec(codec: CodecFactory) = new AvroOutputStreamBuilderWithSource[T](format, out, codec)
 
@@ -60,7 +60,7 @@ class AvroOutputStreamBuilderWithSource[T: EncoderV2](format: AvroFormat,
     case DataFormat   => new AvroDataOutputStream[T](out, codec)
     case BinaryFormat => new DefaultAvroOutputStream[T](out, EncoderFactory.get().binaryEncoder(out, null))
     case JsonFormat =>
-      val encoder = EncoderFactory.get().jsonEncoder(implicitly[EncoderV2[T]].schema, out)
+      val encoder = EncoderFactory.get().jsonEncoder(implicitly[Encoder[T]].schema, out)
       new DefaultAvroOutputStream[T](out, encoder)
   }
 }

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchemaV2, EncoderV2, ImmutableRecord, SchemaForV2}
+import com.sksamuel.avro4s.{AvroSchemaV2, Encoder, ImmutableRecord, SchemaForV2}
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite
@@ -12,7 +12,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit val StringAsBooleanSchemaFor = SchemaForV2[String](SchemaBuilder.builder().booleanType())
 
-    implicit val StringAsBooleanEncoder = new EncoderV2[String] {
+    implicit val StringAsBooleanEncoder = new Encoder[String] {
       val schemaFor: SchemaForV2[String] = StringAsBooleanSchemaFor
 
       def encode(value: String): AnyRef = java.lang.Boolean.valueOf(true)
@@ -21,7 +21,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     case class OverrideTest(s: String, i: Int)
 
     val schema = AvroSchemaV2[OverrideTest]
-    val actual = EncoderV2[OverrideTest].encode(OverrideTest("hello", 123))
+    val actual = Encoder[OverrideTest].encode(OverrideTest("hello", 123))
     val expected = ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true), java.lang.Integer.valueOf(123)))
     actual shouldBe expected
   }
@@ -30,7 +30,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit val FooOverrideSchemaFor = SchemaForV2[Foo](SchemaBuilder.builder().stringType())
 
-    implicit val FooOverrideEncoder = new EncoderV2[Foo] {
+    implicit val FooOverrideEncoder = new Encoder[Foo] {
 
       val schemaFor: SchemaForV2[Foo] = FooOverrideSchemaFor
 
@@ -41,7 +41,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     case class OverrideTest(s: String, f: Foo)
 
     val schema = AvroSchemaV2[OverrideTest]
-    val actual = EncoderV2[OverrideTest].encode(OverrideTest("hello", Foo(true, 123)))
+    val actual = Encoder[OverrideTest].encode(OverrideTest("hello", Foo(true, 123)))
     val expected = ImmutableRecord(schema, Vector(new Utf8("hello"), "true:123"))
     actual shouldBe expected
   }
@@ -51,7 +51,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     implicit val FooValueTypeSchemaFor = SchemaForV2[FooValueType](SchemaBuilder.builder().intType())
 
 
-    implicit object FooValueTypeEncoder extends EncoderV2[FooValueType] {
+    implicit object FooValueTypeEncoder extends Encoder[FooValueType] {
 
       val schemaFor: SchemaForV2[FooValueType] = FooValueTypeSchemaFor
 
@@ -61,7 +61,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     case class OverrideTest(s: String, foo: FooValueType)
 
     val schema = AvroSchemaV2[OverrideTest]
-    val actual = EncoderV2[OverrideTest].encode(OverrideTest("hello", FooValueType("123")))
+    val actual = Encoder[OverrideTest].encode(OverrideTest("hello", FooValueType("123")))
     val expected = ImmutableRecord(schema, Vector(new Utf8("hello"), java.lang.Integer.valueOf(123)))
     actual shouldBe expected
   }
@@ -70,7 +70,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
     implicit val FooValueTypeSchemaFor = SchemaForV2[FooValueType](SchemaBuilder.builder().intType())
 
-    implicit object FooValueTypeEncoder extends EncoderV2[FooValueType] {
+    implicit object FooValueTypeEncoder extends Encoder[FooValueType] {
 
       def schemaFor = FooValueTypeSchemaFor
 
@@ -78,7 +78,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     }
 
     val schema = AvroSchemaV2[FooValueType]
-    EncoderV2[FooValueType].encode(FooValueType("123")) shouldBe java.lang.Integer.valueOf(123)
-    EncoderV2[FooValueType].encode(FooValueType("5455")) shouldBe java.lang.Integer.valueOf(5455)
+    Encoder[FooValueType].encode(FooValueType("123")) shouldBe java.lang.Integer.valueOf(123)
+    Encoder[FooValueType].encode(FooValueType("5455")) shouldBe java.lang.Integer.valueOf(5455)
   }
 }

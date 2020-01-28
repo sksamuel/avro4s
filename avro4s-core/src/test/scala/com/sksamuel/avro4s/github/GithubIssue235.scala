@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.github
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{Decoder, EncoderV2, RecordFormat, SchemaForV2}
+import com.sksamuel.avro4s.{Decoder, Encoder, RecordFormat, SchemaForV2}
 import org.apache.avro.generic.{GenericDatumReader, GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.{DecoderFactory, EncoderFactory}
 import org.scalatest.funsuite.AnyFunSuite
@@ -20,7 +20,7 @@ object Bug {
 
   def apply[T <: Product](a: T)(
     implicit schemaFor: SchemaForV2[T],
-    encoder: EncoderV2[T],
+    encoder: Encoder[T],
     decoder: Decoder[T]
   ): Unit = {
 
