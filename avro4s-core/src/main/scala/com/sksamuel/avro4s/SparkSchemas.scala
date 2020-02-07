@@ -20,7 +20,7 @@ object SparkSchemas {
       * https://github.com/apache/spark/blob/v2.4.0/sql/catalyst/src/main/scala/org/apache/spark/sql/types/Decimal.scala#L417-L421
       * https://github.com/apache/spark/blob/v2.4.0/sql/core/src/main/java/org/apache/spark/sql/execution/datasources/parquet/VectorizedColumnReader.java#L501-L538
       */
-    override def schema(fieldMapper: FieldMapper): Schema = {
+    override def schema(fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = {
       if (0 <= sp.precision && sp.precision <= 9) {
         LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.intType)
       } else if (10 <= sp.precision && sp.precision <= 18) {

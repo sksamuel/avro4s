@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, ImmutableRecord, FieldMapper, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, Encoder, FieldMapper, ImmutableRecord, SchemaFor}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.funsuite.AnyFunSuite
@@ -11,7 +11,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
   test("allow overriding built in Encoder implicit for a basic type") {
 
     implicit val StringAsBooleanSchemaFor = new SchemaFor[String] {
-      override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder().booleanType()
+      override def schema(fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = SchemaBuilder.builder().booleanType()
     }
 
     implicit val StringAsBooleanEncoder = new Encoder[String] {
@@ -29,7 +29,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
   test("allow overriding built in Encoder implicit for a complex type") {
 
     implicit val FooOverrideSchemaFor = new SchemaFor[Foo] {
-      override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder().stringType()
+      override def schema(fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = SchemaBuilder.builder().stringType()
     }
 
     implicit val FooOverrideEncoder = new Encoder[Foo] {
@@ -48,7 +48,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
   test("allow overriding built in Encoder implicit for a value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder().intType()
+      override def schema(fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = SchemaBuilder.builder().intType()
     }
 
     implicit object FooValueTypeEncoder extends Encoder[FooValueType] {
@@ -66,7 +66,7 @@ class EncoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
   test("allow overriding built in Encoder implicit for a top level value type") {
 
     implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(namingStrategy: FieldMapper) = SchemaBuilder.builder().intType()
+      override def schema(namingStrategy: FieldMapper, context: SchemaFor.Context) = SchemaBuilder.builder().intType()
     }
 
     implicit object FooValueTypeEncoder extends Encoder[FooValueType] {

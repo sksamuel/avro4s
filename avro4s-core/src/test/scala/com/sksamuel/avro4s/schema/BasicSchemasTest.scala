@@ -50,24 +50,21 @@ class BasicSchemasTest extends AnyWordSpec with Matchers {
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    // todo fix
-    "support simple recursive types" ignore {
-      val schema = AvroSchema[RecursiveFoo]
+    "support simple recursive types" in {
+      val schema = AvroSchema[Recursive]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
-    // todo fix
-    "support recursive ADTs" ignore {
+    "support recursive ADTs" in {
       val schema = AvroSchema[Tree[String]]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive_adt.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
-    // todo fix
-    //    "support mutually recursive types" ignore {
-    //      val schema = AvroSchema[MutRec1]
-    //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.json"))
-    //      schema.toString(true) shouldBe expected.toString(true)
-    //    }
+    "support mutually recursive types" in {
+      val schema = AvroSchema[MutRec1]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
     "support types nested in uppercase packages" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_in_uppercase_pkg.json"))
       val schema = AvroSchema[ClassInUppercasePackage]
@@ -101,7 +98,7 @@ case class Level3(level4: Level4)
 case class Level2(level3: Level3)
 case class Level1(level2: Level2)
 
-case class RecursiveFoo(list: Seq[RecursiveFoo])
+case class Recursive(payload: Int, next: Option[Recursive])
 
 case class MutRec1(payload: Int, children: List[MutRec2])
 case class MutRec2(payload: String, children: List[MutRec1])

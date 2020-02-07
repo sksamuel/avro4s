@@ -1,18 +1,33 @@
-{
-  "type": "record",
-  "name": "Recursive",
-  "namespace": "com.sksamuel.avro4s.schema",
-  "fields": [
-    {
-      "name": "payload",
-      "type": "int"
-    },
-    {
-      "name": "next",
-      "type": [
-        "null",
-        "Recursive"
-      ]
-    }
-  ]
-}
+[
+  {
+    "type": "record",
+    "name": "Branch__String",
+    "namespace": "com.sksamuel.avro4s.schema",
+    "fields": [
+      {
+        "name": "left",
+        "type": [
+          "Branch__String",
+          {
+            "type": "record",
+            "name": "Leaf__String",
+            "fields": [
+              {
+                "name": "value",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "right",
+        "type": [
+          "Branch__String",
+          "Leaf__String"
+        ]
+      }
+    ]
+  },
+  "com.sksamuel.avro4s.schema.Leaf__String"
+]

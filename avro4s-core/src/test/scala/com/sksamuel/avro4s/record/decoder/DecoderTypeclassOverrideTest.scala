@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, ImmutableRecord, FieldMapper, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, FieldMapper, ImmutableRecord, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -17,7 +17,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
   test("allow overriding built in Decoder implicit for a basic type") {
 
     implicit val StringAsBooleanSchemaFor = new SchemaFor[String] {
-      override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder().booleanType()
+      override def schema(fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = SchemaBuilder.builder().booleanType()
     }
 
     implicit val StringAsBooleanDecoder = new Decoder[String] {
@@ -40,7 +40,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
   test("allow overriding built in Decoder implicit for a complex type") {
 
     implicit val FooOverrideSchemaFor = new SchemaFor[Foo] {
-      override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder().stringType()
+      override def schema(fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = SchemaBuilder.builder().stringType()
     }
 
     implicit val FooOverrideEncoder = new Decoder[Foo] {
@@ -63,7 +63,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
   test("allow overriding built in Decoder implicit for a value type") {
 
     implicit val FooValueTypeOverrideSchemaFor = new SchemaFor[FooValueType] {
-      override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder().intType()
+      override def schema(fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = SchemaBuilder.builder().intType()
     }
 
     implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {
@@ -85,7 +85,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
   test("allow overriding built in Decoder implicit for a top level value type") {
 
     implicit val FooValueTypeOverrideSchemaFor = new SchemaFor[FooValueType] {
-      override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder().intType()
+      override def schema(fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = SchemaBuilder.builder().intType()
     }
 
     implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {

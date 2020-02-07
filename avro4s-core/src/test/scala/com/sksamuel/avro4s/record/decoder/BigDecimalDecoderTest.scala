@@ -40,7 +40,7 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
 
   it should "be able to decode generic fixed as bigdecimals" in {
     implicit object BigDecimalAsFixed extends SchemaFor[BigDecimal] {
-      override def schema(fieldMapper: FieldMapper = DefaultFieldMapper) = LogicalTypes.decimal(10, 8).addToSchema(
+      override def schema(fieldMapper: FieldMapper = DefaultFieldMapper, context: SchemaFor.Context) = LogicalTypes.decimal(10, 8).addToSchema(
         Schema.createFixed("BigDecimal", null, null, 8))
     }
 

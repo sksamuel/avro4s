@@ -13,7 +13,7 @@ class CatsTest extends FunSuite with Matchers {
 
   implicit def nonEmptyListSchemaFor[T](schemaFor: SchemaFor[T]): SchemaFor[NonEmptyList[T]] = {
     new SchemaFor[NonEmptyList[T]] {
-      override def schema(fieldMapper: FieldMapper): Schema = Schema.createArray(schemaFor.schema(fieldMapper))
+      override def schema(fieldMapper: FieldMapper, context: Context): Schema = Schema.createArray(schemaFor.schema(fieldMapper, context))
     }
   }
 

@@ -55,7 +55,7 @@ class BasicOutputStreamTest extends OutputStreamTest {
     )
 
     implicit val encoder: Encoder[GenericRecord] = (r, _, _) => r
-    implicit val schemaFor: SchemaFor[GenericRecord] = _ => schema
+    implicit val schemaFor: SchemaFor[GenericRecord] = (_, _) => schema
 
     val record: GenericRecord =
       new GenericRecordBuilder(schema).set("field", "value").build()

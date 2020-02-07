@@ -58,7 +58,7 @@ class BigDecimalSchemaTest extends AnyWordSpec with Matchers {
     "allow big decimals to be encoded as FIXED when custom typeclasses are provided" in {
 
       implicit object BigDecimalAsFixedSchemaFor extends SchemaFor[BigDecimal] {
-        override def schema(fieldMapper: FieldMapper): Schema = Schema.createFixed("bigdecimal", null, null, 55)
+        override def schema(fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = Schema.createFixed("bigdecimal", null, null, 55)
       }
 
       case class BigDecimalAsFixedTest(decimal: BigDecimal)

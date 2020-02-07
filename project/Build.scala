@@ -46,10 +46,10 @@ object Build extends AutoPlugin {
       "org.scala-lang"    % "scala-reflect"     % scalaVersion.value,
       "org.scala-lang"    % "scala-compiler"    % scalaVersion.value,
       "org.apache.avro"   % "avro"              % AvroVersion,
-      "org.slf4j"         % "slf4j-api"         % Slf4jVersion          % "test",
-      "log4j"             % "log4j"             % Log4jVersion          % "test",
-      "org.slf4j"         % "log4j-over-slf4j"  % Slf4jVersion          % "test",
-      "org.scalatest"     %% "scalatest"        % ScalatestVersion      % "test"
+      "org.slf4j"         % "slf4j-simple"      % Slf4jVersion          % Test,
+      "log4j"             % "log4j"             % Log4jVersion          % Test,
+      "org.slf4j"         % "log4j-over-slf4j"  % Slf4jVersion          % Test,
+      "org.scalatest"     %% "scalatest"        % ScalatestVersion      % Test
     )
   )
 
