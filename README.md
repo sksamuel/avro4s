@@ -261,7 +261,7 @@ To do this, we just introduce a new instance of `SchemaFor` and put it in scope 
 
 ```scala
 implicit object IntOverride extends SchemaFor[Int] {
-  override def schema(implicit fieldMapper: FieldMapper): Schema = SchemaBuilder.builder.stringType
+  override def schema(implicit fieldMapper: FieldMapper, context: SchemaFor.Context): Schema = SchemaBuilder.builder.stringType
 }
 
 case class Foo(a: String)
@@ -269,16 +269,6 @@ val schema = AvroSchema[Foo]
 ```
 
 Note: If you create an override like this, be aware that schemas in Avro are mutable, so don't share the values that the typeclasses return.
-
-### Recursive Schemas
-
-Avro4s supports recursive schemas, but you will have to manually force the `SchemaFor` instance, instead of letting it be generated.
-
-``` scala
-case class Recursive(payload: Int, next: Option[Recursive])
-implicit val schemaFor = SchemaFor[Recursive]
-val schema = AvroSchema[Recursive]
-```
 
 ### Transient Fields
 
@@ -1015,7 +1005,7 @@ and decoders.
 
 ```scala
 implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
-  override val schema(implicit fieldMapper: FieldMapper) = 
+  override def schema(implicit fieldMapper: FieldMapper, context: SchemaFor.Context) = 
     Schema.create(Schema.Type.STRING)
 }
 
