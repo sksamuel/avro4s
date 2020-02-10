@@ -359,7 +359,7 @@ object SchemaFor {
             val record = Schema.createRecord(name.replaceAll("[^a-zA-Z0-9_]", ""), doc, namespace.replaceAll("[^a-zA-Z0-9_.]", ""), false)
             aliases.foreach(record.addAlias)
             props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
-            val newContext = context.cacheSchema(name, namespace, record)
+            val newContext = context.withCachedSchema(name, namespace, record)
 
             val fields = ctx.parameters.flatMap { param =>
 
@@ -576,7 +576,7 @@ object SchemaFor {
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 
   final class Context(private val seen: Map[(String, String), Schema]) {
-    def cacheSchema(name: String, namespace: String, schema: Schema): Context = new Context(this.seen + ((name, namespace)-> schema))
+    def withCachedSchema(name: String, namespace: String, schema: Schema): Context = new Context(this.seen + ((name, namespace)-> schema))
     def getCachedSchema(name: String, namespace: String): Option[Schema] = seen.get((name, namespace))
   }
 
