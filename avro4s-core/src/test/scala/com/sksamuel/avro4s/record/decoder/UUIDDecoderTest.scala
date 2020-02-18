@@ -6,9 +6,10 @@ import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class UUIDDecoderTest extends WordSpec with Matchers {
+class UUIDDecoderTest extends AnyWordSpec with Matchers {
 
   import scala.collection.JavaConverters._
 

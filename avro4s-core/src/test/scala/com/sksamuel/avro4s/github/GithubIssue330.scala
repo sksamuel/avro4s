@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class GithubIssue330 extends FunSuite with Matchers {
+class GithubIssue330 extends AnyFunSuite with Matchers {
 
   test("Unable to generate schema for a CoProduct where on of the case class has a parameter of type Map[String, String]") {
     val schema = AvroSchema[Foo330]

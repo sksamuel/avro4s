@@ -3,10 +3,11 @@ package com.sksamuel.avro4s.record.decoder
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
-import org.scalatest.{FunSuite, Matchers}
 import scala.collection.JavaConverters._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class TupleDecoderTest extends FunSuite with Matchers {
+class TupleDecoderTest extends AnyFunSuite with Matchers {
 
   case class Test2(z: (String, Int))
   case class Test2Seq(z: (Seq[String], Int))

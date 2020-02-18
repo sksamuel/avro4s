@@ -2,9 +2,10 @@ package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.github.SampleProtocol.SubPart1.InnerEnum
 import com.sksamuel.avro4s.{AvroSchema, FromRecord, ToRecord}
-import org.scalatest.{FunSpec, Matchers}
 
 import scala.language.higherKinds
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 object TopEnum extends Enumeration {
   type TopEnumVal = Value
@@ -24,7 +25,7 @@ object SampleProtocol {
 
 case class WithInnerEnum(ie: InnerEnum.InnerEnum)
 
-class Githu4bIssue180 extends FunSpec with Matchers {
+class Githu4bIssue180 extends AnyFunSpec with Matchers {
 
   describe("SchemaFor : FromRecord : ToRecord") {
     describe("with top level scala Enumerations") {

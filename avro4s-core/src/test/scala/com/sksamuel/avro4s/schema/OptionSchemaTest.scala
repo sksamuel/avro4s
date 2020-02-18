@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class OptionSchemaTest extends FunSuite with Matchers {
+class OptionSchemaTest extends AnyFunSuite with Matchers {
 
   test("generate option as Union[T, Null]") {
     case class Test(option: Option[String])

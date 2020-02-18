@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MapSchemaTest extends WordSpec with Matchers {
+class MapSchemaTest extends AnyWordSpec with Matchers {
 
   "SchemaEncoder" should {
     "generate map type for a scala.collection.immutable.Map of strings" in {

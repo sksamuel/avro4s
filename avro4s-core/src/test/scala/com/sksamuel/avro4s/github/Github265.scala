@@ -2,11 +2,12 @@ package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.{Decoder, Encoder, RecordFormat, SchemaFor}
 import org.apache.avro.generic.GenericRecord
-import org.scalatest.{FunSuite, Matchers}
 
 import scala.language.higherKinds
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class Github265 extends FunSuite with Matchers {
+class Github265 extends AnyFunSuite with Matchers {
 
   case class Ingredient(name: String, sugar: Double, fat: Double)
   case class Pizza(name: String, ingredients: Seq[Ingredient], vegetarian: Boolean, vegan: Boolean, calories: Int)

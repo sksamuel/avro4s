@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.AvroSchema
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class NamespaceSchemaTest extends FunSuite with Matchers {
+class NamespaceSchemaTest extends AnyFunSuite with Matchers {
 
   test("use package name for top level class") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_class_namespace.json"))

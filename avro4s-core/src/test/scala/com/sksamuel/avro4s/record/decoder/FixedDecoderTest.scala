@@ -3,9 +3,10 @@ package com.sksamuel.avro4s.record.decoder
 import com.sksamuel.avro4s.record.encoder.FixedValueType
 import com.sksamuel.avro4s.{AvroFixed, AvroSchema, Decoder, DefaultFieldMapper}
 import org.apache.avro.generic.GenericData
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class FixedDecoderTest extends FunSuite with Matchers {
+class FixedDecoderTest extends AnyFunSuite with Matchers {
 
   case class FixedString(@AvroFixed(10) z: String)
   case class OptionalFixedValueType(z: Option[FixedValueType])

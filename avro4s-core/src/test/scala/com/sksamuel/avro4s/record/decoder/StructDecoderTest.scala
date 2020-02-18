@@ -2,13 +2,14 @@ package com.sksamuel.avro4s.record.decoder
 
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import org.apache.avro.generic.GenericData
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class OptionCounty(county: Option[County])
 case class County(name: String, towns: Seq[Town], ceremonial: Boolean, lat: Double, long: Double)
 case class Town(name: String, population: Int)
 
-class StructDecoderTest extends WordSpec with Matchers {
+class StructDecoderTest extends AnyWordSpec with Matchers {
 
   import scala.collection.JavaConverters._
 

@@ -2,11 +2,12 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 import java.sql.Timestamp
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 import java.util.UUID
 
 import magnolia.{CaseClass, Magnolia, SealedTrait, Subtype}
-import org.apache.avro.{JsonProperties, LogicalTypes, Schema, SchemaBuilder}
+import org.apache.avro.util.Utf8
+import org.apache.avro.{JsonProperties, LogicalType, LogicalTypes, Schema, SchemaBuilder}
 import shapeless.{:+:, CNil, Coproduct}
 
 import scala.language.experimental.macros
@@ -42,6 +43,27 @@ object ScalePrecision {
   implicit val default = ScalePrecision(2, 8)
 }
 
+trait EnumSchemaFor {
+
+  import scala.collection.JavaConverters._
+
+  protected def addDefault[E](default: E)(schema: Schema): Schema = SchemaBuilder.
+    enumeration(schema.getName).
+    namespace(schema.getNamespace).
+    defaultSymbol(default.toString).
+    symbols(schema.getEnumSymbols.asScala.toList:_*)
+}
+
+object JavaEnumSchemaFor extends EnumSchemaFor {
+
+  def apply[E <: Enum[_]](default: E)(implicit tag: ClassTag[E]): SchemaFor[E] = SchemaFor.javaEnumSchemaFor.map[E](addDefault(default))
+}
+
+object ScalaEnumSchemaFor extends EnumSchemaFor {
+
+  def apply[E <: scala.Enumeration#Value](default: E)(implicit tag: TypeTag[E]): SchemaFor[E] = SchemaFor.scalaEnumSchemaFor.map[E](addDefault(default))
+}
+
 object SchemaFor {
 
   import scala.collection.JavaConverters._
@@ -50,26 +72,23 @@ object SchemaFor {
 
   def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
 
-  /**
-    * Creates a [[SchemaFor]] that always returns the given constant value.
-    */
-  def const[T](_schema: Schema) = new SchemaFor[T] {
-    override def schema(fieldMapper: FieldMapper): Schema = _schema
-  }
+  implicit val StringSchemaFor: SchemaFor[String] = _ => SchemaBuilder.builder.stringType
+  implicit val LongSchemaFor: SchemaFor[Long] = _ => SchemaBuilder.builder.longType
+  implicit val IntSchemaFor: SchemaFor[Int] = _ => SchemaBuilder.builder.intType
+  implicit val DoubleSchemaFor: SchemaFor[Double] = _ => SchemaBuilder.builder.doubleType
+  implicit val FloatSchemaFor: SchemaFor[Float] = _ => SchemaBuilder.builder.floatType
+  implicit val BooleanSchemaFor: SchemaFor[Boolean] = _ => SchemaBuilder.builder.booleanType
+  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = _ => SchemaBuilder.builder.bytesType
+  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = _ => SchemaBuilder.builder.bytesType
+  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = _ => SchemaBuilder.builder.bytesType
+  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = _ => SchemaBuilder.builder.bytesType
+  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = _ => SchemaBuilder.builder.bytesType
+  implicit val ShortSchemaFor: SchemaFor[Short] = _ => IntSchemaFor.schema(DefaultFieldMapper)
+  implicit val ByteSchemaFor: SchemaFor[Byte] = _ => IntSchemaFor.schema(DefaultFieldMapper)
 
-  implicit val StringSchemaFor: SchemaFor[String] = const(SchemaBuilder.builder.stringType)
-  implicit val LongSchemaFor: SchemaFor[Long] = const(SchemaBuilder.builder.longType)
-  implicit val IntSchemaFor: SchemaFor[Int] = const(SchemaBuilder.builder.intType)
-  implicit val DoubleSchemaFor: SchemaFor[Double] = const(SchemaBuilder.builder.doubleType)
-  implicit val FloatSchemaFor: SchemaFor[Float] = const(SchemaBuilder.builder.floatType)
-  implicit val BooleanSchemaFor: SchemaFor[Boolean] = const(SchemaBuilder.builder.booleanType)
-  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = const(SchemaBuilder.builder.bytesType)
-  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = const(SchemaBuilder.builder.bytesType)
-  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = const(SchemaBuilder.builder.bytesType)
-  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = const(SchemaBuilder.builder.bytesType)
-  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = const(SchemaBuilder.builder.bytesType)
-  implicit val ShortSchemaFor: SchemaFor[Short] = const(IntSchemaFor.schema(DefaultFieldMapper))
-  implicit val ByteSchemaFor: SchemaFor[Byte] = const(IntSchemaFor.schema(DefaultFieldMapper))
+  implicit object Utf8Schema extends SchemaFor[Utf8] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
+  }
 
   implicit object UUIDSchemaFor extends SchemaFor[UUID] {
     override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.uuid().addToSchema(SchemaBuilder.builder.stringType)
@@ -142,15 +161,26 @@ object SchemaFor {
   }
 
   implicit object LocalTimeSchemaFor extends SchemaFor[LocalTime] {
-    override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.timeMillis().addToSchema(SchemaBuilder.builder.intType)
+    override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType())
   }
 
   implicit object LocalDateSchemaFor extends SchemaFor[LocalDate] {
     override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType)
   }
 
+  object TimestampNanosLogicalType extends LogicalType("timestamp-nanos") {
+    override def validate(schema: Schema): Unit = {
+      super.validate(schema)
+      if (schema.getType != Schema.Type.LONG) {
+        throw new IllegalArgumentException("Logical type timestamp-nanos must be backed by long")
+      }
+    }
+  }
+
   implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
-    override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
+    override def schema(fieldMapper: FieldMapper): Schema = {
+      TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType)
+    }
   }
 
   implicit object DateSchemaFor extends SchemaFor[java.sql.Date] {
@@ -161,15 +191,58 @@ object SchemaFor {
     override def schema(fieldMapper: FieldMapper): Schema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
   }
 
+  implicit object OffsetDateTimeSchemaFor extends SchemaFor[OffsetDateTime] {
+
+    implicit object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
+      override def validate(schema: Schema): Unit = {
+        super.validate(schema)
+        if (schema.getType != Schema.Type.STRING) {
+          throw new IllegalArgumentException("Logical type iso-datetime with offset must be backed by String")
+        }
+      }
+    }
+
+    override def schema(fieldMapper: FieldMapper): Schema = OffsetDateTimeLogicalType.addToSchema(SchemaBuilder.builder().stringType())
+  }
+
   implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = new SchemaFor[E] {
     override def schema(fieldMapper: FieldMapper): Schema = {
       val typeInfo = TypeInfo.fromClass(tag.runtimeClass)
       val nameExtractor = NameExtractor(typeInfo)
       val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
-      SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(symbols: _*)
+
+      val maybeName = tag.runtimeClass.getAnnotations.collectFirst {
+        case annotation: AvroJavaName => annotation.value()
+      }
+
+      val maybeNamespace = tag.runtimeClass.getAnnotations.collectFirst {
+        case annotation: AvroJavaNamespace => annotation.value()
+      }
+
+      val name = maybeName.getOrElse(nameExtractor.name)
+      val namespace = maybeNamespace.getOrElse(nameExtractor.namespace)
+
+      val maybeEnumDefault = tag.runtimeClass.getDeclaredFields.collectFirst {
+        case field if field.getDeclaredAnnotations.map(_.annotationType()).contains(classOf[AvroJavaEnumDefault]) => field.getName
+      }
+
+      val schema = maybeEnumDefault.map { enumDefault =>
+        SchemaBuilder.enumeration(name).namespace(namespace).defaultSymbol(enumDefault).symbols(symbols: _*)
+      }.getOrElse {
+        SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
+      }
+
+      val props = tag.runtimeClass.getAnnotations.collect {
+        case annotation: AvroJavaProp => annotation.key() -> annotation.value()
+      }
+
+      props.foreach { case (key, value) =>
+        schema.addProp(key, value)
+      }
+
+      schema
     }
   }
-
 
   /**
     * Builds an Avro Field with the field's Schema provided by an
@@ -198,7 +271,7 @@ object SchemaFor {
     val props = extractor.props
 
     // the name could have been overriden with @AvroName, and then must be encoded with the field mapper
-    val name = extractor.name.fold(fieldMapper.to(label))(fieldMapper.to)
+    val name = extractor.name.getOrElse(fieldMapper.to(label))
 
     // the default value may be none, in which case it was not defined, or Some(null), in which case it was defined
     // and set to null, or something else, in which case it's a non null value
@@ -350,41 +423,66 @@ object SchemaFor {
     }
   }
 
+  def getAnnotationValue[T](annotationClass: Class[T], annotations: Seq[Annotation]): Option[String] = {
+    annotations.collectFirst {
+      case a: Annotation if a.tree.tpe.typeSymbol.name.toString == annotationClass.getSimpleName => a.tree.children.tail.headOption.flatMap {
+        case select: Select => Some(select.name.toString)
+        case _ => None
+      }
+    }.flatten
+  }
+
   implicit def scalaEnumSchemaFor[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = new SchemaFor[E] {
 
-    val typeRef = tag.tpe match {
-      case t@TypeRef(_, _, _) => t
+    private lazy val schema = {
+
+      val typeRef = tag.tpe match {
+        case t@TypeRef(_, _, _) => t
+      }
+
+      val valueType = typeOf[E]
+      val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
+      val syms = pre.filter { sym =>
+        !sym.isMethod &&
+          !sym.isType &&
+          sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
+      }.map { sym =>
+        sym.name.decodedName.toString.trim
+      }
+
+      val annotations: Seq[Annotation] = typeRef.pre.typeSymbol.annotations
+
+      val maybeName = getAnnotationValue(classOf[AvroName], annotations)
+      val maybeNamespace = getAnnotationValue(classOf[AvroNamespace], annotations)
+      val enumDefault = getAnnotationValue(classOf[AvroEnumDefault], annotations)
+
+      val props: Seq[(String, String)] = annotations.collect {
+        case a: Annotation if a.tree.tpe.typeSymbol.name.toString == classOf[AvroProp].getSimpleName =>
+          a.tree.children.tail match {
+            case List(key: Literal, value: Literal) => key.value.value.toString -> value.value.value.toString
+            case _ => throw new RuntimeException("Failed to process an AvroProp annotation. The annotation should contain a key and value literals.")
+          }
+      }
+
+      val nameExtractor = NameExtractor(TypeInfo.fromType(typeRef.pre))
+
+      val name = maybeName.getOrElse(nameExtractor.name)
+      val namespace = maybeNamespace.getOrElse(nameExtractor.namespace)
+
+      val schema = enumDefault.map { default =>
+        SchemaBuilder.enumeration(name).namespace(namespace).defaultSymbol(default)symbols(syms: _*)
+      }.getOrElse {
+        SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
+      }
+
+      props.foreach { case (key, value) =>
+        schema.addProp(key, value)
+      }
+
+      schema
     }
 
-    val valueType = typeOf[E]
-    val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
-    val syms = pre.filter { sym =>
-      !sym.isMethod &&
-        !sym.isType &&
-        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
-    }.map { sym =>
-      sym.name.decodedName.toString.trim
-    }
-
-    val as = typeRef.pre.typeSymbol.annotations
-    val nameAnnotation = as.collectFirst {
-      case a: AvroName => a.name
-    }
-    val namespaceAnnotation = as.collectFirst {
-      case a: AvroNamespace => a.namespace
-    }
-    val props = as.collect {
-      case prop: AvroProp => prop.key -> prop.value
-    }
-
-    val nameExtractor = NameExtractor(TypeInfo.fromType(typeRef.pre))
-
-    val s = SchemaBuilder.enumeration(nameExtractor.name).namespace(nameExtractor.namespace).symbols(syms: _*)
-    props.foreach { case (key, value) =>
-      s.addProp(key, value)
-    }
-
-    override def schema(fieldMapper: FieldMapper): Schema = s
+    override def schema(fieldMapper: FieldMapper): Schema = schema
   }
 
   // A coproduct is a union, or a generalised either.

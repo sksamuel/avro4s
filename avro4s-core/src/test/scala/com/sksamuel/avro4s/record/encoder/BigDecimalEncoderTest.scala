@@ -5,11 +5,12 @@ import com.sksamuel.avro4s.SchemaFor.StringSchemaFor
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
-import org.scalatest.{FunSuite, Matchers}
 
 import scala.math.BigDecimal.RoundingMode
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class BigDecimalEncoderTest extends FunSuite with Matchers {
+class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
   import scala.collection.JavaConverters._
 

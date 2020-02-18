@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel.avro4s.github.Github396",
+  "fields": [
+     {
+       "name" : "WIBBLE",
+       "type" : "string"
+     },
+     {
+       "name" : "b_wubble",
+       "type" : "string"
+     }
+  ]
+}

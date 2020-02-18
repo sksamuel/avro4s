@@ -1,10 +1,11 @@
 package com.sksamuel.avro4s.record.decoder
 
 import com.sksamuel.avro4s.{AvroEnumDefault, AvroSchema, Decoder, DefaultFieldMapper}
-import com.sksamuel.avro4s.schema.{Colours, CupcatAnnotatedEnum, CupcatEnum, CuppersAnnotatedEnum, NotCupcat, SnoutleyAnnotatedEnum, SnoutleyEnum, Wine}
+import com.sksamuel.avro4s.schema.{Colours, CupcatAnnotatedEnum, CupcatEnum, CuppersAnnotatedEnum, SnoutleyEnum, Wine}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class JavaEnumClass(wine: Wine)
 case class JavaOptionEnumClass(wine: Option[Wine])
@@ -17,7 +18,7 @@ case class ScalaAnnotatedSealedTraitEnumWithDefault(cupcat: CupcatAnnotatedEnum 
 case class ScalaAnnotatedSealedTraitEnumList(@AvroEnumDefault(List(CuppersAnnotatedEnum)) cupcat: List[CupcatAnnotatedEnum])
 
 
-class EnumDecoderTest extends WordSpec with Matchers {
+class EnumDecoderTest extends AnyWordSpec with Matchers {
 
   "Decoder" should {
     "support java enums" in {
@@ -71,6 +72,9 @@ class EnumDecoderTest extends WordSpec with Matchers {
       Decoder[ScalaSealedTraitEnumWithDefault].decode(record, schema, DefaultFieldMapper) shouldBe ScalaSealedTraitEnumWithDefault(SnoutleyEnum)
     }
     "support annotated sealed trait enum default values" in {
+
+      case object NotCupcat
+
       val schema = AvroSchema[CupcatAnnotatedEnum]
       val record = new EnumSymbol(schema, NotCupcat)
 

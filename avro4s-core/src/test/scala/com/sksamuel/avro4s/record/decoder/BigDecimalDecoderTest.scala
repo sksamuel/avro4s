@@ -4,14 +4,15 @@ import com.sksamuel.avro4s.Decoder.BigDecimalDecoder
 import com.sksamuel.avro4s.{AvroSchema, BigDecimals, Decoder, DefaultFieldMapper, FieldMapper, SchemaFor}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
-import org.scalatest.{FlatSpec, Matchers}
 
 import scala.language.higherKinds
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 case class WithBigDecimal(decimal: BigDecimal)
 case class OptionalBigDecimal(big: Option[BigDecimal])
 
-class BigDecimalDecoderTest extends FlatSpec with Matchers {
+class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
 
   "Decoder" should "convert byte array to decimal" in {
     val schema = AvroSchema[WithBigDecimal]

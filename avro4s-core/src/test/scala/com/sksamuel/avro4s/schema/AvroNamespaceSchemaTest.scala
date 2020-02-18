@@ -1,9 +1,10 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroNamespace, AvroSchema}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class AvroNamespaceTest extends WordSpec with Matchers {
+class AvroNamespaceTest extends AnyWordSpec with Matchers {
 
   "@AvroNamespace" should {
     "support namespace annotations on records" in {

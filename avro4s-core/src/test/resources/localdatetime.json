@@ -1,13 +1,13 @@
 {
   "type": "record",
-  "name": "LocalTimeTest",
+  "name": "LocalDateTimeTest",
   "namespace": "com.sksamuel.avro4s.schema.DateSchemaTest",
   "fields": [
     {
       "name": "time",
       "type": {
-        "type": "int",
-        "logicalType": "time-millis"
+        "type": "long",
+        "logicalType": "timestamp-nanos"
       }
     }
   ]
