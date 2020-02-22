@@ -30,13 +30,20 @@ object TypeInfo {
   def fromTypeName(typeName: TypeName): TypeInfo = {
     // try to populate from the class name, but this may fail if the class is not top level
     // if it does fail then we default back to using what magnolia provides
-    Try {
+    val maybeType: Option[universe.Type] = Try {
       val mirror = universe.runtimeMirror(this.getClass.getClassLoader)
       val classsym = mirror.staticClass(typeName.full)
-      fromType(classsym.toType)
-    }.getOrElse {
-      TypeInfo(typeName.owner, typeName.short, typeName.typeArguments.map(fromTypeName), None, None, false)
-    }
+      classsym.toType
+    }.toOption
+
+    TypeInfo(
+      owner = typeName.owner,
+      short = typeName.short,
+      typeArguments = typeName.typeArguments.map(fromTypeName),
+      nameAnnotation = maybeType.flatMap(nameAnnotation),
+      namespaceAnnotation = maybeType.flatMap(namespaceAnnotation),
+      erased = maybeType.exists(erased)
+    )
   }
 
   def fromClass[A](klass: Class[A]): TypeInfo = {
@@ -47,26 +54,43 @@ object TypeInfo {
     TypeInfo.fromType(tpe)
   }
 
-  def fromType(tpe: universe.Type): TypeInfo = {
+  private def nameAnnotation(tpe: universe.Type): Option[String] = {
     import scala.reflect.runtime.universe._
 
-    val nameAnnotation = tpe.typeSymbol.typeSignature.typeSymbol.annotations.collectFirst {
+    tpe.typeSymbol.typeSignature.typeSymbol.annotations.collectFirst {
       case a if a.tree.tpe =:= typeOf[AvroName] =>
         val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
         annoValue.toString
     }
+  }
 
-    val namespaceAnnnotation = tpe.typeSymbol.typeSignature.typeSymbol.annotations.collectFirst {
+  private def namespaceAnnotation(tpe: universe.Type): Option[String] = {
+    import scala.reflect.runtime.universe._
+
+    tpe.typeSymbol.typeSignature.typeSymbol.annotations.collectFirst {
       case a if a.tree.tpe =:= typeOf[AvroNamespace] =>
         val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
         annoValue.toString
     }
+  }
 
-    val erased = tpe.typeSymbol.typeSignature.typeSymbol.annotations.exists {
+  private def erased(tpe: universe.Type): Boolean = {
+    import scala.reflect.runtime.universe._
+
+    tpe.typeSymbol.typeSignature.typeSymbol.annotations.exists {
       case a if a.tree.tpe =:= typeOf[AvroErasedName] => true
       case _ => false
     }
+  }
 
-    TypeInfo(tpe.typeSymbol.owner.fullName, tpe.typeSymbol.name.decodedName.toString, tpe.typeArgs.map(fromType), nameAnnotation, namespaceAnnnotation, erased)
+  def fromType(tpe: universe.Type): TypeInfo = {
+    TypeInfo(
+      tpe.typeSymbol.owner.fullName,
+      tpe.typeSymbol.name.decodedName.toString,
+      tpe.typeArgs.map(fromType),
+      nameAnnotation(tpe),
+      namespaceAnnotation(tpe),
+      erased(tpe)
+    )
   }
 }
