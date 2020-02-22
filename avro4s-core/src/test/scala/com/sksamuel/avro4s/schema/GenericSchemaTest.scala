@@ -1,9 +1,27 @@
 package com.sksamuel.avro4s.schema
 
+import java.util.UUID
+
 import com.sksamuel.avro4s.{AvroErasedName, AvroName, AvroSchema}
 import org.apache.avro.SchemaParseException
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+
+case class Thing1Id(id: Int) extends AnyVal
+case class Thing2Id(id: UUID) extends AnyVal
+case class Thing2(id: Thing2Id, name: String)
+case class OuterId(id: UUID) extends AnyVal
+case class InnerId(id: String) extends AnyVal
+case class Inner[LEFT, RIGHT](
+  id: InnerId,
+  left: LEFT,
+  right: Option[RIGHT] = None
+)
+case class Outer[LEFT, RIGHT](
+  id: OuterId,
+  @AvroName("innerThing")
+  theInnerThing: Inner[LEFT, RIGHT]
+)
 
 class GenericSchemaTest extends AnyFunSuite with Matchers {
 
@@ -47,6 +65,18 @@ class GenericSchemaTest extends AnyFunSuite with Matchers {
   test("support @AvroName on generic type args") {
     val schema = AvroSchema[DibDabDob]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_on_type_arg.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("deeply nested generics") {
+    val schema = AvroSchema[Outer[Thing1Id, Option[Seq[Thing2]]]]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/deeply_nested_generics.json"))
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("deeply nested generic with value type") {
+    val schema = AvroSchema[Generic[Option[Seq[Thing1Id]]]]
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/deeply_nested_generic_with_value_type.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
 }
