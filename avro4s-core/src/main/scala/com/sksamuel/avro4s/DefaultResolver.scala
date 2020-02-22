@@ -40,6 +40,7 @@ object DefaultResolver {
     case x: scala.Float => java.lang.Float.valueOf(x)
     case x: Map[_,_] => x.asJava
     case x: Seq[_] => x.asJava
+    case shapeless.Inl(x) => apply(x, schema)
     case p: Product => customDefault(p, schema)
     case v if isScalaEnumeration(v) => customScalaEnumDefault(value)
     case _ =>

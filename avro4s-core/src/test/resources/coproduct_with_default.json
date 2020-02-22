@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "CPWithDefault",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "u",
+      "type": [
+        "int",
+        "string",
+        "boolean",
+        {
+          "type": "record",
+          "name": "Gimble",
+          "fields": [
+            {
+              "name": "x",
+              "type": "string"
+            }
+          ]
+        }
+      ],
+      "default": 123
+    }
+  ]
+}
