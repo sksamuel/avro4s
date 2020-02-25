@@ -31,7 +31,7 @@ object TypeInfo {
     // try to populate from the class name, but this may fail if the class is not top level
     // if it does fail then we default back to using what magnolia provides
     val maybeType: Option[universe.Type] = Try {
-      val mirror = universe.runtimeMirror(this.getClass.getClassLoader)
+      val mirror = universe.runtimeMirror(Thread.currentThread().getContextClassLoader)
       val classsym = mirror.staticClass(typeName.full)
       classsym.toType
     }.toOption
@@ -48,7 +48,7 @@ object TypeInfo {
 
   def fromClass[A](klass: Class[A]): TypeInfo = {
     import scala.reflect.runtime.universe
-    val mirror = universe.runtimeMirror(getClass.getClassLoader)
+    val mirror = universe.runtimeMirror(Thread.currentThread().getContextClassLoader)
     val sym = mirror.classSymbol(klass)
     val tpe = sym.toType
     TypeInfo.fromType(tpe)
