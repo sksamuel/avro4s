@@ -340,7 +340,7 @@ object Decoder {
 
   implicit def scalaEnumDecoder[E <: Enumeration#Value](implicit tag: WeakTypeTag[E]) = new Decoder[E] {
 
-    val mirror: Mirror = runtimeMirror(getClass.getClassLoader)
+    val mirror: Mirror = runtimeMirror(Thread.currentThread().getContextClassLoader)
 
     val enum = tag.tpe match {
       case TypeRef(enumType, _, _) =>
@@ -473,7 +473,7 @@ object Decoder {
                 ctx.subtypes.find { subtype => nameOf(subtype) == str }
                   .getOrElse(sys.error(s"Could not find subtype for enum $str"))
             }
-            val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
+            val runtimeMirror = universe.runtimeMirror(Thread.currentThread().getContextClassLoader)
             val module = runtimeMirror.staticModule(subtype.typeName.full)
             val companion = runtimeMirror.reflectModule(module.asModule)
             companion.instance.asInstanceOf[T]
