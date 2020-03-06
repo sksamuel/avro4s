@@ -261,7 +261,7 @@ To do this, we just introduce a new instance of `SchemaFor` and put it in scope 
 
 ```scala
 implicit object IntOverride extends SchemaFor[Int] {
-  override def schema(implicit fieldMapper: FieldMapper): Schema = SchemaBuilder.builder.stringType
+  override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder.stringType
 }
 
 case class Foo(a: String)
