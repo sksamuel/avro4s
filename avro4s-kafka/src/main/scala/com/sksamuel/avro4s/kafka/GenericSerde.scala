@@ -2,12 +2,15 @@ package com.sksamuel.avro4s.kafka
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{Decoder, Encoder}
-import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema, SchemaFor}
+import com.sksamuel.avro4s.{AvroFormat, AvroInputStream, AvroOutputStream, AvroSchema, BinaryFormat, DataFormat, Decoder, Encoder, JsonFormat, SchemaFor}
 import org.apache.avro.Schema
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 
-class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder] extends Serde[T]
+/**
+  * Kafka Serde using Avro4s for serializing to/deserialising from case classes into Avro records, without integration
+  * with the Confluent schema registry.
+  */
+class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder](avroFormat: AvroFormat = BinaryFormat) extends Serde[T]
   with Deserializer[T]
   with Serializer[T]
   with Serializable {
@@ -20,8 +23,17 @@ class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder] extends Serde[T]
 
   override def deserialize(topic: String, data: Array[Byte]): T = {
     if (data == null) null else {
-      val input = AvroInputStream.binary[T].from(data).build(schema)
-      input.iterator.next()
+
+      val avroInputStream = avroFormat match {
+        case BinaryFormat => AvroInputStream.binary[T]
+        case JsonFormat => AvroInputStream.json[T]
+        case DataFormat => AvroInputStream.data[T]
+      }
+
+      val input = avroInputStream.from(data).build(schema)
+      val result = input.iterator.next()
+      input.close()
+      result
     }
   }
 
@@ -31,7 +43,14 @@ class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder] extends Serde[T]
 
   override def serialize(topic: String, data: T): Array[Byte] = {
     val baos = new ByteArrayOutputStream()
-    val output = AvroOutputStream.binary[T].to(baos).build(schema)
+
+    val avroOutputStream = avroFormat match {
+      case BinaryFormat => AvroOutputStream.binary[T]
+      case JsonFormat => AvroOutputStream.json[T]
+      case DataFormat => AvroOutputStream.data[T]
+    }
+
+    val output = avroOutputStream.to(baos).build(schema)
     output.write(data)
     output.close()
     baos.toByteArray

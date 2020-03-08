@@ -916,6 +916,27 @@ val format = RecordFormat[Composer]
 val ennio = format.from(record)
 ```
 
+## Usage as a Kafka Serde
+
+The [com.sksamuel.avro4s.kafka.GenericSerde](src/main/scala/com/sksamuel/avro4s/kafka/GenericSerde.scala) class can be used as a Kafka Serdes to serialize/deserialize case classes into Avro records with Avro4s.
+Note that this class is not integrated with the schema registry.
+
+```scala
+
+  import java.util.Properties
+  import org.apache.kafka.clients.CommonClientConfigs
+  import org.apache.kafka.clients.producer.ProducerConfig
+
+  case class TheKafkaKey(id: String)
+  case class TheKafkaValue(name: String, location: String)
+
+  val producerProps = new Properties();
+  producerProps.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "...")
+  producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, new GenericSerde[TheKafkaKey]())
+  producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, new GenericSerde[TheKafkaValue]())
+  new ProducerConfig(producerProps)
+```
+
 ## Type Mappings
 
 Avro4s defines two typeclasses, `Encoder` and `Decoder` which do the work
