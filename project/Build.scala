@@ -14,8 +14,8 @@ object Build extends AutoPlugin {
     val Json4sVersion = "3.6.7"
     val CatsVersion = "2.0.0-RC2"
     val ShapelessVersion = "2.3.3"
-    val RefinedVersion = "0.9.12"
-    val MagnoliaVersion = "0.12.6"
+    val RefinedVersion = "0.9.13"
+    val MagnoliaVersion = "0.12.8"
     val ScalaMeterVersion = "0.19"
   }
 
@@ -71,7 +71,7 @@ object Build extends AutoPlugin {
     if (isTravis) {
       version := s"3.1.0.$travisBuildNumber-SNAPSHOT"
     } else {
-      version := "3.0.6"
+      version := "3.0.9"
     },
     publishTo := {
       val nexus = "https://oss.sonatype.org/"

@@ -1,0 +1,12 @@
+{
+  "type" : "record",
+  "name" : "Generic__Option__Seq__Thing1Id",
+  "namespace" : "com.sksamuel.avro4s.schema.GenericSchemaTest",
+  "fields" : [ {
+    "name" : "t",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int"
+    } ]
+  } ]
+}
