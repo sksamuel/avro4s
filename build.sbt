@@ -46,7 +46,7 @@ val `avro4s-kafka` = project.in(file("avro4s-kafka"))
   .dependsOn(`avro4s-core`)
   .settings(
     libraryDependencies ++= Seq(
-      "org.apache.kafka" % "kafka-clients" % "2.4.0"
+      "org.apache.kafka" % "kafka-clients" % "2.4.1"
     )
   )
 
