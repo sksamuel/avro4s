@@ -3,6 +3,7 @@ package com.sksamuel.avro4s
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericContainer, GenericData}
 import org.apache.avro.util.Utf8
+import scala.collection.JavaConverters._
 
 protected abstract class SafeFrom[T: Decoder] {
   val decoder: Decoder[T] = implicitly[Decoder[T]]
@@ -80,7 +81,10 @@ object SafeFrom {
       new SafeFrom[T] {
         override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case _: GenericData.Array[_] => Some(decoder.decode(value, schema, fieldMapper))
+            case _: GenericData.Array[_] =>
+              trySchemas(value, fieldMapper, decoder) {
+                possibleSchemas(schema).filter(_.getType == Schema.Type.ARRAY)
+              }
             case _ => None
           }
         }
@@ -91,7 +95,10 @@ object SafeFrom {
       new SafeFrom[T] {
         override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
           value match {
-            case _: java.util.Map[_, _] => Some(decoder.decode(value, schema, fieldMapper))
+            case _: java.util.Map[_, _] =>
+              trySchemas(value, fieldMapper, decoder) {
+                possibleSchemas(schema).filter(_.getType == Schema.Type.MAP)
+              }
             case _ => None
           }
         }
@@ -115,5 +122,30 @@ object SafeFrom {
         }
       }
     }
+  }
+
+  private def possibleSchemas(schema: Schema): List[Schema] =
+    schema.getType match {
+      case Schema.Type.UNION => schema.getTypes.asScala.toList
+      case _ => List(schema)
+    }
+
+  private def trySchemas[T](value: Any, fieldMapper: FieldMapper, decoder: Decoder[T])(schemas: List[Schema]): Option[T] = {
+    @annotation.tailrec
+    def go(schemas: List[Schema], failed: List[(Schema, Throwable)]): Option[T] =
+      schemas match {
+        case Nil =>
+          val msg = failed.reverse.map { case (s, error) =>
+            s"Type $s with ${error.getMessage}"
+          }.mkString("\n")
+          sys.error(s"Failed to decode:\n$msg")
+        case hd :: tl =>
+          util.Try(decoder.decode(value, hd, fieldMapper)).toEither match {
+            case Right(t) => Some(t)
+            case Left(error) => go(tl, (hd, error) :: failed)
+          }
+      }
+
+    go(schemas, Nil)
   }
 }
