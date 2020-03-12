@@ -96,6 +96,16 @@ object SafeFrom {
           }
         }
       }
+    } else if (tpe <:< typeOf[shapeless.Coproduct]) {
+      // this is only sort of safe because we will call SafeFrom again in the decoder
+      new SafeFrom[T] {
+        override def safeFrom(value: Any, schema: Schema, fieldMapper: FieldMapper): Option[T] = {
+          util.Try(decoder.decode(value, schema, fieldMapper)) match {
+            case util.Success(cp) => Some(cp)
+            case _ => None
+          }
+        }
+      }
     } else {
       new SafeFrom[T] {
 
