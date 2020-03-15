@@ -41,6 +41,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     val record = new GenericData.Record(schema)
     record.put("u", array)
     Decoder[CPWithArray].decode(record, schema, DefaultFieldMapper) shouldBe CPWithArray(Coproduct[CPWrapper.SSI](Seq("a", "b")))
+  }
 
   test("coproducts") {
     val schema = AvroSchema[Coproducts]
