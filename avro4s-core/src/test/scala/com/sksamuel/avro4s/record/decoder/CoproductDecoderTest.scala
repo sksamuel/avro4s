@@ -1,13 +1,17 @@
 package com.sksamuel.avro4s.record.decoder
 
+import com.sksamuel.avro4s.schema.Colours
 import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
 import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 class CoproductDecoderTest extends AnyFunSuite with Matchers {
+
+  import com.sksamuel.avro4s.schema.Colours
 
   test("coproducts with primitives") {
     val schema = AvroSchema[CPWrapper]
@@ -49,6 +53,28 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     val coproduct = Coproduct[(Int :+: String :+: CNil) :+: Boolean :+: CNil](Coproduct[Int :+: String :+: CNil]("foo"))
     Decoder[CoproductsOfCoproducts].decode(record, schema, DefaultFieldMapper) shouldBe CoproductsOfCoproducts(coproduct)
   }
+  
+  test("coproducts with enum") {
+    type OnlyColour = Colours.Value :+: CNil
+    val schema = AvroSchema[CoproductOfEnum]
+    
+    val recordEnum = new GenericData.Record(schema)
+    recordEnum.put("union", new EnumSymbol(schema.getField("union").schema(), "Red"))
+    Decoder[CoproductOfEnum].decode(recordEnum, schema, DefaultFieldMapper) shouldBe CoproductOfEnum(Coproduct[OnlyColour](Colours.Red))
+  }
+  
+  test("coproducts with enum or int") {
+    type ColourOrInt = Colours.Value :+: Int :+: CNil
+    val schema = AvroSchema[CoproductOfEnumOrInt]
+
+    val recordInt = new GenericData.Record(schema)
+    recordInt.put("union", 3)
+    Decoder[CoproductOfEnumOrInt].decode(recordInt, schema, DefaultFieldMapper) shouldBe CoproductOfEnumOrInt(Coproduct[ColourOrInt](3))
+    
+    val recordEnum  = new GenericData.Record(schema)
+    recordEnum.put("union", new EnumSymbol(schema.getField("union").schema(), "Red"))
+    Decoder[CoproductOfEnumOrInt].decode(recordEnum, schema, DefaultFieldMapper) shouldBe CoproductOfEnumOrInt(Coproduct[ColourOrInt](Colours.Red))
+  }
 }
 
 case class CPWithArray(u: CPWrapper.SSI)
@@ -64,3 +90,6 @@ object CPWrapper {
 
 case class Coproducts(union: Int :+: String :+: Boolean :+: CNil)
 case class CoproductsOfCoproducts(union: (Int :+: String :+: CNil) :+: Boolean :+: CNil)
+
+case class CoproductOfEnum(union: Colours.Value :+: CNil)
+case class CoproductOfEnumOrInt(union: Colours.Value :+: Int :+: CNil)
