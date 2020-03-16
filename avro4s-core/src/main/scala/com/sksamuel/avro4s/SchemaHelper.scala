@@ -46,6 +46,8 @@ object SchemaHelper {
       val s = types.get(i)
       if (s.getFullName == fullName) {
         result = s
+      } else if(s.getType == Schema.Type.ENUM && fullName == "scala.Enumeration.Val") {
+        result = s
       } else if (s.getType == Schema.Type.NULL) {
         nullIndex = i
       }
