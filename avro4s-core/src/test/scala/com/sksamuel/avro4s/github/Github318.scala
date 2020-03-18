@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.SchemaForV2
+import com.sksamuel.avro4s.SchemaFor
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import shapeless.{:+:, CNil}
@@ -16,6 +16,6 @@ class Github318 extends AnyFunSuite with Matchers {
 
   test("Error getting SchemaFor instance for Coproduct with ADT #318") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github/github_318.json"))
-    SchemaForV2[CoproductWithAdt].schema.toString(true) shouldBe expected.toString(true)
+    SchemaFor[CoproductWithAdt].schema.toString(true) shouldBe expected.toString(true)
   }
 }

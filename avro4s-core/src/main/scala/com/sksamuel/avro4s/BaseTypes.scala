@@ -31,21 +31,21 @@ trait BaseCodecs {
 
   implicit def tuple2Codec[A: Codec, B: Codec] = new Codec[(A, B)] {
     import EncoderSchemaImplicits._
-    def schemaFor: SchemaForV2[(A, B)] = SchemaForV2.tuple2SchemaFor[A, B]
+    def schemaFor: SchemaFor[(A, B)] = SchemaFor.tuple2SchemaFor[A, B]
     def encode(value: (A, B)): AnyRef = encodeTuple2[A, B](value, schema)
     def decode(value: Any): (A, B) = decodeTuple2[A, B](value)
   }
 
   implicit def tuple3Codec[A: Codec, B: Codec, C: Codec] = new Codec[(A, B, C)] {
     import EncoderSchemaImplicits._
-    def schemaFor: SchemaForV2[(A, B, C)] = SchemaForV2.tuple3SchemaFor[A, B, C]
+    def schemaFor: SchemaFor[(A, B, C)] = SchemaFor.tuple3SchemaFor[A, B, C]
     def encode(value: (A, B, C)): AnyRef = encodeTuple3[A, B, C](value, schema)
     def decode(value: Any): (A, B, C) = decodeTuple3[A, B, C](value)
   }
 
   implicit def tuple4Codec[A: Codec, B: Codec, C: Codec, D: Codec] = new Codec[(A, B, C, D)] {
     import EncoderSchemaImplicits._
-    def schemaFor: SchemaForV2[(A, B, C, D)] = SchemaForV2.tuple4SchemaFor[A, B, C, D]
+    def schemaFor: SchemaFor[(A, B, C, D)] = SchemaFor.tuple4SchemaFor[A, B, C, D]
     def encode(value: (A, B, C, D)): AnyRef = encodeTuple4[A, B, C, D](value, schema)
     def decode(value: Any): (A, B, C, D) = decodeTuple4[A, B, C, D](value)
   }
@@ -53,7 +53,7 @@ trait BaseCodecs {
   implicit def tuple5Codec[A: Codec, B: Codec, C: Codec, D: Codec, E: Codec] =
     new Codec[(A, B, C, D, E)] {
       import EncoderSchemaImplicits._
-      def schemaFor: SchemaForV2[(A, B, C, D, E)] = SchemaForV2.tuple5SchemaFor[A, B, C, D, E]
+      def schemaFor: SchemaFor[(A, B, C, D, E)] = SchemaFor.tuple5SchemaFor[A, B, C, D, E]
       def encode(value: (A, B, C, D, E)): AnyRef = encodeTuple5[A, B, C, D, E](value, schema)
       def decode(value: Any): (A, B, C, D, E) = decodeTuple5[A, B, C, D, E](value)
     }
@@ -77,26 +77,26 @@ trait BaseEncoders {
 
   implicit def tuple2Encoder[A: Encoder, B: Encoder] = new Encoder[(A, B)] {
     import EncoderSchemaImplicits._
-    def schemaFor: SchemaForV2[(A, B)] = SchemaForV2.tuple2SchemaFor[A, B]
+    def schemaFor: SchemaFor[(A, B)] = SchemaFor.tuple2SchemaFor[A, B]
     def encode(value: (A, B)): AnyRef = encodeTuple2(value, schema)
   }
 
   implicit def tuple3Encoder[A: Encoder, B: Encoder, C: Encoder] = new Encoder[(A, B, C)] {
     import EncoderSchemaImplicits._
-    def schemaFor: SchemaForV2[(A, B, C)] = SchemaForV2.tuple3SchemaFor[A, B, C]
+    def schemaFor: SchemaFor[(A, B, C)] = SchemaFor.tuple3SchemaFor[A, B, C]
     def encode(value: (A, B, C)): AnyRef = encodeTuple3(value, schema)
   }
 
   implicit def tuple4Encoder[A: Encoder, B: Encoder, C: Encoder, D: Encoder] = new Encoder[(A, B, C, D)] {
     import EncoderSchemaImplicits._
-    def schemaFor: SchemaForV2[(A, B, C, D)] = SchemaForV2.tuple4SchemaFor[A, B, C, D]
+    def schemaFor: SchemaFor[(A, B, C, D)] = SchemaFor.tuple4SchemaFor[A, B, C, D]
     def encode(value: (A, B, C, D)): AnyRef = encodeTuple4(value, schema)
   }
 
   implicit def tuple5Encoder[A: Encoder, B: Encoder, C: Encoder, D: Encoder, E: Encoder] =
     new Encoder[(A, B, C, D, E)] {
       import EncoderSchemaImplicits._
-      def schemaFor: SchemaForV2[(A, B, C, D, E)] = SchemaForV2.tuple5SchemaFor[A, B, C, D, E]
+      def schemaFor: SchemaFor[(A, B, C, D, E)] = SchemaFor.tuple5SchemaFor[A, B, C, D, E]
       def encode(value: (A, B, C, D, E)): AnyRef = encodeTuple5(value, schema)
     }
 }
@@ -119,26 +119,26 @@ trait BaseDecoders {
 
   implicit def tuple2Decoder[A: Decoder, B: Decoder] = new Decoder[(A, B)] {
     import DecoderSchemaImplicits._
-    def schemaFor: SchemaForV2[(A, B)] = SchemaForV2.tuple2SchemaFor[A, B]
+    def schemaFor: SchemaFor[(A, B)] = SchemaFor.tuple2SchemaFor[A, B]
     def decode(value: Any): (A, B) = decodeTuple2[A, B](value)
   }
 
   implicit def tuple3Decoder[A: Decoder, B: Decoder, C: Decoder] = new Decoder[(A, B, C)] {
     import DecoderSchemaImplicits._
-    def schemaFor: SchemaForV2[(A, B, C)] = SchemaForV2.tuple3SchemaFor[A, B, C]
+    def schemaFor: SchemaFor[(A, B, C)] = SchemaFor.tuple3SchemaFor[A, B, C]
     def decode(value: Any): (A, B, C) = decodeTuple3[A, B, C](value)
   }
 
   implicit def tuple4Decoder[A: Decoder, B: Decoder, C: Decoder, D: Decoder] = new Decoder[(A, B, C, D)] {
     import DecoderSchemaImplicits._
-    def schemaFor: SchemaForV2[(A, B, C, D)] = SchemaForV2.tuple4SchemaFor[A, B, C, D]
+    def schemaFor: SchemaFor[(A, B, C, D)] = SchemaFor.tuple4SchemaFor[A, B, C, D]
     def decode(value: Any): (A, B, C, D) = decodeTuple4[A, B, C, D](value)
   }
 
   implicit def tuple5Decoder[A: Decoder, B: Decoder, C: Decoder, D: Decoder, E: Decoder] =
     new Decoder[(A, B, C, D, E)] {
       import DecoderSchemaImplicits._
-      def schemaFor: SchemaForV2[(A, B, C, D, E)] = SchemaForV2.tuple5SchemaFor[A, B, C, D, E]
+      def schemaFor: SchemaFor[(A, B, C, D, E)] = SchemaFor.tuple5SchemaFor[A, B, C, D, E]
       def decode(value: Any): (A, B, C, D, E) = decodeTuple5[A, B, C, D, E](value)
     }
 }
@@ -147,7 +147,7 @@ object BaseTypes {
 
   object ByteCodec extends Codec[Byte] {
 
-    val schemaFor: SchemaForV2[Byte] = SchemaForV2.ByteSchema
+    val schemaFor: SchemaFor[Byte] = SchemaFor.ByteSchema
 
     def encode(t: Byte): java.lang.Byte = java.lang.Byte.valueOf(t)
 
@@ -159,7 +159,7 @@ object BaseTypes {
 
   object ShortCodec extends Codec[Short] {
 
-    val schemaFor: SchemaForV2[Short] = SchemaForV2.ShortSchema
+    val schemaFor: SchemaFor[Short] = SchemaFor.ShortSchema
 
     def encode(t: Short): java.lang.Short = java.lang.Short.valueOf(t)
 
@@ -172,7 +172,7 @@ object BaseTypes {
 
   object IntCodec extends Codec[Int] {
 
-    val schemaFor: SchemaForV2[Int] = SchemaForV2.IntSchema
+    val schemaFor: SchemaFor[Int] = SchemaFor.IntSchema
 
     def encode(value: Int): AnyRef = java.lang.Integer.valueOf(value)
 
@@ -186,7 +186,7 @@ object BaseTypes {
 
   object LongCodec extends Codec[Long] {
 
-    val schemaFor: SchemaForV2[Long] = SchemaForV2.LongSchema
+    val schemaFor: SchemaFor[Long] = SchemaFor.LongSchema
 
     def encode(value: Long): AnyRef = java.lang.Long.valueOf(value)
 
@@ -201,7 +201,7 @@ object BaseTypes {
 
   object DoubleCodec extends Codec[Double] {
 
-    val schemaFor: SchemaForV2[Double] = SchemaForV2.DoubleSchema
+    val schemaFor: SchemaFor[Double] = SchemaFor.DoubleSchema
 
     def encode(value: Double): AnyRef = java.lang.Double.valueOf(value)
 
@@ -213,7 +213,7 @@ object BaseTypes {
 
   object FloatCodec extends Codec[Float] {
 
-    val schemaFor: SchemaForV2[Float] = SchemaForV2.FloatSchema
+    val schemaFor: SchemaFor[Float] = SchemaFor.FloatSchema
 
     def encode(value: Float): AnyRef = java.lang.Float.valueOf(value)
 
@@ -225,7 +225,7 @@ object BaseTypes {
 
   object BooleanCodec extends Codec[Boolean] {
 
-    val schemaFor: SchemaForV2[Boolean] = SchemaForV2.BooleanSchema
+    val schemaFor: SchemaFor[Boolean] = SchemaFor.BooleanSchema
 
     def encode(value: Boolean): AnyRef = java.lang.Boolean.valueOf(value)
 
@@ -234,7 +234,7 @@ object BaseTypes {
 
   object ByteBufferCodec extends Codec[ByteBuffer] {
 
-    val schemaFor: SchemaForV2[ByteBuffer] = SchemaForV2.ByteBufferSchema
+    val schemaFor: SchemaFor[ByteBuffer] = SchemaFor.ByteBufferSchema
 
     def encode(value: ByteBuffer): AnyRef = value
 
@@ -247,7 +247,7 @@ object BaseTypes {
 
   object CharSequenceCodec extends Codec[CharSequence] {
 
-    val schemaFor: SchemaForV2[CharSequence] = SchemaForV2.CharSequenceSchema
+    val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchema
 
     def encode(value: CharSequence): AnyRef = value
 
@@ -257,10 +257,10 @@ object BaseTypes {
     }
   }
 
-  val StringCodec: Codec[String] = new StringCodec(SchemaForV2.StringSchema)
+  val StringCodec: Codec[String] = new StringCodec(SchemaFor.StringSchema)
 
   val Utf8Codec: Codec[Utf8] = new Codec[Utf8] {
-    val schemaFor: SchemaForV2[Utf8] = SchemaForV2.Utf8Schema
+    val schemaFor: SchemaFor[Utf8] = SchemaFor.Utf8Schema
 
     def encode(value: Utf8): AnyRef = value
 
@@ -272,7 +272,7 @@ object BaseTypes {
     }
   }
 
-  private class StringCodec(val schemaFor: SchemaForV2[String]) extends Codec[String] {
+  private class StringCodec(val schemaFor: SchemaFor[String]) extends Codec[String] {
 
     val encoder: String => AnyRef = schema.getType match {
       case Schema.Type.STRING => new Utf8(_)
@@ -300,13 +300,13 @@ object BaseTypes {
       case other               => sys.error(s"Cannot decode $other of type ${other.getClass} into a string")
     }
 
-    override def withSchema(schemaFor: SchemaForV2[String]): Codec[String] = new StringCodec(schemaFor)
+    override def withSchema(schemaFor: SchemaFor[String]): Codec[String] = new StringCodec(schemaFor)
   }
 
-  val UUIDCodec = StringCodec.inmap[UUID](UUID.fromString, _.toString).withSchema(SchemaForV2.UUIDSchema)
+  val UUIDCodec = StringCodec.inmap[UUID](UUID.fromString, _.toString).withSchema(SchemaFor.UUIDSchema)
 
   class JavaEnumCodec[E <: Enum[E]](implicit tag: ClassTag[E]) extends Codec[E] {
-    val schemaFor: SchemaForV2[E] = SchemaForV2.javaEnumSchema
+    val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchema
 
     def encode(value: E): AnyRef = new EnumSymbol(schema, value.name)
 
@@ -322,7 +322,7 @@ object BaseTypes {
         mirror.reflectModule(moduleSymbol).instance.asInstanceOf[Enumeration]
     }
 
-    val schemaFor: SchemaForV2[E] = SchemaForV2.scalaEnumSchema[E]
+    val schemaFor: SchemaFor[E] = SchemaFor.scalaEnumSchema[E]
 
     def encode(value: E): AnyRef = new EnumSymbol(schema, value.toString)
 
@@ -423,10 +423,10 @@ object BaseTypes {
   }
 
   private[avro4s] object EncoderSchemaImplicits {
-    implicit def schemaFromEncoder[T](implicit encoder: Encoder[T]): SchemaForV2[T] = SchemaForV2[T](encoder.schema)
+    implicit def schemaFromEncoder[T](implicit encoder: Encoder[T]): SchemaFor[T] = SchemaFor[T](encoder.schema)
   }
 
   private[avro4s] object DecoderSchemaImplicits {
-    implicit def schemaFromDecoder[T](implicit decoder: Decoder[T]): SchemaForV2[T] = SchemaForV2[T](decoder.schema)
+    implicit def schemaFromDecoder[T](implicit decoder: Decoder[T]): SchemaFor[T] = SchemaFor[T](decoder.schema)
   }
 }

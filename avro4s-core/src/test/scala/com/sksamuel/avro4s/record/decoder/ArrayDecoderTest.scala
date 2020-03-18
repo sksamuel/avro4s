@@ -31,7 +31,7 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
   "Decoder" should {
 
     "support array for a vector of primitives" in {
-      val schema = AvroSchemaV2[TestVectorBooleans]
+      val schema = AvroSchema[TestVectorBooleans]
       val record = new GenericData.Record(schema)
       record.put("booleans", List(true, false, true).asJava)
       Decoder[TestVectorBooleans].decode(record) shouldBe TestVectorBooleans(Vector(true, false, true))
@@ -39,8 +39,8 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
     "support array for an vector of records" in {
 
-      val containerSchema = AvroSchemaV2[TestVectorRecords]
-      val recordSchema = AvroSchemaV2[Record]
+      val containerSchema = AvroSchema[TestVectorRecords]
+      val recordSchema = AvroSchema[Record]
 
       val record1 = new GenericData.Record(recordSchema)
       record1.put("str", "qwe")
@@ -58,12 +58,12 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
     "support array for a scala.collection.immutable.Seq of primitives" in {
       case class Test(seq: Seq[String])
-      val schema = AvroSchemaV2[Test]
+      val schema = AvroSchema[Test]
       Encoder[Test].encode(Test(Vector("a", "34", "fgD"))) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("a"), new Utf8("34"), new Utf8("fgD")).asJava))
     }
 
     "support array for an Array of primitives" in {
-      val schema = AvroSchemaV2[TestArrayBooleans]
+      val schema = AvroSchema[TestArrayBooleans]
       val record = new GenericData.Record(schema)
       record.put("booleans", List(true, false, true).asJava)
       Decoder[TestArrayBooleans].decode(record).booleans.toVector shouldBe Vector(true, false, true)
@@ -71,7 +71,7 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
     "support array for a List of primitives" in {
 
-      val schema = AvroSchemaV2[TestListBooleans]
+      val schema = AvroSchema[TestListBooleans]
       val record = new GenericData.Record(schema)
       record.put("booleans", List(true, false, true).asJava)
       Decoder[TestListBooleans].decode(record) shouldBe TestListBooleans(List(true, false, true))
@@ -79,8 +79,8 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
     "support array for a List of records" in {
 
-      val containerSchema = AvroSchemaV2[TestListRecords]
-      val recordSchema = AvroSchemaV2[Record]
+      val containerSchema = AvroSchema[TestListRecords]
+      val recordSchema = AvroSchema[Record]
 
       val record1 = new GenericData.Record(recordSchema)
       record1.put("str", "qwe")
@@ -98,8 +98,8 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
     "support array for a scala.collection.immutable.Seq of records" in {
 
-      val containerSchema = AvroSchemaV2[TestSeqRecords]
-      val recordSchema = AvroSchemaV2[Record]
+      val containerSchema = AvroSchema[TestSeqRecords]
+      val recordSchema = AvroSchema[Record]
 
       val record1 = new GenericData.Record(recordSchema)
       record1.put("str", "qwe")
@@ -117,8 +117,8 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
     "support array for an Array of records" in {
 
-      val containerSchema = AvroSchemaV2[TestArrayRecords]
-      val recordSchema = AvroSchemaV2[Record]
+      val containerSchema = AvroSchema[TestArrayRecords]
+      val recordSchema = AvroSchema[Record]
 
       val record1 = new GenericData.Record(recordSchema)
       record1.put("str", "qwe")
@@ -136,8 +136,8 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
     "support array for a Set of records" in {
 
-      val containerSchema = AvroSchemaV2[TestSetRecords]
-      val recordSchema = AvroSchemaV2[Record]
+      val containerSchema = AvroSchema[TestSetRecords]
+      val recordSchema = AvroSchema[Record]
 
       val record1 = new GenericData.Record(recordSchema)
       record1.put("str", "qwe")
@@ -153,13 +153,13 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
       Decoder[TestSetRecords].decode(container) shouldBe TestSetRecords(Set(Record("qwe", 123.4), Record("wer", 8234.324)))
     }
     "support array for a Set of strings" in {
-      val schema = AvroSchemaV2[TestSetString]
+      val schema = AvroSchema[TestSetString]
       val record = new GenericData.Record(schema)
       record.put("strings", List("Qwe", "324", "q").asJava)
       Decoder[TestSetString].decode(record) shouldBe TestSetString(Set("Qwe", "324", "q"))
     }
     "support array for a Set of doubles" in {
-      val schema = AvroSchemaV2[TestSetDoubles]
+      val schema = AvroSchema[TestSetDoubles]
       val record = new GenericData.Record(schema)
       record.put("doubles", List(132.4324, 5.4, 0.123).asJava)
       Decoder[TestSetDoubles].decode(record) shouldBe TestSetDoubles(Set(132.4324, 5.4, 0.123))

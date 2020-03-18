@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record.decoder
 
 import java.util
 
-import com.sksamuel.avro4s.{AvroSchemaV2, Decoder}
+import com.sksamuel.avro4s.{AvroSchema, Decoder}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.scalatest.matchers.should.Matchers
@@ -31,7 +31,7 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
 
   "Decoder" should {
     "support String options" in {
-      val schema = AvroSchemaV2[OptionString]
+      val schema = AvroSchema[OptionString]
 
       val record1 = new GenericData.Record(schema)
       record1.put("s", "hello")
@@ -42,14 +42,14 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
       Decoder[OptionString].decode(record2) shouldBe OptionString(None)
     }
     "support decoding required fields as Option" in {
-      val requiredStringSchema = AvroSchemaV2[RequiredString]
+      val requiredStringSchema = AvroSchema[RequiredString]
 
       val requiredStringRecord = new GenericData.Record(requiredStringSchema)
       requiredStringRecord.put("s", "hello")
       Decoder[OptionString].decode(requiredStringRecord) shouldBe OptionString(Some("hello"))
     }
     "support boolean options" in {
-      val schema = AvroSchemaV2[OptionBoolean]
+      val schema = AvroSchema[OptionBoolean]
 
       val record1 = new GenericData.Record(schema)
       record1.put("b", true)
@@ -60,19 +60,19 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
       Decoder[OptionBoolean].decode(record2) shouldBe OptionBoolean(None)
     }
     "if a field is missing, use default value" in {
-      val record1 = new GenericData.Record(AvroSchemaV2[SchemaWithoutExpectedField])
+      val record1 = new GenericData.Record(AvroSchema[SchemaWithoutExpectedField])
 
       // TODO clarify is it really desired to decode records having a different schema?
       Decoder[OptionStringDefault].decode(record1) shouldBe OptionStringDefault(Some("cupcat"))
     }
     "if an enum field is missing, use default value" in {
-      val record1 = new GenericData.Record(AvroSchemaV2[SchemaWithoutExpectedField])
+      val record1 = new GenericData.Record(AvroSchema[SchemaWithoutExpectedField])
 
       // TODO clarify is it really desired to decode records having a different schema?
       Decoder[OptionEnumDefault].decode(record1) shouldBe OptionEnumDefault(Some(CuppersOptionEnum))
     }
     "decode a null field to None" in {
-      val schema = AvroSchemaV2[OptionEnumDefaultWithNone]
+      val schema = AvroSchema[OptionEnumDefaultWithNone]
 
       val record1 = new GenericData.Record(schema)
       record1.put("s", null)
@@ -81,7 +81,7 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
       Decoder[OptionEnumDefaultWithNone].decode(record1) shouldBe OptionEnumDefaultWithNone(None, "cupcat")
     }
     "option of seq of case class" in {
-      val schema = AvroSchemaV2[OptionOfSeqOfCaseClass]
+      val schema = AvroSchema[OptionOfSeqOfCaseClass]
       val unionSchema = schema.getField("foo").schema()
       require(unionSchema.getType == Schema.Type.UNION)
       val arraySchema = unionSchema.getTypes.get(1)

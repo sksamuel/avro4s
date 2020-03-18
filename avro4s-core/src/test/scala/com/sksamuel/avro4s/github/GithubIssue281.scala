@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.AvroSchemaV2
+import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -16,7 +16,7 @@ case class Outer(inners: Seq[Inner])
 class GithubIssue281 extends AnyFunSuite with Matchers {
 
   test("Avro Schema for a sealed trait in a subobject #281") {
-    AvroSchemaV2[Outer].toString(true) shouldBe """{
+    AvroSchema[Outer].toString(true) shouldBe """{
                                                 |  "type" : "record",
                                                 |  "name" : "Outer",
                                                 |  "namespace" : "com.sksamuel.avro4s.github",

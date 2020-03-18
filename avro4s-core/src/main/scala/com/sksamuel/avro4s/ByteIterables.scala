@@ -52,7 +52,7 @@ object ByteIterables {
       case _                   => sys.error(s"Byte array codec cannot decode '$value'")
     }
 
-    override def withSchema(schemaFor: SchemaForV2[Array[Byte]]): Codec[Array[Byte]] =
+    override def withSchema(schemaFor: SchemaFor[Array[Byte]]): Codec[Array[Byte]] =
       schemaFor.schema.getType match {
         case Schema.Type.BYTES => ByteArrayCodec
         case Schema.Type.FIXED => new FixedByteArrayCodec(schemaFor)
@@ -62,12 +62,12 @@ object ByteIterables {
 
   val ByteArrayCodec: Codec[Array[Byte]] = new ByteArrayCodecBase {
 
-    val schemaFor = SchemaForV2.arraySchema[Byte]
+    val schemaFor = SchemaFor.arraySchema[Byte]
 
     def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
   }
 
-  private[avro4s] class FixedByteArrayCodec(val schemaFor: SchemaForV2[Array[Byte]]) extends ByteArrayCodecBase {
+  private[avro4s] class FixedByteArrayCodec(val schemaFor: SchemaFor[Array[Byte]]) extends ByteArrayCodecBase {
     require(schema.getType == Schema.Type.FIXED)
 
     def encode(value: Array[Byte]): AnyRef = {
@@ -81,13 +81,13 @@ object ByteIterables {
                                                                byteArrayCodec: Codec[Array[Byte]] = ByteArrayCodec)
       extends Codec[C[Byte]] {
 
-    val schemaFor: SchemaForV2[C[Byte]] = byteArrayCodec.schemaFor.forType
+    val schemaFor: SchemaFor[C[Byte]] = byteArrayCodec.schemaFor.forType
 
     def encode(value: C[Byte]): AnyRef = byteArrayCodec.encode(value.toArray)
 
     def decode(value: Any): C[Byte] = build(byteArrayCodec.decode(value))
 
-    override def withSchema(schemaFor: SchemaForV2[C[Byte]]): Codec[C[Byte]] =
+    override def withSchema(schemaFor: SchemaFor[C[Byte]]): Codec[C[Byte]] =
       new IterableByteCodec(build, byteArrayCodec.withSchema(schemaFor.map(identity)))
   }
 }

@@ -1,13 +1,13 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.AvroSchemaV2
+import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 class GithubIssue330 extends AnyFunSuite with Matchers {
 
   test("Unable to generate schema for a CoProduct where on of the case class has a parameter of type Map[String, String]") {
-    val schema = AvroSchemaV2[Foo330]
+    val schema = AvroSchema[Foo330]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github/github_330.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }

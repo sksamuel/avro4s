@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.AvroSchemaV2
+import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -12,7 +12,7 @@ case class MyRecord(key: String, str1: String, str2: String, int1: Int)
 class GithubIssue69 extends AnyFunSuite with Matchers {
 
   test("Can't create schema for generic type #69") {
-    val schema = AvroSchemaV2[Message[MyRecord]]
+    val schema = AvroSchema[Message[MyRecord]]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/github69.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }

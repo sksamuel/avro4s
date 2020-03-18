@@ -8,10 +8,10 @@ trait Encoder[T] extends SchemaAware[Encoder, T] with Serializable { self =>
 
   def encode(value: T): AnyRef
 
-  def withSchema(schemaFor: SchemaForV2[T]): Encoder[T] = {
+  def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
     val sf = schemaFor
     new Encoder[T] {
-      val schemaFor: SchemaForV2[T] = sf
+      val schemaFor: SchemaFor[T] = sf
 
       def encode(value: T): AnyRef = self.encode(value)
     }
@@ -30,11 +30,11 @@ object Encoder
 
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 
-  private class DelegatingEncoder[T, S](encoder: Encoder[T], val schemaFor: SchemaForV2[S], comap: S => T) extends Encoder[S] {
+  private class DelegatingEncoder[T, S](encoder: Encoder[T], val schemaFor: SchemaFor[S], comap: S => T) extends Encoder[S] {
 
     def encode(value: S): AnyRef = encoder.encode(comap(value))
 
-    override def withSchema(schemaFor: SchemaForV2[S]): Encoder[S] = {
+    override def withSchema(schemaFor: SchemaFor[S]): Encoder[S] = {
       // pass through decoder transformation.
       val decoderWithSchema = encoder.withSchema(schemaFor.forType)
       new DelegatingEncoder[T, S](decoderWithSchema, schemaFor.forType, comap)

@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.streams.output
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{AvroOutputStream, AvroSchemaV2}
+import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema}
 import org.apache.avro.file.CodecFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -10,7 +10,7 @@ import org.scalatest.wordspec.AnyWordSpec
 class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
 
   case class Composer(name: String, birthplace: String, compositions: Seq[String])
-  val schema = AvroSchemaV2[Composer]
+  val schema = AvroSchema[Composer]
   val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
 
   "AvroDataOutputStream" should {

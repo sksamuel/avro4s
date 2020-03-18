@@ -5,7 +5,7 @@ sealed trait SchemaUpdate {
 }
 
 object SchemaUpdate {
-  case class FullSchemaUpdate(schemaFor: SchemaForV2[_]) extends SchemaUpdate {
+  case class FullSchemaUpdate(schemaFor: SchemaFor[_]) extends SchemaUpdate {
     def fieldMapper: FieldMapper = schemaFor.fieldMapper
   }
   case class NamespaceUpdate(namespace: String, fieldMapper: FieldMapper) extends SchemaUpdate

@@ -27,7 +27,7 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
 
   performance of "avro4s simple field encoding" in {
 
-    val schema = AvroSchemaV2[RecordWithSimpleField]
+    val schema = AvroSchema[RecordWithSimpleField]
     val encoder = Encoder[RecordWithSimpleField]
     val writer = new GenericDatumWriter[GenericRecord](schema)
     val s = RecordWithSimpleField(IntAttributeValue.Valid(255, t))
@@ -39,7 +39,7 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
 
   performance of "avro4s type union encoding" in {
 
-    val schema = AvroSchemaV2[RecordWithUnionField]
+    val schema = AvroSchema[RecordWithUnionField]
     val encoder = Encoder[RecordWithUnionField]
     val writer = new GenericDatumWriter[GenericRecord](schema)
     val s = RecordWithUnionField(IntAttributeValue.Valid(255, t))
@@ -51,7 +51,7 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
 
   performance of "avro4s type parameter encoding" in {
 
-    val schema = AvroSchemaV2[RecordWithTypeParamField]
+    val schema = AvroSchema[RecordWithTypeParamField]
     val encoder = Encoder[RecordWithTypeParamField]
     val writer = new GenericDatumWriter[GenericRecord](schema)
     val s = RecordWithTypeParamField(AttributeValue.Valid[Int](255, t))
@@ -63,7 +63,7 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
 
   performance of "avro4s union type with type param encoding" in {
 
-    val schema = AvroSchemaV2[RecordWithUnionAndTypeField]
+    val schema = AvroSchema[RecordWithUnionAndTypeField]
     val encoder = Encoder[RecordWithUnionAndTypeField]
     val writer = new GenericDatumWriter[GenericRecord](schema)
     val s = RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t))
@@ -88,7 +88,7 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
 
     import benchmarks.handrolled_codecs._
     implicit val codec: AttributeValueCodec[Int] = AttributeValueCodec[Int]
-    val schema = AvroSchemaV2[RecordWithUnionAndTypeField]
+    val schema = AvroSchema[RecordWithUnionAndTypeField]
     val encoder = Encoder[RecordWithUnionAndTypeField]
     val writer = new GenericDatumWriter[GenericRecord](schema)
 

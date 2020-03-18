@@ -17,7 +17,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
     case class Test(decimal: BigDecimal)
 
-    val schema = AvroSchemaV2[Test]
+    val schema = AvroSchema[Test]
 
     val obj = Test(12.34)
     val s = schema.getField("decimal").schema()
@@ -28,12 +28,12 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
   test("allow decimals to be encoded as strings") {
 
-    implicit val bigDecimalSchemaFor = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
+    implicit val bigDecimalSchemaFor = SchemaFor[BigDecimal](SchemaBuilder.builder.stringType)
     implicit val bigDecimalEncoder = Encoder[BigDecimal].withSchema(bigDecimalSchemaFor)
 
     case class Test(decimal: BigDecimal)
 
-    val schema = AvroSchemaV2[Test]
+    val schema = AvroSchema[Test]
     val record = Encoder[Test].encode(Test(123.456))
     record shouldBe ImmutableRecord(schema, Vector(new Utf8("123.456")))
   }
@@ -43,7 +43,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
     case class Test(decimal: BigDecimal)
 
     implicit val sp = ScalePrecision(2, 10)
-    val schema = AvroSchemaV2[Test]
+    val schema = AvroSchema[Test]
     val s = schema.getField("decimal").schema()
 
     implicit val roundingMode = RoundingMode.HALF_UP
@@ -59,7 +59,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
   test("support optional big decimals") {
 
     case class Test(big: Option[BigDecimal])
-    val schema = AvroSchemaV2[Test]
+    val schema = AvroSchema[Test]
 
     val s = schema.getField("big").schema().getTypes.asScala.find(_.getType != Schema.Type.NULL).get
     val bytes =
@@ -71,18 +71,18 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
   test("allow custom typeclass overrides") {
 
-    implicit val bigDecimalAsString = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
+    implicit val bigDecimalAsString = SchemaFor[BigDecimal](SchemaBuilder.builder.stringType)
     implicit val bigDecimalEncoder = Encoder[BigDecimal].withSchema(bigDecimalAsString)
 
     case class Test(decimal: BigDecimal)
 
-    val schema = AvroSchemaV2[Test]
+    val schema = AvroSchema[Test]
     Encoder[Test].encode(Test(123.66)) shouldBe ImmutableRecord(schema, Vector(new Utf8("123.66")))
   }
 
   test("allow bigdecimals to be encoded as generic fixed") {
     case class Test(s: BigDecimal)
-    implicit val bigDecimalAsFixed = SchemaForV2[BigDecimal](
+    implicit val bigDecimalAsFixed = SchemaFor[BigDecimal](
       LogicalTypes.decimal(10, 8).addToSchema(SchemaBuilder.fixed("BigDecimal").size(8)))
     implicit val bigDecimalEncoder = Encoder[BigDecimal].withSchema(bigDecimalAsFixed)
     val record = Encoder[Test].encode(Test(12345678)).asInstanceOf[GenericRecord]

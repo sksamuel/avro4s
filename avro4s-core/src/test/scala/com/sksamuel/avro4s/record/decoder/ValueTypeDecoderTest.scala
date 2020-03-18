@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchemaV2, Decoder}
+import com.sksamuel.avro4s.{AvroSchema, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite
@@ -17,7 +17,7 @@ class ValueTypeDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("support fields that are value types") {
-    val schema = AvroSchemaV2[Test]
+    val schema = AvroSchema[Test]
 
     val record1 = new GenericData.Record(schema)
     record1.put("foo", new Utf8("hello"))
@@ -26,7 +26,7 @@ class ValueTypeDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("support value types inside Options") {
-    val schema = AvroSchemaV2[OptionTest]
+    val schema = AvroSchema[OptionTest]
 
     val record1 = new GenericData.Record(schema)
     record1.put("foo", new Utf8("hello"))

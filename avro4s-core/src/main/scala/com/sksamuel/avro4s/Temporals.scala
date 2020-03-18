@@ -4,7 +4,7 @@ import java.sql.{Date, Timestamp}
 import java.time._
 import java.time.format.DateTimeFormatter
 
-import com.sksamuel.avro4s.SchemaForV2.TimestampNanosLogicalType
+import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
 
 trait TemporalCodecs {
@@ -40,10 +40,10 @@ trait TemporalDecoders {
 object Temporals {
 
   val InstantCodec =
-    BaseTypes.LongCodec.inmap[Instant](Instant.ofEpochMilli, _.toEpochMilli).withSchema(SchemaForV2.InstantSchema)
+    BaseTypes.LongCodec.inmap[Instant](Instant.ofEpochMilli, _.toEpochMilli).withSchema(SchemaFor.InstantSchema)
 
   val LocalTimeCodec: Codec[LocalTime] = new Codec[LocalTime] {
-    val schemaFor: SchemaForV2[LocalTime] = SchemaForV2.LocalTimeSchema
+    val schemaFor: SchemaFor[LocalTime] = SchemaFor.LocalTimeSchema
 
     def encode(value: LocalTime): AnyRef = java.lang.Long.valueOf(value.toNanoOfDay / 1000)
 
@@ -64,15 +64,15 @@ object Temporals {
   val LocalDateCodec: Codec[LocalDate] =
     BaseTypes.IntCodec
       .inmap[LocalDate](i => LocalDate.ofEpochDay(i.toLong), _.toEpochDay.toInt)
-      .withSchema(SchemaForV2.LocalDateSchema)
+      .withSchema(SchemaFor.LocalDateSchema)
 
   val TimestampCodec: Codec[Timestamp] = InstantCodec.inmap[Timestamp](Timestamp.from, _.toInstant)
 
   val DateCodec: Codec[Date] = LocalDateCodec.inmap[Date](Date.valueOf, _.toLocalDate)
 
-  val LocalDateTimeCodec: Codec[LocalDateTime] = new LocalDateTimeCodec(SchemaForV2.LocalDateTimeSchema)
+  val LocalDateTimeCodec: Codec[LocalDateTime] = new LocalDateTimeCodec(SchemaFor.LocalDateTimeSchema)
 
-  class LocalDateTimeCodec(val schemaFor: SchemaForV2[LocalDateTime]) extends Codec[LocalDateTime] {
+  class LocalDateTimeCodec(val schemaFor: SchemaFor[LocalDateTime]) extends Codec[LocalDateTime] {
 
     val encoder: LocalDateTime => Long = schemaFor.schema.getLogicalType match {
       case _: TimestampMillis => _.toInstant(ZoneOffset.UTC).toEpochMilli
@@ -110,13 +110,13 @@ object Temporals {
 
     def decode(value: Any): LocalDateTime = decoder(value)
 
-    override def withSchema(schemaFor: SchemaForV2[LocalDateTime]): Codec[LocalDateTime] =
+    override def withSchema(schemaFor: SchemaFor[LocalDateTime]): Codec[LocalDateTime] =
       new LocalDateTimeCodec(schemaFor)
   }
 
   object OffsetDateTimeCodec extends Codec[OffsetDateTime] {
 
-    val schemaFor: SchemaForV2[OffsetDateTime] = SchemaForV2.OffsetDateTimeSchema
+    val schemaFor: SchemaFor[OffsetDateTime] = SchemaFor.OffsetDateTimeSchema
 
     def decode(value: Any): OffsetDateTime =
       OffsetDateTime.parse(value.toString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)

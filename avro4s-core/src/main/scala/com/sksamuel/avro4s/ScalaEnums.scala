@@ -33,7 +33,7 @@ object ScalaEnums {
           schema.getEnumSymbols.get(i) -> caseObject
       }.toMap
 
-    val data = new CodecData[Typeclass, T](ctx, symbolForSubtype, valueForSymbol, SchemaForV2[T](schema))
+    val data = new CodecData[Typeclass, T](ctx, symbolForSubtype, valueForSymbol, SchemaFor[T](schema))
     builder(data)
   }
 
@@ -50,7 +50,7 @@ object ScalaEnums {
       case s: String               => valueForSymbol(s)
     }
 
-    protected def validateSchema(schemaFor: SchemaForV2[T]): Unit = {
+    protected def validateSchema(schemaFor: SchemaFor[T]): Unit = {
       val newSchema = schemaFor.schema
       require(newSchema.getType == Schema.Type.ENUM,
               s"Schema type for enum codecs must be ENUM, received ${newSchema.getType}")
@@ -65,7 +65,7 @@ object ScalaEnums {
 
   private class EnumCodec[T](data: CodecData[Codec, T]) extends BaseCodec[Codec, T](data) with Codec[T] {
 
-    override def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = {
+    override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = {
       validateSchema(schemaFor)
       super.withSchema(schemaFor)
     }
@@ -73,7 +73,7 @@ object ScalaEnums {
 
   private class EnumDecoder[T](data: CodecData[Decoder, T]) extends BaseCodec[Decoder, T](data) with Decoder[T] {
 
-    override def withSchema(schemaFor: SchemaForV2[T]): Decoder[T] = {
+    override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
       validateSchema(schemaFor)
       super.withSchema(schemaFor)
     }
@@ -81,7 +81,7 @@ object ScalaEnums {
 
   private class EnumEncoder[T](data: CodecData[Encoder, T]) extends BaseCodec[Encoder, T](data) with Encoder[T] {
 
-    override def withSchema(schemaFor: SchemaForV2[T]): Encoder[T] = {
+    override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
       validateSchema(schemaFor)
       super.withSchema(schemaFor)
     }
@@ -90,7 +90,7 @@ object ScalaEnums {
   private class CodecData[Typeclass[_], T](val ctx: SealedTrait[Typeclass, T],
                                            val symbolForSubtype: Map[Subtype[Typeclass, T], AnyRef],
                                            val valueForSymbol: Map[String, T],
-                                           val schemaFor: SchemaForV2[T])
+                                           val schemaFor: SchemaFor[T])
 
   private def sortedSubtypes[TC[_], T](ctx: SealedTrait[TC, T]): Seq[Subtype[TC, T]] = {
     def priority(st: Subtype[TC, T]) = new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)

@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.github.SampleProtocol.SubPart1.InnerEnum
-import com.sksamuel.avro4s.{AvroSchemaV2, FromRecord, ToRecord}
+import com.sksamuel.avro4s.{AvroSchema, FromRecord, ToRecord}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -37,7 +37,7 @@ class Githu4bIssue180 extends AnyFunSpec with Matchers {
         ToRecord[WithTopEnum] shouldNot be(null)
       }
       it("should be able to compile `SchemaFor`") {
-        AvroSchemaV2[WithTopEnum] shouldNot be(null)
+        AvroSchema[WithTopEnum] shouldNot be(null)
       }
     }
 
@@ -50,7 +50,7 @@ class Githu4bIssue180 extends AnyFunSpec with Matchers {
         ToRecord[WithInnerEnum] shouldNot be(null)
       }
       it("should be able to compile `SchemaFor`") {
-        AvroSchemaV2[WithInnerEnum] shouldNot be(null)
+        AvroSchema[WithInnerEnum] shouldNot be(null)
       }
     }
   }

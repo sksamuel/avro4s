@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroName, AvroSchemaV2, SnakeCase}
+import com.sksamuel.avro4s.{AvroName, AvroSchema, SnakeCase}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -8,7 +8,7 @@ class AvroNameSchemaTest extends AnyFunSuite with Matchers {
 
   test("generate field names using @AvroName") {
     case class Foo(@AvroName("wibble") wobble: String, wubble: String)
-    val schema = AvroSchemaV2[Foo]
+    val schema = AvroSchema[Foo]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_field.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
@@ -16,26 +16,26 @@ class AvroNameSchemaTest extends AnyFunSuite with Matchers {
   test("generate class names using @AvroName") {
     @AvroName("wibble")
     case class Foo(a: String, b: String)
-    val schema = AvroSchemaV2[Foo]
+    val schema = AvroSchema[Foo]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_class.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("@AvroName on top level java enum") {
-    val schema = AvroSchemaV2[MyJavaEnum]
+    val schema = AvroSchema[MyJavaEnum]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_java_enum.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("@AvroName on field level java enum") {
     case class Wibble(e: MyJavaEnum)
-    val schema = AvroSchemaV2[Wibble]
+    val schema = AvroSchema[Wibble]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_nested_java_enum.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("@AvroName on top level ADT type") {
-    val schema = AvroSchemaV2[Weather]
+    val schema = AvroSchema[Weather]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_sealed_trait.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }

@@ -34,21 +34,21 @@ class EitherDecoderTest extends AnyFunSuite with Matchers {
   case class Test5(either: Either[Apple, Orange])
 
   test("decode union:T,U for Either[T,U] of primitives") {
-    val schema = AvroSchemaV2[Test]
+    val schema = AvroSchema[Test]
     Decoder[Test].decode(ImmutableRecord(schema, Vector(new Utf8("foo")))) shouldBe Test(Left("foo"))
     Decoder[Test].decode(ImmutableRecord(schema, Vector(java.lang.Double.valueOf(234.4D)))) shouldBe Test(Right(234.4D))
   }
 
   test("decode union:T,U for Either[T,U] of top level classes") {
-    val schema = AvroSchemaV2[Test2]
-    Decoder[Test2].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchemaV2[Goo], Vector(new Utf8("zzz")))))) shouldBe Test2(Left(Goo("zzz")))
-    Decoder[Test2].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchemaV2[Foo], Vector(java.lang.Boolean.valueOf(true)))))) shouldBe Test2(Right(Foo(true)))
+    val schema = AvroSchema[Test2]
+    Decoder[Test2].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Goo], Vector(new Utf8("zzz")))))) shouldBe Test2(Left(Goo("zzz")))
+    Decoder[Test2].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Foo], Vector(java.lang.Boolean.valueOf(true)))))) shouldBe Test2(Right(Foo(true)))
   }
 
   test("decode union:T,U for Either[T,U] of nested classes") {
-    val schema = AvroSchemaV2[Test3]
-    Decoder[Test3].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchemaV2[Voo], Vector(new Utf8("zzz")))))) shouldBe Test3(Left(Voo("zzz")))
-    Decoder[Test3].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchemaV2[Woo], Vector(java.lang.Boolean.valueOf(true)))))) shouldBe Test3(Right(Woo(true)))
+    val schema = AvroSchema[Test3]
+    Decoder[Test3].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Voo], Vector(new Utf8("zzz")))))) shouldBe Test3(Left(Voo("zzz")))
+    Decoder[Test3].decode(ImmutableRecord(schema, Vector(ImmutableRecord(AvroSchema[Woo], Vector(java.lang.Boolean.valueOf(true)))))) shouldBe Test3(Right(Woo(true)))
   }
 
   test("use @AvroName defined on a class when choosing which Either to decode") {

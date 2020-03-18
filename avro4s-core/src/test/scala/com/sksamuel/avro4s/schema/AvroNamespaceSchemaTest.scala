@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroNamespace, AvroSchemaV2}
+import com.sksamuel.avro4s.{AvroNamespace, AvroSchema}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -11,7 +11,7 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
 
       @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String)
 
-      val schema = AvroSchemaV2[AnnotatedNamespace]
+      val schema = AvroSchema[AnnotatedNamespace]
       schema.getNamespace shouldBe "com.yuval"
     }
 
@@ -21,7 +21,7 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
       @AvroNamespace("com.yuval.internal") case class InternalAnnotated(i: Int)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
-      val schema = AvroSchemaV2[AnnotatedNamespace]
+      val schema = AvroSchema[AnnotatedNamespace]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
@@ -31,7 +31,7 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
       @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String, @AvroNamespace("com.yuval.internal") internal: InternalAnnotated)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
-      val schema = AvroSchemaV2[AnnotatedNamespace]
+      val schema = AvroSchema[AnnotatedNamespace]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
@@ -43,25 +43,25 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
       @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String, @AvroNamespace("com.yuval.internal") internal: InternalAnnotated)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace.avsc"))
-      val schema = AvroSchemaV2[AnnotatedNamespace]
+      val schema = AvroSchema[AnnotatedNamespace]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support namespace annotations on case classes at field level" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum_field_level.json"))
-      val schema = AvroSchemaV2[Teapot]
+      val schema = AvroSchema[Teapot]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support namespace annotations on case classes at class level" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum_class_level.json"))
-      val schema = AvroSchemaV2[Location]
+      val schema = AvroSchema[Location]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support namespace annotations on ADTs at type level" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum_trait_level.json"))
-      val schema = AvroSchemaV2[Africa]
+      val schema = AvroSchema[Africa]
       schema.toString(true) shouldBe expected.toString(true)
     }
 
@@ -71,7 +71,7 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
       case class Foo(s: String)
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_empty.json"))
-      val schema = AvroSchemaV2[Foo]
+      val schema = AvroSchema[Foo]
       schema.toString(true) shouldBe expected.toString(true)
     }
   }

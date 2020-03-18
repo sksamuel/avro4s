@@ -14,7 +14,7 @@ class RefinedTest extends AnyWordSpec with Matchers {
 
   "refinedSchemaFor" should {
     "use the schema for the underlying type" in {
-      AvroSchemaV2[Foo] shouldBe new Schema.Parser().parse(
+      AvroSchema[Foo] shouldBe new Schema.Parser().parse(
         """
           |{
           |	"type": "record",
@@ -40,12 +40,12 @@ class RefinedTest extends AnyWordSpec with Matchers {
   "refinedDecoder" should {
     "use the decoder for the underlying type" in {
       val expected: String Refined NonEmpty = "foo"
-      val record = ImmutableRecord(AvroSchemaV2[Foo], Vector(expected.value))
+      val record = ImmutableRecord(AvroSchema[Foo], Vector(expected.value))
       FromRecord[Foo].from(record) shouldBe Foo(expected)
     }
 
     "throw when the value does not conform to the refined predicate" in {
-      val record = ImmutableRecord(AvroSchemaV2[Foo], Vector(""))
+      val record = ImmutableRecord(AvroSchema[Foo], Vector(""))
       assertThrows[IllegalArgumentException](FromRecord[Foo].from(record))
     }
   }

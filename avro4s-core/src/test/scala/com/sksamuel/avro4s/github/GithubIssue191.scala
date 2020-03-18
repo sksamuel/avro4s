@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.github
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{AvroOutputStream, AvroSchemaV2}
+import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema}
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.util.Utf8
@@ -15,7 +15,7 @@ final case class SimpleUser(name: String, sn: Option[SN])
 class GithubIssue191 extends AnyFunSuite with Matchers {
 
   test("writing out AnyVal in an option") {
-    implicit val schema = AvroSchemaV2[SimpleUser]
+    implicit val schema = AvroSchema[SimpleUser]
     val bytes = new ByteArrayOutputStream
     val out = AvroOutputStream.data[SimpleUser].to(bytes).build()
     out.write(SimpleUser("Tom", Some(SN("123"))))

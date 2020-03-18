@@ -4,16 +4,16 @@ import org.apache.avro.Schema
 
 trait Decoder[T] extends SchemaAware[Decoder, T] with Serializable { self =>
 
-  def schemaFor: SchemaForV2[T]
+  def schemaFor: SchemaFor[T]
 
   def schema: Schema
 
   def decode(value: Any): T
 
-  def withSchema(schemaFor: SchemaForV2[T]): Decoder[T] = {
+  def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
     val sf = schemaFor
     new Decoder[T] {
-      def schemaFor: SchemaForV2[T] = sf
+      def schemaFor: SchemaFor[T] = sf
       def decode(value: Any): T = self.decode(value)
     }
   }
@@ -30,12 +30,12 @@ object Decoder
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
-  private class DelegatingDecoder[T, S](decoder: Decoder[T], val schemaFor: SchemaForV2[S], map: T => S)
+  private class DelegatingDecoder[T, S](decoder: Decoder[T], val schemaFor: SchemaFor[S], map: T => S)
       extends Decoder[S] {
 
     def decode(value: Any): S = map(decoder.decode(value))
 
-    override def withSchema(schemaFor: SchemaForV2[S]): Decoder[S] = {
+    override def withSchema(schemaFor: SchemaFor[S]): Decoder[S] = {
       // pass through decoder transformation.
       val decoderWithSchema = decoder.withSchema(schemaFor.forType)
       new DelegatingDecoder[T, S](decoderWithSchema, schemaFor.forType, map)

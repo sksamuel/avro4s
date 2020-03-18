@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchemaV2, ScalePrecision, SchemaForV2}
+import com.sksamuel.avro4s.{AvroSchema, ScalePrecision, SchemaFor}
 import org.apache.avro.Schema
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -14,35 +14,35 @@ class BigDecimalSchemaTest extends AnyWordSpec with Matchers {
   "SchemaEncoder" should {
     "accept big decimal as logical type on bytes" in {
       case class Test(decimal: BigDecimal)
-      val schema = AvroSchemaV2[Test]
+      val schema = AvroSchema[Test]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal.json"))
       schema shouldBe expected
     }
     "accept big decimal as logical type on bytes with custom scale and precision" in {
       implicit val sp = ScalePrecision(8, 20)
       case class Test(decimal: BigDecimal)
-      val schema = AvroSchemaV2[Test]
+      val schema = AvroSchema[Test]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal-scale-and-precision.json"))
       schema shouldBe expected
     }
     "support big decimal with default" in {
-      val schema = AvroSchemaV2[BigDecimalDefault]
+      val schema = AvroSchema[BigDecimalDefault]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_default.json"))
       schema shouldBe expected
     }
     "suport Option[BigDecimal] as a union" in {
       case class BigDecimalOption(decimal: Option[BigDecimal])
-      val schema = AvroSchemaV2[BigDecimalOption]
+      val schema = AvroSchema[BigDecimalOption]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_option.json"))
       schema shouldBe expected
     }
     "Seq[BigDecimal] be represented as an array of logical types" in {
-      val schema = AvroSchemaV2[BigDecimalSeq]
+      val schema = AvroSchema[BigDecimalSeq]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_seq.json"))
       schema shouldBe expected
     }
     "Seq[Option[BigDecimal]] be represented as an array of unions of nulls/bigdecimals" in {
-      val schema = AvroSchemaV2[BigDecimalSeqOption]
+      val schema = AvroSchema[BigDecimalSeqOption]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_seq_option.json"))
       schema shouldBe expected
     }
@@ -51,16 +51,16 @@ class BigDecimalSchemaTest extends AnyWordSpec with Matchers {
       implicit val bigDecimalSchemaFor = com.sksamuel.avro4s.BigDecimals.AsString
 
       case class BigDecimalAsStringTest(decimal: BigDecimal)
-      val schema = AvroSchemaV2[BigDecimalAsStringTest]
+      val schema = AvroSchema[BigDecimalAsStringTest]
       val expected = new org.apache.avro.Schema.Parser().parse(this.getClass.getResourceAsStream("/bigdecimal_as_string.json"))
       schema shouldBe expected
     }
     "allow big decimals to be encoded as FIXED when custom typeclasses are provided" in {
 
-      implicit val bigDecimalAsFixedSchemaFor = SchemaForV2[BigDecimal](Schema.createFixed("bigdecimal", null, null, 55))
+      implicit val bigDecimalAsFixedSchemaFor = SchemaFor[BigDecimal](Schema.createFixed("bigdecimal", null, null, 55))
 
       case class BigDecimalAsFixedTest(decimal: BigDecimal)
-      val schema = AvroSchemaV2[BigDecimalAsFixedTest]
+      val schema = AvroSchema[BigDecimalAsFixedTest]
       val expected = new org.apache.avro.Schema.Parser().parse(this.getClass.getResourceAsStream("/bigdecimal_as_fixed.json"))
       schema shouldBe expected
     }

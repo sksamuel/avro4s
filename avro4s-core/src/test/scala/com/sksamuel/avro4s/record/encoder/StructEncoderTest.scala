@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchemaV2, Encoder, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -14,8 +14,8 @@ class StructEncoderTest extends AnyWordSpec with Matchers {
 
   "RecordEncoder" should {
     "encode structs" in {
-      val countySchema = AvroSchemaV2[County]
-      val townSchema = AvroSchemaV2[Town]
+      val countySchema = AvroSchema[County]
+      val townSchema = AvroSchema[Town]
       val count = County("Bucks", Seq(Town("Hardwick", 123), Town("Weedon", 225)), true, 12.34, 0.123)
       val result = Encoder[County].encode(count)
 

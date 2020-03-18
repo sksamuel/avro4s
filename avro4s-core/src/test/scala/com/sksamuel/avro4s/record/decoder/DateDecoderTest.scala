@@ -3,8 +3,8 @@ package com.sksamuel.avro4s.record.decoder
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 
-import com.sksamuel.avro4s.SchemaForV2.TimestampNanosLogicalType
-import com.sksamuel.avro4s.{AvroSchemaV2, Decoder, SchemaForV2}
+import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
+import com.sksamuel.avro4s.{AvroSchema, Decoder, SchemaFor}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.{LogicalTypes, SchemaBuilder}
 import org.scalatest.funsuite.AnyFunSuite
@@ -21,21 +21,21 @@ class DateDecoderTest extends AnyFunSuite with Matchers {
   case class WithInstant(z: Instant)
 
   test("decode int to LocalTime") {
-    val schema = AvroSchemaV2[WithLocalTime]
+    val schema = AvroSchema[WithLocalTime]
     val record = new GenericData.Record(schema)
     record.put("z", 46245000000L)
     Decoder[WithLocalTime].decode(record) shouldBe WithLocalTime(LocalTime.of(12, 50, 45))
   }
 
   test("decode int to LocalDate") {
-    val schema = AvroSchemaV2[WithLocalDate]
+    val schema = AvroSchema[WithLocalDate]
     val record = new GenericData.Record(schema)
     record.put("z", 17784)
     Decoder[WithLocalDate].decode(record) shouldBe WithLocalDate(LocalDate.of(2018, 9, 10))
   }
 
   test("decode int to java.sql.Date") {
-    val schema = AvroSchemaV2[WithDate]
+    val schema = AvroSchema[WithDate]
     val record = new GenericData.Record(schema)
     record.put("z", 17784)
     Decoder[WithDate].decode(record) shouldBe WithDate(Date.valueOf(LocalDate.of(2018, 9, 10)))
@@ -46,7 +46,7 @@ class DateDecoderTest extends AnyFunSuite with Matchers {
     val schema = SchemaBuilder.record("foo").fields().name("z").`type`(dateSchema).noDefault().endRecord()
     val record = new GenericData.Record(schema)
     record.put("z", 1572707106376L)
-    Decoder[WithLocalDateTime].withSchema(SchemaForV2(schema)).decode(record) shouldBe WithLocalDateTime(
+    Decoder[WithLocalDateTime].withSchema(SchemaFor(schema)).decode(record) shouldBe WithLocalDateTime(
       LocalDateTime.of(2019, 11, 2, 15, 5, 6, 376000000))
   }
 
@@ -55,7 +55,7 @@ class DateDecoderTest extends AnyFunSuite with Matchers {
     val schema = SchemaBuilder.record("foo").fields().name("z").`type`(dateSchema).noDefault().endRecord()
     val record = new GenericData.Record(schema)
     record.put("z", 1572707106376001L)
-    Decoder[WithLocalDateTime].withSchema(SchemaForV2(schema)).decode(record) shouldBe WithLocalDateTime(
+    Decoder[WithLocalDateTime].withSchema(SchemaFor(schema)).decode(record) shouldBe WithLocalDateTime(
       LocalDateTime.of(2019, 11, 2, 15, 5, 6, 376001000))
   }
 
@@ -69,14 +69,14 @@ class DateDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode long to Timestamp") {
-    val schema = AvroSchemaV2[WithTimestamp]
+    val schema = AvroSchema[WithTimestamp]
     val record = new GenericData.Record(schema)
     record.put("z", 1538312231000L)
     Decoder[WithTimestamp].decode(record) shouldBe WithTimestamp(new Timestamp(1538312231000L))
   }
 
   test("decode long to Instant") {
-    val schema = AvroSchemaV2[WithInstant]
+    val schema = AvroSchema[WithInstant]
     val record = new GenericData.Record(schema)
     record.put("z", 1538312231000L)
     Decoder[WithInstant].decode(record) shouldBe WithInstant(Instant.ofEpochMilli(1538312231000L))

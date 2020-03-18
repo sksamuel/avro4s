@@ -9,15 +9,15 @@ package object cats {
 
   import scala.collection.JavaConverters._
 
-  implicit def nonEmptyListSchemaFor[T](implicit schemaFor: SchemaForV2[T]): SchemaForV2[NonEmptyList[T]] =
-    SchemaForV2(Schema.createArray(schemaFor.schema))
+  implicit def nonEmptyListSchemaFor[T](implicit schemaFor: SchemaFor[T]): SchemaFor[NonEmptyList[T]] =
+    SchemaFor(Schema.createArray(schemaFor.schema))
 
-  implicit def nonEmptyVectorSchemaFor[T](implicit schemaFor: SchemaForV2[T]): SchemaForV2[NonEmptyVector[T]] =
-    SchemaForV2(Schema.createArray(schemaFor.schema))
+  implicit def nonEmptyVectorSchemaFor[T](implicit schemaFor: SchemaFor[T]): SchemaFor[NonEmptyVector[T]] =
+    SchemaFor(Schema.createArray(schemaFor.schema))
 
   implicit def nonEmptyListEncoder[T](implicit encoder: Encoder[T]) = new Encoder[NonEmptyList[T]] {
 
-    val schemaFor: SchemaForV2[NonEmptyList[T]] = nonEmptyListSchemaFor(encoder.schemaFor)
+    val schemaFor: SchemaFor[NonEmptyList[T]] = nonEmptyListSchemaFor(encoder.schemaFor)
 
     override def encode(ts: NonEmptyList[T]): java.util.List[AnyRef] = {
       require(schema != null)
@@ -27,7 +27,7 @@ package object cats {
 
   implicit def nonEmptyVectorEncoder[T](implicit encoder: Encoder[T]) = new Encoder[NonEmptyVector[T]] {
 
-    val schemaFor: SchemaForV2[NonEmptyVector[T]] = nonEmptyVectorSchemaFor(encoder.schemaFor)
+    val schemaFor: SchemaFor[NonEmptyVector[T]] = nonEmptyVectorSchemaFor(encoder.schemaFor)
 
     override def encode(ts: NonEmptyVector[T]): java.util.List[AnyRef] = {
       require(schema != null)
@@ -37,7 +37,7 @@ package object cats {
 
   implicit def nonEmptyListDecoder[T](implicit decoder: Decoder[T]) = new Decoder[NonEmptyList[T]] {
 
-    val schemaFor: SchemaForV2[NonEmptyList[T]] = nonEmptyListSchemaFor(decoder.schemaFor)
+    val schemaFor: SchemaFor[NonEmptyList[T]] = nonEmptyListSchemaFor(decoder.schemaFor)
 
     override def decode(value: Any): NonEmptyList[T] = value match {
       case array: Array[_] => NonEmptyList.fromListUnsafe(array.toList.map(decoder.decode))
@@ -48,7 +48,7 @@ package object cats {
 
   implicit def nonEmptyVectorDecoder[T](implicit decoder: Decoder[T]) = new Decoder[NonEmptyVector[T]] {
 
-    val schemaFor: SchemaForV2[NonEmptyVector[T]] = nonEmptyVectorSchemaFor(decoder.schemaFor)
+    val schemaFor: SchemaFor[NonEmptyVector[T]] = nonEmptyVectorSchemaFor(decoder.schemaFor)
 
     override def decode(value: Any): NonEmptyVector[T] = value match {
       case array: Array[_] => NonEmptyVector.fromVectorUnsafe(array.toVector.map(decoder.decode))

@@ -4,10 +4,10 @@ import org.apache.avro.Schema
 
 trait SchemaAware[+Typeclass[_], T] {
 
-  def schemaFor: SchemaForV2[T]
+  def schemaFor: SchemaFor[T]
 
   final def schema: Schema = schemaFor.schema
 
-  def withSchema(schemaFor: SchemaForV2[T]): Typeclass[T]
+  def withSchema(schemaFor: SchemaFor[T]): Typeclass[T]
 
 }

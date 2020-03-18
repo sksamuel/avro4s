@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.SchemaForV2
+import com.sksamuel.avro4s.SchemaFor
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import shapeless.{:+:, CNil}
@@ -11,6 +11,6 @@ case class CoproductOfCoproductsField(cp: Coproducts :+: Boolean :+: CNil)
 class Github273 extends AnyFunSuite with Matchers {
 
   test("Diverging implicit expansion for SchemaFor in Coproducts inside case classes #273") {
-    SchemaForV2[CoproductOfCoproductsField]
+    SchemaFor[CoproductOfCoproductsField]
   }
 }

@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
 
-object AvroSchemaV2 {
+object AvroSchema {
 
   /**
     * Creates an Avro Schema for an arbitrary type T.
@@ -17,6 +17,6 @@ object AvroSchemaV2 {
     * An implicit [[FieldMapper]] can be provided to override
     * how the field names are generated.
     */
-  def apply[T](implicit schemaFor: SchemaForV2[T]): Schema = schemaFor.schema
+  def apply[T](implicit schemaFor: SchemaFor[T]): Schema = schemaFor.schema
 
 }

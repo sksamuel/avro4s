@@ -18,7 +18,7 @@ class ValueTypeCodec[T](ctx: CaseClass[Codec, T], codec: ValueFieldCodec[T])
   def withNamespace(namespace: String): Codec[T] =
     ValueTypes.codec(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = ValueTypes.codec(ctx, FullSchemaUpdate(schemaFor))
+  override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = ValueTypes.codec(ctx, FullSchemaUpdate(schemaFor))
 }
 
 class ValueTypeEncoder[T](ctx: CaseClass[Encoder, T], encoder: ValueFieldEncoder[T])
@@ -32,7 +32,7 @@ class ValueTypeEncoder[T](ctx: CaseClass[Encoder, T], encoder: ValueFieldEncoder
   def withNamespace(namespace: String): Encoder[T] =
     ValueTypes.encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): Encoder[T] =
+  override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] =
     ValueTypes.encoder(ctx, FullSchemaUpdate(schemaFor))
 }
 
@@ -47,7 +47,7 @@ class ValueTypeDecoder[T](ctx: CaseClass[Decoder, T], decoder: ValueFieldDecoder
   def withNamespace(namespace: String): Decoder[T] =
     ValueTypes.decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): Decoder[T] =
+  override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] =
     ValueTypes.decoder(ctx, FullSchemaUpdate(schemaFor))
 }
 
@@ -70,7 +70,7 @@ object ValueTypes {
 
   private[avro4s] trait Builder[Typeclass[_], T, ValueProcessor[_]] {
 
-    def processorConstructor: (Param[Typeclass, T], SchemaForV2[T]) => ValueProcessor[T]
+    def processorConstructor: (Param[Typeclass, T], SchemaFor[T]) => ValueProcessor[T]
 
     def paramSchema: Param[Typeclass, T] => Schema
 
@@ -107,8 +107,8 @@ object ValueTypes {
       builder: Builder[Typeclass, T, ValueProcessor]): Typeclass[T] = {
     val schema = schemaUpdate match {
       case FullSchemaUpdate(s)    => s.forType[T]
-      case NamespaceUpdate(ns, _) => SchemaForV2(buildSchema(ctx, Some(ns), builder.paramSchema)).forType[T]
-      case UseFieldMapper(_)      => SchemaForV2(buildSchema(ctx, None, builder.paramSchema)).forType[T]
+      case NamespaceUpdate(ns, _) => SchemaFor(buildSchema(ctx, Some(ns), builder.paramSchema)).forType[T]
+      case UseFieldMapper(_)      => SchemaFor(buildSchema(ctx, None, builder.paramSchema)).forType[T]
     }
     val processor = builder.processorConstructor(ctx.parameters.head, schema)
     builder.constructor(ctx, processor)
@@ -143,7 +143,7 @@ object ValueTypes {
   }
 
   private[avro4s] class Base[Typeclass[X] <: SchemaAware[Typeclass, X], T](val param: Param[Typeclass, T],
-                                                                           val schemaFor: SchemaForV2[T]) {
+                                                                           val schemaFor: SchemaFor[T]) {
 
     // An encoder for a value type just needs to pass through the given value into an encoder
     // for the backing type. At runtime, the value type class won't exist, and the input
@@ -167,18 +167,18 @@ object ValueTypes {
     def decodeValue(value: Any): Any
   }
 
-  private[avro4s] class ValueFieldEncoder[T](p: Param[Encoder, T], schemaFor: SchemaForV2[T])
+  private[avro4s] class ValueFieldEncoder[T](p: Param[Encoder, T], schemaFor: SchemaFor[T])
       extends Base(p, schemaFor) {
     def encodeValue(value: T): AnyRef = encode(typeclass, value)
   }
 
-  private[avro4s] class ValueFieldDecoder[T](param: Param[Decoder, T], schemaFor: SchemaForV2[T])
+  private[avro4s] class ValueFieldDecoder[T](param: Param[Decoder, T], schemaFor: SchemaFor[T])
       extends Base(param, schemaFor)
       with ValueDecoder {
     def decodeValue(value: Any): Any = decode(typeclass, value)
   }
 
-  private[avro4s] class ValueFieldCodec[T](param: Param[Codec, T], schemaFor: SchemaForV2[T])
+  private[avro4s] class ValueFieldCodec[T](param: Param[Codec, T], schemaFor: SchemaFor[T])
       extends Base(param, schemaFor)
       with ValueDecoder {
 

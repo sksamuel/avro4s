@@ -12,7 +12,7 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordEncoder[T](ctx: CaseClass[Encoder, T], val schemaFor: SchemaForV2[T], fieldEncoding: Seq[FieldEncoder[T]])
+class RecordEncoder[T](ctx: CaseClass[Encoder, T], val schemaFor: SchemaFor[T], fieldEncoding: Seq[FieldEncoder[T]])
     extends Encoder[T]
     with NamespaceAware[Encoder[T]] {
 
@@ -20,13 +20,13 @@ class RecordEncoder[T](ctx: CaseClass[Encoder, T], val schemaFor: SchemaForV2[T]
 
   def withNamespace(namespace: String): Encoder[T] = encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): Encoder[T] = {
+  override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
     verifyNewSchema(schemaFor)
     encoder(ctx, FullSchemaUpdate(schemaFor))
   }
 }
 
-class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaForV2[T], fieldDecoding: Seq[FieldDecoder])
+class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T], fieldDecoding: Seq[FieldDecoder])
     extends Decoder[T]
     with NamespaceAware[Decoder[T]] {
 
@@ -35,14 +35,14 @@ class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaForV2[T]
   def withNamespace(namespace: String): Decoder[T] =
     decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): Decoder[T] = {
+  override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
     verifyNewSchema(schemaFor)
     decoder(ctx, FullSchemaUpdate(schemaFor))
   }
 }
 
 class RecordCodec[T](ctx: CaseClass[Codec, T],
-                     val schemaFor: SchemaForV2[T],
+                     val schemaFor: SchemaFor[T],
                      fieldEncoding: Seq[RecordFields.FieldEncoder[T]],
                      fieldDecoding: Seq[RecordFields.FieldCodec[T]])
     extends Codec[T]
@@ -54,7 +54,7 @@ class RecordCodec[T](ctx: CaseClass[Codec, T],
 
   def withNamespace(namespace: String): Codec[T] = codec(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
 
-  override def withSchema(schemaFor: SchemaForV2[T]): Codec[T] = {
+  override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = {
     verifyNewSchema(schemaFor)
     codec(ctx, FullSchemaUpdate(schemaFor))
   }
@@ -114,7 +114,7 @@ object Records {
 
     def param: FieldProcessor[T] => Param[Typeclass, T]
 
-    def constructor: (CaseClass[Typeclass, T], Seq[FieldProcessor[T]], SchemaForV2[T]) => Typeclass[T]
+    def constructor: (CaseClass[Typeclass, T], Seq[FieldProcessor[T]], SchemaFor[T]) => Typeclass[T]
   }
 
   private class CodecBuilder[T] extends Builder[Codec, T, RecordFieldCodec] {
@@ -166,7 +166,7 @@ object Records {
     builder.constructor(ctx, fieldProcessors, schemaFor)
   }
 
-  private[avro4s] def verifyNewSchema[T](schemaFor: SchemaForV2[T]) = {
+  private[avro4s] def verifyNewSchema[T](schemaFor: SchemaFor[T]) = {
     val schemaType = schemaFor.schema.getType
     require(schemaType == Schema.Type.RECORD, s"Schema type for record codecs must be RECORD, received $schemaType")
   }
@@ -180,7 +180,7 @@ object Records {
   def codec[T](ctx: CaseClass[Codec, T], update: SchemaUpdate): Codec[T] =
     create(ctx, update, new CodecBuilder[T])
 
-  private def buildEncoders[T](encoders: Seq[FieldEncoder[T]], schemaFor: SchemaForV2[T]): Seq[FieldEncoder[T]] =
+  private def buildEncoders[T](encoders: Seq[FieldEncoder[T]], schemaFor: SchemaFor[T]): Seq[FieldEncoder[T]] =
     schemaFor.schema.getFields.asScala.map(f => encoders.find(e => e.field.contains(f)).get).toVector
 
   private def buildDecoders[Typeclass[_], T, Decoder](decoders: Seq[Decoder],
@@ -189,7 +189,7 @@ object Records {
     ctx.parameters.map(p => decoders.find(decoder => param(decoder) == p).get).toVector
 
   def buildFields[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
-                                         schemaFor: SchemaForV2[T],
+                                         schemaFor: SchemaFor[T],
                                          builder: Builder[Typeclass, T, F]) = {
     val schema = schemaFor.schema
     val fieldMapper = schemaFor.fieldMapper
@@ -203,7 +203,7 @@ object Records {
 
   def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
                                          update: SchemaUpdate,
-                                         builder: Builder[Typeclass, T, F]): SchemaForV2[T] = update match {
+                                         builder: Builder[Typeclass, T, F]): SchemaFor[T] = update match {
     case FullSchemaUpdate(s)                     => s.forType[T]
     case NamespaceUpdate(namespace, fieldMapper) => buildSchema(ctx, fieldMapper, Some(namespace), builder.paramSchema)
     case UseFieldMapper(fieldMapper)             => buildSchema(ctx, fieldMapper, None, builder.paramSchema)
@@ -212,7 +212,7 @@ object Records {
   def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
                                          fieldMapper: FieldMapper,
                                          namespaceUpdate: Option[String],
-                                         paramSchema: Param[Typeclass, T] => Schema): SchemaForV2[T] = {
+                                         paramSchema: Param[Typeclass, T] => Schema): SchemaFor[T] = {
     val annotations = new AnnotationExtractors(ctx.annotations)
 
     val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)
@@ -237,7 +237,7 @@ object Records {
     annotations.aliases.foreach(record.addAlias)
     annotations.props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
     record.setFields(fields.asJava)
-    SchemaForV2[T](record, fieldMapper)
+    SchemaFor[T](record, fieldMapper)
   }
 
   private def buildSchemaField[Typeclass[_], T](param: Param[Typeclass, T],

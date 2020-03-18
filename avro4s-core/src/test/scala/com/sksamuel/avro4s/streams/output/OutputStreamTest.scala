@@ -11,14 +11,14 @@ import org.scalatest.matchers.should.Matchers
 
 trait OutputStreamTest extends AnyFunSuite with Matchers {
 
-  def readData[T: SchemaForV2](out: ByteArrayOutputStream): GenericRecord = readData(out.toByteArray)
-  def readData[T: SchemaForV2](bytes: Array[Byte]): GenericRecord = {
-    val datumReader = new GenericDatumReader[GenericRecord](AvroSchemaV2[T])
+  def readData[T: SchemaFor](out: ByteArrayOutputStream): GenericRecord = readData(out.toByteArray)
+  def readData[T: SchemaFor](bytes: Array[Byte]): GenericRecord = {
+    val datumReader = new GenericDatumReader[GenericRecord](AvroSchema[T])
     val dataFileReader = new DataFileReader[GenericRecord](new SeekableByteArrayInput(bytes), datumReader)
     dataFileReader.next
   }
 
-  def writeData[T: Encoder : SchemaForV2](t: T): ByteArrayOutputStream = {
+  def writeData[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
     val out = new ByteArrayOutputStream
     val avro = AvroOutputStream.data[T].to(out).build()
     avro.write(t)
@@ -26,14 +26,14 @@ trait OutputStreamTest extends AnyFunSuite with Matchers {
     out
   }
 
-  def readBinary[T: SchemaForV2](out: ByteArrayOutputStream): GenericRecord = readBinary(out.toByteArray)
-  def readBinary[T: SchemaForV2](bytes: Array[Byte]): GenericRecord = {
-    val datumReader = new GenericDatumReader[GenericRecord](AvroSchemaV2[T])
+  def readBinary[T: SchemaFor](out: ByteArrayOutputStream): GenericRecord = readBinary(out.toByteArray)
+  def readBinary[T: SchemaFor](bytes: Array[Byte]): GenericRecord = {
+    val datumReader = new GenericDatumReader[GenericRecord](AvroSchema[T])
     val decoder = DecoderFactory.get().binaryDecoder(new SeekableByteArrayInput(bytes), null)
     datumReader.read(null, decoder)
   }
 
-  def writeBinary[T: Encoder : SchemaForV2](t: T): ByteArrayOutputStream = {
+  def writeBinary[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
     val out = new ByteArrayOutputStream
     val avro = AvroOutputStream.binary[T].to(out).build()
     avro.write(t)
@@ -41,15 +41,15 @@ trait OutputStreamTest extends AnyFunSuite with Matchers {
     out
   }
 
-  def readJson[T: SchemaForV2](out: ByteArrayOutputStream): GenericRecord = readJson(out.toByteArray)
-  def readJson[T: SchemaForV2](bytes: Array[Byte]): GenericRecord = {
-    val schema = AvroSchemaV2[T]
+  def readJson[T: SchemaFor](out: ByteArrayOutputStream): GenericRecord = readJson(out.toByteArray)
+  def readJson[T: SchemaFor](bytes: Array[Byte]): GenericRecord = {
+    val schema = AvroSchema[T]
     val datumReader = new GenericDatumReader[GenericRecord](schema)
     val decoder = DecoderFactory.get().jsonDecoder(schema, new SeekableByteArrayInput(bytes))
     datumReader.read(null, decoder)
   }
 
-  def writeJson[T: Encoder : SchemaForV2](t: T): ByteArrayOutputStream = {
+  def writeJson[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
     val out = new ByteArrayOutputStream
     val avro = AvroOutputStream.json[T].to(out).build()
     avro.write(t)
@@ -57,7 +57,7 @@ trait OutputStreamTest extends AnyFunSuite with Matchers {
     out
   }
 
-  def writeRead[T: Encoder : SchemaForV2](t: T)(fn: GenericRecord => Any): Unit = {
+  def writeRead[T: Encoder : SchemaFor](t: T)(fn: GenericRecord => Any): Unit = {
     {
       val out = writeData(t)
       val record = readData(out)

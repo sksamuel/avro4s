@@ -14,7 +14,7 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
   implicit val fm: FieldMapper = DefaultFieldMapper
 
   "Decoder" should "convert byte array to decimal" in {
-    val schema = AvroSchemaV2[WithBigDecimal]
+    val schema = AvroSchema[WithBigDecimal]
     val record = new GenericData.Record(schema)
     val bytes =
       new Conversions.DecimalConversion().toBytes(BigDecimal(123.45).bigDecimal, null, LogicalTypes.decimal(8, 2))
@@ -23,7 +23,7 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
   }
 
   it should "support optional big decimals" in {
-    val schema = AvroSchemaV2[OptionalBigDecimal]
+    val schema = AvroSchema[OptionalBigDecimal]
     val bytes =
       new Conversions.DecimalConversion().toBytes(BigDecimal(123.45).bigDecimal, null, LogicalTypes.decimal(8, 2))
     val record = new GenericData.Record(schema)
@@ -36,12 +36,12 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
   }
 
   it should "be able to decode strings as bigdecimals" in {
-    val schemaFor = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
+    val schemaFor = SchemaFor[BigDecimal](SchemaBuilder.builder.stringType)
     Decoder[BigDecimal].withSchema(schemaFor).decode("123.45") shouldBe BigDecimal(123.45)
   }
 
   it should "be able to decode generic fixed as bigdecimals" in {
-    val schemaFor = SchemaForV2[BigDecimal](
+    val schemaFor = SchemaFor[BigDecimal](
       LogicalTypes.decimal(10, 8).addToSchema(SchemaBuilder.fixed("BigDecimal").size(8))
     )
 

@@ -18,19 +18,19 @@ class CoproductEncoderTest extends AnyFunSuite with Matchers {
 
   test("coproducts with case classes") {
     implicit val fieldMapper: FieldMapper = DefaultFieldMapper
-    val gschema = AvroSchemaV2[Gimble]
+    val gschema = AvroSchema[Gimble]
     val encoder = Encoder[CPWrapper]
     encoder.encode(CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))) shouldBe ImmutableRecord(encoder.schema, Vector(ImmutableRecord(gschema, Vector(new Utf8("foo")))))
   }
 
   test("options of coproducts") {
-    val schema = AvroSchemaV2[CPWithOption]
+    val schema = AvroSchema[CPWithOption]
     Encoder[CPWithOption].encode(CPWithOption(Some(Coproduct[CPWrapper.ISBG]("foo")))) shouldBe ImmutableRecord(schema, Vector(new Utf8("foo")))
     Encoder[CPWithOption].encode(CPWithOption(None)) shouldBe ImmutableRecord(schema, Vector(null))
   }
 
   test("coproducts with arrays") {
-    val schema = AvroSchemaV2[CPWithArray]
+    val schema = AvroSchema[CPWithArray]
     Encoder[CPWithArray].encode(CPWithArray(Coproduct[CPWrapper.SSI](Seq("foo", "bar")))) shouldBe ImmutableRecord(schema, Vector(java.util.Arrays.asList(new Utf8("foo"), new Utf8("bar"))))
     Encoder[CPWithArray].encode(CPWithArray(Coproduct[CPWrapper.SSI](4))) shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(4)))
   }

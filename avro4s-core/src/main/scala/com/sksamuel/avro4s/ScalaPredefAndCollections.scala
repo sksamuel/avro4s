@@ -16,13 +16,13 @@ trait ScalaPredefAndCollectionCodecs {
 
   implicit def optionCodec[T](implicit codec: Codec[T]): Codec[Option[T]] = new Codec[Option[T]] {
 
-    val schemaFor: SchemaForV2[Option[T]] = SchemaForV2.optionSchema(codec.schemaFor)
+    val schemaFor: SchemaFor[Option[T]] = SchemaFor.optionSchema(codec.schemaFor)
 
     def encode(value: Option[T]): AnyRef = encodeOption(codec, value)
 
     def decode(value: Any): Option[T] = decodeOption(codec, value)
 
-    override def withSchema(schemaFor: SchemaForV2[Option[T]]): Codec[Option[T]] =
+    override def withSchema(schemaFor: SchemaFor[Option[T]]): Codec[Option[T]] =
       optionCodec(codec.withSchema(extractOptionSchema(schemaFor)))
   }
 
@@ -30,7 +30,7 @@ trait ScalaPredefAndCollectionCodecs {
       implicit leftCodec: Codec[A],
       rightCodec: Codec[B]): Codec[Either[A, B]] =
     new Codec[Either[A, B]] {
-      val schemaFor: SchemaForV2[Either[A, B]] = SchemaForV2.eitherSchema(leftCodec.schemaFor, rightCodec.schemaFor)
+      val schemaFor: SchemaFor[Either[A, B]] = SchemaFor.eitherSchema(leftCodec.schemaFor, rightCodec.schemaFor)
 
       def encode(value: Either[A, B]): AnyRef = encodeEither(value)
 
@@ -39,7 +39,7 @@ trait ScalaPredefAndCollectionCodecs {
 
       def decode(value: Any): Either[A, B] = decodeEither(value, manifest[A], manifest[B])
 
-      override def withSchema(schemaFor: SchemaForV2[Either[A, B]]): Codec[Either[A, B]] =
+      override def withSchema(schemaFor: SchemaFor[Either[A, B]]): Codec[Either[A, B]] =
         eitherCodec(
           manifest[A],
           weakTypeTag[A],
@@ -51,26 +51,26 @@ trait ScalaPredefAndCollectionCodecs {
     }
 
   implicit def arrayCodec[T: ClassTag](implicit codec: Codec[T]): Codec[Array[T]] = new Codec[Array[T]] {
-    val schemaFor: SchemaForV2[Array[T]] = SchemaForV2.arraySchema(codec.schemaFor)
+    val schemaFor: SchemaFor[Array[T]] = SchemaFor.arraySchema(codec.schemaFor)
 
     def encode(value: Array[T]): AnyRef = encodeArray(codec, value)
 
     def decode(value: Any): Array[T] = decodeArray(codec, value)
 
-    override def withSchema(schemaFor: SchemaForV2[Array[T]]): Codec[Array[T]] =
+    override def withSchema(schemaFor: SchemaFor[Array[T]]): Codec[Array[T]] =
       arrayCodec(implicitly[ClassTag[T]], codec.withSchema(extractArrayElementSchema(schemaFor)))
   }
 
   private def iterableCodec[C[X] <: Iterable[X], T](codec: Codec[T])(
     implicit builder: Iterable[T] => C[T]): Codec[C[T]] =
     new Codec[C[T]] {
-      val schemaFor: SchemaForV2[C[T]] = SchemaForV2.iterableSchema(codec.schemaFor).forType
+      val schemaFor: SchemaFor[C[T]] = SchemaFor.iterableSchema(codec.schemaFor).forType
 
       def encode(value: C[T]): AnyRef = encodeIterable(codec, value)
 
       def decode(value: Any): C[T] = decodeIterable(codec, value)
 
-      override def withSchema(schemaFor: SchemaForV2[C[T]]): Codec[C[T]] =
+      override def withSchema(schemaFor: SchemaFor[C[T]]): Codec[C[T]] =
         iterableCodec(codec.withSchema(extractIterableElementSchema(schemaFor)))
     }
 
@@ -82,13 +82,13 @@ trait ScalaPredefAndCollectionCodecs {
   implicit def vectorCodec[T](implicit codec: Codec[T]): Codec[Vector[T]] = iterableCodec(codec)(_.toVector)
 
   implicit def mapCodec[T](implicit codec: Codec[T]): Codec[Map[String, T]] = new Codec[Map[String, T]] {
-    val schemaFor: SchemaForV2[Map[String, T]] = SchemaForV2.mapSchema(codec.schemaFor)
+    val schemaFor: SchemaFor[Map[String, T]] = SchemaFor.mapSchema(codec.schemaFor)
 
     def encode(value: Map[String, T]): AnyRef = encodeMap(codec, value)
 
     def decode(value: Any): Map[String, T] = decodeMap(codec, value)
 
-    override def withSchema(schemaFor: SchemaForV2[Map[String, T]]): Codec[Map[String, T]] =
+    override def withSchema(schemaFor: SchemaFor[Map[String, T]]): Codec[Map[String, T]] =
       mapCodec(codec.withSchema(extractMapValueSchema(schemaFor)))
   }
 }
@@ -99,43 +99,43 @@ trait ScalaPredefAndCollectionEncoders {
 
   implicit def optionEncoder[T](implicit encoder: Encoder[T]): Encoder[Option[T]] = new Encoder[Option[T]] {
 
-    val schemaFor: SchemaForV2[Option[T]] = SchemaForV2.optionSchema(encoder.schemaFor)
+    val schemaFor: SchemaFor[Option[T]] = SchemaFor.optionSchema(encoder.schemaFor)
 
     def encode(value: Option[T]): AnyRef = encodeOption(encoder, value)
 
-    override def withSchema(schemaFor: SchemaForV2[Option[T]]): Encoder[Option[T]] =
+    override def withSchema(schemaFor: SchemaFor[Option[T]]): Encoder[Option[T]] =
       optionEncoder(encoder.withSchema(extractOptionSchema(schemaFor)))
   }
 
   implicit def eitherEncoder[A, B](implicit leftEncoder: Encoder[A],
                                    rightEncoder: Encoder[B]): Encoder[Either[A, B]] =
     new Encoder[Either[A, B]] {
-      val schemaFor: SchemaForV2[Either[A, B]] = SchemaForV2.eitherSchema(leftEncoder.schemaFor, rightEncoder.schemaFor)
+      val schemaFor: SchemaFor[Either[A, B]] = SchemaFor.eitherSchema(leftEncoder.schemaFor, rightEncoder.schemaFor)
 
       def encode(value: Either[A, B]): AnyRef = encodeEither(value)
 
-      override def withSchema(schemaFor: SchemaForV2[Either[A, B]]): Encoder[Either[A, B]] =
+      override def withSchema(schemaFor: SchemaFor[Either[A, B]]): Encoder[Either[A, B]] =
         eitherEncoder(leftEncoder.withSchema(extractEitherLeftSchema(schemaFor)),
                       rightEncoder.withSchema(extractEitherRightSchema(schemaFor)))
     }
 
   implicit def arrayEncoder[T: ClassTag](implicit encoder: Encoder[T]): Encoder[Array[T]] =
     new Encoder[Array[T]] {
-      val schemaFor: SchemaForV2[Array[T]] = SchemaForV2.arraySchema(encoder.schemaFor)
+      val schemaFor: SchemaFor[Array[T]] = SchemaFor.arraySchema(encoder.schemaFor)
 
       def encode(value: Array[T]): AnyRef = encodeArray(encoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[Array[T]]): Encoder[Array[T]] =
+      override def withSchema(schemaFor: SchemaFor[Array[T]]): Encoder[Array[T]] =
         arrayEncoder(implicitly[ClassTag[T]], encoder.withSchema(extractArrayElementSchema(schemaFor)))
     }
 
   private def iterableEncoder[T, C[X] <: Iterable[X]](encoder: Encoder[T]): Encoder[C[T]] =
     new Encoder[C[T]] {
-      val schemaFor: SchemaForV2[C[T]] = SchemaForV2.iterableSchema(encoder.schemaFor).forType
+      val schemaFor: SchemaFor[C[T]] = SchemaFor.iterableSchema(encoder.schemaFor).forType
 
       def encode(value: C[T]): AnyRef = encodeIterable(encoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[C[T]]): Encoder[C[T]] =
+      override def withSchema(schemaFor: SchemaFor[C[T]]): Encoder[C[T]] =
         iterableEncoder(encoder.withSchema(extractIterableElementSchema(schemaFor)))
     }
 
@@ -148,11 +148,11 @@ trait ScalaPredefAndCollectionEncoders {
 
   implicit def mapEncoder[T](implicit encoder: Encoder[T]): Encoder[Map[String, T]] =
     new Encoder[Map[String, T]] {
-      val schemaFor: SchemaForV2[Map[String, T]] = SchemaForV2.mapSchema(encoder.schemaFor)
+      val schemaFor: SchemaFor[Map[String, T]] = SchemaFor.mapSchema(encoder.schemaFor)
 
       def encode(value: Map[String, T]): AnyRef = encodeMap(encoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[Map[String, T]]): Encoder[Map[String, T]] =
+      override def withSchema(schemaFor: SchemaFor[Map[String, T]]): Encoder[Map[String, T]] =
         mapEncoder(encoder.withSchema(extractMapValueSchema(schemaFor)))
     }
 }
@@ -163,11 +163,11 @@ trait ScalaPredefAndCollectionDecoders {
 
   implicit def optionDecoder[T](implicit decoder: Decoder[T]): Decoder[Option[T]] = new Decoder[Option[T]] {
 
-    val schemaFor = SchemaForV2.optionSchema(decoder.schemaFor)
+    val schemaFor = SchemaFor.optionSchema(decoder.schemaFor)
 
     def decode(value: Any): Option[T] = decodeOption(decoder, value)
 
-    override def withSchema(schemaFor: SchemaForV2[Option[T]]): Decoder[Option[T]] =
+    override def withSchema(schemaFor: SchemaFor[Option[T]]): Decoder[Option[T]] =
       optionDecoder(decoder.withSchema(extractOptionSchema(schemaFor)))
   }
 
@@ -175,14 +175,14 @@ trait ScalaPredefAndCollectionDecoders {
                                                                                   implicit leftDecoder: Decoder[A],
                                                                                   rightDecoder: Decoder[B]): Decoder[Either[A, B]] =
     new Decoder[Either[A, B]] {
-      val schemaFor: SchemaForV2[Either[A, B]] = SchemaForV2.eitherSchema(leftDecoder.schemaFor, rightDecoder.schemaFor)
+      val schemaFor: SchemaFor[Either[A, B]] = SchemaFor.eitherSchema(leftDecoder.schemaFor, rightDecoder.schemaFor)
 
       private implicit val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding.guard(leftDecoder)
       private implicit val rightGuard: PartialFunction[Any, B] = TypeGuardedDecoding.guard(rightDecoder)
 
       def decode(value: Any): Either[A, B] = decodeEither(value, manifest[A], manifest[B])
 
-      override def withSchema(schemaFor: SchemaForV2[Either[A, B]]): Decoder[Either[A, B]] =
+      override def withSchema(schemaFor: SchemaFor[Either[A, B]]): Decoder[Either[A, B]] =
         eitherDecoder(
           manifest[A],
           weakTypeTag[A],
@@ -195,22 +195,22 @@ trait ScalaPredefAndCollectionDecoders {
 
   implicit def arrayDecoder[T: ClassTag](implicit decoder: Decoder[T]): Decoder[Array[T]] =
     new Decoder[Array[T]] {
-      def schemaFor: SchemaForV2[Array[T]] = SchemaForV2.arraySchema(decoder.schemaFor)
+      def schemaFor: SchemaFor[Array[T]] = SchemaFor.arraySchema(decoder.schemaFor)
 
       def decode(value: Any): Array[T] = decodeArray(decoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[Array[T]]): Decoder[Array[T]] =
+      override def withSchema(schemaFor: SchemaFor[Array[T]]): Decoder[Array[T]] =
         arrayDecoder(implicitly[ClassTag[T]], decoder.withSchema(extractArrayElementSchema(schemaFor)))
     }
 
   private def iterableDecoder[T, C[X] <: Iterable[X]](decoder: Decoder[T])(
     implicit build: Iterable[T] => C[T]): Decoder[C[T]] =
     new Decoder[C[T]] {
-      val schemaFor: SchemaForV2[C[T]] = SchemaForV2.iterableSchema(decoder.schemaFor).forType
+      val schemaFor: SchemaFor[C[T]] = SchemaFor.iterableSchema(decoder.schemaFor).forType
 
       def decode(value: Any): C[T] = decodeIterable(decoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[C[T]]): Decoder[C[T]] =
+      override def withSchema(schemaFor: SchemaFor[C[T]]): Decoder[C[T]] =
         iterableDecoder(decoder.withSchema(extractIterableElementSchema(schemaFor)))
     }
 
@@ -224,23 +224,23 @@ trait ScalaPredefAndCollectionDecoders {
 
   implicit def mapDecoder[T](implicit decoder: Decoder[T]): Decoder[Map[String, T]] =
     new Decoder[Map[String, T]] {
-      val schemaFor: SchemaForV2[Map[String, T]] = SchemaForV2.mapSchema(decoder.schemaFor)
+      val schemaFor: SchemaFor[Map[String, T]] = SchemaFor.mapSchema(decoder.schemaFor)
 
       def decode(value: Any): Map[String, T] = decodeMap(decoder, value)
 
-      override def withSchema(schemaFor: SchemaForV2[Map[String, T]]): Decoder[Map[String, T]] =
+      override def withSchema(schemaFor: SchemaFor[Map[String, T]]): Decoder[Map[String, T]] =
         mapDecoder(decoder.withSchema(extractMapValueSchema(schemaFor)))
     }
 }
 
 object ScalaPredefAndCollections {
 
-  private[avro4s] def extractOptionSchema[T](schemaFor: SchemaForV2[Option[T]]): SchemaForV2[T] = {
+  private[avro4s] def extractOptionSchema[T](schemaFor: SchemaFor[Option[T]]): SchemaFor[T] = {
     require(schemaFor.schema.getType == Schema.Type.UNION,
             s"Schema type for option encoders / decoders must be UNION, received ${schemaFor.schema.getType}")
 
     schemaFor.schema.getTypes.asScala.find(_.getType != Schema.Type.NULL) match {
-      case Some(s) => SchemaForV2(s, schemaFor.fieldMapper)
+      case Some(s) => SchemaFor(s, schemaFor.fieldMapper)
       case None    => sys.error(s"Union schema ${schemaFor.schema} doesn't contain any non-null entries")
     }
   }
@@ -261,22 +261,22 @@ object ScalaPredefAndCollections {
       case Right(r) => rightEncoder.encode(r)
     }
 
-  private[avro4s] def extractEitherLeftSchema[A, B](schemaFor: SchemaForV2[Either[A, B]]): SchemaForV2[A] = {
+  private[avro4s] def extractEitherLeftSchema[A, B](schemaFor: SchemaFor[Either[A, B]]): SchemaFor[A] = {
     require(schemaFor.schema.getType == Schema.Type.UNION,
             s"Schema type for either encoders / decoders must be UNION, received ${schemaFor.schema.getType}")
     require(schemaFor.schema.getTypes.size() == 2,
             s"Schema for either encoders / decoders must be a UNION of to types, received ${schemaFor.schema}")
 
-    SchemaForV2(schemaFor.schema.getTypes.get(0), schemaFor.fieldMapper)
+    SchemaFor(schemaFor.schema.getTypes.get(0), schemaFor.fieldMapper)
   }
 
-  private[avro4s] def extractEitherRightSchema[A, B](schemaFor: SchemaForV2[Either[A, B]]): SchemaForV2[B] = {
+  private[avro4s] def extractEitherRightSchema[A, B](schemaFor: SchemaFor[Either[A, B]]): SchemaFor[B] = {
     require(schemaFor.schema.getType == Schema.Type.UNION,
             s"Schema type for either encoders / decoders must be UNION, received ${schemaFor.schema.getType}")
     require(schemaFor.schema.getTypes.size() == 2,
             s"Schema for either encoders / decoders must be a UNION of to types, received ${schemaFor.schema}")
 
-    SchemaForV2(schemaFor.schema.getTypes.get(1), schemaFor.fieldMapper)
+    SchemaFor(schemaFor.schema.getTypes.get(1), schemaFor.fieldMapper)
   }
 
   @inline
@@ -294,7 +294,7 @@ object ScalaPredefAndCollections {
     }
 
   object NoneCodec extends Codec[None.type] {
-    val schemaFor: SchemaForV2[None.type] = SchemaForV2.noneSchema
+    val schemaFor: SchemaFor[None.type] = SchemaFor.noneSchema
 
     def encode(value: None.type): AnyRef = null
 
@@ -303,12 +303,12 @@ object ScalaPredefAndCollections {
   }
 
   private[avro4s] def extractIterableElementSchema[C[X] <: Iterable[X], T](
-      schemaFor: SchemaForV2[C[T]]): SchemaForV2[T] = {
+      schemaFor: SchemaFor[C[T]]): SchemaFor[T] = {
     require(
       schemaFor.schema.getType == Schema.Type.ARRAY,
       s"Schema type for list / seq / vector encoders and decoders must be ARRAY, received ${schemaFor.schema.getType}"
     )
-    SchemaForV2(schemaFor.schema.getElementType, schemaFor.fieldMapper)
+    SchemaFor(schemaFor.schema.getElementType, schemaFor.fieldMapper)
   }
 
   @inline
@@ -324,10 +324,10 @@ object ScalaPredefAndCollections {
     case other                         => sys.error("Unsupported array " + other)
   }
 
-  private[avro4s] def extractArrayElementSchema[T](schemaFor: SchemaForV2[Array[T]]): SchemaForV2[T] = {
+  private[avro4s] def extractArrayElementSchema[T](schemaFor: SchemaFor[Array[T]]): SchemaFor[T] = {
     require(schemaFor.schema.getType == Schema.Type.ARRAY,
             s"Schema type for array encoders / decoders must be ARRAY, received ${schemaFor.schema.getType}")
-    SchemaForV2(schemaFor.schema.getElementType, schemaFor.fieldMapper)
+    SchemaFor(schemaFor.schema.getElementType, schemaFor.fieldMapper)
   }
 
   @inline
@@ -342,10 +342,10 @@ object ScalaPredefAndCollections {
     case other                         => sys.error("Unsupported array " + other)
   }
 
-  private[avro4s] def extractMapValueSchema[T](schemaFor: SchemaForV2[Map[String, T]]): SchemaForV2[T] = {
+  private[avro4s] def extractMapValueSchema[T](schemaFor: SchemaFor[Map[String, T]]): SchemaFor[T] = {
     require(schemaFor.schema.getType == Schema.Type.MAP,
             s"Schema type for map encoders / decoders must be MAP, received ${schemaFor.schema.getType}")
-    SchemaForV2(schemaFor.schema.getValueType, schemaFor.fieldMapper)
+    SchemaFor(schemaFor.schema.getValueType, schemaFor.fieldMapper)
   }
 
   @inline

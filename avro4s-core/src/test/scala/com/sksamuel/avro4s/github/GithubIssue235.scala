@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.github
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{Decoder, Encoder, RecordFormat, SchemaForV2}
+import com.sksamuel.avro4s.{Decoder, Encoder, RecordFormat, SchemaFor}
 import org.apache.avro.generic.{GenericDatumReader, GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.{DecoderFactory, EncoderFactory}
 import org.scalatest.funsuite.AnyFunSuite
@@ -19,7 +19,7 @@ case class OneOrTwoWrapper[A](t: OneOrTwo[A])
 object Bug {
 
   def apply[T <: Product](a: T)(
-    implicit schemaFor: SchemaForV2[T],
+    implicit schemaFor: SchemaFor[T],
     encoder: Encoder[T],
     decoder: Decoder[T]
   ): Unit = {

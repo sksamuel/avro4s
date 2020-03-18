@@ -11,12 +11,12 @@ import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 package object handrolled_codecs {
 
-  final class AttributeValueCodec[T: Codec](val schemaForValid: SchemaForV2[Valid[T]]) extends Codec[AttributeValue[T]] {
+  final class AttributeValueCodec[T: Codec](val schemaForValid: SchemaFor[Valid[T]]) extends Codec[AttributeValue[T]] {
 
 
-    def schemaFor: SchemaForV2[AttributeValue[T]] = {
-      implicit val sfv: SchemaForV2[Valid[T]] = schemaForValid
-      SchemaForV2[AttributeValue[T]]
+    def schemaFor: SchemaFor[AttributeValue[T]] = {
+      implicit val sfv: SchemaFor[Valid[T]] = schemaForValid
+      SchemaFor[AttributeValue[T]]
     }
 
     def unionSchemaElementWhere(predicate: Schema => Boolean): Schema = schema.getTypes.asScala.find(predicate).get
@@ -48,17 +48,17 @@ package object handrolled_codecs {
     }
   }
 
-  def buildSchemaForValid[T: SchemaForV2: TypeTag]: SchemaForV2[Valid[T]] = {
-    val sf = SchemaForV2[Valid[T]]
+  def buildSchemaForValid[T: SchemaFor: TypeTag]: SchemaFor[Valid[T]] = {
+    val sf = SchemaFor[Valid[T]]
     val name: String = typeOf[T].typeSymbol.name.toString
     val s = sf.schema
     val fields = s.getFields.asScala.map(f => new Schema.Field(f.name, f.schema, f.doc, f.defaultVal)).asJava
-    SchemaForV2(Schema.createRecord(s"Valid$name", s.getDoc, s.getNamespace, s.isError, fields), sf.fieldMapper)
+    SchemaFor(Schema.createRecord(s"Valid$name", s.getDoc, s.getNamespace, s.isError, fields), sf.fieldMapper)
   }
 
   object AttributeValueCodec {
-    def apply[T: Codec: SchemaForV2: TypeTag]: AttributeValueCodec[T] = {
-      implicit val schemaForValid: SchemaForV2[Valid[T]] = buildSchemaForValid
+    def apply[T: Codec: SchemaFor: TypeTag]: AttributeValueCodec[T] = {
+      implicit val schemaForValid: SchemaFor[Valid[T]] = buildSchemaForValid
       new AttributeValueCodec[T](schemaForValid)
     }
   }

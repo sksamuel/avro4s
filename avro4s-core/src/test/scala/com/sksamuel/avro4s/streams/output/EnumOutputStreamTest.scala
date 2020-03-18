@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.streams.output
 
-import com.sksamuel.avro4s.AvroSchemaV2
+import com.sksamuel.avro4s.AvroSchema
 import com.sksamuel.avro4s.schema.{Colours, Wine}
 import org.apache.avro.generic.GenericData
 import org.scalatest.funsuite.AnyFunSuite
@@ -10,7 +10,7 @@ class EnumOutputStreamTest extends AnyFunSuite with Matchers with OutputStreamTe
 
   test("java enum") {
     case class Test(z: Wine)
-    val schema = AvroSchemaV2[Wine]
+    val schema = AvroSchema[Wine]
     writeRead(Test(Wine.Malbec)) { record =>
       record.get("z") shouldBe GenericData.get.createEnum(Wine.Malbec.name, schema)
     }
@@ -18,7 +18,7 @@ class EnumOutputStreamTest extends AnyFunSuite with Matchers with OutputStreamTe
 
   test("optional java enum") {
     case class Test(z: Option[Wine])
-    val schema = AvroSchemaV2[Wine]
+    val schema = AvroSchema[Wine]
     writeRead(Test(Some(Wine.Malbec))) { record =>
       record.get("z") shouldBe GenericData.get.createEnum(Wine.Malbec.name, schema)
     }
@@ -29,7 +29,7 @@ class EnumOutputStreamTest extends AnyFunSuite with Matchers with OutputStreamTe
 
   test("scala enum") {
     case class Test(z: Colours.Value)
-    val schema = AvroSchemaV2[Wine]
+    val schema = AvroSchema[Wine]
     writeRead(Test(Colours.Green)) { record =>
       record.get("z") shouldBe GenericData.get.createEnum(Colours.Green.toString, schema)
     }
@@ -37,7 +37,7 @@ class EnumOutputStreamTest extends AnyFunSuite with Matchers with OutputStreamTe
 
   test("optional scala enum") {
     case class Test(z: Option[Colours.Value])
-    val schema = AvroSchemaV2[Wine]
+    val schema = AvroSchema[Wine]
     writeRead(Test(Some(Colours.Green))) { record =>
       record.get("z") shouldBe GenericData.get.createEnum(Colours.Green.toString, schema)
     }

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchemaV2, AvroSortPriority}
+import com.sksamuel.avro4s.{AvroSchema, AvroSortPriority}
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -9,20 +9,20 @@ class AvroSortPrioritySchemaTest extends AnyFunSuite with Matchers {
 
   test("enums should be sorted by descending priority") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_sort_priority_enum.json"))
-    val schema = AvroSchemaV2[Numeric]
+    val schema = AvroSchema[Numeric]
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("unions should be sorted by descending priority") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_sort_priority_union.json"))
-    val schema = AvroSchemaV2[FightingStyleWrapper]
+    val schema = AvroSchema[FightingStyleWrapper]
 
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("avrosortpriority should respect union default ordering") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_sort_priority_union_with_default.json"))
-    val schema = AvroSchemaV2[FightingStyleWrapperWithDefault]
+    val schema = AvroSchema[FightingStyleWrapperWithDefault]
 
     schema.toString(true) shouldBe expected.toString(true)
   }

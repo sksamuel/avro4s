@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.AvroSchemaV2
+import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -9,7 +9,7 @@ class OptionSchemaTest extends AnyFunSuite with Matchers {
   test("generate option as Union[T, Null]") {
     case class Test(option: Option[String])
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option.json"))
-    val schema = AvroSchemaV2[Test]
+    val schema = AvroSchema[Test]
     schema.toString(true) shouldBe expected.toString(true)
   }
 
@@ -26,13 +26,13 @@ class OptionSchemaTest extends AnyFunSuite with Matchers {
   //  }
 
   test("move default option values to first schema as per avro spec") {
-    val schema = AvroSchemaV2[OptionWithDefault]
+    val schema = AvroSchema[OptionWithDefault]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option_default_value.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("if a field has a default value of null then define the field to be nullable") {
-    val schema = AvroSchemaV2[FieldWithNull]
+    val schema = AvroSchema[FieldWithNull]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option_from_null_default.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }

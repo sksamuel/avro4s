@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchemaV2, Decoder}
+import com.sksamuel.avro4s.{AvroSchema, Decoder}
 import org.apache.avro.generic.GenericData
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -16,8 +16,8 @@ class StructDecoderTest extends AnyWordSpec with Matchers {
   "Decoder" should {
     "decode structs" in {
 
-      val countySchema = AvroSchemaV2[County]
-      val townSchema = AvroSchemaV2[Town]
+      val countySchema = AvroSchema[County]
+      val townSchema = AvroSchema[Town]
 
       val obj = County("Bucks", Seq(Town("Hardwick", 123), Town("Weedon", 225)), true, 12.34, 0.123)
 
@@ -40,9 +40,9 @@ class StructDecoderTest extends AnyWordSpec with Matchers {
     }
 
     "decode optional structs" in {
-      val countySchema = AvroSchemaV2[County]
-      val townSchema = AvroSchemaV2[Town]
-      val optionCountySchema = AvroSchemaV2[OptionCounty]
+      val countySchema = AvroSchema[County]
+      val townSchema = AvroSchema[Town]
+      val optionCountySchema = AvroSchema[OptionCounty]
 
       val obj = OptionCounty(Some(County("Bucks", Seq(Town("Hardwick", 123), Town("Weedon", 225)), true, 12.34, 0.123)))
 

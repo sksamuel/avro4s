@@ -10,13 +10,13 @@ import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
  * The implicit schemaFor instance is used as the writer schema when deserializing, in case it needs to diverge
  * from both writer schema used in serialize, and the desired schema in deserialize.
  */
-class GenericSerde[T >: Null: Encoder: Decoder: SchemaForV2]
+class GenericSerde[T >: Null: Encoder: Decoder: SchemaFor]
     extends Serde[T]
     with Deserializer[T]
     with Serializer[T]
     with Serializable {
 
-  val schema: Schema = SchemaForV2[T].schema
+  val schema: Schema = SchemaFor[T].schema
 
   override def serializer(): Serializer[T] = this
 

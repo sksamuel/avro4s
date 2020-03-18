@@ -16,11 +16,11 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
   test("allow overriding built in Decoder implicit for a basic type") {
 
-    implicit val StringAsBooleanSchemaFor = SchemaForV2[String](SchemaBuilder.builder().booleanType())
+    implicit val StringAsBooleanSchemaFor = SchemaFor[String](SchemaBuilder.builder().booleanType())
 
     implicit val StringAsBooleanDecoder = new Decoder[String] {
 
-      val schemaFor: SchemaForV2[String] = StringAsBooleanSchemaFor
+      val schemaFor: SchemaFor[String] = StringAsBooleanSchemaFor
 
       override def decode(value: Any): String = value match {
         case true => "a"
@@ -29,7 +29,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
       }
     }
 
-    val schema = AvroSchemaV2[StringOverrideTest]
+    val schema = AvroSchema[StringOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true), java.lang.Integer.valueOf(123)))
     Decoder[StringOverrideTest].decode(record1) shouldBe StringOverrideTest("a", 123)
@@ -40,11 +40,11 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
   test("allow overriding built in Decoder implicit for a complex type") {
 
-    implicit val FooOverrideSchemaFor = SchemaForV2[Foo](SchemaBuilder.builder().stringType())
+    implicit val FooOverrideSchemaFor = SchemaFor[Foo](SchemaBuilder.builder().stringType())
 
     implicit val FooOverrideEncoder = new Decoder[Foo] {
 
-      val schemaFor: SchemaForV2[Foo] = FooOverrideSchemaFor
+      val schemaFor: SchemaFor[Foo] = FooOverrideSchemaFor
 
       override def decode(value: Any): Foo = value match {
         case string: String =>
@@ -53,7 +53,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
       }
     }
 
-    val schema = AvroSchemaV2[FooOverrideTest]
+    val schema = AvroSchema[FooOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector("a", "true:123"))
     Decoder[FooOverrideTest].decode(record1) shouldBe FooOverrideTest("a", Foo(true, 123))
@@ -64,11 +64,11 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
   test("allow overriding built in Decoder implicit for a value type") {
 
-    implicit val FooValueTypeOverrideSchemaFor = SchemaForV2[FooValueType](SchemaBuilder.builder().intType())
+    implicit val FooValueTypeOverrideSchemaFor = SchemaFor[FooValueType](SchemaBuilder.builder().intType())
 
     implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {
 
-      val schemaFor: SchemaForV2[FooValueType] = FooValueTypeOverrideSchemaFor
+      val schemaFor: SchemaFor[FooValueType] = FooValueTypeOverrideSchemaFor
 
       override def decode(value: Any): FooValueType = value match {
         case i: Int => FooValueType(i.toString)
@@ -76,7 +76,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
       }
     }
 
-    val schema = AvroSchemaV2[ValueTypeOverrideTest]
+    val schema = AvroSchema[ValueTypeOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector("a", java.lang.Integer.valueOf(123)))
     Decoder[ValueTypeOverrideTest].decode(record1) shouldBe ValueTypeOverrideTest("a", FooValueType("123"))
@@ -87,11 +87,11 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
   test("allow overriding built in Decoder implicit for a top level value type") {
 
-    implicit val FooValueTypeOverrideSchemaFor = SchemaForV2[FooValueType](SchemaBuilder.builder().intType())
+    implicit val FooValueTypeOverrideSchemaFor = SchemaFor[FooValueType](SchemaBuilder.builder().intType())
 
     implicit val FooValueTypeOverrideDecoder = new Decoder[FooValueType] {
 
-      val schemaFor: SchemaForV2[FooValueType] = FooValueTypeOverrideSchemaFor
+      val schemaFor: SchemaFor[FooValueType] = FooValueTypeOverrideSchemaFor
 
       override def decode(value: Any): FooValueType = value match {
         case i: Int => FooValueType(i.toString)
