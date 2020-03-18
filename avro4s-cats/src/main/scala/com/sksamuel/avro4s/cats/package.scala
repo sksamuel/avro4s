@@ -9,13 +9,13 @@ package object cats {
 
   import scala.collection.JavaConverters._
 
-  implicit def nonEmptyListSchemaFor[T](schemaFor: SchemaForV2[T]): SchemaForV2[NonEmptyList[T]] =
+  implicit def nonEmptyListSchemaFor[T](implicit schemaFor: SchemaForV2[T]): SchemaForV2[NonEmptyList[T]] =
     SchemaForV2(Schema.createArray(schemaFor.schema))
 
-  implicit def nonEmptyVectorSchemaFor[T](schemaFor: SchemaForV2[T]): SchemaForV2[NonEmptyVector[T]] =
+  implicit def nonEmptyVectorSchemaFor[T](implicit schemaFor: SchemaForV2[T]): SchemaForV2[NonEmptyVector[T]] =
     SchemaForV2(Schema.createArray(schemaFor.schema))
 
-  implicit def nonEmptyListEncoder[T](encoder: Encoder[T]) = new Encoder[NonEmptyList[T]] {
+  implicit def nonEmptyListEncoder[T](implicit encoder: Encoder[T]) = new Encoder[NonEmptyList[T]] {
 
     val schemaFor: SchemaForV2[NonEmptyList[T]] = nonEmptyListSchemaFor(encoder.schemaFor)
 
@@ -25,7 +25,7 @@ package object cats {
     }
   }
 
-  implicit def nonEmptyVectorEncoder[T](encoder: Encoder[T]) = new Encoder[NonEmptyVector[T]] {
+  implicit def nonEmptyVectorEncoder[T](implicit encoder: Encoder[T]) = new Encoder[NonEmptyVector[T]] {
 
     val schemaFor: SchemaForV2[NonEmptyVector[T]] = nonEmptyVectorSchemaFor(encoder.schemaFor)
 
@@ -35,7 +35,7 @@ package object cats {
     }
   }
 
-  implicit def nonEmptyListDecoder[T](decoder: Decoder[T]) = new Decoder[NonEmptyList[T]] {
+  implicit def nonEmptyListDecoder[T](implicit decoder: Decoder[T]) = new Decoder[NonEmptyList[T]] {
 
     val schemaFor: SchemaForV2[NonEmptyList[T]] = nonEmptyListSchemaFor(decoder.schemaFor)
 
@@ -46,7 +46,7 @@ package object cats {
     }
   }
 
-  implicit def nonEmptyVectorDecoder[T](decoder: Decoder[T]) = new Decoder[NonEmptyVector[T]] {
+  implicit def nonEmptyVectorDecoder[T](implicit decoder: Decoder[T]) = new Decoder[NonEmptyVector[T]] {
 
     val schemaFor: SchemaForV2[NonEmptyVector[T]] = nonEmptyVectorSchemaFor(decoder.schemaFor)
 

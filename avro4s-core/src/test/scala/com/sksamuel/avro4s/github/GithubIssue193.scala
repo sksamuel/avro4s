@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.github
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{AvroFixed, AvroInputStream, AvroOutputStream, AvroSchema}
+import com.sksamuel.avro4s.{AvroFixed, AvroInputStream, AvroOutputStream}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 

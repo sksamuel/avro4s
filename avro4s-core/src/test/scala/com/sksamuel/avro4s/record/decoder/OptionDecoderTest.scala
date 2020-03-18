@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record.decoder
 
 import java.util
 
-import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2, Decoder}
+import com.sksamuel.avro4s.{AvroSchemaV2, Decoder}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.scalatest.matchers.should.Matchers

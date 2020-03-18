@@ -15,11 +15,11 @@ import org.scalameter.api._
 object Decoding extends Bench.LocalTime with BenchmarkHelpers {
   override def defaultConfig: Context = Context(exec.minWarmupRuns -> 100000, exec.benchRuns -> 200000)
 
-  def encode[T: Encoder: SchemaFor](value: T): ByteBuffer = {
+  def encode[T: Encoder: SchemaForV2](value: T): ByteBuffer = {
     val outputStream = new ByteArrayOutputStream(512)
     val encoder = Encoder[T]
-    val schema = AvroSchema[T]
-    val record = encoder.encode(value, schema, DefaultFieldMapper).asInstanceOf[GenericRecord]
+    val schema = AvroSchemaV2[T]
+    val record = encoder.encode(value).asInstanceOf[GenericRecord]
     val writer = new GenericDatumWriter[GenericRecord](schema)
     val enc = EncoderFactory.get().directBinaryEncoder(outputStream, null)
     writer.write(record, enc)

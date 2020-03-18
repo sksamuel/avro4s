@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.record.decoder
 import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 
-import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
+import com.sksamuel.avro4s.SchemaForV2.TimestampNanosLogicalType
 import com.sksamuel.avro4s.{AvroSchemaV2, Decoder, SchemaForV2}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.{LogicalTypes, SchemaBuilder}

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record
 
-import com.sksamuel.avro4s.{AvroNamespace, AvroSchema, ToRecord}
+import com.sksamuel.avro4s.{AvroNamespace, ToRecord}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 

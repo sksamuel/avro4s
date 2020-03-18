@@ -33,6 +33,13 @@ final case class SchemaForV2[T](schema: Schema, fieldMapper: FieldMapper = Defau
   def forType[U]: SchemaForV2[U] = map[U](identity)
 }
 
+
+case class ScalePrecision(scale: Int, precision: Int)
+
+object ScalePrecision {
+  implicit val default = ScalePrecision(2, 8)
+}
+
 object SchemaForV2 {
 
   def apply[T](implicit schemaFor: SchemaForV2[T]): SchemaForV2[T] = schemaFor

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2}
+import com.sksamuel.avro4s.AvroSchemaV2
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 

@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchemaV2, FieldMapper, SchemaFor, SchemaForV2}
-import org.apache.avro.{Schema, SchemaBuilder}
+import com.sksamuel.avro4s.{AvroSchemaV2, SchemaForV2}
+import org.apache.avro.SchemaBuilder
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 

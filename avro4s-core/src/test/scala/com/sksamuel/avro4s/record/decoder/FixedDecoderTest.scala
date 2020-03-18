@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.record.decoder
 
 import com.sksamuel.avro4s.record.encoder.FixedValueType
-import com.sksamuel.avro4s.{AvroFixed, AvroSchema, AvroSchemaV2, Decoder}
+import com.sksamuel.avro4s.{AvroFixed, AvroSchemaV2, Decoder}
 import org.apache.avro.generic.GenericData
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2, AvroTransient, Decoder}
+import com.sksamuel.avro4s.{AvroSchemaV2, AvroTransient, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchemaV2, FieldMapper, ScalePrecision, SchemaFor, SchemaForV2}
+import com.sksamuel.avro4s.{AvroSchemaV2, ScalePrecision, SchemaForV2}
 import org.apache.avro.Schema
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
