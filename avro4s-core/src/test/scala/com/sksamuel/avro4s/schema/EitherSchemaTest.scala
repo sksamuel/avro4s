@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroNamespace, AvroSchema}
+import com.sksamuel.avro4s.{AvroNamespace, AvroSchemaV2}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -10,7 +10,7 @@ class EitherSchemaTest extends AnyWordSpec with Matchers {
     "generate union:T,U for Either[T,U] of primitives" in {
       case class Test(either: Either[String, Double])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/either.json"))
-      val schema = AvroSchema[Test]
+      val schema = AvroSchemaV2[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate union:T,U for Either[T,U] of records" in {
@@ -18,7 +18,7 @@ class EitherSchemaTest extends AnyWordSpec with Matchers {
       case class Foo(b: Boolean)
       case class Test(either: Either[Goo, Foo])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/either_record.json"))
-      val schema = AvroSchema[Test]
+      val schema = AvroSchemaV2[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "generate union:T,U for Either[T,U] of records using @AvroNamespace" in {
@@ -28,11 +28,11 @@ class EitherSchemaTest extends AnyWordSpec with Matchers {
       case class Foo(b: Boolean)
       case class Test(either: Either[Goo, Foo])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/either_record_with_avro_namespace.json"))
-      val schema = AvroSchema[Test]
+      val schema = AvroSchemaV2[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "flatten nested unions and move null to first position" in {
-      AvroSchema[Either[String, Option[Int]]].toString shouldBe """["null","string","int"]"""
+      AvroSchemaV2[Either[String, Option[Int]]].toString shouldBe """["null","string","int"]"""
     }
   }
 }

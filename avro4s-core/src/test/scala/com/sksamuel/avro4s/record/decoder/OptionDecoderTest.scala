@@ -60,7 +60,7 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
       Decoder[OptionBoolean].decode(record2) shouldBe OptionBoolean(None)
     }
     "if a field is missing, use default value" in {
-      val record1 = new GenericData.Record(AvroSchema[SchemaWithoutExpectedField])
+      val record1 = new GenericData.Record(AvroSchemaV2[SchemaWithoutExpectedField])
 
       // TODO clarify is it really desired to decode records having a different schema?
       Decoder[OptionStringDefault].decode(record1) shouldBe OptionStringDefault(Some("cupcat"))

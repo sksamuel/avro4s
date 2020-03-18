@@ -94,7 +94,7 @@ object ScalaEnums {
 
   private def sortedSubtypes[TC[_], T](ctx: SealedTrait[TC, T]): Seq[Subtype[TC, T]] = {
     def priority(st: Subtype[TC, T]) = new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
-    ctx.subtypes.sortBy(st => (priority(st), st.typeName.full))
+    ctx.subtypes.sortWith((l, r) => priority(l) > priority(r))
   }
 
   def schema[Typeclass[_], T](ctx: SealedTrait[Typeclass, T]): Schema = buildSchema(ctx, sortedSubtypes(ctx))

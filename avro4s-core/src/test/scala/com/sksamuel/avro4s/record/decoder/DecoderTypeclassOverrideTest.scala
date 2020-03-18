@@ -76,7 +76,7 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
       }
     }
 
-    val schema = AvroSchema[ValueTypeOverrideTest]
+    val schema = AvroSchemaV2[ValueTypeOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector("a", java.lang.Integer.valueOf(123)))
     Decoder[ValueTypeOverrideTest].decode(record1) shouldBe ValueTypeOverrideTest("a", FooValueType("123"))

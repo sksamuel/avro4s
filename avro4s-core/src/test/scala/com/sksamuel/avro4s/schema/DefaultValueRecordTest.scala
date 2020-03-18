@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.schema
 
 
-import com.sksamuel.avro4s.{AvroName, AvroSchema, FromRecord, ToRecord}
+import com.sksamuel.avro4s.{AvroName, AvroSchemaV2, FromRecord, ToRecord}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

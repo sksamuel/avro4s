@@ -1,9 +1,7 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.{Schema, SchemaBuilder}
+import org.apache.avro.SchemaBuilder
 
 object BigDecimals {
-  implicit object AsString extends SchemaFor[BigDecimal] {
-    override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder().stringType()
-  }
+  implicit val AsString: SchemaForV2[BigDecimal] = SchemaForV2[BigDecimal](SchemaBuilder.builder.stringType)
 }

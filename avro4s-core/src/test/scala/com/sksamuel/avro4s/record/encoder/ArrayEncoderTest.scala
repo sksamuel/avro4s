@@ -35,7 +35,7 @@ class ArrayEncoderTest extends AnyWordSpec with Matchers {
     }
     "generate array for a List of primitives" in {
       case class Test(list: List[String])
-      val schema = AvroSchema[Test]
+      val schema = AvroSchemaV2[Test]
       Encoder[Test].encode(Test(List("we23", "54"))) shouldBe ImmutableRecord(schema, Vector(Vector(new Utf8("we23"), new Utf8("54")).asJava))
     }
     "generate array for a scala.collection.immutable.Seq of records" in {

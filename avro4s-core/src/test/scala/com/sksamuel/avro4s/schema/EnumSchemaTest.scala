@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroEnumDefault, AvroSchema, AvroSortPriority, ToRecord}
+import com.sksamuel.avro4s.{AvroEnumDefault, AvroSchemaV2, AvroSortPriority}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -10,50 +10,50 @@ class EnumSchemaTest extends AnyWordSpec with Matchers {
     "accept java enums" in {
       case class Test(wine: Wine)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/java_enum.json"))
-      val schema = AvroSchema[Test]
+      val schema = AvroSchemaV2[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support options of java enum values" in {
-      val schema = AvroSchema[JavaEnumOptional]
+      val schema = AvroSchemaV2[JavaEnumOptional]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_java_enum.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values in options of java enum values" in {
-      val schema = AvroSchema[JavaEnumOptionalWithDefault]
+      val schema = AvroSchemaV2[JavaEnumOptionalWithDefault]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_java_enum_with_default.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support scala enums" in {
-      val schema = AvroSchema[ScalaEnums]
+      val schema = AvroSchemaV2[ScalaEnums]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/scalaenums.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support option of scala enum values" in {
-      val schema = AvroSchema[ScalaOptionEnums]
+      val schema = AvroSchemaV2[ScalaOptionEnums]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_scala_enum.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support top level enum schemas" in {
-      val schema = AvroSchema[Wine]
+      val schema = AvroSchemaV2[Wine]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/top_level_java_enum.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support default scala enum" in {
-      val schema = AvroSchema[ScalaEnumsWithDefault]
+      val schema = AvroSchemaV2[ScalaEnumsWithDefault]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_scala_enum.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support a default scala enum with sealed trait" in {
-      val schema = AvroSchema[EnumsWithSealedTraitDefault]
+      val schema = AvroSchemaV2[EnumsWithSealedTraitDefault]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_sealed_trait_enum.json"))
 
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "handle enum default in an option" in {
-      val schema = AvroSchema[CupcatOptionalEnumDefault]
+      val schema = AvroSchemaV2[CupcatOptionalEnumDefault]
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_optional_enum.json"))
       schema.toString(true) shouldBe expected.toString(true)

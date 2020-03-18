@@ -13,8 +13,6 @@ case class MySchema(@AvroNamespace("broken") foo: Foo, id: String, x: Int)
 class ToRecordTest extends AnyFunSuite with Matchers {
 
   test("ToRecord should work with a namespace annotation on an ADT") {
-    val schema = AvroSchema[MySchema]
-
     val ms = MySchema(Bar(1), "", 0)
     ToRecord[MySchema].to(ms) //throws
   }

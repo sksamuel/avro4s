@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.AvroSchemaV2
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -10,61 +10,61 @@ class DefaultValueSchemaTest extends AnyWordSpec with Matchers {
 
   "SchemaEncoder" should {
     "support default values for strings in top level classes" in {
-      val schema = AvroSchema[ClassWithDefaultString]
+      val schema = AvroSchemaV2[ClassWithDefaultString]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_string.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for ints in top level classes" in {
-      val schema = AvroSchema[ClassWithDefaultInt]
+      val schema = AvroSchemaV2[ClassWithDefaultInt]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_int.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for booleans in top level classes" in {
-      val schema = AvroSchema[ClassWithDefaultBoolean]
+      val schema = AvroSchemaV2[ClassWithDefaultBoolean]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_boolean.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for doubles in top level classes" in {
-      val schema = AvroSchema[ClassWithDefaultDouble]
+      val schema = AvroSchemaV2[ClassWithDefaultDouble]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_double.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for longs in top level classes" in {
-      val schema = AvroSchema[ClassWithDefaultLong]
+      val schema = AvroSchemaV2[ClassWithDefaultLong]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_long.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for floats in top level classes" in {
-      val schema = AvroSchema[ClassWithDefaultFloat]
+      val schema = AvroSchemaV2[ClassWithDefaultFloat]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_float.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for maps and seqs" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/defaultvalues.json"))
-      val schema = AvroSchema[DefaultValues]
+      val schema = AvroSchemaV2[DefaultValues]
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values set to None for optional sealed trait hierarchies" in {
-      val schema = AvroSchema[DogProspect]
+      val schema = AvroSchemaV2[DogProspect]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_union.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support default values of optional Seq and Map" in {
-      val schema = AvroSchema[OptionalDefaultValues]
+      val schema = AvroSchemaV2[OptionalDefaultValues]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_default_values.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support default values that are case classes" in {
-      val schema = AvroSchema[Cuppers]
+      val schema = AvroSchemaV2[Cuppers]
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_class_default_values.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
 
     "support default values that are case objects" in {
-      implicit val schema = AvroSchema[NoVarg]
+      implicit val schema = AvroSchemaV2[NoVarg]
 
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_default_values.json"))
       schema.toString(true) shouldBe expected.toString(true)

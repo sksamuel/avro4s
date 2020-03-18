@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder}
+import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite
@@ -20,8 +20,8 @@ class TupleDecoderTest extends AnyFunSuite with Matchers {
   case class Test5Seq(z: (String, Int, Boolean, Double, Seq[Long]))
 
   test("decode tuple2") {
-    val schema = AvroSchema[Test2]
-    val z = new GenericData.Record(AvroSchema[(String, Int)])
+    val schema = AvroSchemaV2[Test2]
+    val z = new GenericData.Record(AvroSchemaV2[(String, Int)])
     z.put("_1", new Utf8("hello"))
     z.put("_2", java.lang.Integer.valueOf(214))
     val record = new GenericData.Record(schema)
@@ -30,8 +30,8 @@ class TupleDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode tuple2 with seq") {
-    val schema = AvroSchema[Test2Seq]
-    val z = new GenericData.Record(AvroSchema[(Seq[String], Int)])
+    val schema = AvroSchemaV2[Test2Seq]
+    val z = new GenericData.Record(AvroSchemaV2[(Seq[String], Int)])
     z.put("_1", List(new Utf8("hello")).asJava)
     z.put("_2", java.lang.Integer.valueOf(214))
     val record = new GenericData.Record(schema)
@@ -40,8 +40,8 @@ class TupleDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode tuple3") {
-    val schema = AvroSchema[Test3]
-    val z = new GenericData.Record(AvroSchema[(String, Int, Boolean)])
+    val schema = AvroSchemaV2[Test3]
+    val z = new GenericData.Record(AvroSchemaV2[(String, Int, Boolean)])
     z.put("_1", new Utf8("hello"))
     z.put("_2", java.lang.Integer.valueOf(214))
     z.put("_3", java.lang.Boolean.valueOf(true))
@@ -51,8 +51,8 @@ class TupleDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode tuple3 with seq") {
-    val schema = AvroSchema[Test3Seq]
-    val z = new GenericData.Record(AvroSchema[(String, Seq[Int], Boolean)])
+    val schema = AvroSchemaV2[Test3Seq]
+    val z = new GenericData.Record(AvroSchemaV2[(String, Seq[Int], Boolean)])
     z.put("_1", new Utf8("hello"))
     z.put("_2", List(java.lang.Integer.valueOf(214)).asJava)
     z.put("_3", java.lang.Boolean.valueOf(true))
@@ -62,8 +62,8 @@ class TupleDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode tuple4") {
-    val schema = AvroSchema[Test4]
-    val z = new GenericData.Record(AvroSchema[(String, Int, Boolean, Double)])
+    val schema = AvroSchemaV2[Test4]
+    val z = new GenericData.Record(AvroSchemaV2[(String, Int, Boolean, Double)])
     z.put("_1", new Utf8("hello"))
     z.put("_2", java.lang.Integer.valueOf(214))
     z.put("_3", java.lang.Boolean.valueOf(true))
@@ -74,8 +74,8 @@ class TupleDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode tuple4 with seq") {
-    val schema = AvroSchema[Test4Seq]
-    val z = new GenericData.Record(AvroSchema[(String, Int, Boolean, Seq[Double])])
+    val schema = AvroSchemaV2[Test4Seq]
+    val z = new GenericData.Record(AvroSchemaV2[(String, Int, Boolean, Seq[Double])])
     z.put("_1", new Utf8("hello"))
     z.put("_2", java.lang.Integer.valueOf(214))
     z.put("_3", java.lang.Boolean.valueOf(true))
@@ -86,8 +86,8 @@ class TupleDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode tuple5") {
-    val schema = AvroSchema[Test5]
-    val z = new GenericData.Record(AvroSchema[(String, Int, Boolean, Double, Long)])
+    val schema = AvroSchemaV2[Test5]
+    val z = new GenericData.Record(AvroSchemaV2[(String, Int, Boolean, Double, Long)])
     z.put("_1", new Utf8("hello"))
     z.put("_2", java.lang.Integer.valueOf(214))
     z.put("_3", java.lang.Boolean.valueOf(true))
@@ -99,8 +99,8 @@ class TupleDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode tuple5 with seq") {
-    val schema = AvroSchema[Test5Seq]
-    val z = new GenericData.Record(AvroSchema[(String, Int, Boolean, Double, Seq[Long])])
+    val schema = AvroSchemaV2[Test5Seq]
+    val z = new GenericData.Record(AvroSchemaV2[(String, Int, Boolean, Double, Seq[Long])])
     z.put("_1", new Utf8("hello"))
     z.put("_2", java.lang.Integer.valueOf(214))
     z.put("_3", java.lang.Boolean.valueOf(true))

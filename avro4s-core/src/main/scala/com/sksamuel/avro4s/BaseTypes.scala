@@ -303,7 +303,7 @@ object BaseTypes {
     override def withSchema(schemaFor: SchemaForV2[String]): Codec[String] = new StringCodec(schemaFor)
   }
 
-  val UUIDCodec = StringCodec.inmap[UUID](UUID.fromString, _.toString)
+  val UUIDCodec = StringCodec.inmap[UUID](UUID.fromString, _.toString).withSchema(SchemaForV2.UUIDSchema)
 
   class JavaEnumCodec[E <: Enum[E]](implicit tag: ClassTag[E]) extends Codec[E] {
     val schemaFor: SchemaForV2[E] = SchemaForV2.javaEnumSchema

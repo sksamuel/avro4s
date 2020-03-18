@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.AvroSchemaV2
 import shapeless.{:+:, CNil}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -8,19 +8,19 @@ import org.scalatest.matchers.should.Matchers
 class CoproductSchemaTest extends AnyFunSuite with Matchers {
 
   test("coproducts") {
-    val schema = AvroSchema[CPWrapper]
+    val schema = AvroSchemaV2[CPWrapper]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/coproduct.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("options of coproducts") {
-    val schema = AvroSchema[CPWithOption]
+    val schema = AvroSchemaV2[CPWithOption]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/coproduct_option.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("support coproducts of coproducts") {
-    val coproductOfCoproducts = AvroSchema[CoproductOfCoproducts]
+    val coproductOfCoproducts = AvroSchemaV2[CoproductOfCoproducts]
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/coproduct_of_coproducts.json"))
     coproductOfCoproducts.toString(true) shouldBe expected.toString(true)
   }

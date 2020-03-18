@@ -49,7 +49,7 @@ object SchemaForV2 {
     SchemaForV2[CharSequence](SchemaBuilder.builder.stringType)
   implicit val StringSchema: SchemaForV2[String] = SchemaForV2[String](SchemaBuilder.builder.stringType)
   implicit val Utf8Schema: SchemaForV2[Utf8] = StringSchema.forType
-  implicit val UUIDSchema: SchemaForV2[UUID] = StringSchema.forType
+  implicit val UUIDSchema: SchemaForV2[UUID] = SchemaForV2(LogicalTypes.uuid().addToSchema(SchemaBuilder.builder.stringType))
 
   implicit def javaEnumSchema[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaForV2[E] = {
     val typeInfo = TypeInfo.fromClass(tag.runtimeClass)
@@ -201,7 +201,7 @@ object SchemaForV2 {
                                           b: SchemaForV2[B],
                                           c: SchemaForV2[C],
                                           d: SchemaForV2[D]): SchemaForV2[(A, B, C, D)] = {
-    SchemaForV2(SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
+    SchemaForV2(SchemaBuilder.record("Tuple4").namespace("scala").doc(null)
       .fields()
       .name("_1").`type`(a.schema).noDefault()
       .name("_2").`type`(b.schema).noDefault()
@@ -217,7 +217,7 @@ object SchemaForV2 {
                                               c: SchemaForV2[C],
                                               d: SchemaForV2[D],
                                               e: SchemaForV2[E]): SchemaForV2[(A, B, C, D, E)] = {
-    SchemaForV2(SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
+    SchemaForV2(SchemaBuilder.record("Tuple5").namespace("scala").doc(null)
       .fields()
       .name("_1").`type`(a.schema).noDefault()
       .name("_2").`type`(b.schema).noDefault()

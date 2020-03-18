@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, FromRecord, ToRecord}
+import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2, FromRecord, ToRecord}
 import org.apache.avro.generic.GenericData
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -13,8 +13,8 @@ class FromRecordTest extends AnyWordSpec with Matchers {
 
   "FromRecord" should {
     "decode to class with a subset of fields used to encode" in {
-      val schema = AvroSchema[HasSomeFields]
-      val nestedSchema = AvroSchema[Nested]
+      val schema = AvroSchemaV2[HasSomeFields]
+      val nestedSchema = AvroSchemaV2[Nested]
 
       val record = new GenericData.Record(schema)
       val nestedRecord = new GenericData.Record(nestedSchema)

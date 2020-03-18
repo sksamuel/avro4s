@@ -199,7 +199,7 @@ object TypeUnions {
       case _ => overrides
     }
 
-    ctx.subtypes.map { st: Subtype[Typeclass, T] =>
+    sortedSubtypes(ctx).map { st: Subtype[Typeclass, T] =>
       builder.entryConstructor(st, subtypeOverride(st))
     }
   }
@@ -210,6 +210,11 @@ object TypeUnions {
             s"Schema type for record codecs must be UNION, received ${newSchema.getType}")
   }
 
+  def sortedSubtypes[Typeclass[_], T](ctx: SealedTrait[Typeclass, T]) = {
+    def priority(st: Subtype[Typeclass, T]) = new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
+    ctx.subtypes.sortWith((l, r) => priority(l) > priority(r))
+  }
+
   def buildSchema[Typeclass[_], T, E[_]](ctx: SealedTrait[Typeclass, T],
                                          update: SchemaUpdate,
                                          entries: Seq[E[T]],
@@ -218,12 +223,8 @@ object TypeUnions {
       case FullSchemaUpdate(s) => s.forType
       case _ =>
         val entryMap = ctx.subtypes.zip(entries).toMap
-        val sortedSubtypes = {
-          def priority(st: Subtype[Typeclass, T]) =
-            new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
-          ctx.subtypes.sortBy(st => (priority(st), st.typeName.full))
-        }
-        SchemaForV2(SchemaHelper.createSafeUnion(sortedSubtypes.map(entryMap).map(builder.entrySchema): _*))
+        val subtypes  = sortedSubtypes(ctx)
+        SchemaForV2(SchemaHelper.createSafeUnion(subtypes.map(entryMap).map(builder.entrySchema): _*))
     }
   }
 }

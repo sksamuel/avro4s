@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchema, FieldMapper, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchemaV2, FieldMapper, SchemaFor, SchemaForV2}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -9,68 +9,64 @@ class SchemaForTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
   test("allow overriding built in SchemaFor implicit for a basic type") {
 
-    implicit val StringSchemaFor = new SchemaFor[String] {
-      override def schema(fieldMapper: FieldMapper): Schema = {
-        val schema = SchemaBuilder.builder().bytesType()
-        schema.addProp("foo", "bar": AnyRef)
-        schema
-      }
+    implicit val StringSchemaFor = SchemaForV2[String] {
+      val schema = SchemaBuilder.builder().bytesType()
+      schema.addProp("foo", "bar": AnyRef)
+      schema
     }
 
     case class OverrideTest(s: String, i: Int)
 
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schema_override_basic.json"))
-    val schema = AvroSchema[OverrideTest]
+    val expected =
+      new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schema_override_basic.json"))
+    val schema = AvroSchemaV2[OverrideTest]
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("allow overriding built in SchemaFor implicit for a complex type") {
 
-    implicit val FooSchemaFor = new SchemaFor[Foo] {
-      override def schema(fieldMapper: FieldMapper): Schema = {
-        val schema = SchemaBuilder.builder().doubleType()
-        schema.addProp("foo", "bar": AnyRef)
-        schema
-      }
+    implicit val FooSchemaFor = SchemaForV2[Foo] {
+      val schema = SchemaBuilder.builder().doubleType()
+      schema.addProp("foo", "bar": AnyRef)
+      schema
     }
 
     case class Foo(s: String, b: Boolean)
     case class OverrideTest(s: String, f: Foo)
 
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schema_override_complex.json"))
-    val schema = AvroSchema[OverrideTest]
+    val expected =
+      new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schema_override_complex.json"))
+    val schema = AvroSchemaV2[OverrideTest]
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("allow overriding built in SchemaFor implicit for a value type") {
 
-    implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(fieldMapper: FieldMapper) = {
-        val schema = SchemaBuilder.builder().intType()
-        schema.addProp("foo", "bar": AnyRef)
-        schema
-      }
+    implicit val FooValueTypeSchemaFor = SchemaForV2[FooValueType] {
+      val schema = SchemaBuilder.builder().intType()
+      schema.addProp("foo", "bar": AnyRef)
+      schema
     }
 
     case class OverrideTest(s: String, foo: FooValueType)
 
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schema_override_value_type.json"))
-    val schema = AvroSchema[FooValueType]
+    val expected =
+      new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schema_override_value_type.json"))
+    val schema = AvroSchemaV2[FooValueType]
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("allow overriding built in SchemaFor implicit for a top level value type") {
 
-    implicit object FooValueTypeSchemaFor extends SchemaFor[FooValueType] {
-      override def schema(fieldMapper: FieldMapper) = {
-        val schema = SchemaBuilder.builder().intType()
-        schema.addProp("foo", "bar": AnyRef)
-        schema
-      }
+    implicit val FooValueTypeSchemaFor = SchemaForV2[FooValueType] {
+      val schema = SchemaBuilder.builder().intType()
+      schema.addProp("foo", "bar": AnyRef)
+      schema
     }
 
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schema_override_top_level_value_type.json"))
-    val schema = AvroSchema[FooValueType]
+    val expected = new org.apache.avro.Schema.Parser()
+      .parse(getClass.getResourceAsStream("/schema_override_top_level_value_type.json"))
+    val schema = AvroSchemaV2[FooValueType]
     schema.toString(true) shouldBe expected.toString(true)
   }
 }

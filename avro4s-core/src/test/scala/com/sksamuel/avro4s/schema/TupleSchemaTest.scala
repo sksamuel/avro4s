@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.AvroSchemaV2
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -13,25 +13,25 @@ class TupleSchemaTest extends AnyFunSuite with Matchers {
 
   test("tuple 2 schema") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple2.json"))
-    val schema = AvroSchema[Test2]
+    val schema = AvroSchemaV2[Test2]
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("tuple 3 schema") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple3.json"))
-    val schema = AvroSchema[Test3]
+    val schema = AvroSchemaV2[Test3]
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("tuple 4 schema") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple4.json"))
-    val schema = AvroSchema[Test4]
+    val schema = AvroSchemaV2[Test4]
     schema.toString(true) shouldBe expected.toString(true)
   }
 
   test("tuple 5 schema") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple5.json"))
-    val schema = AvroSchema[Test5]
+    val schema = AvroSchemaV2[Test5]
     schema.toString(true) shouldBe expected.toString(true)
   }
 }

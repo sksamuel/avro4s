@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.github
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, Encoder}
+import com.sksamuel.avro4s.{AvroSchemaV2, Decoder, Encoder}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -16,7 +16,7 @@ class GithubIssue389 extends AnyWordSpec with Matchers {
     val MIN = OffsetDateTime.MIN
 
     "generate a schema with a logical type backed by a string" in {
-      val schema = AvroSchema[OffsetDateTime]
+      val schema = AvroSchemaV2[OffsetDateTime]
       val expected = new org.apache.avro.Schema.Parser().parse(this.getClass.getResourceAsStream("/github/github_389.json"))
       schema shouldBe expected
     }

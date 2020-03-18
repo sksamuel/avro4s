@@ -21,7 +21,7 @@ class FixedDecoderTest extends AnyFunSuite with Matchers {
   test("support options of fixed") {
     val schema = AvroSchemaV2[OptionalFixedValueType]
     val record = new GenericData.Record(schema)
-    record.put("z", new GenericData.Fixed(AvroSchema[FixedValueType], Array[Byte](115, 97, 109)))
+    record.put("z", new GenericData.Fixed(AvroSchemaV2[FixedValueType], Array[Byte](115, 97, 109)))
     Decoder[OptionalFixedValueType].decode(record) shouldBe OptionalFixedValueType(Some(FixedValueType("sam")))
   }
 }

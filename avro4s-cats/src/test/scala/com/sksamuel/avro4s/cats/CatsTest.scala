@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.cats
 
 import cats.data.NonEmptyList
-import com.sksamuel.avro4s.{AvroSchema, FieldMapper, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, AvroSchemaV2, FieldMapper, SchemaFor}
 import org.apache.avro.Schema
 import org.scalatest.{FunSuite, Matchers}
 
@@ -18,6 +18,6 @@ class CatsTest extends FunSuite with Matchers {
   }
 
   ignore("cats") {
-    AvroSchema[Foo] shouldBe """"""
+    AvroSchemaV2[Foo] shouldBe """"""
   }
 }
