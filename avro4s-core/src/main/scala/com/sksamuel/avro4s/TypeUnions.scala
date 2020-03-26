@@ -67,6 +67,7 @@ object TypeUnions {
   private[avro4s] def encodeUnion[Typeclass[_], T](ctx: SealedTrait[Typeclass, T],
                                                    encoderBySubtype: Map[Subtype[Typeclass, T], EntryEncoder[T]],
                                                    value: T): AnyRef =
+    // we need an additional indirection since we may have enhanced the original magnolia-provided encoder via annotations
     ctx.dispatch(value)(subtype => encoderBySubtype(subtype).encodeSubtype(value))
 
   @inline
@@ -96,99 +97,55 @@ object TypeUnions {
 
   trait EntryCodec[T] extends EntryDecoder[T] with EntryEncoder[T]
 
-  def codec[T](ctx: SealedTrait[Codec, T], update: SchemaUpdate): Codec[T] =
-    create(ctx, update, new CodecBuilder[T])
-
-  def encoder[T](ctx: SealedTrait[Encoder, T], update: SchemaUpdate): Encoder[T] =
-    create(ctx, update, new EncoderBuilder[T])
-
-  def decoder[T](ctx: SealedTrait[Decoder, T], update: SchemaUpdate): Decoder[T] =
-    create(ctx, update, new DecoderBuilder[T])
-
-  def schema[T](ctx: SealedTrait[SchemaFor, T], update: SchemaUpdate): SchemaFor[T] =
-    create(ctx, update, new SchemaForBuilder[T](update.fieldMapper))
-
-  private trait Builder[Typeclass[_], T, Entry[_]] {
-    def entryConstructor: (Subtype[Typeclass, T], SchemaUpdate) => Entry[T]
-
-    def entrySchema: Entry[T] => Schema
-
-    def constructor: (SealedTrait[Typeclass, T], Seq[Entry[T]], SchemaFor[T]) => Typeclass[T]
+  def codec[T](ctx: SealedTrait[Codec, T], update: SchemaUpdate): Codec[T] = {
+    val subtypeCodecs = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEntryCodec[T](st, u) }
+    val schemaFor = buildSchema[T](update, subtypeCodecs.map(_.schema))
+    val codecByName = subtypeCodecs.map(c => c.fullName -> c).toMap
+    val codecBySubtype = subtypeCodecs.map(c => c.st -> c).toMap
+    new TypeUnionCodec(ctx, schemaFor, codecByName, codecBySubtype)
   }
 
-  private class CodecBuilder[T] extends Builder[Codec, T, UnionEntryCodec] {
-
-    val entryConstructor = new UnionEntryCodec[T](_, _)
-
-    val entrySchema = _.schema
-
-    val constructor = { (ctx, subtypeCodecs, schemaFor) =>
-      val codecByName = subtypeCodecs.map(c => c.fullName -> c).toMap
-      val codecBySubtype = subtypeCodecs.map(c => c.st -> c).toMap
-      new TypeUnionCodec(ctx, schemaFor, codecByName, codecBySubtype)
-    }
+  def encoder[T](ctx: SealedTrait[Encoder, T], update: SchemaUpdate): Encoder[T] = {
+    val subtypeEncoders = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEntryEncoder[T](st, u) }
+    val schemaFor = buildSchema[T](update, subtypeEncoders.map(_.schema))
+    val encoderBySubtype = subtypeEncoders.map(c => c.st -> c).toMap
+    new TypeUnionEncoder(ctx, schemaFor, encoderBySubtype∆)
   }
 
-  private class EncoderBuilder[T] extends Builder[Encoder, T, UnionEntryEncoder] {
-    val entryConstructor = new UnionEntryEncoder[T](_, _)
-
-    val entrySchema = _.schema
-
-    val constructor = { (ctx, subtypeEncoder, schemaFor) =>
-      val encoderBySubtype = subtypeEncoder.map(c => c.st -> c).toMap
-      new TypeUnionEncoder(ctx, schemaFor, encoderBySubtype)
-    }
+  def decoder[T](ctx: SealedTrait[Decoder, T], update: SchemaUpdate): Decoder[T] = {
+    val subtypeDecoders = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEntryDecoder[T](st, u) }
+    val schemaFor = buildSchema[T](update, subtypeDecoders.map(_.schema))
+    val decoderByName = subtypeDecoders.map(decoder => decoder.fullName -> decoder).toMap
+    new TypeUnionDecoder(ctx, schemaFor, decoderByName)
   }
 
-  private class DecoderBuilder[T] extends Builder[Decoder, T, UnionEntryDecoder] {
-    val entryConstructor = new UnionEntryDecoder[T](_, _)
+  def schema[T](ctx: SealedTrait[SchemaFor, T], update: SchemaUpdate): SchemaFor[T] = {
+    val subtypeSchema: ((Subtype[SchemaFor, T], SchemaUpdate)) => Schema = {
+      case (st, u) =>
+        u match {
+          case NamespaceUpdate(ns, _) =>
+            val oldSchemaFor = st.typeclass
+            SchemaHelper.overrideNamespace(oldSchemaFor.schema, ns)
 
-    val entrySchema = _.schema
-
-    val constructor = { (ctx, subtypeDecoder, schemaFor) =>
-      val decoderByName = subtypeDecoder.map(decoder => decoder.fullName -> decoder).toMap
-      new TypeUnionDecoder(ctx, schemaFor, decoderByName)
-    }
-  }
-
-  private class SchemaForBuilder[T](fieldMapper: FieldMapper) extends Builder[SchemaFor, T, SchemaFor] {
-
-    def entryConstructor: (Subtype[SchemaFor, T], SchemaUpdate) => SchemaFor[T] = { (st, u) =>
-      u match {
-        case NamespaceUpdate(ns, fm) =>
-          val oldSchemaFor = st.typeclass
-          SchemaFor(SchemaHelper.overrideNamespace(oldSchemaFor.schema, ns), fm)
-
-        case FullSchemaUpdate(schemaFor) => schemaFor.forType[T]
-        case UseFieldMapper(fm)          => st.typeclass.copy[T](fieldMapper = fm)
-      }
+          case FullSchemaUpdate(schemaFor) => schemaFor.schema
+          case UseFieldMapper(fm)          => st.typeclass.schema
+        }
     }
 
-    val entrySchema = _.schema
-
-    def constructor: (SealedTrait[SchemaFor, T], Seq[SchemaFor[T]], SchemaFor[T]) => SchemaFor[T] =
-      (_, schemaFors, _) => SchemaFor[T](SchemaHelper.createSafeUnion(schemaFors.map(_.schema): _*), fieldMapper)
+    val subtypeSchemas = enrichedSubtypes(ctx, update).map(subtypeSchema)
+    SchemaFor[T](SchemaHelper.createSafeUnion(subtypeSchemas: _*), update.fieldMapper)
   }
 
-  private def create[Typeclass[_], T, E[_]](ctx: SealedTrait[Typeclass, T],
-                                            update: SchemaUpdate,
-                                            builder: Builder[Typeclass, T, E]): Typeclass[T] = {
-    val extendedUpdate = update match {
+  private def enrichedSubtypes[Typeclass[_], T](ctx: SealedTrait[Typeclass, T],
+                                                update: SchemaUpdate): Seq[(Subtype[Typeclass, T], SchemaUpdate)] = {
+    val enrichedUpdate = update match {
       case UseFieldMapper(fm) =>
         val ns = new AnnotationExtractors(ctx.annotations).namespace
         ns.fold[SchemaUpdate](UseFieldMapper(fm))(NamespaceUpdate(_, fm))
       case _ => update
     }
-    val subtypeEntries = buildSubtypeEntries(ctx, extendedUpdate, builder)
-    val schema = buildSchema(ctx, extendedUpdate, subtypeEntries, builder)
-    builder.constructor(ctx, subtypeEntries, schema)
-  }
 
-  private[avro4s] def buildSubtypeEntries[Typeclass[_], T, E[_]](ctx: SealedTrait[Typeclass, T],
-                                                                 overrides: SchemaUpdate,
-                                                                 builder: Builder[Typeclass, T, E]): Seq[E[T]] = {
-
-    def subtypeOverride(st: Subtype[Typeclass, T]) = overrides match {
+    def subtypeSchemaUpdate(st: Subtype[Typeclass, T]) = enrichedUpdate match {
       case FullSchemaUpdate(schemaFor) =>
         val schema = schemaFor.schema
         val fieldMapper = schemaFor.fieldMapper
@@ -196,12 +153,13 @@ object TypeUnions {
         val subtraitSchema =
           SchemaFor(SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema), fieldMapper)
         FullSchemaUpdate(subtraitSchema)
-      case _ => overrides
+      case _ => enrichedUpdate
     }
 
-    sortedSubtypes(ctx).map { st: Subtype[Typeclass, T] =>
-      builder.entryConstructor(st, subtypeOverride(st))
-    }
+    def priority(st: Subtype[Typeclass, T]) = new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
+    val sortedSubtypes = ctx.subtypes.sortWith((l, r) => priority(l) > priority(r))
+
+    sortedSubtypes.map(st => (st, subtypeSchemaUpdate(st)))
   }
 
   private[avro4s] def validateNewSchema[T](schemaFor: SchemaFor[T]) = {
@@ -210,21 +168,8 @@ object TypeUnions {
             s"Schema type for record codecs must be UNION, received ${newSchema.getType}")
   }
 
-  def sortedSubtypes[Typeclass[_], T](ctx: SealedTrait[Typeclass, T]) = {
-    def priority(st: Subtype[Typeclass, T]) = new AnnotationExtractors(st.annotations).sortPriority.getOrElse(0.0f)
-    ctx.subtypes.sortWith((l, r) => priority(l) > priority(r))
-  }
-
-  def buildSchema[Typeclass[_], T, E[_]](ctx: SealedTrait[Typeclass, T],
-                                         update: SchemaUpdate,
-                                         entries: Seq[E[T]],
-                                         builder: Builder[Typeclass, T, E]): SchemaFor[T] = {
-    update match {
-      case FullSchemaUpdate(s) => s.forType
-      case _ =>
-        val entryMap = ctx.subtypes.zip(entries).toMap
-        val subtypes  = sortedSubtypes(ctx)
-        SchemaFor(SchemaHelper.createSafeUnion(subtypes.map(entryMap).map(builder.entrySchema): _*))
-    }
+  def buildSchema[T](update: SchemaUpdate, schemas: Seq[Schema]): SchemaFor[T] = update match {
+    case FullSchemaUpdate(s) => s.forType
+    case _                   => SchemaFor(SchemaHelper.createSafeUnion(schemas: _*))
   }
 }
