@@ -109,7 +109,7 @@ object TypeUnions {
     val subtypeEncoders = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEntryEncoder[T](st, u) }
     val schemaFor = buildSchema[T](update, subtypeEncoders.map(_.schema))
     val encoderBySubtype = subtypeEncoders.map(c => c.st -> c).toMap
-    new TypeUnionEncoder(ctx, schemaFor, encoderBySubtype∆)
+    new TypeUnionEncoder(ctx, schemaFor, encoderBySubtype)
   }
 
   def decoder[T](ctx: SealedTrait[Decoder, T], update: SchemaUpdate): Decoder[T] = {
