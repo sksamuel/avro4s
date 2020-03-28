@@ -1,13 +1,15 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.Schema
-
+/**
+ * Transforms an Avro Generic data type to its Scala / Java representation
+ *
+ * @tparam T data type this decoder reads
+ */
 trait Decoder[T] extends SchemaAware[Decoder, T] with Serializable { self =>
 
-  def schemaFor: SchemaFor[T]
-
-  def schema: Schema
-
+  /**
+   * Decodes the given Avro Generic value to a value of type T
+   */
   def decode(value: Any): T
 
   def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {

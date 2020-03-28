@@ -1,15 +1,10 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.Schema
-
+/**
+ * Converts back and forth between Avro Generic representation and its Scala / Java equivalent
+ */
 trait Codec[T] extends Encoder[T] with Decoder[T] with SchemaAware[Codec, T] {
   self =>
-
-  def schema: Schema
-
-  def encode(value: T): AnyRef
-
-  def decode(value: Any): T
 
   override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = {
     val sf = schemaFor

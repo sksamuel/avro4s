@@ -5,7 +5,7 @@ import org.apache.avro.Schema
 /**
  * Indicates that this typeclass (Codec, Encoder, Decoder) has a schema and is modifiable through schema changes
  * @tparam Typeclass type extending SchemaAware (Codec, Encoder, Decoder)
- * @tparam T element type this codec/encoder/decoder transforms from/to
+ * @tparam T data type this codec/encoder/decoder transforms from/to
  */
 trait SchemaAware[+Typeclass[_], T] {
 

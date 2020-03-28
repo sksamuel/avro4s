@@ -2,10 +2,16 @@ package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
 
+/**
+ * Converts a data type to its Avro Generic representation.
+ *
+ * @tparam T data type this encoder transforms to Avro
+ */
 trait Encoder[T] extends SchemaAware[Encoder, T] with Serializable { self =>
 
-  def schema: Schema
-
+  /**
+   * Encodes the given value to a value supported by Avro's Generic data model
+   */
   def encode(value: T): AnyRef
 
   def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
