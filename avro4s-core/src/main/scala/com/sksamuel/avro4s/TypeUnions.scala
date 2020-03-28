@@ -121,15 +121,9 @@ object TypeUnions {
 
   def schema[T](ctx: SealedTrait[SchemaFor, T], update: SchemaUpdate): SchemaFor[T] = {
     val subtypeSchema: ((Subtype[SchemaFor, T], SchemaUpdate)) => Schema = {
-      case (st, u) =>
-        u match {
-          case NamespaceUpdate(ns, _) =>
-            val oldSchemaFor = st.typeclass
-            SchemaHelper.overrideNamespace(oldSchemaFor.schema, ns)
-
-          case FullSchemaUpdate(schemaFor) => schemaFor.schema
-          case UseFieldMapper(fm)          => st.typeclass.schema
-        }
+      case (st, NamespaceUpdate(ns, _))     => SchemaHelper.overrideNamespace(st.typeclass.schema, ns)
+      case (_, FullSchemaUpdate(schemaFor)) => schemaFor.schema
+      case (st, UseFieldMapper(_))          => st.typeclass.schema
     }
 
     val subtypeSchemas = enrichedSubtypes(ctx, update).map(subtypeSchema)
