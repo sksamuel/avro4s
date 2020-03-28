@@ -12,7 +12,9 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordEncoder[T](ctx: CaseClass[Encoder, T], val schemaFor: SchemaFor[T], fieldEncoding: Seq[FieldEncoder[T]])
+class RecordEncoder[T](ctx: CaseClass[Encoder, T],
+                       val schemaFor: SchemaFor[T],
+                       fieldEncoding: IndexedSeq[FieldEncoder[T]])
     extends Encoder[T]
     with NamespaceAware[Encoder[T]] {
 
@@ -26,7 +28,7 @@ class RecordEncoder[T](ctx: CaseClass[Encoder, T], val schemaFor: SchemaFor[T], 
   }
 }
 
-class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T], fieldDecoding: Seq[FieldDecoder])
+class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T], fieldDecoding: IndexedSeq[FieldDecoder])
     extends Decoder[T]
     with NamespaceAware[Decoder[T]] {
 
@@ -43,8 +45,8 @@ class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T], 
 
 class RecordCodec[T](ctx: CaseClass[Codec, T],
                      val schemaFor: SchemaFor[T],
-                     fieldEncoding: Seq[RecordFields.FieldEncoder[T]],
-                     fieldDecoding: Seq[RecordFields.FieldCodec[T]])
+                     fieldEncoding: IndexedSeq[RecordFields.FieldEncoder[T]],
+                     fieldDecoding: IndexedSeq[RecordFields.FieldDecoder])
     extends Codec[T]
     with NamespaceAware[Codec[T]] {
 
@@ -63,7 +65,7 @@ class RecordCodec[T](ctx: CaseClass[Codec, T],
 object Records {
 
   @inline
-  private[avro4s] def encodeRecord[T](schema: Schema, fieldEncoding: Seq[FieldEncoder[T]], value: T): AnyRef = {
+  private[avro4s] def encodeRecord[T](schema: Schema, fieldEncoding: IndexedSeq[FieldEncoder[T]], value: T): AnyRef = {
     // hot code path. Sacrificing functional programming to the gods of performance.
     val length = fieldEncoding.length
     val values = new Array[AnyRef](length)
@@ -72,13 +74,13 @@ object Records {
       values(i) = fieldEncoding(i).encodeFieldValue(value)
       i += 1
     }
-    ImmutableRecord(schema, values)
+    ImmutableRecord(schema, values) // note: array gets implicitly wrapped in an immutable container.
   }
 
   @inline
   private[avro4s] def decodeRecord[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
                                                     schema: Schema,
-                                                    fieldDecoding: Seq[FieldDecoder],
+                                                    fieldDecoding: IndexedSeq[FieldDecoder],
                                                     value: Any): T =
     value match {
       case record: IndexedRecord =>
@@ -107,112 +109,60 @@ object Records {
           s"This decoder can only handle IndexedRecords or its subtypes such as GenericRecord [was ${value.getClass}]")
     }
 
-  private trait Builder[Typeclass[_], T, FieldProcessor[_]] {
-    def fieldConstructor: (Param[Typeclass, T], Option[Field]) => FieldProcessor[T]
-
-    def paramSchema: Param[Typeclass, T] => Schema
-
-    def param: FieldProcessor[T] => Param[Typeclass, T]
-
-    def constructor: (CaseClass[Typeclass, T], Seq[FieldProcessor[T]], SchemaFor[T]) => Typeclass[T]
-  }
-
-  private class CodecBuilder[T] extends Builder[Codec, T, RecordFieldCodec] {
-
-    val fieldConstructor = new RecordFieldCodec(_, _)
-
-    val paramSchema = _.typeclass.schema
-
-    val param = _.param
-
-    val constructor = { (ctx, codecs, schemaFor) =>
-      val encoding = buildEncoders(codecs, schemaFor)
-      val decoding = buildDecoders(codecs, ctx, param)
-      new RecordCodec[T](ctx, schemaFor, encoding, decoding)
-    }
-  }
-
-  private class EncoderBuilder[T] extends Builder[Encoder, T, RecordFieldEncoder] {
-    val fieldConstructor = new RecordFieldEncoder(_, _)
-
-    val paramSchema = _.typeclass.schema
-
-    val param = _.param
-
-    val constructor = { (ctx, encoders, schemaFor) =>
-      val encoding = buildEncoders(encoders, schemaFor)
-      new RecordEncoder[T](ctx, schemaFor, encoding)
-    }
-  }
-
-  private class DecoderBuilder[T] extends Builder[Decoder, T, RecordFieldDecoder] {
-    val fieldConstructor = new RecordFieldDecoder(_, _)
-
-    val paramSchema = _.typeclass.schema
-
-    val param = _.param
-
-    val constructor = { (ctx, decoders, schemaFor) =>
-      val decoding = buildDecoders(decoders, ctx, param)
-      new RecordDecoder[T](ctx, schemaFor, decoding)
-    }
-  }
-
-  private def create[Typeclass[_], T, E[_]](ctx: CaseClass[Typeclass, T],
-                                            update: SchemaUpdate,
-                                            builder: Builder[Typeclass, T, E]): Typeclass[T] = {
-    val schemaFor = buildSchema(ctx, update, builder)
-    val fieldProcessors = buildFields(ctx, schemaFor, builder)
-    builder.constructor(ctx, fieldProcessors, schemaFor)
-  }
-
   private[avro4s] def verifyNewSchema[T](schemaFor: SchemaFor[T]) = {
     val schemaType = schemaFor.schema.getType
     require(schemaType == Schema.Type.RECORD, s"Schema type for record codecs must be RECORD, received $schemaType")
   }
 
-  def encoder[T](ctx: CaseClass[Encoder, T], update: SchemaUpdate): Encoder[T] =
-    create(ctx, update, new EncoderBuilder[T])
+  def encoder[T](ctx: CaseClass[Encoder, T], update: SchemaUpdate): Encoder[T] = {
+    val paramSchema = ctx.parameters.map(p => p -> p.typeclass.schema).toMap
+    val schemaFor = buildSchema(ctx, update, paramSchema)
+    val encoders = paramFields(ctx, schemaFor).map { case (param, field) => new RecordFieldEncoder(param, field) }
+    new RecordEncoder[T](ctx, schemaFor, reorderEncoders(encoders, schemaFor))
+  }
 
-  def decoder[T](ctx: CaseClass[Decoder, T], update: SchemaUpdate): Decoder[T] =
-    create(ctx, update, new DecoderBuilder[T])
+  def decoder[T](ctx: CaseClass[Decoder, T], update: SchemaUpdate): Decoder[T] = {
+    val paramSchema = ctx.parameters.map(p => p -> p.typeclass.schema).toMap
+    val schemaFor = buildSchema(ctx, update, paramSchema)
+    val decoders = paramFields(ctx, schemaFor).map { case (param, field) => new RecordFieldDecoder(param, field) }.toVector
+    new RecordDecoder[T](ctx, schemaFor, decoders)
+  }
 
-  def codec[T](ctx: CaseClass[Codec, T], update: SchemaUpdate): Codec[T] =
-    create(ctx, update, new CodecBuilder[T])
+  def codec[T](ctx: CaseClass[Codec, T], update: SchemaUpdate): Codec[T] = {
+    val paramSchema = ctx.parameters.map(p => p -> p.typeclass.schema).toMap
+    val schemaFor = buildSchema(ctx, update, paramSchema)
+    val codecs = paramFields(ctx, schemaFor).map { case (param, field) => new RecordFieldCodec(param, field) }
+    val encoders: IndexedSeq[FieldEncoder[T]] = reorderEncoders(codecs, schemaFor)
+    val decoders: IndexedSeq[FieldDecoder] = codecs.toVector // order of codecs corresponds to param order
+    new RecordCodec[T](ctx, schemaFor, encoders, decoders)
+  }
 
-  private def buildEncoders[T](encoders: Seq[FieldEncoder[T]], schemaFor: SchemaFor[T]): Seq[FieldEncoder[T]] =
+  private def reorderEncoders[T](encoders: Seq[FieldEncoder[T]], schemaFor: SchemaFor[T]): IndexedSeq[FieldEncoder[T]] =
     schemaFor.schema.getFields.asScala.map(f => encoders.find(e => e.field.contains(f)).get).toVector
 
-  private def buildDecoders[Typeclass[_], T, Decoder](decoders: Seq[Decoder],
-                                                      ctx: CaseClass[Typeclass, T],
-                                                      param: Decoder => Param[Typeclass, T]): Seq[Decoder] =
-    ctx.parameters.map(p => decoders.find(decoder => param(decoder) == p).get).toVector
-
-  def buildFields[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
-                                         schemaFor: SchemaFor[T],
-                                         builder: Builder[Typeclass, T, F]) = {
+  private[avro4s] def paramFields[Typeclass[_], T](ctx: CaseClass[Typeclass, T], schemaFor: SchemaFor[T]) = {
     val schema = schemaFor.schema
     val fieldMapper = schemaFor.fieldMapper
     ctx.parameters.map { param =>
       val annotations = new AnnotationExtractors(param.annotations)
       val name = annotations.name.getOrElse(fieldMapper.to(param.label))
       val field = if (annotations.transient) None else Option(schema.getField(name))
-      builder.fieldConstructor(param, field)
+      param -> field
     }
   }
 
-  def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
+  private def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
                                          update: SchemaUpdate,
-                                         builder: Builder[Typeclass, T, F]): SchemaFor[T] = update match {
+                                         paramSchema: Param[Typeclass, T] => Schema): SchemaFor[T] = update match {
     case FullSchemaUpdate(s)                     => s.forType[T]
-    case NamespaceUpdate(namespace, fieldMapper) => buildSchema(ctx, fieldMapper, Some(namespace), builder.paramSchema)
-    case UseFieldMapper(fieldMapper)             => buildSchema(ctx, fieldMapper, None, builder.paramSchema)
+    case NamespaceUpdate(namespace, fieldMapper) => schema(ctx, fieldMapper, Some(namespace), paramSchema)
+    case UseFieldMapper(fieldMapper)             => schema(ctx, fieldMapper, None, paramSchema)
   }
 
-  def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
-                                         fieldMapper: FieldMapper,
-                                         namespaceUpdate: Option[String],
-                                         paramSchema: Param[Typeclass, T] => Schema): SchemaFor[T] = {
+  def schema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
+                                    fieldMapper: FieldMapper,
+                                    namespaceUpdate: Option[String],
+                                    paramSchema: Param[Typeclass, T] => Schema): SchemaFor[T] = {
     val annotations = new AnnotationExtractors(ctx.annotations)
 
     val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)

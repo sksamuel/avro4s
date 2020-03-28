@@ -273,7 +273,7 @@ object SchemaFor {
 
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record =>
-        Records.buildSchema(ctx, fieldMapper, None, paramSchema)
+        Records.schema(ctx, fieldMapper, None, paramSchema)
       case CaseClassShape.ValueType =>
         SchemaFor[T](ValueTypes.buildSchema(ctx, None, paramSchema), fieldMapper)
     }
