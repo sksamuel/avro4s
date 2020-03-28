@@ -36,13 +36,16 @@ object Decoder
     def decode(value: Any): S = map(decoder.decode(value))
 
     override def withSchema(schemaFor: SchemaFor[S]): Decoder[S] = {
-      // pass through decoder transformation.
-      val decoderWithSchema = decoder.withSchema(schemaFor.forType)
-      new DelegatingDecoder[T, S](decoderWithSchema, schemaFor.forType, map)
+      // pass through schema so that underlying decoder performs desired transformations.
+      val modifiedDecoder = decoder.withSchema(schemaFor.forType)
+      new DelegatingDecoder[T, S](modifiedDecoder, schemaFor.forType, map)
     }
   }
 
-  implicit class DecoderFunctor[T](val decoder: Decoder[T]) extends AnyVal {
+  /**
+   * Enables decorating/enhancing a decoder with a transformation function
+   */
+  implicit class DecoderOps[T](val decoder: Decoder[T]) extends AnyVal {
     def map[S](f: T => S): Decoder[S] = new DelegatingDecoder(decoder, decoder.schemaFor.forType, f)
   }
 }

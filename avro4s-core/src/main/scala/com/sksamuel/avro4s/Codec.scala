@@ -40,13 +40,16 @@ object Codec
     def decode(value: Any): S = map(codec.decode(value))
 
     override def withSchema(schemaFor: SchemaFor[S]): Codec[S] = {
-      // pass through decoder transformation.
-      val decoderWithSchema = codec.withSchema(schemaFor.forType)
-      new DelegatingCodec[T, S](decoderWithSchema, schemaFor.forType, map, comap)
+      // pass through schema so that underlying codec performs desired transformations.
+      val modifiedCodec = codec.withSchema(schemaFor.forType)
+      new DelegatingCodec[T, S](modifiedCodec, schemaFor.forType, map, comap)
     }
   }
 
-  implicit class CodecBifunctor[T](val codec: Codec[T]) extends AnyVal {
+  /**
+   * Enables decorating/enhancing a codec with two back-and-forth transformation functions
+   */
+  implicit class CodecOps[T](val codec: Codec[T]) extends AnyVal {
     def inmap[S](map: T => S, comap: S => T): Codec[S] = new DelegatingCodec(codec, codec.schemaFor.forType, map, comap)
   }
 }

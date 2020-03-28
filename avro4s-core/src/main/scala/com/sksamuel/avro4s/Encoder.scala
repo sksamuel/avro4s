@@ -35,13 +35,16 @@ object Encoder
     def encode(value: S): AnyRef = encoder.encode(comap(value))
 
     override def withSchema(schemaFor: SchemaFor[S]): Encoder[S] = {
-      // pass through decoder transformation.
-      val decoderWithSchema = encoder.withSchema(schemaFor.forType)
-      new DelegatingEncoder[T, S](decoderWithSchema, schemaFor.forType, comap)
+      // pass through schema so that underlying encoder performs desired transformations.
+      val modifiedEncoder = encoder.withSchema(schemaFor.forType)
+      new DelegatingEncoder[T, S](modifiedEncoder, schemaFor.forType, comap)
     }
   }
 
-  implicit class EncoderCofunctor[T](val encoder: Encoder[T]) extends AnyVal {
+  /**
+   * Enables decorating/enhancing an encoder with a transformation function
+   */
+  implicit class EncoderOps[T](val encoder: Encoder[T]) extends AnyVal {
     def comap[S](f: S => T): Encoder[S] = new DelegatingEncoder(encoder, encoder.schemaFor.forType, f)
   }
 }
