@@ -243,7 +243,7 @@ object Encoder {
 
     import org.apache.avro.Conversions
 
-    private val converter = new Conversions.DecimalConversion
+    @transient private lazy val converter = new Conversions.DecimalConversion
     private val rm = java.math.RoundingMode.valueOf(roundingMode.id)
 
     override def encode(decimal: BigDecimal, schema: Schema, fieldMapper: FieldMapper): AnyRef = {
