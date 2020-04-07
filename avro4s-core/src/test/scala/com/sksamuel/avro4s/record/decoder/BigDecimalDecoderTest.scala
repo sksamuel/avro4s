@@ -36,7 +36,7 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
   }
 
   it should "be able to decode strings as bigdecimals" in {
-    val schemaFor = SchemaFor[BigDecimal](SchemaBuilder.builder.stringType)
+    val schemaFor = BigDecimals.AsString
     Decoder[BigDecimal].withSchema(schemaFor).decode("123.45") shouldBe BigDecimal(123.45)
   }
 

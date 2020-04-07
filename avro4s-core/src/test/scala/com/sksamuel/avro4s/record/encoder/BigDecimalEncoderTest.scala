@@ -28,7 +28,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
   test("allow decimals to be encoded as strings") {
 
-    implicit val bigDecimalSchemaFor = SchemaFor[BigDecimal](SchemaBuilder.builder.stringType)
+    implicit val bigDecimalSchemaFor = BigDecimals.AsString
     implicit val bigDecimalEncoder = Encoder[BigDecimal].withSchema(bigDecimalSchemaFor)
 
     case class Test(decimal: BigDecimal)
