@@ -43,7 +43,7 @@ object BigDecimals {
   class BigDecimalBytesCodec(val schemaFor: SchemaFor[BigDecimal], roundingMode: RoundingMode)
       extends BigDecimalCodecBase(roundingMode) {
 
-    private val decimal = schema.getLogicalType.asInstanceOf[Decimal]
+    @transient private lazy val decimal = schema.getLogicalType.asInstanceOf[Decimal]
     @transient private lazy val converter = new Conversions.DecimalConversion
     private val rm = java.math.RoundingMode.valueOf(roundingMode.id)
 
@@ -65,7 +65,7 @@ object BigDecimals {
 
   class BigDecimalFixedCodec(val schemaFor: SchemaFor[BigDecimal], roundingMode: RoundingMode) extends BigDecimalCodecBase(roundingMode) {
 
-    private val decimal = schema.getLogicalType.asInstanceOf[Decimal]
+    @transient private lazy val decimal = schema.getLogicalType.asInstanceOf[Decimal]
     @transient private lazy val converter = new Conversions.DecimalConversion
     private val rm = java.math.RoundingMode.valueOf(roundingMode.id)
 
