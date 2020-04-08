@@ -9,13 +9,6 @@ import org.apache.avro.{Conversions, Schema, SchemaBuilder}
 import scala.math.BigDecimal.RoundingMode
 import scala.math.BigDecimal.RoundingMode.RoundingMode
 
-trait BigDecimalCodecs {
-
-  implicit def bigDecimalCodec(implicit scalePrecision: ScalePrecision = ScalePrecision.default,
-                               roundingMode: RoundingMode = RoundingMode.UNNECESSARY): Codec[BigDecimal] =
-    new BigDecimals.BigDecimalBytesCodec(SchemaFor.bigDecimalSchema, roundingMode)
-}
-
 trait BigDecimalDecoders {
 
   implicit def bigDecimalDecoder(implicit scalePrecision: ScalePrecision = ScalePrecision.default,

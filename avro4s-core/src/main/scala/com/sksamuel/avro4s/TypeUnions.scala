@@ -7,26 +7,6 @@ import magnolia.{SealedTrait, Subtype}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericContainer
 
-class TypeUnionCodec[T](ctx: SealedTrait[Codec, T],
-                        val schemaFor: SchemaFor[T],
-                        codecByName: Map[String, EntryDecoder[T]],
-                        codecBySubtype: Map[Subtype[Codec, T], EntryEncoder[T]])
-    extends Codec[T]
-    with NamespaceAware[Codec[T]] {
-
-  def withNamespace(namespace: String): Codec[T] =
-    TypeUnions.codec(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
-
-  override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = {
-    validateNewSchema(schemaFor)
-    TypeUnions.codec(ctx, FullSchemaUpdate(schemaFor))
-  }
-
-  def encode(value: T): AnyRef = encodeUnion(ctx, codecBySubtype, value)
-
-  def decode(value: Any): T = decodeUnion(ctx, codecByName, value)
-}
-
 class TypeUnionEncoder[T](ctx: SealedTrait[Encoder, T],
                           val schemaFor: SchemaFor[T],
                           encoderBySubtype: Map[Subtype[Encoder, T], EntryEncoder[T]])
@@ -95,20 +75,10 @@ object TypeUnions {
     def encodeSubtype(value: T): AnyRef
   }
 
-  trait EntryCodec[T] extends EntryDecoder[T] with EntryEncoder[T]
-
-  def codec[T](ctx: SealedTrait[Codec, T], update: SchemaUpdate): Codec[T] = {
-    val subtypeCodecs = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEntryCodec[T](st, u) }
-    val schemaFor = buildSchema[T](update, subtypeCodecs.map(_.schema))
-    val codecByName = subtypeCodecs.map(c => c.fullName -> c).toMap
-    val codecBySubtype = subtypeCodecs.map(c => c.st -> c).toMap
-    new TypeUnionCodec(ctx, schemaFor, codecByName, codecBySubtype)
-  }
-
   def encoder[T](ctx: SealedTrait[Encoder, T], update: SchemaUpdate): Encoder[T] = {
     val subtypeEncoders = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEntryEncoder[T](st, u) }
     val schemaFor = buildSchema[T](update, subtypeEncoders.map(_.schema))
-    val encoderBySubtype = subtypeEncoders.map(c => c.st -> c).toMap
+    val encoderBySubtype = subtypeEncoders.map(c => c.subtype -> c).toMap
     new TypeUnionEncoder(ctx, schemaFor, encoderBySubtype)
   }
 

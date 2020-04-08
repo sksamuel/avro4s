@@ -9,46 +9,45 @@ import org.apache.avro.Schema
 
 object RecordFields {
 
-  trait FieldEncoder[T] extends Serializable {
-
-    def field: Option[Field]
-
-    def encodeFieldValue(value: T): AnyRef
-  }
-
-  trait FieldDecoder extends Serializable {
-    def fastDecodeFieldValue(record: IndexedRecord): Any
-
-    def safeDecodeFieldValue(record: IndexedRecord): Any
-  }
-
-  trait FieldCodec[T] extends FieldEncoder[T] with FieldDecoder
-
-  class RecordFieldCodec[T](param: Param[Codec, T], field: Option[Field])
-      extends RecordFieldBase[Codec, T](param, field, (e: Codec[_]) => e.schema)
-      with FieldCodec[T] {
-
-    def encodeFieldValue(value: T): AnyRef = encodeFieldValue(typeclass, value)
-
-    def fastDecodeFieldValue(record: IndexedRecord): Any = fastDecodeFieldValue(typeclass, record)
-
-    def safeDecodeFieldValue(record: IndexedRecord): Any = safeDecodeFieldValue(typeclass, record)
-  }
-
   class RecordFieldDecoder[T](param: Param[Decoder, T], field: Option[Field])
       extends RecordFieldBase[Decoder, T](param, field, (e: Decoder[_]) => e.schema)
-      with FieldDecoder {
+      with Serializable {
 
-    def fastDecodeFieldValue(record: IndexedRecord): Any = fastDecodeFieldValue(typeclass, record)
+    private val fieldPosition = field.map(_.pos).getOrElse(-1)
 
-    def safeDecodeFieldValue(record: IndexedRecord): Any = safeDecodeFieldValue(typeclass, record)
+    def fastDecodeFieldValue(record: IndexedRecord): Any =
+      if (fieldPosition == -1) defaultFieldValue
+      else tryDecode(record.get(fieldPosition))
+
+    def safeDecodeFieldValue(record: IndexedRecord): Any =
+      if (fieldPosition == -1) defaultFieldValue
+      else {
+        val schemaField = record.getSchema.getField(field.get.name)
+        if (schemaField == null) defaultFieldValue else tryDecode(record.get(schemaField.pos))
+      }
+
+    @inline
+    private def defaultFieldValue: Any = param.default match {
+      case Some(default) => default
+      // there is no default, so the field must be an option
+      case None => typeclass.decode(null)
+    }
+
+    @inline
+    private def tryDecode(value: Any): Any =
+      try {
+        typeclass.decode(value)
+      } catch {
+        case NonFatal(ex) => param.default.getOrElse(throw ex)
+      }
+
   }
 
-  class RecordFieldEncoder[T](param: Param[Encoder, T], field: Option[Field])
-      extends RecordFieldBase[Encoder, T](param, field, (e: Encoder[_]) => e.schema)
-      with FieldEncoder[T] {
+  class RecordFieldEncoder[T](p: Param[Encoder, T], field: Option[Field])
+      extends RecordFieldBase[Encoder, T](p, field, (e: Encoder[_]) => e.schema)
+      with Serializable {
 
-    def encodeFieldValue(value: T): AnyRef = encodeFieldValue(typeclass, value)
+    def encodeFieldValue(value: T): AnyRef = typeclass.encode(param.dereference(value))
   }
 
   /**
@@ -66,7 +65,7 @@ object RecordFields {
 
     private def typesDiffer(schemaA: Schema, schemaB: Schema): Boolean =
       schemaA.getType != schemaB.getType || schemaA.getLogicalType != schemaB.getLogicalType || fieldsDiffer(schemaA,
-                                                                                                             schemaB)
+        schemaB)
 
     private def fieldsDiffer(schemaA: Schema, schemaB: Schema): Boolean =
       schemaA.getType == Schema.Type.RECORD && schemaA.getFields != schemaB.getFields
@@ -78,43 +77,9 @@ object RecordFields {
       (param.typeclass, namespace, field.map(_.schema)) match {
         case (typeclass, _, Some(s)) if typesDiffer(s, sf(typeclass)) =>
           typeclass.withSchema(SchemaFor[param.PType](s))
-        case (m: NamespaceAware[Typeclass[param.PType]] @unchecked, Some(ns), _) => m.withNamespace(ns)
-        case (codec, _, _)                                                       => codec
+        case (m: NamespaceAware[Typeclass[param.PType]]@unchecked, Some(ns), _) => m.withNamespace(ns)
+        case (codec, _, _) => codec
       }
     }
-
-    private val fieldPosition = field.map(_.pos).getOrElse(-1)
-
-    @inline
-    protected final def encodeFieldValue(encoder: Encoder[param.PType], value: T): AnyRef =
-      encoder.encode(param.dereference(value))
-
-    @inline
-    protected final def fastDecodeFieldValue(decoder: Decoder[param.PType], record: IndexedRecord): param.PType =
-      if (fieldPosition == -1) defaultFieldValue(decoder)
-      else tryDecode(decoder, record.get(fieldPosition))
-
-    @inline
-    protected final def safeDecodeFieldValue(decoder: Decoder[param.PType], record: IndexedRecord): param.PType =
-      if (fieldPosition == -1) defaultFieldValue(decoder)
-      else {
-        val schemaField = record.getSchema.getField(field.get.name)
-        if (schemaField == null) defaultFieldValue(decoder) else tryDecode(decoder, record.get(schemaField.pos))
-      }
-
-    @inline
-    private def defaultFieldValue(decoder: Decoder[param.PType]) = param.default match {
-      case Some(default) => default
-      // there is no default, so the field must be an option
-      case None => decoder.decode(null)
-    }
-
-    @inline
-    private def tryDecode(decoder: Decoder[param.PType], value: Any) =
-      try {
-        decoder.decode(value)
-      } catch {
-        case NonFatal(ex) => param.default.getOrElse(throw ex)
-      }
   }
 }

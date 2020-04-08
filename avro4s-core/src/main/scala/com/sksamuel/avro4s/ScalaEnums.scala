@@ -8,8 +8,6 @@ import scala.collection.JavaConverters._
 
 object ScalaEnums {
 
-  def codec[T](ctx: SealedTrait[Codec, T]): Codec[T] = create(ctx, new EnumCodec[T](_))
-
   def encoder[T](ctx: SealedTrait[Encoder, T]): Encoder[T] = create(ctx, new EnumEncoder[T](_))
 
   def decoder[T](ctx: SealedTrait[Decoder, T]): Decoder[T] = create(ctx, new EnumDecoder[T](_))
@@ -79,13 +77,7 @@ object ScalaEnums {
     }
   }
 
-  private class EnumEncoder[T](data: CodecData[Encoder, T]) extends BaseCodec[Encoder, T](data) with Encoder[T] {
-
-    override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
-      validateSchema(schemaFor)
-      super.withSchema(schemaFor)
-    }
-  }
+  private class EnumEncoder[T](data: CodecData[Encoder, T]) extends BaseCodec[Encoder, T](data) with Encoder[T]
 
   private class CodecData[Typeclass[_], T](val ctx: SealedTrait[Typeclass, T],
                                            val symbolForSubtype: Map[Subtype[Typeclass, T], AnyRef],

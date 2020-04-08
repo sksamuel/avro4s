@@ -14,58 +14,11 @@ import scala.util.control.NonFatal
 
 class RecordEncoder[T](ctx: CaseClass[Encoder, T],
                        val schemaFor: SchemaFor[T],
-                       fieldEncoding: IndexedSeq[FieldEncoder[T]])
+                       fieldEncoding: IndexedSeq[RecordFieldEncoder[T]])
     extends Encoder[T]
     with NamespaceAware[Encoder[T]] {
 
-  def encode(value: T): AnyRef = encodeRecord(schema, fieldEncoding, value)
-
-  def withNamespace(namespace: String): Encoder[T] = encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
-
-  override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
-    verifyNewSchema(schemaFor)
-    encoder(ctx, FullSchemaUpdate(schemaFor))
-  }
-}
-
-class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T], fieldDecoding: IndexedSeq[FieldDecoder])
-    extends Decoder[T]
-    with NamespaceAware[Decoder[T]] {
-
-  def decode(value: Any): T = decodeRecord(ctx, schema, fieldDecoding, value)
-
-  def withNamespace(namespace: String): Decoder[T] =
-    decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
-
-  override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
-    verifyNewSchema(schemaFor)
-    decoder(ctx, FullSchemaUpdate(schemaFor))
-  }
-}
-
-class RecordCodec[T](ctx: CaseClass[Codec, T],
-                     val schemaFor: SchemaFor[T],
-                     fieldEncoding: IndexedSeq[RecordFields.FieldEncoder[T]],
-                     fieldDecoding: IndexedSeq[RecordFields.FieldDecoder])
-    extends Codec[T]
-    with NamespaceAware[Codec[T]] {
-
-  def encode(value: T): AnyRef = encodeRecord(schema, fieldEncoding, value)
-
-  def decode(value: Any): T = decodeRecord(ctx, schema, fieldDecoding, value)
-
-  def withNamespace(namespace: String): Codec[T] = codec(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
-
-  override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = {
-    verifyNewSchema(schemaFor)
-    codec(ctx, FullSchemaUpdate(schemaFor))
-  }
-}
-
-object Records {
-
-  @inline
-  private[avro4s] def encodeRecord[T](schema: Schema, fieldEncoding: IndexedSeq[FieldEncoder[T]], value: T): AnyRef = {
+  def encode(value: T): AnyRef = {
     // hot code path. Sacrificing functional programming to the gods of performance.
     val length = fieldEncoding.length
     val values = new Array[AnyRef](length)
@@ -77,37 +30,55 @@ object Records {
     ImmutableRecord(schema, values) // note: array gets implicitly wrapped in an immutable container.
   }
 
-  @inline
-  private[avro4s] def decodeRecord[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
-                                                    schema: Schema,
-                                                    fieldDecoding: IndexedSeq[FieldDecoder],
-                                                    value: Any): T =
-    value match {
-      case record: IndexedRecord =>
-        // hot code path. Sacrificing functional programming to the gods of performance.
-        val length = fieldDecoding.length
-        val values = new Array[Any](length)
-        var i = 0
-        // testing schema based on reference equality, as value equality on schemas is probably more expensive to check
-        // than using safe decoding.
-        if (record.getSchema eq schema) {
-          // known schema, use fast pre-computed position-based decoding
-          while (i < length) {
-            values(i) = fieldDecoding(i).fastDecodeFieldValue(record)
-            i += 1
-          }
-        } else {
-          // use safe name-based decoding
-          while (i < length) {
-            values(i) = fieldDecoding(i).safeDecodeFieldValue(record)
-            i += 1
-          }
+  def withNamespace(namespace: String): Encoder[T] = encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
+
+  override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
+    verifyNewSchema(schemaFor)
+    encoder(ctx, FullSchemaUpdate(schemaFor))
+  }
+}
+
+class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T], fieldDecoding: IndexedSeq[RecordFieldDecoder[T]])
+    extends Decoder[T]
+    with NamespaceAware[Decoder[T]] {
+
+  def decode(value: Any): T = value match {
+    case record: IndexedRecord =>
+      // hot code path. Sacrificing functional programming to the gods of performance.
+      val length = fieldDecoding.length
+      val values = new Array[Any](length)
+      var i = 0
+      // testing schema based on reference equality, as value equality on schemas is probably more expensive to check
+      // than using safe decoding.
+      if (record.getSchema eq schema) {
+        // known schema, use fast pre-computed position-based decoding
+        while (i < length) {
+          values(i) = fieldDecoding(i).fastDecodeFieldValue(record)
+          i += 1
         }
-        ctx.rawConstruct(values)
-      case _ =>
-        sys.error(
-          s"This decoder can only handle IndexedRecords or its subtypes such as GenericRecord [was ${value.getClass}]")
-    }
+      } else {
+        // use safe name-based decoding
+        while (i < length) {
+          values(i) = fieldDecoding(i).safeDecodeFieldValue(record)
+          i += 1
+        }
+      }
+      ctx.rawConstruct(values)
+    case _ =>
+      sys.error(
+        s"This decoder can only handle IndexedRecords or its subtypes such as GenericRecord [was ${value.getClass}]")
+  }
+
+  def withNamespace(namespace: String): Decoder[T] =
+    decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
+
+  override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
+    verifyNewSchema(schemaFor)
+    decoder(ctx, FullSchemaUpdate(schemaFor))
+  }
+}
+
+object Records {
 
   private[avro4s] def verifyNewSchema[T](schemaFor: SchemaFor[T]) = {
     val schemaType = schemaFor.schema.getType
@@ -128,16 +99,7 @@ object Records {
     new RecordDecoder[T](ctx, schemaFor, decoders)
   }
 
-  def codec[T](ctx: CaseClass[Codec, T], update: SchemaUpdate): Codec[T] = {
-    val paramSchema = ctx.parameters.map(p => p -> p.typeclass.schema).toMap
-    val schemaFor = buildSchema(ctx, update, paramSchema)
-    val codecs = paramFields(ctx, schemaFor).map { case (param, field) => new RecordFieldCodec(param, field) }
-    val encoders: IndexedSeq[FieldEncoder[T]] = reorderEncoders(codecs, schemaFor)
-    val decoders: IndexedSeq[FieldDecoder] = codecs.toVector // order of codecs corresponds to param order
-    new RecordCodec[T](ctx, schemaFor, encoders, decoders)
-  }
-
-  private def reorderEncoders[T](encoders: Seq[FieldEncoder[T]], schemaFor: SchemaFor[T]): IndexedSeq[FieldEncoder[T]] =
+  private def reorderEncoders[T](encoders: Seq[RecordFieldEncoder[T]], schemaFor: SchemaFor[T]): IndexedSeq[RecordFieldEncoder[T]] =
     schemaFor.schema.getFields.asScala.map(f => encoders.find(e => e.field.contains(f)).get).toVector
 
   private[avro4s] def paramFields[Typeclass[_], T](ctx: CaseClass[Typeclass, T], schemaFor: SchemaFor[T]) = {

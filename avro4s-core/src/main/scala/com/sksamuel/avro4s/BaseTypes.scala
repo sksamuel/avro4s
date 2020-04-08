@@ -13,52 +13,6 @@ import BaseTypes._
 import scala.reflect.runtime.universe._
 import scala.reflect.ClassTag
 
-trait BaseCodecs {
-  implicit val BooleanCodec: Codec[Boolean] = BaseTypes.BooleanCodec
-  implicit val ByteBufferCodec: Codec[ByteBuffer] = BaseTypes.ByteBufferCodec
-  implicit val ByteCodec: Codec[Byte] = BaseTypes.ByteCodec
-  implicit val CharSequenceCodec: Codec[CharSequence] = BaseTypes.CharSequenceCodec
-  implicit val DoubleCodec: Codec[Double] = BaseTypes.DoubleCodec
-  implicit val FloatCodec: Codec[Float] = BaseTypes.FloatCodec
-  implicit val IntCodec: Codec[Int] = BaseTypes.IntCodec
-  implicit val LongCodec: Codec[Long] = BaseTypes.LongCodec
-  implicit val ShortCodec: Codec[Short] = BaseTypes.ShortCodec
-  implicit val StringCodec: Codec[String] = BaseTypes.StringCodec
-  implicit val Utf8Codec: Codec[Utf8] = BaseTypes.Utf8Codec
-  implicit val UUIDCodec: Codec[UUID] = BaseTypes.UUIDCodec
-  implicit def javaEnumCodec[E <: Enum[E]: ClassTag]: Codec[E] = new JavaEnumCodec[E]
-  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: Codec[E] = new ScalaEnumCodec[E]
-
-  implicit def tuple2Codec[A: Codec, B: Codec] = new Codec[(A, B)] {
-    import EncoderSchemaImplicits._
-    def schemaFor: SchemaFor[(A, B)] = SchemaFor.tuple2SchemaFor[A, B]
-    def encode(value: (A, B)): AnyRef = encodeTuple2[A, B](value, schema)
-    def decode(value: Any): (A, B) = decodeTuple2[A, B](value)
-  }
-
-  implicit def tuple3Codec[A: Codec, B: Codec, C: Codec] = new Codec[(A, B, C)] {
-    import EncoderSchemaImplicits._
-    def schemaFor: SchemaFor[(A, B, C)] = SchemaFor.tuple3SchemaFor[A, B, C]
-    def encode(value: (A, B, C)): AnyRef = encodeTuple3[A, B, C](value, schema)
-    def decode(value: Any): (A, B, C) = decodeTuple3[A, B, C](value)
-  }
-
-  implicit def tuple4Codec[A: Codec, B: Codec, C: Codec, D: Codec] = new Codec[(A, B, C, D)] {
-    import EncoderSchemaImplicits._
-    def schemaFor: SchemaFor[(A, B, C, D)] = SchemaFor.tuple4SchemaFor[A, B, C, D]
-    def encode(value: (A, B, C, D)): AnyRef = encodeTuple4[A, B, C, D](value, schema)
-    def decode(value: Any): (A, B, C, D) = decodeTuple4[A, B, C, D](value)
-  }
-
-  implicit def tuple5Codec[A: Codec, B: Codec, C: Codec, D: Codec, E: Codec] =
-    new Codec[(A, B, C, D, E)] {
-      import EncoderSchemaImplicits._
-      def schemaFor: SchemaFor[(A, B, C, D, E)] = SchemaFor.tuple5SchemaFor[A, B, C, D, E]
-      def encode(value: (A, B, C, D, E)): AnyRef = encodeTuple5[A, B, C, D, E](value, schema)
-      def decode(value: Any): (A, B, C, D, E) = decodeTuple5[A, B, C, D, E](value)
-    }
-}
-
 trait BaseEncoders {
   implicit val BooleanEncoder: Encoder[Boolean] = BaseTypes.BooleanCodec
   implicit val ByteBufferEncoder: Encoder[ByteBuffer] = BaseTypes.ByteBufferCodec

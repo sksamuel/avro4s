@@ -5,22 +5,6 @@ import com.sksamuel.avro4s.ValueTypes._
 import magnolia.{CaseClass, Param}
 import org.apache.avro.{Schema, SchemaBuilder}
 
-class ValueTypeCodec[T](ctx: CaseClass[Codec, T], codec: ValueFieldCodec[T])
-    extends Codec[T]
-    with NamespaceAware[Codec[T]] {
-
-  val schemaFor = codec.schemaFor
-
-  def encode(value: T): AnyRef = codec.encodeValue(value)
-
-  def decode(value: Any): T = decodeValueType(ctx, codec, value)
-
-  def withNamespace(namespace: String): Codec[T] =
-    ValueTypes.codec(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
-
-  override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = ValueTypes.codec(ctx, FullSchemaUpdate(schemaFor))
-}
-
 class ValueTypeEncoder[T](ctx: CaseClass[Encoder, T], encoder: ValueFieldEncoder[T])
     extends Encoder[T]
     with NamespaceAware[Encoder[T]] {
@@ -42,7 +26,7 @@ class ValueTypeDecoder[T](ctx: CaseClass[Decoder, T], decoder: ValueFieldDecoder
 
   val schemaFor = decoder.schemaFor
 
-  def decode(value: Any): T = decodeValueType(ctx, decoder, value)
+  def decode(value: Any): T = ctx.rawConstruct(List(decoder.decodeValue(value)))
 
   def withNamespace(namespace: String): Decoder[T] =
     ValueTypes.decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
@@ -53,70 +37,31 @@ class ValueTypeDecoder[T](ctx: CaseClass[Decoder, T], decoder: ValueFieldDecoder
 
 object ValueTypes {
 
-  @inline
-  private[avro4s] def decodeValueType[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
-                                                       decoder: ValueDecoder,
-                                                       value: Any): T =
-    ctx.rawConstruct(List(decoder.decodeValue(value)))
-
-  def codec[T](ctx: CaseClass[Codec, T], schemaUpdate: SchemaUpdate): Codec[T] =
-    create(ctx, schemaUpdate, new CodecBuilder)
-
-  def encoder[T](ctx: CaseClass[Encoder, T], schemaUpdate: SchemaUpdate): Encoder[T] =
-    create(ctx, schemaUpdate, new EncoderBuilder)
-
-  def decoder[T](ctx: CaseClass[Decoder, T], schemaUpdate: SchemaUpdate): Decoder[T] =
-    create(ctx, schemaUpdate, new DecoderBuilder)
-
-  private[avro4s] trait Builder[Typeclass[_], T, ValueProcessor[_]] {
-
-    def processorConstructor: (Param[Typeclass, T], SchemaFor[T]) => ValueProcessor[T]
-
-    def paramSchema: Param[Typeclass, T] => Schema
-
-    def constructor: (CaseClass[Typeclass, T], ValueProcessor[T]) => Typeclass[T]
+  def encoder[T](ctx: CaseClass[Encoder, T], schemaUpdate: SchemaUpdate): Encoder[T] = {
+    val param = ctx.parameters.head
+    val schemaFor = buildSchemaFor(ctx, param.typeclass.schema, schemaUpdate)
+    new ValueTypeEncoder[T](ctx, new ValueFieldEncoder[T](param, schemaFor))
   }
 
-  private[avro4s] class CodecBuilder[T] extends Builder[Codec, T, ValueFieldCodec] {
-    val processorConstructor = new ValueFieldCodec(_, _)
-
-    val paramSchema = _.typeclass.schemaFor.schema
-
-    val constructor: (CaseClass[Codec, T], ValueFieldCodec[T]) => Codec[T] = new ValueTypeCodec(_, _)
+  def decoder[T](ctx: CaseClass[Decoder, T], schemaUpdate: SchemaUpdate): Decoder[T] = {
+    val param = ctx.parameters.head
+    val schemaFor = buildSchemaFor(ctx, param.typeclass.schema, schemaUpdate)
+    new ValueTypeDecoder[T](ctx, new ValueFieldDecoder[T](param, schemaFor))
   }
 
-  private[avro4s] class DecoderBuilder[T] extends Builder[Decoder, T, ValueFieldDecoder] {
-    val processorConstructor = new ValueFieldDecoder[T](_, _)
+  def schema[T](ctx: CaseClass[SchemaFor, T], fieldMapper: FieldMapper): SchemaFor[T] =
+    SchemaFor[T](buildSchema(ctx, None, ctx.parameters.head.typeclass.schema), fieldMapper)
 
-    val paramSchema = _.typeclass.schemaFor.schema
-
-    val constructor = new ValueTypeDecoder(_, _)
-  }
-
-  private[avro4s] class EncoderBuilder[T] extends Builder[Encoder, T, ValueFieldEncoder] {
-    val processorConstructor = new ValueFieldEncoder(_, _)
-
-    val paramSchema = _.typeclass.schemaFor.schema
-
-    val constructor: (CaseClass[Encoder, T], ValueFieldEncoder[T]) => Encoder[T] = new ValueTypeEncoder(_, _)
-  }
-
-  private def create[Typeclass[_], T, ValueProcessor[_]](
-      ctx: CaseClass[Typeclass, T],
-      schemaUpdate: SchemaUpdate,
-      builder: Builder[Typeclass, T, ValueProcessor]): Typeclass[T] = {
-    val schema = schemaUpdate match {
+  private def buildSchemaFor[Typeclass[_], T](ctx: CaseClass[Typeclass, T], paramSchema: Schema, schemaUpdate: SchemaUpdate): SchemaFor[T] =
+    schemaUpdate match {
       case FullSchemaUpdate(s)    => s.forType[T]
-      case NamespaceUpdate(ns, _) => SchemaFor(buildSchema(ctx, Some(ns), builder.paramSchema)).forType[T]
-      case UseFieldMapper(_)      => SchemaFor(buildSchema(ctx, None, builder.paramSchema)).forType[T]
+      case NamespaceUpdate(ns, _) => SchemaFor(buildSchema(ctx, Some(ns), paramSchema)).forType[T]
+      case UseFieldMapper(_)      => SchemaFor(buildSchema(ctx, None, paramSchema)).forType[T]
     }
-    val processor = builder.processorConstructor(ctx.parameters.head, schema)
-    builder.constructor(ctx, processor)
-  }
 
-  def buildSchema[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
+  private def buildSchema[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
                                    namespaceUpdate: Option[String],
-                                   paramSchema: Param[Typeclass, T] => Schema): Schema = {
+                                   paramSchema: Schema): Schema = {
     val annotationExtractor = new AnnotationExtractors(ctx.annotations) // taking over @AvroFixed and the like
 
     val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)
@@ -127,7 +72,6 @@ object ValueTypes {
     // in other words, if we have `case class Foo(str:String)` then this just acts like a string
     // if we have a value type AND @AvroFixed is present on the class, then we simply return a schema of type fixed
 
-    val param = ctx.parameters.head
     annotationExtractor.fixed match {
       case Some(size) =>
         val builder =
@@ -138,12 +82,12 @@ object ValueTypes {
             .aliases(annotationExtractor.aliases: _*)
         annotationExtractor.props.foreach { case (k, v) => builder.prop(k, v) }
         builder.size(size)
-      case None => paramSchema(param)
+      case None => paramSchema
     }
   }
 
   private[avro4s] class Base[Typeclass[X] <: SchemaAware[Typeclass, X], T](val param: Param[Typeclass, T],
-                                                                           val schemaFor: SchemaFor[T]) {
+                                                                           val schemaFor: SchemaFor[T]) extends Serializable {
 
     // An encoder for a value type just needs to pass through the given value into an encoder
     // for the backing type. At runtime, the value type class won't exist, and the input
@@ -155,35 +99,15 @@ object ValueTypes {
     protected val typeclass: Typeclass[param.PType] =
       if (param.typeclass.schema != schemaFor.schema) param.typeclass.withSchema(schemaFor.forType) else param.typeclass
 
-    @inline
-    protected final def encode(encoder: Encoder[param.PType], value: T): AnyRef =
-      encoder.encode(param.dereference(value))
-
-    @inline
-    protected final def decode(decoder: Decoder[param.PType], value: Any): param.PType = decoder.decode(value)
-  }
-
-  private[avro4s] trait ValueDecoder {
-    def decodeValue(value: Any): Any
   }
 
   private[avro4s] class ValueFieldEncoder[T](p: Param[Encoder, T], schemaFor: SchemaFor[T])
       extends Base(p, schemaFor) {
-    def encodeValue(value: T): AnyRef = encode(typeclass, value)
+    def encodeValue(value: T): AnyRef = typeclass.encode(param.dereference(value))
   }
 
   private[avro4s] class ValueFieldDecoder[T](param: Param[Decoder, T], schemaFor: SchemaFor[T])
-      extends Base(param, schemaFor)
-      with ValueDecoder {
-    def decodeValue(value: Any): Any = decode(typeclass, value)
-  }
-
-  private[avro4s] class ValueFieldCodec[T](param: Param[Codec, T], schemaFor: SchemaFor[T])
-      extends Base(param, schemaFor)
-      with ValueDecoder {
-
-    def encodeValue(value: T): AnyRef = encode(typeclass, value)
-
-    def decodeValue(value: Any): Any = decode(typeclass, value)
+      extends Base(param, schemaFor) {
+    def decodeValue(value: Any): Any = typeclass.decode(value)
   }
 }

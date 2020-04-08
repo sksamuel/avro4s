@@ -315,13 +315,13 @@ object SchemaFor {
 
   def combine[T](ctx: CaseClass[Typeclass, T])(
       implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaFor[T] = {
-    val paramSchema = (p: Param[Typeclass, T]) => p.typeclass.schema
 
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record =>
+        val paramSchema: Param[Typeclass, T] => Schema = (p: Param[Typeclass, T]) => p.typeclass.schema
         Records.schema(ctx, fieldMapper, None, paramSchema)
       case CaseClassShape.ValueType =>
-        SchemaFor[T](ValueTypes.buildSchema(ctx, None, paramSchema), fieldMapper)
+        ValueTypes.schema(ctx, fieldMapper)
     }
   }
 

@@ -1037,28 +1037,6 @@ implicit object FooDecoder extends Decoder[Foo] {
 }
 ```
 
-In case you want to provide both custom encoding and decoding, you can also define a codec as follows:
-```scala
-case class Foo(a: String, b: String)
-
-implicit object FooCodec extends Codec[Foo] {
-
-  override val schemaFor = SchemaFor[Foo]
-
-  override def encode(foo: Foo) = {
-    val record = new GenericData.Record(schema)
-    record.put("a", foo.a.toUpperCase)
-    record.put("b", foo.b.toUpperCase)
-    record
-  }
-
-  override def decode(value: Any) = {
-    val record = value.asInstanceOf[GenericRecord]
-    Foo(record.get("a").toString.toLowerCase, record.get("b").toString.toLowerCase)
-  }
-}
-```
-
 Another example is changing the way we serialize `LocalDateTime` to store these dates as ISO strings. In this case, we are
 writing out a String rather than the default Long so we must also change the schema type. Therefore, we must add an implicit `SchemaFor` as well as the encoders
 and decoders.

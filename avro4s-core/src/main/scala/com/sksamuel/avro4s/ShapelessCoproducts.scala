@@ -8,30 +8,6 @@ import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.reflect.runtime.universe._
 
-trait ShapelessCoproductCodecs {
-
-  implicit final val CNilCodec: Codec[CNil] = ShapelessCoproducts.CNilCodec
-
-  implicit final def coproductCodec[H: WeakTypeTag: Manifest, T <: Coproduct](implicit codecH: Codec[H],
-                                                                              codecT: Codec[T]): Codec[H :+: T] =
-    new Codec[H :+: T] {
-
-      val schemaFor: SchemaFor[H :+: T] = SchemaFor.coproductSchema(codecH.schemaFor, codecT.schemaFor)
-
-      def encode(value: H :+: T): AnyRef = encodeCoproduct[H, T](value)
-
-      private implicit val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(codecH)
-
-      def decode(value: Any): H :+: T = decodeCoproduct[H, T](value)
-
-      override def withSchema(schemaFor: SchemaFor[H :+: T]): Codec[H :+: T] =
-        coproductCodec[H, T](implicitly[WeakTypeTag[H]],
-                             implicitly[Manifest[H]],
-                             withSelectedSubSchema(codecH, schemaFor),
-                             withFullSchema(codecT, schemaFor))
-    }
-}
-
 trait ShapelessCoproductEncoders {
 
   implicit final val CNilEncoder: Encoder[CNil] = ShapelessCoproducts.CNilCodec

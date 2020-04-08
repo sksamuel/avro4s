@@ -12,7 +12,4 @@ package object refined {
 
   implicit def refinedDecoder[T: Decoder, P, F[_, _] : RefType](implicit validate: Validate[T, P]): Decoder[F[T, P]] =
     Decoder[T].map(RefType[F].refine[P].unsafeFrom[T])
-
-  implicit def refinedCodec[T: Codec, P, F[_, _] : RefType](implicit validate: Validate[T, P]): Codec[F[T, P]] =
-    Codec[T].inmap(RefType[F].refine[P].unsafeFrom[T], RefType[F].unwrap)
 }

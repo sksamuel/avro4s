@@ -45,23 +45,3 @@ trait MagnoliaGeneratedDecoders {
       case CaseClassShape.ValueType => ValueTypes.decoder(ctx, UseFieldMapper(fieldMapper))
     }
 }
-
-trait MagnoliaGeneratedCodecs {
-
-  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
-
-  type Typeclass[T] = Codec[T]
-
-  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
-      implicit fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] =
-    DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion => TypeUnions.codec(ctx, UseFieldMapper(fieldMapper))
-      case SealedTraitShape.ScalaEnum => ScalaEnums.codec(ctx)
-    }
-
-  def combine[T](ctx: CaseClass[Typeclass, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): Codec[T] =
-    DatatypeShape.of(ctx) match {
-      case CaseClassShape.Record    => Records.codec(ctx, UseFieldMapper(fieldMapper))
-      case CaseClassShape.ValueType => ValueTypes.codec(ctx, UseFieldMapper(fieldMapper))
-    }
-}

@@ -3,7 +3,7 @@ package com.sksamuel.avro4s
 /**
  * Converts back and forth between Avro Generic representation and its Scala / Java equivalent
  */
-trait Codec[T] extends Encoder[T] with Decoder[T] with SchemaAware[Codec, T] {
+private[avro4s] trait Codec[T] extends Encoder[T] with Decoder[T] with SchemaAware[Codec, T] {
   self =>
 
   override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = {
@@ -16,16 +16,7 @@ trait Codec[T] extends Encoder[T] with Decoder[T] with SchemaAware[Codec, T] {
   }
 }
 
-object Codec
-    extends MagnoliaGeneratedCodecs
-    with ShapelessCoproductCodecs
-    with ScalaPredefAndCollectionCodecs
-    with ByteIterableCodecs
-    with BigDecimalCodecs
-    with TemporalCodecs
-    with BaseCodecs {
-
-  def apply[T](implicit codec: Codec[T]): Codec[T] = codec
+object Codec {
 
   private class DelegatingCodec[T, S](codec: Codec[T], val schemaFor: SchemaFor[S], map: T => S, comap: S => T)
       extends Codec[S] {

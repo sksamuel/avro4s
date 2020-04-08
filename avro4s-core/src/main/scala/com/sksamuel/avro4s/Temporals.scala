@@ -7,16 +7,6 @@ import java.time.format.DateTimeFormatter
 import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
 
-trait TemporalCodecs {
-  implicit val InstantCodec: Codec[Instant] = Temporals.InstantCodec
-  implicit val LocalTimeCodec: Codec[LocalTime] = Temporals.LocalTimeCodec
-  implicit val LocalDateCodec: Codec[LocalDate] = Temporals.LocalDateCodec
-  implicit val TimestampCodec: Codec[Timestamp] = Temporals.TimestampCodec
-  implicit val DateCodec: Codec[Date] = Temporals.DateCodec
-  implicit val LocalDateTimeCodec: Codec[LocalDateTime] = Temporals.LocalDateTimeCodec
-  implicit val OffsetDateTimeCodec: Codec[OffsetDateTime] = Temporals.OffsetDateTimeCodec
-}
-
 trait TemporalEncoders {
   implicit val InstantEncoder: Encoder[Instant] = Temporals.InstantCodec
   implicit val LocalTimeEncoder: Encoder[LocalTime] = Temporals.LocalTimeCodec

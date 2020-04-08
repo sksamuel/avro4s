@@ -30,17 +30,6 @@ trait ByteIterableEncoders {
   implicit val ByteSeqEncoder: Encoder[Seq[Byte]] = iterableByteEncoder(_.toSeq)
 }
 
-trait ByteIterableCodecs {
-
-  implicit val ByteArrayCodec: Codec[Array[Byte]] = ByteIterables.ByteArrayCodec
-
-  private def iterableByteCodec[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): Codec[C[Byte]] = new IterableByteCodec[C](build)
-
-  implicit val ByteListCodec: Codec[List[Byte]] = iterableByteCodec(_.toList)
-  implicit val ByteVectorCodec: Codec[Vector[Byte]] = iterableByteCodec(_.toVector)
-  implicit val ByteSeqCodec: Codec[Seq[Byte]] = iterableByteCodec(_.toSeq)
-}
-
 object ByteIterables {
 
   private[avro4s] sealed trait ByteArrayCodecBase extends Codec[Array[Byte]] {
