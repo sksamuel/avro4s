@@ -2,8 +2,10 @@ package com.sksamuel.avro4s
 
 /**
  * Converts back and forth between Avro Generic representation and its Scala / Java equivalent
+ *
+ * Can be used to define both an [[Encoder]] and [[Decoder]] in one go.
  */
-private[avro4s] trait Codec[T] extends Encoder[T] with Decoder[T] with SchemaAware[Codec, T] {
+trait Codec[T] extends Encoder[T] with Decoder[T] with SchemaAware[Codec, T] {
   self =>
 
   override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = {
