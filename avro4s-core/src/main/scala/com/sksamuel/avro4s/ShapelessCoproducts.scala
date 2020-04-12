@@ -17,7 +17,7 @@ trait ShapelessCoproductEncoders {
       encoderT: Encoder[T]): Encoder[H :+: T] =
     new Encoder[H :+: T] {
 
-      val schemaFor: SchemaFor[H :+: T] = SchemaFor.coproductSchema(encoderH.schemaFor, encoderT.schemaFor)
+      val schemaFor: SchemaFor[H :+: T] = SchemaFor.coproductSchemaFor(encoderH.schemaFor, encoderT.schemaFor)
 
       def encode(value: H :+: T): AnyRef = value match {
         case Inl(h) => encoderH.encode(h)
@@ -43,7 +43,7 @@ trait ShapelessCoproductDecoders {
       decoderT: Decoder[T]): Decoder[H :+: T] =
     new Decoder[H :+: T] {
 
-      val schemaFor: SchemaFor[H :+: T] = SchemaFor.coproductSchema(decoderH.schemaFor, decoderT.schemaFor)
+      val schemaFor: SchemaFor[H :+: T] = SchemaFor.coproductSchemaFor(decoderH.schemaFor, decoderT.schemaFor)
 
       private implicit val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(decoderH)
 

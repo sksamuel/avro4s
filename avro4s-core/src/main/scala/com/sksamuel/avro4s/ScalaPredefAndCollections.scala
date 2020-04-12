@@ -16,7 +16,7 @@ trait ScalaPredefAndCollectionEncoders {
 
   implicit def optionEncoder[T](implicit encoder: Encoder[T]): Encoder[Option[T]] = new Encoder[Option[T]] {
 
-    val schemaFor: SchemaFor[Option[T]] = SchemaFor.optionSchema(encoder.schemaFor)
+    val schemaFor: SchemaFor[Option[T]] = SchemaFor.optionSchemaFor(encoder.schemaFor)
 
     def encode(value: Option[T]): AnyRef = if (value.isEmpty) null else encoder.encode(value.get)
 
@@ -26,7 +26,7 @@ trait ScalaPredefAndCollectionEncoders {
 
   implicit def eitherEncoder[A, B](implicit leftEncoder: Encoder[A], rightEncoder: Encoder[B]): Encoder[Either[A, B]] =
     new Encoder[Either[A, B]] {
-      val schemaFor: SchemaFor[Either[A, B]] = SchemaFor.eitherSchema(leftEncoder.schemaFor, rightEncoder.schemaFor)
+      val schemaFor: SchemaFor[Either[A, B]] = SchemaFor.eitherSchemaFor(leftEncoder.schemaFor, rightEncoder.schemaFor)
 
       def encode(value: Either[A, B]): AnyRef = value match {
         case Left(l)  => leftEncoder.encode(l)
@@ -40,7 +40,7 @@ trait ScalaPredefAndCollectionEncoders {
 
   implicit def arrayEncoder[T: ClassTag](implicit encoder: Encoder[T]): Encoder[Array[T]] =
     new Encoder[Array[T]] {
-      val schemaFor: SchemaFor[Array[T]] = SchemaFor.arraySchema(encoder.schemaFor)
+      val schemaFor: SchemaFor[Array[T]] = SchemaFor.arraySchemaFor(encoder.schemaFor)
 
       def encode(value: Array[T]): AnyRef = value.map(encoder.encode).toList.asJava
 
@@ -50,7 +50,7 @@ trait ScalaPredefAndCollectionEncoders {
 
   private def iterableEncoder[T, C[X] <: Iterable[X]](encoder: Encoder[T]): Encoder[C[T]] =
     new Encoder[C[T]] {
-      val schemaFor: SchemaFor[C[T]] = SchemaFor.iterableSchema(encoder.schemaFor).forType
+      val schemaFor: SchemaFor[C[T]] = SchemaFor.iterableSchemaFor(encoder.schemaFor).forType
 
       def encode(value: C[T]): AnyRef = value.map(encoder.encode).toList.asJava
 
@@ -67,7 +67,7 @@ trait ScalaPredefAndCollectionEncoders {
 
   implicit def mapEncoder[T](implicit encoder: Encoder[T]): Encoder[Map[String, T]] =
     new Encoder[Map[String, T]] {
-      val schemaFor: SchemaFor[Map[String, T]] = SchemaFor.mapSchema(encoder.schemaFor)
+      val schemaFor: SchemaFor[Map[String, T]] = SchemaFor.mapSchemaFor(encoder.schemaFor)
 
       def encode(value: Map[String, T]): AnyRef = {
         val map = new util.HashMap[String, AnyRef]
@@ -86,7 +86,7 @@ trait ScalaPredefAndCollectionDecoders {
 
   implicit def optionDecoder[T](implicit decoder: Decoder[T]): Decoder[Option[T]] = new Decoder[Option[T]] {
 
-    val schemaFor = SchemaFor.optionSchema(decoder.schemaFor)
+    val schemaFor = SchemaFor.optionSchemaFor(decoder.schemaFor)
 
     def decode(value: Any): Option[T] = if (value == null) None else Option(decoder.decode(value))
 
@@ -98,7 +98,7 @@ trait ScalaPredefAndCollectionDecoders {
       implicit leftDecoder: Decoder[A],
       rightDecoder: Decoder[B]): Decoder[Either[A, B]] =
     new Decoder[Either[A, B]] {
-      val schemaFor: SchemaFor[Either[A, B]] = SchemaFor.eitherSchema(leftDecoder.schemaFor, rightDecoder.schemaFor)
+      val schemaFor: SchemaFor[Either[A, B]] = SchemaFor.eitherSchemaFor(leftDecoder.schemaFor, rightDecoder.schemaFor)
 
       private implicit val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding.guard(leftDecoder)
       private implicit val rightGuard: PartialFunction[Any, B] = TypeGuardedDecoding.guard(rightDecoder)
@@ -127,7 +127,7 @@ trait ScalaPredefAndCollectionDecoders {
 
   implicit def arrayDecoder[T: ClassTag](implicit decoder: Decoder[T]): Decoder[Array[T]] =
     new Decoder[Array[T]] {
-      def schemaFor: SchemaFor[Array[T]] = SchemaFor.arraySchema(decoder.schemaFor)
+      def schemaFor: SchemaFor[Array[T]] = SchemaFor.arraySchemaFor(decoder.schemaFor)
 
       def decode(value: Any): Array[T] = value match {
         case array: Array[_]               => array.map(decoder.decode)
@@ -143,7 +143,7 @@ trait ScalaPredefAndCollectionDecoders {
   private def iterableDecoder[T, C[X] <: Iterable[X]](decoder: Decoder[T])(
       implicit build: Iterable[T] => C[T]): Decoder[C[T]] =
     new Decoder[C[T]] {
-      val schemaFor: SchemaFor[C[T]] = SchemaFor.iterableSchema(decoder.schemaFor).forType
+      val schemaFor: SchemaFor[C[T]] = SchemaFor.iterableSchemaFor(decoder.schemaFor).forType
 
       def decode(value: Any): C[T] = value match {
         case list: java.util.Collection[_] => build(list.asScala.map(decoder.decode))
@@ -167,7 +167,7 @@ trait ScalaPredefAndCollectionDecoders {
 
   implicit def mapDecoder[T](implicit decoder: Decoder[T]): Decoder[Map[String, T]] =
     new Decoder[Map[String, T]] {
-      val schemaFor: SchemaFor[Map[String, T]] = SchemaFor.mapSchema(decoder.schemaFor)
+      val schemaFor: SchemaFor[Map[String, T]] = SchemaFor.mapSchemaFor(decoder.schemaFor)
 
       def decode(value: Any): Map[String, T] = value match {
         case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> decoder.decode(v) }
@@ -208,7 +208,7 @@ object ScalaPredefAndCollections {
   }
 
   object NoneCodec extends Codec[None.type] {
-    val schemaFor: SchemaFor[None.type] = SchemaFor.noneSchema
+    val schemaFor: SchemaFor[None.type] = SchemaFor.noneSchemaFor
 
     def encode(value: None.type): AnyRef = null
 

@@ -170,7 +170,7 @@ object BaseTypes {
 
   object ByteCodec extends Codec[Byte] {
 
-    val schemaFor: SchemaFor[Byte] = SchemaFor.ByteSchema
+    val schemaFor: SchemaFor[Byte] = SchemaFor.ByteSchemaFor
 
     def encode(t: Byte): java.lang.Byte = java.lang.Byte.valueOf(t)
 
@@ -182,7 +182,7 @@ object BaseTypes {
 
   object ShortCodec extends Codec[Short] {
 
-    val schemaFor: SchemaFor[Short] = SchemaFor.ShortSchema
+    val schemaFor: SchemaFor[Short] = SchemaFor.ShortSchemaFor
 
     def encode(t: Short): java.lang.Short = java.lang.Short.valueOf(t)
 
@@ -195,7 +195,7 @@ object BaseTypes {
 
   object IntCodec extends Codec[Int] {
 
-    val schemaFor: SchemaFor[Int] = SchemaFor.IntSchema
+    val schemaFor: SchemaFor[Int] = SchemaFor.IntSchemaFor
 
     def encode(value: Int): AnyRef = java.lang.Integer.valueOf(value)
 
@@ -209,7 +209,7 @@ object BaseTypes {
 
   object LongCodec extends Codec[Long] {
 
-    val schemaFor: SchemaFor[Long] = SchemaFor.LongSchema
+    val schemaFor: SchemaFor[Long] = SchemaFor.LongSchemaFor
 
     def encode(value: Long): AnyRef = java.lang.Long.valueOf(value)
 
@@ -224,7 +224,7 @@ object BaseTypes {
 
   object DoubleCodec extends Codec[Double] {
 
-    val schemaFor: SchemaFor[Double] = SchemaFor.DoubleSchema
+    val schemaFor: SchemaFor[Double] = SchemaFor.DoubleSchemaFor
 
     def encode(value: Double): AnyRef = java.lang.Double.valueOf(value)
 
@@ -236,7 +236,7 @@ object BaseTypes {
 
   object FloatCodec extends Codec[Float] {
 
-    val schemaFor: SchemaFor[Float] = SchemaFor.FloatSchema
+    val schemaFor: SchemaFor[Float] = SchemaFor.FloatSchemaFor
 
     def encode(value: Float): AnyRef = java.lang.Float.valueOf(value)
 
@@ -248,7 +248,7 @@ object BaseTypes {
 
   object BooleanCodec extends Codec[Boolean] {
 
-    val schemaFor: SchemaFor[Boolean] = SchemaFor.BooleanSchema
+    val schemaFor: SchemaFor[Boolean] = SchemaFor.BooleanSchemaFor
 
     def encode(value: Boolean): AnyRef = java.lang.Boolean.valueOf(value)
 
@@ -257,7 +257,7 @@ object BaseTypes {
 
   object ByteBufferCodec extends Codec[ByteBuffer] {
 
-    val schemaFor: SchemaFor[ByteBuffer] = SchemaFor.ByteBufferSchema
+    val schemaFor: SchemaFor[ByteBuffer] = SchemaFor.ByteBufferSchemaFor
 
     def encode(value: ByteBuffer): AnyRef = value
 
@@ -270,7 +270,7 @@ object BaseTypes {
 
   object CharSequenceCodec extends Codec[CharSequence] {
 
-    val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchema
+    val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchemaFor
 
     def encode(value: CharSequence): AnyRef = value
 
@@ -280,10 +280,10 @@ object BaseTypes {
     }
   }
 
-  val StringCodec: Codec[String] = new StringCodec(SchemaFor.StringSchema)
+  val StringCodec: Codec[String] = new StringCodec(SchemaFor.StringSchemaFor)
 
   val Utf8Codec: Codec[Utf8] = new Codec[Utf8] {
-    val schemaFor: SchemaFor[Utf8] = SchemaFor.Utf8Schema
+    val schemaFor: SchemaFor[Utf8] = SchemaFor.Utf8SchemaFor
 
     def encode(value: Utf8): AnyRef = value
 
@@ -328,10 +328,10 @@ object BaseTypes {
     override def withSchema(schemaFor: SchemaFor[String]): Codec[String] = new StringCodec(schemaFor)
   }
 
-  val UUIDCodec = StringCodec.inmap[UUID](UUID.fromString, _.toString).withSchema(SchemaFor.UUIDSchema)
+  val UUIDCodec = StringCodec.inmap[UUID](UUID.fromString, _.toString).withSchema(SchemaFor.UUIDSchemaFor)
 
   class JavaEnumCodec[E <: Enum[E]](implicit tag: ClassTag[E]) extends Codec[E] {
-    val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchema
+    val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchemaFor
 
     def encode(value: E): AnyRef = new EnumSymbol(schema, value.name)
 
@@ -347,7 +347,7 @@ object BaseTypes {
         mirror.reflectModule(moduleSymbol).instance.asInstanceOf[Enumeration]
     }
 
-    val schemaFor: SchemaFor[E] = SchemaFor.scalaEnumSchema[E]
+    val schemaFor: SchemaFor[E] = SchemaFor.scalaEnumSchemaFor[E]
 
     def encode(value: E): AnyRef = new EnumSymbol(schema, value.toString)
 

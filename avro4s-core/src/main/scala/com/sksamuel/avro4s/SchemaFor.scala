@@ -53,33 +53,33 @@ trait EnumSchemaFor {
 
 object JavaEnumSchemaFor extends EnumSchemaFor {
 
-  def apply[E <: Enum[_]](default: E)(implicit tag: ClassTag[E]): SchemaFor[E] = SchemaFor.javaEnumSchema.map[E](addDefault(default))
+  def apply[E <: Enum[_]](default: E)(implicit tag: ClassTag[E]): SchemaFor[E] = SchemaFor.javaEnumSchemaFor.map[E](addDefault(default))
 }
 
 object ScalaEnumSchemaFor extends EnumSchemaFor {
 
-  def apply[E <: scala.Enumeration#Value](default: E)(implicit tag: TypeTag[E]): SchemaFor[E] = SchemaFor.scalaEnumSchema.map[E](addDefault(default))
+  def apply[E <: scala.Enumeration#Value](default: E)(implicit tag: TypeTag[E]): SchemaFor[E] = SchemaFor.scalaEnumSchemaFor.map[E](addDefault(default))
 }
 
 object SchemaFor {
 
   def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
 
-  implicit val IntSchema: SchemaFor[Int] = SchemaFor[Int](SchemaBuilder.builder.intType)
-  implicit val ByteSchema: SchemaFor[Byte] = IntSchema.forType
-  implicit val ShortSchema: SchemaFor[Short] = IntSchema.forType
-  implicit val LongSchema: SchemaFor[Long] = SchemaFor[Long](SchemaBuilder.builder.longType)
-  implicit val FloatSchema: SchemaFor[Float] = SchemaFor[Float](SchemaBuilder.builder.floatType)
-  implicit val DoubleSchema: SchemaFor[Double] = SchemaFor[Double](SchemaBuilder.builder.doubleType)
-  implicit val BooleanSchema: SchemaFor[Boolean] = SchemaFor[Boolean](SchemaBuilder.builder.booleanType)
-  implicit val ByteBufferSchema: SchemaFor[ByteBuffer] = SchemaFor[ByteBuffer](SchemaBuilder.builder.bytesType)
-  implicit val CharSequenceSchema: SchemaFor[CharSequence] =
+  implicit val IntSchemaFor: SchemaFor[Int] = SchemaFor[Int](SchemaBuilder.builder.intType)
+  implicit val ByteSchemaFor: SchemaFor[Byte] = IntSchemaFor.forType
+  implicit val ShortSchemaFor: SchemaFor[Short] = IntSchemaFor.forType
+  implicit val LongSchemaFor: SchemaFor[Long] = SchemaFor[Long](SchemaBuilder.builder.longType)
+  implicit val FloatSchemaFor: SchemaFor[Float] = SchemaFor[Float](SchemaBuilder.builder.floatType)
+  implicit val DoubleSchemaFor: SchemaFor[Double] = SchemaFor[Double](SchemaBuilder.builder.doubleType)
+  implicit val BooleanSchemaFor: SchemaFor[Boolean] = SchemaFor[Boolean](SchemaBuilder.builder.booleanType)
+  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = SchemaFor[ByteBuffer](SchemaBuilder.builder.bytesType)
+  implicit val CharSequenceSchemaFor: SchemaFor[CharSequence] =
     SchemaFor[CharSequence](SchemaBuilder.builder.stringType)
-  implicit val StringSchema: SchemaFor[String] = SchemaFor[String](SchemaBuilder.builder.stringType)
-  implicit val Utf8Schema: SchemaFor[Utf8] = StringSchema.forType
-  implicit val UUIDSchema: SchemaFor[UUID] = SchemaFor(LogicalTypes.uuid().addToSchema(SchemaBuilder.builder.stringType))
+  implicit val StringSchemaFor: SchemaFor[String] = SchemaFor[String](SchemaBuilder.builder.stringType)
+  implicit val Utf8SchemaFor: SchemaFor[Utf8] = StringSchemaFor.forType
+  implicit val UUIDSchemaFor: SchemaFor[UUID] = SchemaFor(LogicalTypes.uuid().addToSchema(SchemaBuilder.builder.stringType))
 
-  implicit def javaEnumSchema[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = {
+  implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = {
     val typeInfo = TypeInfo.fromClass(tag.runtimeClass)
     val nameExtractor = NameExtractor(typeInfo)
     val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
@@ -124,7 +124,7 @@ object SchemaFor {
     }.flatten
   }
 
-  implicit def scalaEnumSchema[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = {
+  implicit def scalaEnumSchemaFor[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = {
 
 
     val typeRef = tag.tpe match {
@@ -190,62 +190,62 @@ object SchemaFor {
     }
   }
 
-  implicit val InstantSchema: SchemaFor[Instant] =
+  implicit val InstantSchemaFor: SchemaFor[Instant] =
     SchemaFor[Instant](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
-  implicit val DateSchema: SchemaFor[Date] = SchemaFor(
+  implicit val DateSchemaFor: SchemaFor[Date] = SchemaFor(
     LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType))
-  implicit val LocalDateSchema: SchemaFor[LocalDate] = DateSchema.forType
-  implicit val LocalDateTimeSchema: SchemaFor[LocalDateTime] = SchemaFor(
+  implicit val LocalDateSchemaFor: SchemaFor[LocalDate] = DateSchemaFor.forType
+  implicit val LocalDateTimeSchemaFor: SchemaFor[LocalDateTime] = SchemaFor(
     TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType))
-  implicit val OffsetDateTimeSchema: SchemaFor[OffsetDateTime] = SchemaFor(
+  implicit val OffsetDateTimeSchemaFor: SchemaFor[OffsetDateTime] = SchemaFor(
     OffsetDateTimeLogicalType.addToSchema(SchemaBuilder.builder.stringType))
-  implicit val LocalTimeSchema: SchemaFor[LocalTime] = SchemaFor(
+  implicit val LocalTimeSchemaFor: SchemaFor[LocalTime] = SchemaFor(
     LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType))
-  implicit val TimestampSchema: SchemaFor[Timestamp] =
+  implicit val TimestampSchemaFor: SchemaFor[Timestamp] =
     SchemaFor[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 
-  implicit val noneSchema: SchemaFor[None.type] = SchemaFor[None.type](SchemaBuilder.builder.nullType)
+  implicit val noneSchemaFor: SchemaFor[None.type] = SchemaFor[None.type](SchemaBuilder.builder.nullType)
 
-  implicit def optionSchema[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Option[T]] = {
+  implicit def optionSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Option[T]] = {
     schemaForItem.map[Option[T]](itemSchema =>
       SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
   }
 
-  implicit def eitherSchema[A, B](implicit leftFor: SchemaFor[A],
+  implicit def eitherSchemaFor[A, B](implicit leftFor: SchemaFor[A],
                                   rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] =
     SchemaFor[Either[A, B]](SchemaHelper.createSafeUnion(leftFor.schema, rightFor.schema))
 
-  implicit val ByteArraySchema: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
-  implicit val ByteListSchema: SchemaFor[List[Byte]] = ByteArraySchema.forType
-  implicit val ByteSeqSchema: SchemaFor[Seq[Byte]] = ByteArraySchema.forType
-  implicit val ByteVectorSchema: SchemaFor[Vector[Byte]] = ByteArraySchema.forType
+  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
+  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = ByteArraySchemaFor.forType
+  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = ByteArraySchemaFor.forType
+  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = ByteArraySchemaFor.forType
 
-  private def _iterableSchema[C[X] <: Iterable[X], T](implicit schemaForItem: SchemaFor[T]): SchemaFor[C[T]] =
+  private def _iterableSchemaFor[C[X] <: Iterable[X], T](implicit schemaForItem: SchemaFor[T]): SchemaFor[C[T]] =
     SchemaFor[C[T]](SchemaBuilder.array.items(schemaForItem.schema), schemaForItem.fieldMapper)
 
-  implicit def arraySchema[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Array[T]] =
-    _iterableSchema(schemaForItem).forType
-  implicit def iterableSchema[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Iterable[T]] =
-    _iterableSchema(schemaForItem).forType
-  implicit def listSchema[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[List[T]] =
-    _iterableSchema(schemaForItem).forType
-  implicit def setSchema[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Set[T]] =
-    _iterableSchema(schemaForItem).forType
-  implicit def vectorSchema[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Vector[T]] =
-    _iterableSchema(schemaForItem).forType
-  implicit def seqSchema[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Seq[T]] =
-    _iterableSchema(schemaForItem).forType
+  implicit def arraySchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Array[T]] =
+    _iterableSchemaFor(schemaForItem).forType
+  implicit def iterableSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Iterable[T]] =
+    _iterableSchemaFor(schemaForItem).forType
+  implicit def listSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[List[T]] =
+    _iterableSchemaFor(schemaForItem).forType
+  implicit def setSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Set[T]] =
+    _iterableSchemaFor(schemaForItem).forType
+  implicit def vectorSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Vector[T]] =
+    _iterableSchemaFor(schemaForItem).forType
+  implicit def seqSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Seq[T]] =
+    _iterableSchemaFor(schemaForItem).forType
 
-  implicit def mapSchema[T](implicit schemaForValue: SchemaFor[T]): SchemaFor[Map[String, T]] =
+  implicit def mapSchemaFor[T](implicit schemaForValue: SchemaFor[T]): SchemaFor[Map[String, T]] =
     SchemaFor(SchemaBuilder.map().values(schemaForValue.schema), schemaForValue.fieldMapper)
 
-  implicit def bigDecimalSchema(implicit sp: ScalePrecision = ScalePrecision.default): SchemaFor[BigDecimal] =
+  implicit def bigDecimalSchemaFor(implicit sp: ScalePrecision = ScalePrecision.default): SchemaFor[BigDecimal] =
     SchemaFor(LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.bytesType))
 
-  implicit def singleElementSchema[H](implicit schemaFor: SchemaFor[H]): SchemaFor[H :+: CNil] =
+  implicit def singleElementSchemaFor[H](implicit schemaFor: SchemaFor[H]): SchemaFor[H :+: CNil] =
     SchemaFor(SchemaHelper.createSafeUnion(schemaFor.schema), schemaFor.fieldMapper)
 
-  implicit def coproductSchema[H, T <: Coproduct](implicit schemaForH: SchemaFor[H],
+  implicit def coproductSchemaFor[H, T <: Coproduct](implicit schemaForH: SchemaFor[H],
                                                   schemaForT: SchemaFor[T]): SchemaFor[H :+: T] =
     SchemaFor(SchemaHelper.createSafeUnion(schemaForH.schema, schemaForT.schema), schemaForH.fieldMapper)
 

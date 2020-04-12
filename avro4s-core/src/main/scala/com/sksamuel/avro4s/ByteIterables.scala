@@ -51,7 +51,7 @@ object ByteIterables {
 
   val ByteArrayCodec: Codec[Array[Byte]] = new ByteArrayCodecBase {
 
-    val schemaFor = SchemaFor.arraySchema[Byte]
+    val schemaFor = SchemaFor.arraySchemaFor[Byte]
 
     def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
   }
