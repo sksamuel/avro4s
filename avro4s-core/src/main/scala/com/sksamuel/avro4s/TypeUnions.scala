@@ -9,7 +9,7 @@ import org.apache.avro.generic.GenericContainer
 
 class TypeUnionEncoder[T](ctx: SealedTrait[Encoder, T],
                           val schemaFor: SchemaFor[T],
-                          encoderBySubtype: Map[Subtype[Encoder, T], EntryEncoder[T]])
+                          encoderBySubtype: Map[Subtype[Encoder, T], UnionEntryEncoder[T]])
     extends Encoder[T]
     with NamespaceAware[Encoder[T]] {
 
@@ -21,12 +21,14 @@ class TypeUnionEncoder[T](ctx: SealedTrait[Encoder, T],
     TypeUnions.encoder(ctx, FullSchemaUpdate(schemaFor))
   }
 
-  def encode(value: T): AnyRef = encodeUnion(ctx, encoderBySubtype, value)
+  def encode(value: T): AnyRef =
+    // we need an additional indirection since we may have enhanced the original magnolia-provided encoder via annotations
+    ctx.dispatch(value)(subtype => encoderBySubtype(subtype).encodeSubtype(value))
 }
 
 class TypeUnionDecoder[T](ctx: SealedTrait[Decoder, T],
                           val schemaFor: SchemaFor[T],
-                          decoderByName: Map[String, EntryDecoder[T]])
+                          decoderByName: Map[String, UnionEntryDecoder[T]])
     extends Decoder[T]
     with NamespaceAware[Decoder[T]] {
 
@@ -38,42 +40,21 @@ class TypeUnionDecoder[T](ctx: SealedTrait[Decoder, T],
     TypeUnions.decoder(ctx, FullSchemaUpdate(schemaFor))
   }
 
-  def decode(value: Any): T = decodeUnion(ctx, decoderByName, value)
+  def decode(value: Any): T = value match {
+    case container: GenericContainer =>
+      val schemaName = container.getSchema.getFullName
+      val codecOpt = decoderByName.get(schemaName)
+      if (codecOpt.isDefined) {
+        codecOpt.get.decodeSubtype(container)
+      } else {
+        val schemaNames = decoderByName.keys.toSeq.sorted.mkString("[", ", ", "]")
+        sys.error(s"Could not find schema $schemaName in type union schemas $schemaNames")
+      }
+    case _ => sys.error(s"Unsupported type $value in type union decoder")
+  }
 }
 
 object TypeUnions {
-
-  @inline
-  private[avro4s] def encodeUnion[Typeclass[_], T](ctx: SealedTrait[Typeclass, T],
-                                                   encoderBySubtype: Map[Subtype[Typeclass, T], EntryEncoder[T]],
-                                                   value: T): AnyRef =
-    // we need an additional indirection since we may have enhanced the original magnolia-provided encoder via annotations
-    ctx.dispatch(value)(subtype => encoderBySubtype(subtype).encodeSubtype(value))
-
-  @inline
-  private[avro4s] def decodeUnion[Typeclass[_], T](ctx: SealedTrait[Typeclass, T],
-                                                   decoderByName: Map[String, EntryDecoder[T]],
-                                                   value: Any) =
-    value match {
-      case container: GenericContainer =>
-        val schemaName = container.getSchema.getFullName
-        val codecOpt = decoderByName.get(schemaName)
-        if (codecOpt.isDefined) {
-          codecOpt.get.decodeSubtype(container)
-        } else {
-          val schemaNames = decoderByName.keys.toSeq.sorted.mkString("[", ", ", "]")
-          sys.error(s"Could not find schema $schemaName in type union schemas $schemaNames")
-        }
-      case _ => sys.error(s"Unsupported type $value in type union decoder")
-    }
-
-  trait EntryDecoder[T] extends Serializable {
-    def decodeSubtype(value: Any): T
-  }
-
-  trait EntryEncoder[T] extends Serializable {
-    def encodeSubtype(value: T): AnyRef
-  }
 
   def encoder[T](ctx: SealedTrait[Encoder, T], update: SchemaUpdate): Encoder[T] = {
     val subtypeEncoders = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEntryEncoder[T](st, u) }

@@ -1,21 +1,17 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate}
-import com.sksamuel.avro4s.TypeUnions.{EntryDecoder, EntryEncoder}
 import magnolia.Subtype
 
 private[avro4s] object TypeUnionEntry {
 
-  class UnionEntryEncoder[T](st: Subtype[Encoder, T], update: SchemaUpdate)
-      extends EntryBase[Encoder, T](st, update)
-      with EntryEncoder[T] {
+  class UnionEntryEncoder[T](st: Subtype[Encoder, T], update: SchemaUpdate) extends EntryBase[Encoder, T](st, update) {
 
     def encodeSubtype(value: T): AnyRef = typeclass.encode(subtype.cast(value))
   }
 
   class UnionEntryDecoder[T](st: Subtype[Decoder, T], overrides: SchemaUpdate)
-      extends EntryBase[Decoder, T](st, overrides)
-      with EntryDecoder[T] {
+      extends EntryBase[Decoder, T](st, overrides) {
 
     def decodeSubtype(value: Any): T = typeclass.decode(value)
   }
