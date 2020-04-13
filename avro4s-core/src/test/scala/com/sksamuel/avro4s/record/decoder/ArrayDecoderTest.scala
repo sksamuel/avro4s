@@ -26,7 +26,6 @@ case class Record(str: String, double: Double)
 class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
   import scala.collection.JavaConverters._
-  implicit val fm: FieldMapper = DefaultFieldMapper
 
   "Decoder" should {
 

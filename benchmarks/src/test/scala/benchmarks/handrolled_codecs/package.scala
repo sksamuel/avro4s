@@ -11,8 +11,7 @@ import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 package object handrolled_codecs {
 
-  final class AttributeValueCodec[T: Codec](val schemaForValid: SchemaFor[Valid[T]]) extends Codec[AttributeValue[T]] {
-
+  final class AttributeValueCodec[T: Encoder: Decoder](val schemaForValid: SchemaFor[Valid[T]]) extends Codec[AttributeValue[T]] {
 
     def schemaFor: SchemaFor[AttributeValue[T]] = {
       implicit val sfv: SchemaFor[Valid[T]] = schemaForValid
@@ -21,19 +20,23 @@ package object handrolled_codecs {
 
     def unionSchemaElementWhere(predicate: Schema => Boolean): Schema = schema.getTypes.asScala.find(predicate).get
 
-    val validCodec = Codec[Valid[T]].withSchema(schemaForValid)
-    val emptyCodec = Codec[Empty]
-    val invalidCodec = Codec[Invalid]
+    val validEncoder = Encoder[Valid[T]].withSchema(schemaForValid)
+    val emptyEncoder = Encoder[Empty]
+    val invalidEncoder = Encoder[Invalid]
 
     def encode(t: AttributeValue[T]): AnyRef = t match {
-      case v: Valid[T] => validCodec.encode(v)
-      case e: Empty    => emptyCodec.encode(e)
-      case i: Invalid  => invalidCodec.encode(i)
+      case v: Valid[T] => validEncoder.encode(v)
+      case e: Empty    => emptyEncoder.encode(e)
+      case i: Invalid  => invalidEncoder.encode(i)
     }
 
-    val validSn: String = validCodec.schema.getFullName
-    val emptySn: String = emptyCodec.schema.getFullName
-    val invalidSn: String = invalidCodec.schema.getFullName
+    val validDecoder = Decoder[Valid[T]].withSchema(schemaForValid)
+    val emptyDecoder = Decoder[Empty]
+    val invalidDecoder = Decoder[Invalid]
+
+    val validSn: String = validDecoder.schema.getFullName
+    val emptySn: String = emptyDecoder.schema.getFullName
+    val invalidSn: String = invalidDecoder.schema.getFullName
 
     def decode(value: Any): AttributeValue[T] = {
       val schema = value match {
@@ -41,9 +44,9 @@ package object handrolled_codecs {
         case i: ImmutableRecord    => i.schema
       }
       schema.getFullName match {
-        case `validSn`   => validCodec.decode(value)
-        case `emptySn`   => emptyCodec.decode(value)
-        case `invalidSn` => invalidCodec.decode(value)
+        case `validSn`   => validDecoder.decode(value)
+        case `emptySn`   => emptyDecoder.decode(value)
+        case `invalidSn` => invalidDecoder.decode(value)
       }
     }
   }
@@ -57,7 +60,7 @@ package object handrolled_codecs {
   }
 
   object AttributeValueCodec {
-    def apply[T: Codec: SchemaFor: TypeTag]: AttributeValueCodec[T] = {
+    def apply[T: Encoder: Decoder: SchemaFor: TypeTag]: AttributeValueCodec[T] = {
       implicit val schemaForValid: SchemaFor[Valid[T]] = buildSchemaForValid
       new AttributeValueCodec[T](schemaForValid)
     }

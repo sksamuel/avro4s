@@ -11,8 +11,6 @@ case class OptionalBigDecimal(big: Option[BigDecimal])
 
 class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
 
-  implicit val fm: FieldMapper = DefaultFieldMapper
-
   "Decoder" should "convert byte array to decimal" in {
     val schema = AvroSchema[WithBigDecimal]
     val record = new GenericData.Record(schema)

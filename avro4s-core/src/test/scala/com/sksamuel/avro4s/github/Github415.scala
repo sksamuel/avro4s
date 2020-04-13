@@ -10,7 +10,6 @@ import org.scalatest.matchers.must.Matchers
 class Github415 extends AnyFunSuite with Matchers {
 
   test("github 415") {
-    // TODO clarify is it necessary to be able to serialize encoders / decoders of unserializable classes?
     val fileOut = new FileOutputStream("remove_me")
     val out = new ObjectOutputStream(fileOut)
     out.writeObject(Encoder[PlaybackSession])

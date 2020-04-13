@@ -13,7 +13,7 @@ import org.scalameter.Context
 import org.scalameter.api._
 
 object Decoding extends Bench.LocalTime with BenchmarkHelpers {
-  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 100000, exec.benchRuns -> 200000)
+  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 10000, exec.benchRuns -> 10000)
 
   def encode[T: Encoder: SchemaFor](value: T): ByteBuffer = {
     val outputStream = new ByteArrayOutputStream(512)
@@ -58,9 +58,9 @@ object Decoding extends Bench.LocalTime with BenchmarkHelpers {
     }
   }
 
-  performance of "avro4s union type with type param alternative codec decoding" in {
+  performance of "avro4s union type with type param" in {
     implicit val mapper: FieldMapper = DefaultFieldMapper
-    val codec = Codec[RecordWithUnionAndTypeField]
+    val codec = Decoder[RecordWithUnionAndTypeField]
     val bytes = encode(RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t)))
     val reader = new GenericDatumReader[GenericRecord](codec.schema)
 

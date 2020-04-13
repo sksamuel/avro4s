@@ -9,7 +9,6 @@ import org.scalatest.matchers.should.Matchers
 class AvroNameDecoderTest extends AnyFunSuite with Matchers {
 
   case class AvroNameDecoderTest(@AvroName("bar") foo: String)
-  implicit val fm: FieldMapper = DefaultFieldMapper
 
   test("decoder should take into account @AvroName on fields") {
     val decoder = Decoder[AvroNameDecoderTest]

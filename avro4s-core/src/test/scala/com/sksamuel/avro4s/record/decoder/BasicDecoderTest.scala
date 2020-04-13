@@ -16,8 +16,6 @@ case class FooInt(i: Int)
 
 class BasicDecoderTest extends AnyWordSpec with Matchers {
 
-  implicit val fm: FieldMapper = DefaultFieldMapper
-
   "Decoder" should {
     "decode strings" in {
       val schema = AvroSchema[FooString]

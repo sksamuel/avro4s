@@ -9,7 +9,6 @@ import shapeless.{:+:, CNil, Coproduct}
 class CoproductEncoderTest extends AnyFunSuite with Matchers {
 
   test("coproducts with primitives") {
-    implicit val fieldMapper: FieldMapper = DefaultFieldMapper
     val encoder = Encoder[CPWrapper]
     encoder.encode(CPWrapper(Coproduct[CPWrapper.ISBG](4))) shouldBe ImmutableRecord(encoder.schema, Vector(java.lang.Integer.valueOf(4)))
     encoder.encode(CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))) shouldBe ImmutableRecord(encoder.schema, Vector(new Utf8("wibble")))
@@ -17,7 +16,6 @@ class CoproductEncoderTest extends AnyFunSuite with Matchers {
   }
 
   test("coproducts with case classes") {
-    implicit val fieldMapper: FieldMapper = DefaultFieldMapper
     val gschema = AvroSchema[Gimble]
     val encoder = Encoder[CPWrapper]
     encoder.encode(CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))) shouldBe ImmutableRecord(encoder.schema, Vector(ImmutableRecord(gschema, Vector(new Utf8("foo")))))

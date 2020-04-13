@@ -12,7 +12,7 @@ import org.scalameter.Context
 import org.scalameter.api._
 
 object Encoding extends Bench.LocalTime with BenchmarkHelpers {
-  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 100000, exec.benchRuns -> 100000)
+  override def defaultConfig: Context = Context(exec.minWarmupRuns -> 10000, exec.benchRuns -> 10000)
 
   def encode[T](value: T,
                 encoder: Encoder[T],
@@ -88,6 +88,7 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
 
     import benchmarks.handrolled_codecs._
     implicit val codec: AttributeValueCodec[Int] = AttributeValueCodec[Int]
+    implicit val schemaForValid = codec.schemaForValid
     val schema = AvroSchema[RecordWithUnionAndTypeField]
     val encoder = Encoder[RecordWithUnionAndTypeField]
     val writer = new GenericDatumWriter[GenericRecord](schema)
@@ -99,8 +100,8 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
     }
   }
 
-  performance of "avro4s union type with type param alternative codec encoding" in {
-    val codec = Codec[RecordWithUnionAndTypeField]
+  performance of "avro4s union type with type param" in {
+    val codec = Encoder[RecordWithUnionAndTypeField]
     val writer = new GenericDatumWriter[GenericRecord](codec.schema)
 
     val s = RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t))
