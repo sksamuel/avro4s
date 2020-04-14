@@ -95,9 +95,8 @@ object TypeUnions {
         val schema = schemaFor.schema
         val fieldMapper = schemaFor.fieldMapper
         val nameExtractor = NameExtractor(st.typeName, st.annotations ++ ctx.annotations)
-        val subtraitSchema =
-          SchemaFor(SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema), fieldMapper)
-        FullSchemaUpdate(subtraitSchema)
+        val subtypeSchema = SchemaFor(SchemaHelper.extractTraitSubschema(nameExtractor.fullName, schema), fieldMapper)
+        FullSchemaUpdate(subtypeSchema)
       case _ => enrichedUpdate
     }
 

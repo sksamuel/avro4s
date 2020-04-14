@@ -10,7 +10,7 @@ import org.apache.avro.Schema
 object RecordFields {
 
   class RecordFieldDecoder[T](param: Param[Decoder, T], field: Option[Field])
-      extends RecordFieldBase[Decoder, T](param, field, (e: Decoder[_]) => e.schema)
+      extends RecordFieldBase[Decoder, T](param, field, param.typeclass.schema)
       with Serializable {
 
     private val fieldPosition = field.map(_.pos).getOrElse(-1)
@@ -44,28 +44,28 @@ object RecordFields {
   }
 
   class RecordFieldEncoder[T](p: Param[Encoder, T], field: Option[Field])
-      extends RecordFieldBase[Encoder, T](p, field, (e: Encoder[_]) => e.schema)
+      extends RecordFieldBase[Encoder, T](p, field, p.typeclass.schema)
       with Serializable {
 
     def encodeFieldValue(value: T): AnyRef = typeclass.encode(param.dereference(value))
   }
 
   /**
-    * Workhorse class for field encoder / decoder / codec.
+    * Base class for field encoder / decoder.
     *
     * Defines how fields are encoded / decoded, and how namespaces or schema overrides are passed to the
-    * underlying encoder / decoder / codec that were discovered via Magnolia derivation.
+    * underlying encoder / decoder that were discovered via Magnolia derivation.
     *
-    * @tparam Typeclass typeclass (i.e. Codec[_], Encoder[_], Decoder[_])
+    * @tparam Typeclass typeclass (i.e. Encoder[_], Decoder[_])
     * @tparam T type of the parent record / case class, needed for Magnolia's Param[_, _]
     */
   abstract class RecordFieldBase[Typeclass[X] <: SchemaAware[Typeclass, X], T](val param: Param[Typeclass, T],
                                                                                val field: Option[Field],
-                                                                               sf: Typeclass[_] => Schema) {
+                                                                               derivedSchema: Schema) {
 
     private def typesDiffer(schemaA: Schema, schemaB: Schema): Boolean =
       schemaA.getType != schemaB.getType || schemaA.getLogicalType != schemaB.getLogicalType || fieldsDiffer(schemaA,
-        schemaB)
+                                                                                                             schemaB)
 
     private def fieldsDiffer(schemaA: Schema, schemaB: Schema): Boolean =
       schemaA.getType == Schema.Type.RECORD && schemaA.getFields != schemaB.getFields
@@ -75,10 +75,9 @@ object RecordFields {
     protected val typeclass: Typeclass[param.PType] = {
       val namespace = new AnnotationExtractors(param.annotations).namespace
       (param.typeclass, namespace, field.map(_.schema)) match {
-        case (typeclass, _, Some(s)) if typesDiffer(s, sf(typeclass)) =>
-          typeclass.withSchema(SchemaFor[param.PType](s))
-        case (m: NamespaceAware[Typeclass[param.PType]]@unchecked, Some(ns), _) => m.withNamespace(ns)
-        case (codec, _, _) => codec
+        case (tc, _, Some(s)) if typesDiffer(s, derivedSchema)                   => tc.withSchema(SchemaFor[param.PType](s))
+        case (m: NamespaceAware[Typeclass[param.PType]] @unchecked, Some(ns), _) => m.withNamespace(ns)
+        case (tc, _, _)                                                          => tc
       }
     }
   }

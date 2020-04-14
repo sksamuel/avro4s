@@ -158,8 +158,6 @@ object Records {
                                                 containingNamespace: String,
                                                 fieldMapper: FieldMapper,
                                                 valueTypeDoc: Option[String]): Schema.Field = {
-
-    val extractor = new AnnotationExtractors(param.annotations)
     val doc = extractor.doc.orElse(valueTypeDoc).orNull
     val default: Option[AnyRef] = if (extractor.nodefault) None else param.default.asInstanceOf[Option[AnyRef]]
     val aliases = extractor.aliases
