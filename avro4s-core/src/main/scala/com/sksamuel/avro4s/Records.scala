@@ -113,7 +113,7 @@ object Records {
     }
   }
 
-  private def buildSchema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
+  private def buildSchema[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
                                          update: SchemaUpdate,
                                          paramSchema: Param[Typeclass, T] => Schema): SchemaFor[T] = update match {
     case FullSchemaUpdate(s)                     => s.forType[T]
@@ -121,7 +121,7 @@ object Records {
     case UseFieldMapper(fieldMapper)             => schema(ctx, fieldMapper, None, paramSchema)
   }
 
-  def schema[Typeclass[_], T, F[_]](ctx: CaseClass[Typeclass, T],
+  def schema[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
                                     fieldMapper: FieldMapper,
                                     namespaceUpdate: Option[String],
                                     paramSchema: Param[Typeclass, T] => Schema): SchemaFor[T] = {
