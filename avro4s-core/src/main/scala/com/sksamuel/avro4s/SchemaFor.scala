@@ -1,15 +1,7 @@
 package com.sksamuel.avro4s
 
-import java.nio.ByteBuffer
-import java.sql.{Date, Timestamp}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
-import java.util.UUID
-
-import com.sksamuel.avro4s.SchemaUpdate.UseFieldMapper
-import magnolia.{CaseClass, Magnolia, Param, SealedTrait}
-import org.apache.avro.util.Utf8
-import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
-import shapeless.{:+:, CNil, Coproduct}
+import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NoUpdate}
+import org.apache.avro.{Schema, SchemaBuilder}
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
@@ -22,7 +14,18 @@ import scala.reflect.runtime.universe._
   * For example, a String SchemaFor could return an instance of Schema.Type.STRING
   * or Schema.Type.FIXED depending on the type required for Strings.
   */
-final case class SchemaFor[T](schema: Schema, fieldMapper: FieldMapper = DefaultFieldMapper) extends Serializable {
+trait SchemaFor[T] extends Resolvable[SchemaFor, T] with Serializable {
+  self =>
+
+  def apply(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T] =
+    (self, update) match {
+      case (unresolved: ResolvableSchemaFor[T], _) => unresolved.resolve(env, update)
+      case (_, FullSchemaUpdate(sf))               => sf.forType
+      case _                                       => self
+    }
+
+  def schema: Schema
+  def fieldMapper: FieldMapper
 
   /**
     * Creates a SchemaFor[U] by applying a function Schema => Schema
@@ -33,6 +36,14 @@ final case class SchemaFor[T](schema: Schema, fieldMapper: FieldMapper = Default
   def forType[U]: SchemaFor[U] = map[U](identity)
 }
 
+trait ResolvableSchemaFor[T] extends SchemaFor[T] {
+  def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T]
+
+  lazy val adhocInstance = resolve(DefinitionEnvironment.empty, NoUpdate)
+
+  def schema = adhocInstance.schema
+  def fieldMapper: FieldMapper = adhocInstance.fieldMapper
+}
 
 case class ScalePrecision(scale: Int, precision: Int)
 
@@ -44,286 +55,48 @@ trait EnumSchemaFor {
 
   import scala.collection.JavaConverters._
 
-  protected def addDefault[E](default: E)(schema: Schema): Schema = SchemaBuilder.
-    enumeration(schema.getName).
-    namespace(schema.getNamespace).
-    defaultSymbol(default.toString).
-    symbols(schema.getEnumSymbols.asScala.toList:_*)
+  protected def addDefault[E](default: E)(schema: Schema): Schema =
+    SchemaBuilder
+      .enumeration(schema.getName)
+      .namespace(schema.getNamespace)
+      .defaultSymbol(default.toString)
+      .symbols(schema.getEnumSymbols.asScala.toList: _*)
 }
 
 object JavaEnumSchemaFor extends EnumSchemaFor {
 
-  def apply[E <: Enum[_]](default: E)(implicit tag: ClassTag[E]): SchemaFor[E] = SchemaFor.javaEnumSchemaFor.map[E](addDefault(default))
+  def apply[E <: Enum[_]](default: E)(implicit tag: ClassTag[E]): SchemaFor[E] =
+    SchemaFor.javaEnumSchemaFor.map[E](addDefault(default))
 }
 
 object ScalaEnumSchemaFor extends EnumSchemaFor {
 
-  def apply[E <: scala.Enumeration#Value](default: E)(implicit tag: TypeTag[E]): SchemaFor[E] = SchemaFor.scalaEnumSchemaFor.map[E](addDefault(default))
+  def apply[E <: scala.Enumeration#Value](default: E)(implicit tag: TypeTag[E]): SchemaFor[E] =
+    SchemaFor.scalaEnumSchemaFor.map[E](addDefault(default))
 }
 
-object SchemaFor {
+object SchemaFor
+    extends MagnoliaDerivedSchemaFors
+    with ShapelessCoproductSchemaFors
+    with CollectionAndContainerSchemaFors
+    with TupleSchemaFors
+    with BaseSchemaFors {
 
-  def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
-
-  implicit val IntSchemaFor: SchemaFor[Int] = SchemaFor[Int](SchemaBuilder.builder.intType)
-  implicit val ByteSchemaFor: SchemaFor[Byte] = IntSchemaFor.forType
-  implicit val ShortSchemaFor: SchemaFor[Short] = IntSchemaFor.forType
-  implicit val LongSchemaFor: SchemaFor[Long] = SchemaFor[Long](SchemaBuilder.builder.longType)
-  implicit val FloatSchemaFor: SchemaFor[Float] = SchemaFor[Float](SchemaBuilder.builder.floatType)
-  implicit val DoubleSchemaFor: SchemaFor[Double] = SchemaFor[Double](SchemaBuilder.builder.doubleType)
-  implicit val BooleanSchemaFor: SchemaFor[Boolean] = SchemaFor[Boolean](SchemaBuilder.builder.booleanType)
-  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = SchemaFor[ByteBuffer](SchemaBuilder.builder.bytesType)
-  implicit val CharSequenceSchemaFor: SchemaFor[CharSequence] =
-    SchemaFor[CharSequence](SchemaBuilder.builder.stringType)
-  implicit val StringSchemaFor: SchemaFor[String] = SchemaFor[String](SchemaBuilder.builder.stringType)
-  implicit val Utf8SchemaFor: SchemaFor[Utf8] = StringSchemaFor.forType
-  implicit val UUIDSchemaFor: SchemaFor[UUID] = SchemaFor(LogicalTypes.uuid().addToSchema(SchemaBuilder.builder.stringType))
-
-  implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = {
-    val typeInfo = TypeInfo.fromClass(tag.runtimeClass)
-    val nameExtractor = NameExtractor(typeInfo)
-    val symbols = tag.runtimeClass.getEnumConstants.map(_.toString)
-
-    val maybeName = tag.runtimeClass.getAnnotations.collectFirst {
-      case annotation: AvroJavaName => annotation.value()
-    }
-
-    val maybeNamespace = tag.runtimeClass.getAnnotations.collectFirst {
-      case annotation: AvroJavaNamespace => annotation.value()
-    }
-
-    val name = maybeName.getOrElse(nameExtractor.name)
-    val namespace = maybeNamespace.getOrElse(nameExtractor.namespace)
-
-    val maybeEnumDefault = tag.runtimeClass.getDeclaredFields.collectFirst {
-      case field if field.getDeclaredAnnotations.map(_.annotationType()).contains(classOf[AvroJavaEnumDefault]) => field.getName
-    }
-
-    val schema = maybeEnumDefault.map { enumDefault =>
-      SchemaBuilder.enumeration(name).namespace(namespace).defaultSymbol(enumDefault).symbols(symbols: _*)
-    }.getOrElse {
-      SchemaBuilder.enumeration(name).namespace(namespace).symbols(symbols: _*)
-    }
-
-    val props = tag.runtimeClass.getAnnotations.collect {
-      case annotation: AvroJavaProp => annotation.key() -> annotation.value()
-    }
-
-    props.foreach { case (key, value) =>
-      schema.addProp(key, value)
-    }
-    SchemaFor[E](schema)
-  }
-
-  def getAnnotationValue[T](annotationClass: Class[T], annotations: Seq[Annotation]): Option[String] = {
-    annotations.collectFirst {
-      case a: Annotation if a.tree.tpe.typeSymbol.name.toString == annotationClass.getSimpleName => a.tree.children.tail.headOption.flatMap {
-        case select: Select => Some(select.name.toString)
-        case _ => None
-      }
-    }.flatten
-  }
-
-  implicit def scalaEnumSchemaFor[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = {
-
-
-    val typeRef = tag.tpe match {
-      case t@TypeRef(_, _, _) => t
-    }
-
-    val valueType = typeOf[E]
-    val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
-    val syms = pre.filter { sym =>
-      !sym.isMethod &&
-        !sym.isType &&
-        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
-    }.map { sym =>
-      sym.name.decodedName.toString.trim
-    }
-
-    val annotations: Seq[Annotation] = typeRef.pre.typeSymbol.annotations
-
-    val maybeName = getAnnotationValue(classOf[AvroName], annotations)
-    val maybeNamespace = getAnnotationValue(classOf[AvroNamespace], annotations)
-    val enumDefault = getAnnotationValue(classOf[AvroEnumDefault], annotations)
-
-    val props: Seq[(String, String)] = annotations.collect {
-      case a: Annotation if a.tree.tpe.typeSymbol.name.toString == classOf[AvroProp].getSimpleName =>
-        a.tree.children.tail match {
-          case List(key: Literal, value: Literal) => key.value.value.toString -> value.value.value.toString
-          case _ => throw new RuntimeException("Failed to process an AvroProp annotation. The annotation should contain a key and value literals.")
-        }
-    }
-
-    val nameExtractor = NameExtractor(TypeInfo.fromType(typeRef.pre))
-
-    val name = maybeName.getOrElse(nameExtractor.name)
-    val namespace = maybeNamespace.getOrElse(nameExtractor.namespace)
-
-    val schema = enumDefault.map { default =>
-      SchemaBuilder.enumeration(name).namespace(namespace).defaultSymbol(default)symbols(syms: _*)
-    }.getOrElse {
-      SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
-    }
-
-    props.foreach { case (key, value) =>
-      schema.addProp(key, value)
-    }
-    SchemaFor[E](schema)
-  }
-
-  object TimestampNanosLogicalType extends LogicalType("timestamp-nanos") {
-    override def validate(schema: Schema): Unit = {
-      super.validate(schema)
-      if (schema.getType != Schema.Type.LONG) {
-        throw new IllegalArgumentException("Logical type timestamp-nanos must be backed by long")
-      }
-    }
-  }
-
-  object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
-    override def validate(schema: Schema): Unit = {
-      super.validate(schema)
-      if (schema.getType != Schema.Type.STRING) {
-        throw new IllegalArgumentException("Logical type iso-datetime with offset must be backed by String")
-      }
-    }
-  }
-
-  implicit val InstantSchemaFor: SchemaFor[Instant] =
-    SchemaFor[Instant](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
-  implicit val DateSchemaFor: SchemaFor[Date] = SchemaFor(
-    LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType))
-  implicit val LocalDateSchemaFor: SchemaFor[LocalDate] = DateSchemaFor.forType
-  implicit val LocalDateTimeSchemaFor: SchemaFor[LocalDateTime] = SchemaFor(
-    TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType))
-  implicit val OffsetDateTimeSchemaFor: SchemaFor[OffsetDateTime] = SchemaFor(
-    OffsetDateTimeLogicalType.addToSchema(SchemaBuilder.builder.stringType))
-  implicit val LocalTimeSchemaFor: SchemaFor[LocalTime] = SchemaFor(
-    LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType))
-  implicit val TimestampSchemaFor: SchemaFor[Timestamp] =
-    SchemaFor[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
-
-  implicit val noneSchemaFor: SchemaFor[None.type] = SchemaFor[None.type](SchemaBuilder.builder.nullType)
-
-  implicit def optionSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Option[T]] = {
-    schemaForItem.map[Option[T]](itemSchema =>
-      SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
-  }
-
-  implicit def eitherSchemaFor[A, B](implicit leftFor: SchemaFor[A],
-                                  rightFor: SchemaFor[B]): SchemaFor[Either[A, B]] =
-    SchemaFor[Either[A, B]](SchemaHelper.createSafeUnion(leftFor.schema, rightFor.schema))
+  // the following four implicits have to be here directly in order to avoid ambiguous implicit values errors
 
   implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
   implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = ByteArraySchemaFor.forType
   implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = ByteArraySchemaFor.forType
   implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = ByteArraySchemaFor.forType
 
-  private def _iterableSchemaFor[C[X] <: Iterable[X], T](implicit schemaForItem: SchemaFor[T]): SchemaFor[C[T]] =
-    SchemaFor[C[T]](SchemaBuilder.array.items(schemaForItem.schema), schemaForItem.fieldMapper)
-
-  implicit def arraySchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Array[T]] =
-    _iterableSchemaFor(schemaForItem).forType
-  implicit def iterableSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Iterable[T]] =
-    _iterableSchemaFor(schemaForItem).forType
-  implicit def listSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[List[T]] =
-    _iterableSchemaFor(schemaForItem).forType
-  implicit def setSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Set[T]] =
-    _iterableSchemaFor(schemaForItem).forType
-  implicit def vectorSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Vector[T]] =
-    _iterableSchemaFor(schemaForItem).forType
-  implicit def seqSchemaFor[T](implicit schemaForItem: SchemaFor[T]): SchemaFor[Seq[T]] =
-    _iterableSchemaFor(schemaForItem).forType
-
-  implicit def mapSchemaFor[T](implicit schemaForValue: SchemaFor[T]): SchemaFor[Map[String, T]] =
-    SchemaFor(SchemaBuilder.map().values(schemaForValue.schema), schemaForValue.fieldMapper)
-
-  implicit def bigDecimalSchemaFor(implicit sp: ScalePrecision = ScalePrecision.default): SchemaFor[BigDecimal] =
-    SchemaFor(LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.bytesType))
-
-  implicit def singleElementSchemaFor[H](implicit schemaFor: SchemaFor[H]): SchemaFor[H :+: CNil] =
-    SchemaFor(SchemaHelper.createSafeUnion(schemaFor.schema), schemaFor.fieldMapper)
-
-  implicit def coproductSchemaFor[H, T <: Coproduct](implicit schemaForH: SchemaFor[H],
-                                                  schemaForT: SchemaFor[T]): SchemaFor[H :+: T] =
-    SchemaFor(SchemaHelper.createSafeUnion(schemaForH.schema, schemaForT.schema), schemaForH.fieldMapper)
-
-  implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = {
-    SchemaFor(SchemaBuilder.record("Tuple2").namespace("scala").doc(null)
-        .fields()
-        .name("_1").`type`(a.schema).noDefault()
-        .name("_2").`type`(b.schema).noDefault()
-        .endRecord(),
-      a.fieldMapper
-    )
-  }
-
-  implicit def tuple3SchemaFor[A, B, C](implicit a: SchemaFor[A],
-                                        b: SchemaFor[B],
-                                        c: SchemaFor[C]): SchemaFor[(A, B, C)] = {
-    SchemaFor(SchemaBuilder.record("Tuple3").namespace("scala").doc(null)
-      .fields()
-      .name("_1").`type`(a.schema).noDefault()
-      .name("_2").`type`(b.schema).noDefault()
-      .name("_3").`type`(c.schema).noDefault()
-      .endRecord(),
-      a.fieldMapper
-    )
-  }
-
-  implicit def tuple4SchemaFor[A, B, C, D](implicit a: SchemaFor[A],
-                                           b: SchemaFor[B],
-                                           c: SchemaFor[C],
-                                           d: SchemaFor[D]): SchemaFor[(A, B, C, D)] = {
-    SchemaFor(SchemaBuilder.record("Tuple4").namespace("scala").doc(null)
-      .fields()
-      .name("_1").`type`(a.schema).noDefault()
-      .name("_2").`type`(b.schema).noDefault()
-      .name("_3").`type`(c.schema).noDefault()
-      .name("_4").`type`(d.schema).noDefault()
-      .endRecord(),
-      a.fieldMapper
-    )
-  }
-
-  implicit def tuple5SchemaFor[A, B, C, D, E](implicit a: SchemaFor[A],
-                                              b: SchemaFor[B],
-                                              c: SchemaFor[C],
-                                              d: SchemaFor[D],
-                                              e: SchemaFor[E]): SchemaFor[(A, B, C, D, E)] = {
-    SchemaFor(SchemaBuilder.record("Tuple5").namespace("scala").doc(null)
-      .fields()
-      .name("_1").`type`(a.schema).noDefault()
-      .name("_2").`type`(b.schema).noDefault()
-      .name("_3").`type`(c.schema).noDefault()
-      .name("_4").`type`(d.schema).noDefault()
-      .name("_5").`type`(e.schema).noDefault()
-      .endRecord(),
-      a.fieldMapper
-    )
-  }
-
-  type Typeclass[T] = SchemaFor[T]
-
-  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Typeclass, T])(
-      implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaFor[T] =
-    DatatypeShape.of(ctx) match {
-      case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx, UseFieldMapper(fieldMapper))
-      case SealedTraitShape.ScalaEnum => SchemaFor[T](ScalaEnums.schema(ctx), fieldMapper)
-    }
-
-  def combine[T](ctx: CaseClass[Typeclass, T])(
-      implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaFor[T] = {
-
-    DatatypeShape.of(ctx) match {
-      case CaseClassShape.Record =>
-        val paramSchema: Param[Typeclass, T] => Schema = (p: Param[Typeclass, T]) => p.typeclass.schema
-        Records.schema(ctx, fieldMapper, None, paramSchema)
-      case CaseClassShape.ValueType =>
-        ValueTypes.schema(ctx, fieldMapper)
+  def apply[T](schema: Schema, fieldMapper: FieldMapper = DefaultFieldMapper) = {
+    val s = schema
+    val fm = fieldMapper
+    new SchemaFor[T] {
+      def schema: Schema = s
+      def fieldMapper: FieldMapper = fm
     }
   }
 
-  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
+  def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor.apply()
 }

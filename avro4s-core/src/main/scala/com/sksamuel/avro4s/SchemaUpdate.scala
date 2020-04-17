@@ -1,13 +1,9 @@
 package com.sksamuel.avro4s
 
-sealed trait SchemaUpdate {
-  def fieldMapper: FieldMapper
-}
+sealed trait SchemaUpdate
 
 object SchemaUpdate {
-  case class FullSchemaUpdate(schemaFor: SchemaFor[_]) extends SchemaUpdate {
-    def fieldMapper: FieldMapper = schemaFor.fieldMapper
-  }
-  case class NamespaceUpdate(namespace: String, fieldMapper: FieldMapper) extends SchemaUpdate
-  case class UseFieldMapper(fieldMapper: FieldMapper) extends SchemaUpdate
+  case class FullSchemaUpdate(schemaFor: SchemaFor[_]) extends SchemaUpdate
+  case class NamespaceUpdate(namespace: String) extends SchemaUpdate
+  case object NoUpdate extends SchemaUpdate
 }

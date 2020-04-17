@@ -8,9 +8,9 @@ import scala.collection.JavaConverters._
 
 object ScalaEnums {
 
-  def encoder[T](ctx: SealedTrait[Encoder, T]): Encoder[T] = create(ctx, new EnumEncoder[T](_))
+  def encoder[T](ctx: SealedTrait[Encoder, T]): Encoder[T] = create[Encoder, T](ctx, new EnumEncoder[T](_))
 
-  def decoder[T](ctx: SealedTrait[Decoder, T]): Decoder[T] = create(ctx, new EnumDecoder[T](_))
+  def decoder[T](ctx: SealedTrait[Decoder, T]): Decoder[T] = create[Decoder, T](ctx, new EnumDecoder[T](_))
 
   private type Builder[Typeclass[_], T] = CodecData[Typeclass, T] => Typeclass[T]
 
@@ -31,10 +31,11 @@ object ScalaEnums {
           schema.getEnumSymbols.get(i) -> caseObject
       }.toMap
 
-    val data = new CodecData[Typeclass, T](ctx, symbolForSubtype, valueForSymbol, SchemaFor[T](schema))
+    val data = new CodecData[Typeclass, T](ctx, symbolForSubtype, valueForSymbol, SchemaFor[T](schema, DefaultFieldMapper))
     builder(data)
   }
 
+  // TODO reduce type params
   private abstract class BaseCodec[Typeclass[_], T](data: CodecData[Typeclass, T]) extends SchemaAware[Typeclass, T] {
 
     val schemaFor = data.schemaFor
@@ -58,14 +59,6 @@ object ScalaEnums {
         newSymbols == currentSymbols,
         s"Enum codec symbols cannot be changed via schema; schema symbols are ${newSymbols.mkString(",")} - codec symbols are $currentSymbols"
       )
-    }
-  }
-
-  private class EnumCodec[T](data: CodecData[Codec, T]) extends BaseCodec[Codec, T](data) with Codec[T] {
-
-    override def withSchema(schemaFor: SchemaFor[T]): Codec[T] = {
-      validateSchema(schemaFor)
-      super.withSchema(schemaFor)
     }
   }
 

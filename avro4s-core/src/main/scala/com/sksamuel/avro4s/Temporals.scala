@@ -8,34 +8,55 @@ import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
 
 trait TemporalEncoders {
-  implicit val InstantEncoder: Encoder[Instant] = Temporals.InstantCodec
-  implicit val LocalTimeEncoder: Encoder[LocalTime] = Temporals.LocalTimeCodec
-  implicit val LocalDateEncoder: Encoder[LocalDate] = Temporals.LocalDateCodec
-  implicit val TimestampEncoder: Encoder[Timestamp] = Temporals.TimestampCodec
-  implicit val DateEncoder: Encoder[Date] = Temporals.DateCodec
-  implicit val LocalDateTimeEncoder: Encoder[LocalDateTime] = Temporals.LocalDateTimeCodec
-  implicit val OffsetDateTimeEncoder: Encoder[OffsetDateTime] = Temporals.OffsetDateTimeCodec
-}
+  implicit val InstantEncoder =
+    Encoder.LongEncoder.comap[Instant](_.toEpochMilli).withSchema(SchemaFor.InstantSchemaFor)
 
-trait TemporalDecoders {
-  implicit val InstantDecoder: Decoder[Instant] = Temporals.InstantCodec
-  implicit val LocalTimeDecoder: Decoder[LocalTime] = Temporals.LocalTimeCodec
-  implicit val LocalDateDecoder: Decoder[LocalDate] = Temporals.LocalDateCodec
-  implicit val TimestampDecoder: Decoder[Timestamp] = Temporals.TimestampCodec
-  implicit val DateDecoder: Decoder[Date] = Temporals.DateCodec
-  implicit val LocalDateTimeDecoder: Decoder[LocalDateTime] = Temporals.LocalDateTimeCodec
-  implicit val OffsetDateTimeDecoder: Decoder[OffsetDateTime] = Temporals.OffsetDateTimeCodec
-}
-
-object Temporals {
-
-  val InstantCodec =
-    BaseTypes.LongCodec.inmap[Instant](Instant.ofEpochMilli, _.toEpochMilli).withSchema(SchemaFor.InstantSchemaFor)
-
-  val LocalTimeCodec: Codec[LocalTime] = new Codec[LocalTime] {
+  implicit val LocalTimeEncoder: Encoder[LocalTime] = new Encoder[LocalTime] {
     val schemaFor: SchemaFor[LocalTime] = SchemaFor.LocalTimeSchemaFor
 
     def encode(value: LocalTime): AnyRef = java.lang.Long.valueOf(value.toNanoOfDay / 1000)
+  }
+
+  implicit val LocalDateEncoder: Encoder[LocalDate] =
+    Encoder.IntEncoder.comap[LocalDate](_.toEpochDay.toInt).withSchema(SchemaFor.LocalDateSchemaFor)
+
+  implicit val TimestampEncoder: Encoder[Timestamp] = InstantEncoder.comap[Timestamp](_.toInstant)
+
+  implicit val DateEncoder: Encoder[Date] = LocalDateEncoder.comap[Date](_.toLocalDate)
+
+  implicit val LocalDateTimeEncoder: Encoder[LocalDateTime] = new LocalDateTimeEncoder(SchemaFor.LocalDateTimeSchemaFor)
+
+  private class LocalDateTimeEncoder(val schemaFor: SchemaFor[LocalDateTime]) extends Encoder[LocalDateTime] {
+
+    val encoder: LocalDateTime => Long = schemaFor.schema.getLogicalType match {
+      case _: TimestampMillis => _.toInstant(ZoneOffset.UTC).toEpochMilli
+      case _: TimestampMicros =>
+        t =>
+          t.toEpochSecond(ZoneOffset.UTC) * 1000000L + t.getNano.toLong / 1000L
+      case TimestampNanosLogicalType =>
+        t =>
+          t.toEpochSecond(ZoneOffset.UTC) * 1000000000L + t.getNano.toLong
+      case _ => sys.error(s"Unsupported type for LocalDateTime: ${schemaFor.schema}")
+    }
+
+    def encode(t: LocalDateTime): AnyRef = java.lang.Long.valueOf(encoder(t))
+
+    override def withSchema(schemaFor: SchemaFor[LocalDateTime]): Encoder[LocalDateTime] =
+      new LocalDateTimeEncoder(schemaFor)
+  }
+
+  implicit object OffsetDateTimeEncoder extends Encoder[OffsetDateTime] {
+    val schemaFor: SchemaFor[OffsetDateTime] = SchemaFor.OffsetDateTimeSchemaFor
+    override def encode(value: OffsetDateTime) = value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+  }
+}
+
+trait TemporalDecoders {
+  implicit val InstantDecoder =
+    Decoder.LongDecoder.map[Instant](Instant.ofEpochMilli).withSchema(SchemaFor.InstantSchemaFor)
+
+  implicit val LocalTimeDecoder: Decoder[LocalTime] = new Decoder[LocalTime] {
+    val schemaFor: SchemaFor[LocalTime] = SchemaFor.LocalTimeSchemaFor
 
     def decode(value: Any): LocalTime = schema.getLogicalType match {
       case _: TimeMillis =>
@@ -51,29 +72,16 @@ object Temporals {
     }
   }
 
-  val LocalDateCodec: Codec[LocalDate] =
-    BaseTypes.IntCodec
-      .inmap[LocalDate](i => LocalDate.ofEpochDay(i.toLong), _.toEpochDay.toInt)
-      .withSchema(SchemaFor.LocalDateSchemaFor)
+  implicit val LocalDateDecoder: Decoder[LocalDate] =
+    Decoder.IntDecoder.map[LocalDate](i => LocalDate.ofEpochDay(i.toLong)).withSchema(SchemaFor.LocalDateSchemaFor)
 
-  val TimestampCodec: Codec[Timestamp] = InstantCodec.inmap[Timestamp](Timestamp.from, _.toInstant)
+  implicit val TimestampDecoder: Decoder[Timestamp] = InstantDecoder.map[Timestamp](Timestamp.from)
 
-  val DateCodec: Codec[Date] = LocalDateCodec.inmap[Date](Date.valueOf, _.toLocalDate)
+  implicit val DateDecoder: Decoder[Date] = LocalDateDecoder.map[Date](Date.valueOf)
 
-  val LocalDateTimeCodec: Codec[LocalDateTime] = new LocalDateTimeCodec(SchemaFor.LocalDateTimeSchemaFor)
+  implicit val LocalDateTimeDecoder: Decoder[LocalDateTime] = new LocalDateTimeDecoder(SchemaFor.LocalDateTimeSchemaFor)
 
-  class LocalDateTimeCodec(val schemaFor: SchemaFor[LocalDateTime]) extends Codec[LocalDateTime] {
-
-    val encoder: LocalDateTime => Long = schemaFor.schema.getLogicalType match {
-      case _: TimestampMillis => _.toInstant(ZoneOffset.UTC).toEpochMilli
-      case _: TimestampMicros =>
-        t =>
-          t.toEpochSecond(ZoneOffset.UTC) * 1000000L + t.getNano.toLong / 1000L
-      case TimestampNanosLogicalType =>
-        t =>
-          t.toEpochSecond(ZoneOffset.UTC) * 1000000000L + t.getNano.toLong
-      case _ => sys.error(s"Unsupported type for LocalDateTime: ${schemaFor.schema}")
-    }
+  class LocalDateTimeDecoder(val schemaFor: SchemaFor[LocalDateTime]) extends Decoder[LocalDateTime] {
 
     val decoder: Any => LocalDateTime = schema.getLogicalType match {
       case _: TimestampMillis => {
@@ -96,23 +104,17 @@ object Temporals {
       }
     }
 
-    def encode(t: LocalDateTime): AnyRef = java.lang.Long.valueOf(encoder(t))
-
     def decode(value: Any): LocalDateTime = decoder(value)
 
-    override def withSchema(schemaFor: SchemaFor[LocalDateTime]): Codec[LocalDateTime] =
-      new LocalDateTimeCodec(schemaFor)
+    override def withSchema(schemaFor: SchemaFor[LocalDateTime]): Decoder[LocalDateTime] =
+      new LocalDateTimeDecoder(schemaFor)
   }
 
-  object OffsetDateTimeCodec extends Codec[OffsetDateTime] {
+  implicit object OffsetDateTimeDecoder extends Decoder[OffsetDateTime] {
 
     val schemaFor: SchemaFor[OffsetDateTime] = SchemaFor.OffsetDateTimeSchemaFor
 
     def decode(value: Any): OffsetDateTime =
       OffsetDateTime.parse(value.toString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-
-    override def encode(value: OffsetDateTime) =
-      value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
   }
-
 }

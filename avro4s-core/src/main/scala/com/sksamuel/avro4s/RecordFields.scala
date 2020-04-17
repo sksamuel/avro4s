@@ -1,84 +1,143 @@
 package com.sksamuel.avro4s
 
-import magnolia.Param
+import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, NoUpdate}
+import magnolia.{CaseClass, Param}
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.IndexedRecord
 
 import scala.util.control.NonFatal
-import org.apache.avro.Schema
+import org.apache.avro.{Schema, SchemaBuilder}
 
 object RecordFields {
 
-  class RecordFieldDecoder[T](param: Param[Decoder, T], field: Option[Field])
-      extends RecordFieldBase[Decoder, T](param, field, param.typeclass.schema)
-      with Serializable {
-
-    private val fieldPosition = field.map(_.pos).getOrElse(-1)
-
-    def fastDecodeFieldValue(record: IndexedRecord): Any =
-      if (fieldPosition == -1) defaultFieldValue
-      else tryDecode(record.get(fieldPosition))
-
-    def safeDecodeFieldValue(record: IndexedRecord): Any =
-      if (fieldPosition == -1) defaultFieldValue
-      else {
-        val schemaField = record.getSchema.getField(field.get.name)
-        if (schemaField == null) defaultFieldValue else tryDecode(record.get(schemaField.pos))
-      }
-
-    @inline
-    private def defaultFieldValue: Any = param.default match {
-      case Some(default) => default
-      // there is no default, so the field must be an option
-      case None => typeclass.decode(null)
+  class FieldEncoder[T](val param: Param[Encoder, T]) extends Serializable {
+    class ValueEncoder(encoder: Encoder[param.PType], val fieldName: String) extends Serializable {
+      def encodeFieldValue(value: T): AnyRef = encoder.encode(param.dereference(value))
     }
 
-    @inline
-    private def tryDecode(value: Any): Any =
-      try {
-        typeclass.decode(value)
-      } catch {
-        case NonFatal(ex) => param.default.getOrElse(throw ex)
+    def apply(env: DefinitionEnvironment[Encoder],
+              update: SchemaUpdate,
+              record: Schema,
+              ctx: CaseClass[Encoder, T],
+              fieldMapper: FieldMapper): (Field, ValueEncoder) = {
+
+      val (encoder, field) = update match {
+        case FullSchemaUpdate(sf) =>
+          val field = extractField(param, sf)
+
+          val fieldUpdate = FullSchemaUpdate(SchemaFor(field.schema(), sf.fieldMapper))
+          val encoder = param.typeclass.apply(env, fieldUpdate)
+          (encoder, field)
+
+        case _ =>
+          val encoder = param.typeclass.apply(env, fieldUpdate(param, record, fieldMapper))
+          (encoder, buildField(param, record, ctx, encoder.schema, fieldMapper))
       }
 
+      field -> new ValueEncoder(encoder, field.name)
+    }
   }
 
-  class RecordFieldEncoder[T](p: Param[Encoder, T], field: Option[Field])
-      extends RecordFieldBase[Encoder, T](p, field, p.typeclass.schema)
-      with Serializable {
+  class FieldDecoder[T](val param: Param[Decoder, T]) extends Serializable {
+    class ValueDecoder(decoder: Decoder[param.PType], val fieldName: Option[String], fieldPosition: Int)
+        extends Serializable {
 
-    def encodeFieldValue(value: T): AnyRef = typeclass.encode(param.dereference(value))
+      def fastDecodeFieldValue(record: IndexedRecord): Any =
+        if (fieldPosition == -1) defaultFieldValue
+        else tryDecode(record.get(fieldPosition))
+
+      def safeDecodeFieldValue(record: IndexedRecord): Any =
+        if (fieldPosition == -1) defaultFieldValue
+        else {
+          val schemaField = record.getSchema.getField(fieldName.get)
+          if (schemaField == null) defaultFieldValue else tryDecode(record.get(schemaField.pos))
+        }
+
+      @inline
+      private def defaultFieldValue: Any = param.default match {
+        case Some(default) => default
+        // there is no default, so the field must be an option
+        case None => decoder.decode(null)
+      }
+
+      @inline
+      private def tryDecode(value: Any): Any =
+        try {
+          decoder.decode(value)
+        } catch {
+          case NonFatal(ex) => param.default.getOrElse(throw ex)
+        }
+    }
+
+    def apply(idx: Int,
+              env: DefinitionEnvironment[Decoder],
+              update: SchemaUpdate,
+              record: Schema,
+              ctx: CaseClass[Decoder, T],
+              fieldMapper: FieldMapper): (Option[Field], ValueDecoder) = {
+
+      val annotations = new AnnotationExtractors(param.annotations)
+      val (decoder, field, index) = update match {
+        case FullSchemaUpdate(sf) =>
+          val (field, fieldUpdate, index) = if (annotations.transient) {
+            (None, NoUpdate, -1)
+          } else {
+            val field = extractField(param, sf)
+            (Some(field), FullSchemaUpdate(SchemaFor(field.schema(), sf.fieldMapper)), field.pos)
+          }
+
+          val decoder = param.typeclass.apply(env, fieldUpdate)
+          (decoder, field, index)
+
+        case _ =>
+          val decoder = param.typeclass.apply(env, fieldUpdate(param, record, fieldMapper))
+          if (annotations.transient) (decoder, None, -1)
+          else {
+            val field = buildField(param, record, ctx, decoder.schema, fieldMapper)
+            (decoder, Some(field), idx)
+          }
+      }
+
+      field -> new ValueDecoder(decoder, field.map(_.name), index)
+    }
   }
 
   /**
-    * Base class for field encoder / decoder.
-    *
-    * Defines how fields are encoded / decoded, and how namespaces or schema overrides are passed to the
-    * underlying encoder / decoder that were discovered via Magnolia derivation.
-    *
-    * @tparam Typeclass typeclass (i.e. Encoder[_], Decoder[_])
-    * @tparam T type of the parent record / case class, needed for Magnolia's Param[_, _]
+    * Compute schema updates coming from annotations on the given parameter to be passed down to the
+    * field encoder / decoder. These may be a change of the schema type to fixed or an override of the namespace.
     */
-  abstract class RecordFieldBase[Typeclass[X] <: SchemaAware[Typeclass, X], T](val param: Param[Typeclass, T],
-                                                                               val field: Option[Field],
-                                                                               derivedSchema: Schema) {
-
-    private def typesDiffer(schemaA: Schema, schemaB: Schema): Boolean =
-      schemaA.getType != schemaB.getType || schemaA.getLogicalType != schemaB.getLogicalType || fieldsDiffer(schemaA,
-                                                                                                             schemaB)
-
-    private def fieldsDiffer(schemaA: Schema, schemaB: Schema): Boolean =
-      schemaA.getType == Schema.Type.RECORD && schemaA.getFields != schemaB.getFields
-
-    // Propagate of namespaces and schema changes. Schema changes have precedence over namespace changes, as
-    // schema changes (via .withSchema) are more flexible than namespace changes (via param annotations).
-    protected val typeclass: Typeclass[param.PType] = {
-      val namespace = new AnnotationExtractors(param.annotations).namespace
-      (param.typeclass, namespace, field.map(_.schema)) match {
-        case (tc, _, Some(s)) if typesDiffer(s, derivedSchema)                   => tc.withSchema(SchemaFor[param.PType](s))
-        case (m: NamespaceAware[Typeclass[param.PType]] @unchecked, Some(ns), _) => m.withNamespace(ns)
-        case (tc, _, _)                                                          => tc
-      }
+  private def fieldUpdate[Typeclass[_]](param: Param[Typeclass, _],
+                                        record: Schema,
+                                        fieldMapper: FieldMapper): SchemaUpdate = {
+    val extractor = new AnnotationExtractors(param.annotations)
+    (extractor.fixed, extractor.namespace) match {
+      case (Some(size), namespace) =>
+        val name = extractor.name.getOrElse(fieldMapper.to(param.label))
+        val ns = namespace.getOrElse(record.getNamespace)
+        FullSchemaUpdate(SchemaFor(SchemaBuilder.fixed(name).namespace(ns).size(size), fieldMapper))
+      case (_, Some(ns)) => NamespaceUpdate(ns)
+      case _             => NoUpdate
     }
+  }
+
+  private def buildField[Typeclass[_]](param: Param[Typeclass, _],
+                                       record: Schema,
+                                       ctx: CaseClass[Typeclass, _],
+                                       schema: Schema,
+                                       fieldMapper: FieldMapper) = {
+    val doc = Records.valueTypeDoc(ctx, param)
+    val namespace = record.getNamespace
+    Records.buildSchemaField(param, schema, new AnnotationExtractors(param.annotations), namespace, fieldMapper, doc)
+  }
+
+  private def extractField[Typeclass[_]](param: Param[Typeclass, _], schemaFor: SchemaFor[_]): Field = {
+    val annotations = new AnnotationExtractors(param.annotations)
+    val fieldName = annotations.name.getOrElse(schemaFor.fieldMapper.to(param.label))
+    val field = schemaFor.schema.getField(fieldName)
+    if (field == null) {
+      sys.error(
+        s"Unable to find field with name $fieldName for case class parameter ${param.label} in schema ${schemaFor.schema}")
+    }
+    field
   }
 }

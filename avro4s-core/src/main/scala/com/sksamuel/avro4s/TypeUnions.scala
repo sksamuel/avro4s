@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, UseFieldMapper}
+import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, NoUpdate}
 import com.sksamuel.avro4s.TypeUnionEntry._
 import com.sksamuel.avro4s.TypeUnions._
 import magnolia.{SealedTrait, Subtype}
@@ -9,16 +9,12 @@ import org.apache.avro.generic.GenericContainer
 
 class TypeUnionEncoder[T](ctx: SealedTrait[Encoder, T],
                           val schemaFor: SchemaFor[T],
-                          encoderBySubtype: Map[Subtype[Encoder, T], UnionEntryEncoder[T]])
-    extends Encoder[T]
-    with NamespaceAware[Encoder[T]] {
-
-  def withNamespace(namespace: String): Encoder[T] =
-    TypeUnions.encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
+                          encoderBySubtype: Map[Subtype[Encoder, T], UnionEncoder[T]#SubtypeEncoder])
+    extends Encoder[T] {
 
   override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
     validateNewSchema(schemaFor)
-    TypeUnions.encoder(ctx, FullSchemaUpdate(schemaFor))
+    TypeUnions.encoder(ctx, new DefinitionEnvironment[Encoder](), FullSchemaUpdate(schemaFor))
   }
 
   def encode(value: T): AnyRef =
@@ -28,16 +24,12 @@ class TypeUnionEncoder[T](ctx: SealedTrait[Encoder, T],
 
 class TypeUnionDecoder[T](ctx: SealedTrait[Decoder, T],
                           val schemaFor: SchemaFor[T],
-                          decoderByName: Map[String, UnionEntryDecoder[T]])
-    extends Decoder[T]
-    with NamespaceAware[Decoder[T]] {
-
-  def withNamespace(namespace: String): Decoder[T] =
-    TypeUnions.decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
+                          decoderByName: Map[String, UnionDecoder[T]#SubtypeDecoder])
+    extends Decoder[T] {
 
   override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
     validateNewSchema(schemaFor)
-    TypeUnions.decoder(ctx, FullSchemaUpdate(schemaFor))
+    TypeUnions.decoder(ctx, new DefinitionEnvironment[Decoder](), FullSchemaUpdate(schemaFor))
   }
 
   def decode(value: Any): T = value match {
@@ -56,37 +48,50 @@ class TypeUnionDecoder[T](ctx: SealedTrait[Decoder, T],
 
 object TypeUnions {
 
-  def encoder[T](ctx: SealedTrait[Encoder, T], update: SchemaUpdate): Encoder[T] = {
-    val subtypeEncoders = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEntryEncoder[T](st, u) }
+  def encoder[T](ctx: SealedTrait[Encoder, T],
+                 env: DefinitionEnvironment[Encoder],
+                 update: SchemaUpdate): Encoder[T] = {
+    // cannot extend the recursive environment with an initial type union encoder with empty union schema, as Avro Schema
+    // doesn't support this. So we use the original recursive environment to build subtypes, meaning that in case of a
+    // recursive schema, two identical type union encoders may be created instead of one.
+    val subtypeEncoders = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEncoder[T](st)(env, u) }
     val schemaFor = buildSchema[T](update, subtypeEncoders.map(_.schema))
-    val encoderBySubtype = subtypeEncoders.map(c => c.subtype -> c).toMap
-    new TypeUnionEncoder(ctx, schemaFor, encoderBySubtype)
+    val encoderBySubtype = subtypeEncoders.map(e => e.subtype -> e).toMap
+    new TypeUnionEncoder[T](ctx, schemaFor, encoderBySubtype)
   }
 
-  def decoder[T](ctx: SealedTrait[Decoder, T], update: SchemaUpdate): Decoder[T] = {
-    val subtypeDecoders = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionEntryDecoder[T](st, u) }
+  def decoder[T](ctx: SealedTrait[Decoder, T],
+                 env: DefinitionEnvironment[Decoder],
+                 update: SchemaUpdate): Decoder[T] = {
+    // cannot extend the recursive environment with an initial type union decoder with empty union schema, as Avro Schema
+    // doesn't support this. So we use the original recursive environment to build subtypes, meaning that in case of a
+    // recursive schema, two identical type union decoders may be created instead of one.
+    val subtypeDecoders = enrichedSubtypes(ctx, update).map { case (st, u) => new UnionDecoder[T](st)(env, u) }
     val schemaFor = buildSchema[T](update, subtypeDecoders.map(_.schema))
     val decoderByName = subtypeDecoders.map(decoder => decoder.fullName -> decoder).toMap
-    new TypeUnionDecoder(ctx, schemaFor, decoderByName)
+    new TypeUnionDecoder[T](ctx, schemaFor, decoderByName)
   }
 
-  def schema[T](ctx: SealedTrait[SchemaFor, T], update: SchemaUpdate): SchemaFor[T] = {
+  def schema[T](ctx: SealedTrait[SchemaFor, T],
+                env: DefinitionEnvironment[SchemaFor],
+                update: SchemaUpdate): SchemaFor[T] = {
     val subtypeSchema: ((Subtype[SchemaFor, T], SchemaUpdate)) => Schema = {
-      case (st, NamespaceUpdate(ns, _))     => SchemaHelper.overrideNamespace(st.typeclass.schema, ns)
+      case (st, NamespaceUpdate(ns))     => SchemaHelper.overrideNamespace(st.typeclass.apply(env, update).schema, ns)
       case (_, FullSchemaUpdate(schemaFor)) => schemaFor.schema
-      case (st, UseFieldMapper(_))          => st.typeclass.schema
+      case (st, NoUpdate)          => st.typeclass.apply(env, update).schema
     }
 
     val subtypeSchemas = enrichedSubtypes(ctx, update).map(subtypeSchema)
-    SchemaFor[T](SchemaHelper.createSafeUnion(subtypeSchemas: _*), update.fieldMapper)
+    SchemaFor[T](SchemaHelper.createSafeUnion(subtypeSchemas: _*), DefaultFieldMapper)
   }
 
   private def enrichedSubtypes[Typeclass[_], T](ctx: SealedTrait[Typeclass, T],
                                                 update: SchemaUpdate): Seq[(Subtype[Typeclass, T], SchemaUpdate)] = {
     val enrichedUpdate = update match {
-      case UseFieldMapper(fm) =>
+      case NoUpdate =>
+        // in case of namespace annotations, pass the namespace update down to all subtypes
         val ns = new AnnotationExtractors(ctx.annotations).namespace
-        ns.fold[SchemaUpdate](UseFieldMapper(fm))(NamespaceUpdate(_, fm))
+        ns.fold[SchemaUpdate](NoUpdate)(NamespaceUpdate)
       case _ => update
     }
 
@@ -114,6 +119,6 @@ object TypeUnions {
 
   def buildSchema[T](update: SchemaUpdate, schemas: Seq[Schema]): SchemaFor[T] = update match {
     case FullSchemaUpdate(s) => s.forType
-    case _                   => SchemaFor(SchemaHelper.createSafeUnion(schemas: _*))
+    case _                   => SchemaFor(SchemaHelper.createSafeUnion(schemas: _*), DefaultFieldMapper)
   }
 }

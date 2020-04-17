@@ -2,9 +2,8 @@ package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.RecordFields._
 import com.sksamuel.avro4s.Records._
-import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, UseFieldMapper}
+import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, NoUpdate}
 import magnolia.{CaseClass, Param}
-import org.apache.avro.Schema.Field
 import org.apache.avro.generic.IndexedRecord
 import org.apache.avro.{JsonProperties, Schema, SchemaBuilder}
 
@@ -12,11 +11,9 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 import scala.util.control.NonFatal
 
-class RecordEncoder[T](ctx: CaseClass[Encoder, T],
-                       val schemaFor: SchemaFor[T],
-                       fieldEncoding: IndexedSeq[RecordFieldEncoder[T]])
-    extends Encoder[T]
-    with NamespaceAware[Encoder[T]] {
+class RecordEncoder[T: WeakTypeTag](ctx: CaseClass[Encoder, T], val schemaFor: SchemaFor[T]) extends Encoder[T] {
+
+  private[avro4s] var fieldEncoding: IndexedSeq[FieldEncoder[T]#ValueEncoder] = IndexedSeq.empty
 
   def encode(value: T): AnyRef = {
     // hot code path. Sacrificing functional programming to the gods of performance.
@@ -30,17 +27,15 @@ class RecordEncoder[T](ctx: CaseClass[Encoder, T],
     ImmutableRecord(schema, values) // note: array gets implicitly wrapped in an immutable container.
   }
 
-  def withNamespace(namespace: String): Encoder[T] = encoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
-
   override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
     verifyNewSchema(schemaFor)
-    encoder(ctx, FullSchemaUpdate(schemaFor))
+    encoder(ctx, new DefinitionEnvironment[Encoder](), FullSchemaUpdate(schemaFor), schemaFor.fieldMapper)
   }
 }
 
-class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T], fieldDecoding: IndexedSeq[RecordFieldDecoder[T]])
-    extends Decoder[T]
-    with NamespaceAware[Decoder[T]] {
+class RecordDecoder[T: WeakTypeTag](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T]) extends Decoder[T] {
+
+  private[avro4s] var fieldDecoding: IndexedSeq[FieldDecoder[T]#ValueDecoder] = IndexedSeq.empty
 
   def decode(value: Any): T = value match {
     case record: IndexedRecord =>
@@ -69,12 +64,9 @@ class RecordDecoder[T](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T], 
         s"This decoder can only handle IndexedRecords or its subtypes such as GenericRecord [was ${value.getClass}]")
   }
 
-  def withNamespace(namespace: String): Decoder[T] =
-    decoder(ctx, NamespaceUpdate(namespace, schemaFor.fieldMapper))
-
   override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
     verifyNewSchema(schemaFor)
-    decoder(ctx, FullSchemaUpdate(schemaFor))
+    decoder(ctx, new DefinitionEnvironment[Decoder](), FullSchemaUpdate(schemaFor), schemaFor.fieldMapper)
   }
 }
 
@@ -85,79 +77,113 @@ object Records {
     require(schemaType == Schema.Type.RECORD, s"Schema type for record codecs must be RECORD, received $schemaType")
   }
 
-  def encoder[T](ctx: CaseClass[Encoder, T], update: SchemaUpdate): Encoder[T] = {
-    val paramSchema = ctx.parameters.map(p => p -> p.typeclass.schema).toMap
-    val schemaFor = buildSchema(ctx, update, paramSchema)
-    val encoders = paramFields(ctx, schemaFor).map { case (param, field) => new RecordFieldEncoder(param, field) }
-    new RecordEncoder[T](ctx, schemaFor, reorderEncoders(encoders, schemaFor))
-  }
-
-  def decoder[T](ctx: CaseClass[Decoder, T], update: SchemaUpdate): Decoder[T] = {
-    val paramSchema = ctx.parameters.map(p => p -> p.typeclass.schema).toMap
-    val schemaFor = buildSchema(ctx, update, paramSchema)
-    val decoders = paramFields(ctx, schemaFor).map { case (param, field) => new RecordFieldDecoder(param, field) }.toVector
-    new RecordDecoder[T](ctx, schemaFor, decoders)
-  }
-
-  private def reorderEncoders[T](encoders: Seq[RecordFieldEncoder[T]], schemaFor: SchemaFor[T]): IndexedSeq[RecordFieldEncoder[T]] =
-    schemaFor.schema.getFields.asScala.map(f => encoders.find(e => e.field.contains(f)).get).toVector
-
-  private[avro4s] def paramFields[Typeclass[_], T](ctx: CaseClass[Typeclass, T], schemaFor: SchemaFor[T]) = {
-    val schema = schemaFor.schema
-    val fieldMapper = schemaFor.fieldMapper
-    ctx.parameters.map { param =>
+  def encoder[T: WeakTypeTag](ctx: CaseClass[Encoder, T],
+                              env: DefinitionEnvironment[Encoder],
+                              update: SchemaUpdate,
+                              fieldMapper: FieldMapper): Encoder[T] = {
+    val record = buildRecordSchema(ctx, update)
+    val schemaFor = SchemaFor[T](record, fieldMapper)
+    val encoder = new RecordEncoder[T](ctx, schemaFor)
+    val nextEnv = env.updated(encoder)
+    val fieldsAndEncoders = ctx.parameters.flatMap { param =>
       val annotations = new AnnotationExtractors(param.annotations)
-      val name = annotations.name.getOrElse(fieldMapper.to(param.label))
-      val field = if (annotations.transient) None else Option(schema.getField(name))
-      param -> field
+      if (annotations.transient) None else Some(new FieldEncoder(param)(nextEnv, update, record, ctx, fieldMapper))
     }
+    val encoders = fieldsAndEncoders.map(_._2)
+    update match {
+      case FullSchemaUpdate(_) =>
+        record.getFields.asScala.map(f => encoders.find(e => e.fieldName == f.name).get).toVector
+        encoder.fieldEncoding = encoders.toVector
+
+      case _ =>
+        val fields = fieldsAndEncoders.map(_._1)
+        record.setFields(fields.asJava)
+        encoder.fieldEncoding = encoders.toVector
+    }
+    encoder
   }
 
-  private def buildSchema[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
-                                         update: SchemaUpdate,
-                                         paramSchema: Param[Typeclass, T] => Schema): SchemaFor[T] = update match {
-    case FullSchemaUpdate(s)                     => s.forType[T]
-    case NamespaceUpdate(namespace, fieldMapper) => schema(ctx, fieldMapper, Some(namespace), paramSchema)
-    case UseFieldMapper(fieldMapper)             => schema(ctx, fieldMapper, None, paramSchema)
+  def decoder[T: WeakTypeTag](ctx: CaseClass[Decoder, T],
+                              env: DefinitionEnvironment[Decoder],
+                              update: SchemaUpdate,
+                              fieldMapper: FieldMapper): Decoder[T] = {
+    val record = buildRecordSchema(ctx, update)
+    val schemaFor = SchemaFor[T](record, fieldMapper)
+    val decoder = new RecordDecoder[T](ctx, schemaFor)
+    val nextEnv = env.updated(decoder)
+    val fieldsAndDecoders = ctx.parameters.zipWithIndex.map {
+      case (param, idx) =>
+        new FieldDecoder[T](param)(idx, nextEnv, update, record, ctx, fieldMapper)
+    }
+    val decoders = fieldsAndDecoders.map(_._2)
+    update match {
+      case FullSchemaUpdate(_) =>
+        record.getFields.asScala.map(f => decoders.find(e => e.fieldName.contains(f.name)).get).toVector
+        decoder.fieldDecoding = decoders.toVector
+
+      case _ =>
+        val fields = fieldsAndDecoders.flatMap(_._1)
+        record.setFields(fields.asJava)
+        decoder.fieldDecoding = decoders.toVector
+    }
+    decoder
   }
 
-  def schema[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
-                                    fieldMapper: FieldMapper,
-                                    namespaceUpdate: Option[String],
-                                    paramSchema: Param[Typeclass, T] => Schema): SchemaFor[T] = {
-    val annotations = new AnnotationExtractors(ctx.annotations)
-
-    val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)
-    val namespace = namespaceUpdate.getOrElse(nameExtractor.namespace)
-    val name = nameExtractor.name
-
-    val fields: Seq[Field] = ctx.parameters.flatMap { param =>
+  def schema[T: WeakTypeTag](ctx: CaseClass[SchemaFor, T],
+                             env: DefinitionEnvironment[SchemaFor],
+                             update: SchemaUpdate,
+                             fieldMapper: FieldMapper): SchemaFor[T] = {
+    val record = buildRecordSchema(ctx, update)
+    // early incomplete construction here for potentially recursive schema definitions
+    val schemaFor = SchemaFor[T](record, fieldMapper)
+    val nextEnv = env.updated(schemaFor)
+    val fields = ctx.parameters.flatMap { param =>
       val annotations = new AnnotationExtractors(param.annotations)
-
       if (annotations.transient) None
       else {
         val doc = valueTypeDoc(ctx, param)
-        Some(buildSchemaField(param, paramSchema(param), annotations, namespace, fieldMapper, doc))
+        val schema = param.typeclass.apply(nextEnv, NoUpdate).schema
+        Some(buildSchemaField(param, schema, annotations, record.getNamespace, fieldMapper, doc))
       }
-    }
-
-    val record =
-      Schema.createRecord(name.replaceAll("[^a-zA-Z0-9_]", ""),
-                          annotations.doc.orNull,
-                          namespace.replaceAll("[^a-zA-Z0-9_.]", ""),
-                          false)
-    annotations.aliases.foreach(record.addAlias)
-    annotations.props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
-    record.setFields(fields.asJava)
-    SchemaFor[T](record, fieldMapper)
+    }.asJava
+    record.setFields(fields)
+    schemaFor
   }
 
-  private def buildSchemaField[Typeclass[_], T](param: Param[Typeclass, T],
-                                                baseSchema: Schema,
-                                                extractor: AnnotationExtractors,
-                                                containingNamespace: String,
-                                                fieldMapper: FieldMapper,
-                                                valueTypeDoc: Option[String]): Schema.Field = {
+  def buildRecordSchema[Typeclass[_]](ctx: CaseClass[Typeclass, _], update: SchemaUpdate): Schema = {
+    def newSchema(namespaceUpdate: Option[String]) = {
+      val annotations = new AnnotationExtractors(ctx.annotations)
+
+      val nameExtractor = NameExtractor(ctx.typeName, ctx.annotations)
+      val namespace = namespaceUpdate.getOrElse(nameExtractor.namespace)
+      val name = nameExtractor.name
+
+      val record =
+        Schema.createRecord(name.replaceAll("[^a-zA-Z0-9_]", ""),
+                            annotations.doc.orNull,
+                            namespace.replaceAll("[^a-zA-Z0-9_.]", ""),
+                            false)
+      annotations.aliases.foreach(record.addAlias)
+      annotations.props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
+      record
+    }
+
+    update match {
+      case FullSchemaUpdate(sf) =>
+        require(sf.schema.getType == Schema.Type.RECORD,
+                s"Schema for case classes must be of type Record, got ${sf.schema.getType}")
+        sf.schema
+      case NamespaceUpdate(namespace) => newSchema(Some(namespace))
+      case _                          => newSchema(None)
+    }
+  }
+
+  private[avro4s] def buildSchemaField[Typeclass[_], T](param: Param[Typeclass, T],
+                                                        baseSchema: Schema,
+                                                        extractor: AnnotationExtractors,
+                                                        containingNamespace: String,
+                                                        fieldMapper: FieldMapper,
+                                                        valueTypeDoc: Option[String]): Schema.Field = {
     val doc = extractor.doc.orElse(valueTypeDoc).orNull
     val default: Option[AnyRef] = if (extractor.nodefault) None else param.default.asInstanceOf[Option[AnyRef]]
     val aliases = extractor.aliases
@@ -218,7 +244,8 @@ object Records {
     field
   }
 
-  private def valueTypeDoc[Typeclass[_], T](ctx: CaseClass[Typeclass, T], param: Param[Typeclass, T]): Option[String] =
+  private[avro4s] def valueTypeDoc[Typeclass[_], _](ctx: CaseClass[Typeclass, _],
+                                                    param: Param[Typeclass, _]): Option[String] =
     try {
       // if the field is a value type then we may have annotated it with @AvroDoc, and that doc should be
       // placed onto the field, not onto the record type, because there won't be a record type for a value type!

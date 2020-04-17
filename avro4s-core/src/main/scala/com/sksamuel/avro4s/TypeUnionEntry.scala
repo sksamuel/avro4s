@@ -1,34 +1,29 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate}
 import magnolia.Subtype
 
 private[avro4s] object TypeUnionEntry {
 
-  class UnionEntryEncoder[T](st: Subtype[Encoder, T], update: SchemaUpdate) extends EntryBase[Encoder, T](st, update) {
+  class UnionEncoder[T](st: Subtype[Encoder, T]) {
+    class SubtypeEncoder(encoder: Encoder[st.SType]) {
+      val subtype = st
+      val schema = encoder.schema
 
-    def encodeSubtype(value: T): AnyRef = typeclass.encode(subtype.cast(value))
-  }
-
-  class UnionEntryDecoder[T](st: Subtype[Decoder, T], overrides: SchemaUpdate)
-      extends EntryBase[Decoder, T](st, overrides) {
-
-    def decodeSubtype(value: Any): T = typeclass.decode(value)
-  }
-
-  abstract class EntryBase[Typeclass[X] <: SchemaAware[Typeclass, X], T](val subtype: Subtype[Typeclass, T],
-                                                                         update: SchemaUpdate) {
-
-    protected val typeclass: Typeclass[subtype.SType] = {
-      (subtype.typeclass, update) match {
-        case (tc, FullSchemaUpdate(s))                                                       => tc.withSchema(s.forType)
-        case (a: NamespaceAware[Typeclass[subtype.SType]] @unchecked, NamespaceUpdate(n, _)) => a.withNamespace(n)
-        case (tc, _)                                                                         => tc
-      }
+      def encodeSubtype(value: T): AnyRef = encoder.encode(st.cast(value))
     }
 
-    val fullName = typeclass.schema.getFullName
+    def apply(env: DefinitionEnvironment[Encoder], update: SchemaUpdate) = new SubtypeEncoder(st.typeclass.apply(env, update))
+  }
 
-    val schema = typeclass.schema
+  class UnionDecoder[T](st: Subtype[Decoder, T]) {
+    class SubtypeDecoder(decoder: Decoder[st.SType]) {
+      val subtype = st
+      val schema = decoder.schema
+      val fullName = schema.getFullName
+
+      def decodeSubtype(value: Any): T = decoder.decode(value)
+    }
+
+    def apply(env: DefinitionEnvironment[Decoder], update: SchemaUpdate) = new SubtypeDecoder(st.typeclass.apply(env, update))
   }
 }
