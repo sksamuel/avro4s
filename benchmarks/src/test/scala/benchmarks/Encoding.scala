@@ -87,7 +87,9 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
   performance of "avro4s union type with type param hand-rolled encoding" in {
 
     import benchmarks.handrolled_codecs._
-    implicit val codec: AttributeValueCodec[Int] = AttributeValueCodec[Int]
+    val codec: AttributeValueCodec[Int] = AttributeValueCodec[Int]
+    implicit val attributeValueEncoder = codec.encoder
+    implicit val attributeValueDecoder = codec.decoder
     implicit val schemaForValid = codec.schemaForValid
     val schema = AvroSchema[RecordWithUnionAndTypeField]
     val encoder = Encoder[RecordWithUnionAndTypeField]
@@ -101,14 +103,14 @@ object Encoding extends Bench.LocalTime with BenchmarkHelpers {
   }
 
   performance of "avro4s union type with type param" in {
-    val codec = Encoder[RecordWithUnionAndTypeField]
-    val writer = new GenericDatumWriter[GenericRecord](codec.schema)
+    val encoder = Encoder[RecordWithUnionAndTypeField]
+    val writer = new GenericDatumWriter[GenericRecord](encoder.schema)
 
     val s = RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t))
 
     using(item) in { _ =>
       val outputStream = new ByteArrayOutputStream(512)
-      val record = codec.encode(s).asInstanceOf[GenericRecord]
+      val record = encoder.encode(s).asInstanceOf[GenericRecord]
       val enc = EncoderFactory.get().directBinaryEncoder(outputStream, null)
       writer.write(record, enc)
       ByteBuffer.wrap(outputStream.toByteArray)

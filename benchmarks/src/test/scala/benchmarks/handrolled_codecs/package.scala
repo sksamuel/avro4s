@@ -11,42 +11,51 @@ import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 package object handrolled_codecs {
 
-  final class AttributeValueCodec[T: Encoder: Decoder](val schemaForValid: SchemaFor[Valid[T]]) extends Codec[AttributeValue[T]] {
+  final class AttributeValueCodec[T: Encoder: Decoder](val schemaForValid: SchemaFor[Valid[T]]) { codec =>
 
     def schemaFor: SchemaFor[AttributeValue[T]] = {
       implicit val sfv: SchemaFor[Valid[T]] = schemaForValid
       SchemaFor[AttributeValue[T]]
     }
 
-    def unionSchemaElementWhere(predicate: Schema => Boolean): Schema = schema.getTypes.asScala.find(predicate).get
+    def schema = schemaFor.schema
 
-    val validEncoder = Encoder[Valid[T]].withSchema(schemaForValid)
-    val emptyEncoder = Encoder[Empty]
-    val invalidEncoder = Encoder[Invalid]
+    def encoder: Encoder[AttributeValue[T]] = new Encoder[AttributeValue[T]] {
 
-    def encode(t: AttributeValue[T]): AnyRef = t match {
-      case v: Valid[T] => validEncoder.encode(v)
-      case e: Empty    => emptyEncoder.encode(e)
-      case i: Invalid  => invalidEncoder.encode(i)
+      val validEncoder = Encoder[Valid[T]].withSchema(schemaForValid)
+      val emptyEncoder = Encoder[Empty]
+      val invalidEncoder = Encoder[Invalid]
+
+      def schemaFor: SchemaFor[AttributeValue[T]] = codec.schemaFor
+
+      def encode(t: AttributeValue[T]): AnyRef = t match {
+        case v: Valid[T] => validEncoder.encode(v)
+        case e: Empty    => emptyEncoder.encode(e)
+        case i: Invalid  => invalidEncoder.encode(i)
+      }
     }
 
-    val validDecoder = Decoder[Valid[T]].withSchema(schemaForValid)
-    val emptyDecoder = Decoder[Empty]
-    val invalidDecoder = Decoder[Invalid]
+    def decoder: Decoder[AttributeValue[T]] = new Decoder[AttributeValue[T]] {
+      def schemaFor: SchemaFor[AttributeValue[T]] = codec.schemaFor
 
-    val validSn: String = validDecoder.schema.getFullName
-    val emptySn: String = emptyDecoder.schema.getFullName
-    val invalidSn: String = invalidDecoder.schema.getFullName
+      val validDecoder = Decoder[Valid[T]].withSchema(schemaForValid)
+      val emptyDecoder = Decoder[Empty]
+      val invalidDecoder = Decoder[Invalid]
 
-    def decode(value: Any): AttributeValue[T] = {
-      val schema = value match {
-        case r: GenericData.Record => r.getSchema
-        case i: ImmutableRecord    => i.schema
-      }
-      schema.getFullName match {
-        case `validSn`   => validDecoder.decode(value)
-        case `emptySn`   => emptyDecoder.decode(value)
-        case `invalidSn` => invalidDecoder.decode(value)
+      val validSn: String = validDecoder.schema.getFullName
+      val emptySn: String = emptyDecoder.schema.getFullName
+      val invalidSn: String = invalidDecoder.schema.getFullName
+
+      def decode(value: Any): AttributeValue[T] = {
+        val schema = value match {
+          case r: GenericData.Record => r.getSchema
+          case i: ImmutableRecord    => i.schema
+        }
+        schema.getFullName match {
+          case `validSn`   => validDecoder.decode(value)
+          case `emptySn`   => emptyDecoder.decode(value)
+          case `invalidSn` => invalidDecoder.decode(value)
+        }
       }
     }
   }

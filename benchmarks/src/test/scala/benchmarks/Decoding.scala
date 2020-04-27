@@ -46,7 +46,9 @@ object Decoding extends Bench.LocalTime with BenchmarkHelpers {
   performance of "avro4s union type with type param hand-rolled decoding" in {
 
     import benchmarks.handrolled_codecs._
-    implicit val codec: AttributeValueCodec[Int] = AttributeValueCodec[Int]
+    val codec: AttributeValueCodec[Int] = AttributeValueCodec[Int]
+    implicit val attributeValueEncoder = codec.encoder
+    implicit val attributeValueDecoder = codec.decoder
     implicit val schemaFor: SchemaFor[AttributeValue[Int]] = SchemaFor[AttributeValue[Int]](codec.schema)
     val recordSchemaFor = SchemaFor[RecordWithUnionAndTypeField]
     val decoder = Decoder[RecordWithUnionAndTypeField].withSchema(recordSchemaFor)
@@ -60,15 +62,15 @@ object Decoding extends Bench.LocalTime with BenchmarkHelpers {
 
   performance of "avro4s union type with type param" in {
     implicit val mapper: FieldMapper = DefaultFieldMapper
-    val codec = Decoder[RecordWithUnionAndTypeField]
+    val decoder = Decoder[RecordWithUnionAndTypeField]
     val bytes = encode(RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t)))
-    val reader = new GenericDatumReader[GenericRecord](codec.schema)
+    val reader = new GenericDatumReader[GenericRecord](decoder.schema)
 
     using(item) in { _ =>
       val dec =
         DecoderFactory.get().binaryDecoder(new ByteBufferInputStream(Collections.singletonList(bytes.duplicate)), null)
       val record = reader.read(null, dec)
-      codec.decode(record)
+      decoder.decode(record)
     }
   }
 }
