@@ -1,8 +1,8 @@
 package com.sksamuel.avro4s.github
 
-import com.sksamuel.avro4s.{Decoder, DefaultFieldMapper, Encoder, RecordFormat, SchemaFor}
 import java.io.ByteArrayOutputStream
 
+import com.sksamuel.avro4s.{Decoder, Encoder, RecordFormat, SchemaFor}
 import org.apache.avro.generic.{GenericDatumReader, GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.{DecoderFactory, EncoderFactory}
 import org.scalatest.funsuite.AnyFunSuite
@@ -25,7 +25,7 @@ object Bug {
   ): Unit = {
 
     val format = RecordFormat[T]
-    val schema = schemaFor.schema(DefaultFieldMapper)
+    val schema = schemaFor.schema
     val datumReader = new GenericDatumReader[GenericRecord](schema)
     val datumWriter = new GenericDatumWriter[GenericRecord](schema)
 

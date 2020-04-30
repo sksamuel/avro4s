@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.streams.output
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder, SchemaFor}
+import com.sksamuel.avro4s._
 import org.apache.avro.file.{DataFileReader, SeekableByteArrayInput}
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.io.DecoderFactory
@@ -19,9 +19,8 @@ trait OutputStreamTest extends AnyFunSuite with Matchers {
   }
 
   def writeData[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
-    val schema = AvroSchema[T]
     val out = new ByteArrayOutputStream
-    val avro = AvroOutputStream.data[T].to(out).build(schema)
+    val avro = AvroOutputStream.data[T].to(out).build()
     avro.write(t)
     avro.close()
     out
@@ -35,9 +34,8 @@ trait OutputStreamTest extends AnyFunSuite with Matchers {
   }
 
   def writeBinary[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
-    val schema = AvroSchema[T]
     val out = new ByteArrayOutputStream
-    val avro = AvroOutputStream.binary[T].to(out).build(schema)
+    val avro = AvroOutputStream.binary[T].to(out).build()
     avro.write(t)
     avro.close()
     out
@@ -52,9 +50,8 @@ trait OutputStreamTest extends AnyFunSuite with Matchers {
   }
 
   def writeJson[T: Encoder : SchemaFor](t: T): ByteArrayOutputStream = {
-    val schema = AvroSchema[T]
     val out = new ByteArrayOutputStream
-    val avro = AvroOutputStream.json[T].to(out).build(schema)
+    val avro = AvroOutputStream.json[T].to(out).build()
     avro.write(t)
     avro.close()
     out

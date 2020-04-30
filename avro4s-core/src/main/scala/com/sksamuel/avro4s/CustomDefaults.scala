@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.SchemaFor.Typeclass
 import magnolia.{SealedTrait, Subtype}
 import org.json4s.native.JsonMethods.parse
 import org.json4s.native.Serialization.write
@@ -42,10 +41,10 @@ object CustomDefaults {
 
   def isUnionOfEnum(schema: Schema) = schema.getType == Schema.Type.UNION && schema.getTypes.asScala.map(_.getType).contains(Schema.Type.ENUM)
 
-  def sealedTraitEnumDefaultValue[T](ctx: SealedTrait[Typeclass, T]) = {
+  def sealedTraitEnumDefaultValue[T](ctx: SealedTrait[SchemaFor, T]) = {
     val defaultExtractor = new AnnotationExtractors(ctx.annotations)
     defaultExtractor.enumDefault.flatMap { default =>
-      ctx.subtypes.flatMap { st: Subtype[Typeclass, T] =>
+      ctx.subtypes.flatMap { st: Subtype[SchemaFor, T] =>
         if(st.typeName.short == default.toString)
           Option(st.typeName.short)
         else

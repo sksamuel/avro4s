@@ -832,7 +832,7 @@ val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pi
 
 val schema = AvroSchema[Pizza]
 
-val os = AvroOutputStream.data[Pizza].to(new File("pizzas.avro")).build(schema)
+val os = AvroOutputStream.data[Pizza].to(new File("pizzas.avro")).build()
 os.write(Seq(pepperoni, hawaiian))
 os.flush()
 os.close()
@@ -1015,7 +1015,10 @@ the contents in lower case, we can do the following:
 case class Foo(a: String, b: String)
 
 implicit object FooEncoder extends Encoder[Foo] {
-  override def encode(foo: Foo, schema: Schema, fieldMapper: FieldMapper) = {
+
+  override val schemaFor = SchemaFor[Foo]
+
+  override def encode(foo: Foo) = {
     val record = new GenericData.Record(schema)
     record.put("a", foo.a.toUpperCase)
     record.put("b", foo.b.toUpperCase)
@@ -1024,7 +1027,10 @@ implicit object FooEncoder extends Encoder[Foo] {
 }
 
 implicit object FooDecoder extends Decoder[Foo] {
-  override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper) = {
+
+  override val schemaFor = SchemaFor[Foo]
+
+  override def decode(value: Any) = {
     val record = value.asInstanceOf[GenericRecord]
     Foo(record.get("a").toString.toLowerCase, record.get("b").toString.toLowerCase)
   }
@@ -1036,18 +1042,22 @@ writing out a String rather than the default Long so we must also change the sch
 and decoders.
 
 ```scala
-implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
-  override val schema(implicit fieldMapper: FieldMapper) = 
-    Schema.create(Schema.Type.STRING)
+implicit val LocalDateTimeSchemaFor = SchemaFor[LocalDateTime](Schema.create(Schema.Type.STRING))
 }
 
 implicit object DateTimeEncoder extends Encoder[LocalDateTime] {
-  override def apply(value: LocalDateTime, schema: Schema, fieldMapper: FieldMapper) = 
+
+  override val schemaFor = LocalDateTimeSchemaFor
+
+  override def encode(value: LocalDateTime) = 
     ISODateTimeFormat.dateTime().print(value)
 }
 
 implicit object DateTimeDecoder extends Decoder[LocalDateTime] {
-  override def apply(value: Any, field: Field)(implicit fieldMapper: FieldMapper) = 
+
+  override val schemaFor = LocalDateTimeSchemaFor
+
+  override def decode(value: Any) = 
     ISODateTimeFormat.dateTime().parseDateTime(value.toString)
 }
 ```

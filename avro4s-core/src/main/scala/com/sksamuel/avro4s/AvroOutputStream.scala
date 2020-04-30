@@ -3,7 +3,6 @@ package com.sksamuel.avro4s
 import java.io.{File, OutputStream}
 import java.nio.file.{Files, Path, Paths}
 
-import org.apache.avro.Schema
 import org.apache.avro.file.CodecFactory
 import org.apache.avro.io.EncoderFactory
 
@@ -48,16 +47,20 @@ class AvroOutputStreamBuilder[T: Encoder](format: AvroFormat) {
   def to(out: OutputStream): AvroOutputStreamBuilderWithSource[T] = new AvroOutputStreamBuilderWithSource(format, out)
 }
 
-class AvroOutputStreamBuilderWithSource[T: Encoder](format: AvroFormat, out: OutputStream, codec: CodecFactory = CodecFactory.nullCodec) {
+class AvroOutputStreamBuilderWithSource[T: Encoder](format: AvroFormat,
+                                                    out: OutputStream,
+                                                    codec: CodecFactory = CodecFactory.nullCodec) {
 
   def withCodec(codec: CodecFactory) = new AvroOutputStreamBuilderWithSource[T](format, out, codec)
 
   /**
-    * Builds an [[AvroInputStream]] with the specified writer schema.
+    * Builds an [[AvroOutputStream]]
     */
-  def build(schema: Schema) = format match {
-    case DataFormat => new AvroDataOutputStream[T](out, schema, codec)
-    case BinaryFormat => new DefaultAvroOutputStream[T](out, schema, EncoderFactory.get().binaryEncoder(out, null))
-    case JsonFormat => new DefaultAvroOutputStream[T](out, schema, EncoderFactory.get().jsonEncoder(schema, out))
+  def build(): AvroOutputStream[T] = format match {
+    case DataFormat   => new AvroDataOutputStream[T](out, codec)
+    case BinaryFormat => new DefaultAvroOutputStream[T](out, EncoderFactory.get().binaryEncoder(out, null))
+    case JsonFormat =>
+      val encoder = EncoderFactory.get().jsonEncoder(implicitly[Encoder[T]].schema, out)
+      new DefaultAvroOutputStream[T](out, encoder)
   }
 }

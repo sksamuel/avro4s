@@ -41,7 +41,7 @@ object AvroInputStream {
     */
   def data[T: Decoder]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](DataFormat)
 
-    /**
+  /**
     * Creates a new [[AvroInputStreamBuilder]] that will read from json
     * encoded files.
     */
@@ -68,19 +68,9 @@ class AvroInputStreamBuilderWithSource[T: Decoder](format: AvroFormat, in: Input
     * Builds an [[AvroInputStream]] with the specified writer schema.
     */
   def build(writerSchema: Schema) = format match {
-    case DataFormat => new AvroDataInputStream[T](in, Some(writerSchema), None)
-    case BinaryFormat => new AvroBinaryInputStream[T](in, writerSchema, writerSchema)
-    case JsonFormat => new AvroJsonInputStream[T](in, writerSchema, writerSchema)
-  }
-
-  /**
-    * Builds an [[AvroInputStream]] with the specified reader and
-    * write schemas.
-    */
-  def build(writerSchema: Schema, readerSchema: Schema) = format match {
-    case DataFormat => new AvroDataInputStream[T](in, Some(writerSchema), Some(readerSchema))
-    case BinaryFormat => new AvroBinaryInputStream[T](in, writerSchema, readerSchema)
-    case JsonFormat => new AvroJsonInputStream[T](in, writerSchema, readerSchema)
+    case DataFormat   => new AvroDataInputStream[T](in, Some(writerSchema))
+    case BinaryFormat => new AvroBinaryInputStream[T](in, writerSchema)
+    case JsonFormat   => new AvroJsonInputStream[T](in, writerSchema)
   }
 
   /**
@@ -89,7 +79,7 @@ class AvroInputStreamBuilderWithSource[T: Decoder](format: AvroFormat, in: Input
     * formats do not store the schema.
     */
   def build = format match {
-    case DataFormat => new AvroDataInputStream[T](in, None, None)
-    case _ => sys.error("Must specify a schema for binary or json formats")
+    case DataFormat => new AvroDataInputStream[T](in, None)
+    case _          => sys.error("Must specify a schema for binary or json formats")
   }
 }

@@ -2,10 +2,10 @@ package com.sksamuel.avro4s.github
 
 import com.sksamuel.avro4s.github.SampleProtocol.SubPart1.InnerEnum
 import com.sksamuel.avro4s.{AvroSchema, FromRecord, ToRecord}
-
-import scala.language.higherKinds
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+
+import scala.language.higherKinds
 
 object TopEnum extends Enumeration {
   type TopEnumVal = Value
