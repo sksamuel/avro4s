@@ -6,10 +6,6 @@ import org.scalatest.matchers.should.Matchers
 
 class RecursiveEncoderTest extends AnyFunSuite with Matchers {
 
-  test("schema") {
-    println(SchemaFor[Tree[Int]].schema.toString(true))
-  }
-
   ignore("recursive encoding") {
     Branch(Branch(Leaf(1), Leaf(2)), Leaf(3))
   }
