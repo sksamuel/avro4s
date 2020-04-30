@@ -1,0 +1,31 @@
+[ {
+  "type" : "record",
+  "name" : "TVBranch__Int",
+  "namespace" : "com.sksamuel.avro4s.Recursive",
+  "fields" : [ {
+    "name" : "left",
+    "type" : {
+      "type" : "record",
+      "name" : "Tuple2",
+      "namespace" : "scala",
+      "fields" : [ {
+        "name" : "_1",
+        "type" : "int"
+      }, {
+        "name" : "_2",
+        "type" : [ "com.sksamuel.avro4s.Recursive.TVBranch__Int", {
+          "type" : "record",
+          "name" : "TVLeaf__Int",
+          "namespace" : "com.sksamuel.avro4s.Recursive",
+          "fields" : [ {
+            "name" : "value",
+            "type" : "int"
+          } ]
+        } ]
+      } ]
+    }
+  }, {
+    "name" : "right",
+    "type" : "scala.Tuple2"
+  } ]
+}, "com.sksamuel.avro4s.Recursive.TVLeaf__Int" ]

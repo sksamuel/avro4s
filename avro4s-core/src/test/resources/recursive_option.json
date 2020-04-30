@@ -1,0 +1,15 @@
+{
+  "type" : "record",
+  "name" : "OptionTree__Int",
+  "namespace" : "com.sksamuel.avro4s.Recursive",
+  "fields" : [ {
+    "name" : "value",
+    "type" : "int"
+  }, {
+    "name" : "left",
+    "type" : [ "null", "OptionTree__Int" ]
+  }, {
+    "name" : "right",
+    "type" : [ "null", "OptionTree__Int" ]
+  } ]
+}
