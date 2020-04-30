@@ -1,18 +1,12 @@
 {
-  "type": "record",
-  "name": "Recursive",
-  "namespace": "com.sksamuel.avro4s.schema",
-  "fields": [
-    {
-      "name": "payload",
-      "type": "int"
-    },
-    {
-      "name": "next",
-      "type": [
-        "null",
-        "Recursive"
-      ]
+  "type" : "record",
+  "name" : "RecursiveFoo",
+  "namespace" : "com.sksamuel.avro4s.schema",
+  "fields" : [ {
+    "name" : "list",
+    "type" : {
+      "type" : "array",
+      "items" : "RecursiveFoo"
     }
-  ]
+  } ]
 }

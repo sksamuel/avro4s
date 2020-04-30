@@ -50,24 +50,22 @@ class BasicSchemasTest extends AnyWordSpec with Matchers {
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    // todo fix
-    "support simple recursive types" ignore {
+    "support simple recursive types" in {
       val schema = AvroSchema[RecursiveFoo]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
-    // todo fix
-    "support recursive ADTs" ignore {
+    "support recursive ADTs" in {
       val schema = AvroSchema[Tree[String]]
+      println(schema.toString(true))
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/recursive_adt.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
-    // todo fix
-    //    "support mutually recursive types" ignore {
-    //      val schema = AvroSchema[MutRec1]
-    //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.json"))
-    //      schema.toString(true) shouldBe expected.toString(true)
-    //    }
+    "support mutually recursive types" in {
+      val schema = AvroSchema[MutRec1]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/mutrec.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
     "support types nested in uppercase packages" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/nested_in_uppercase_pkg.json"))
       val schema = AvroSchema[ClassInUppercasePackage]
