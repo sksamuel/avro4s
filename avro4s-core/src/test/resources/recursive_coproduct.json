@@ -1,12 +1,12 @@
 [ {
   "type" : "record",
-  "name" : "CoproductBranch__Int",
+  "name" : "CBranch__Int",
   "namespace" : "com.sksamuel.avro4s.Recursive",
   "fields" : [ {
     "name" : "left",
-    "type" : [ "CoproductBranch__Int", {
+    "type" : [ "CBranch__Int", {
       "type" : "record",
-      "name" : "CoproductLeaf__Int",
+      "name" : "CLeaf__Int",
       "fields" : [ {
         "name" : "value",
         "type" : "int"
@@ -14,6 +14,6 @@
     } ]
   }, {
     "name" : "right",
-    "type" : [ "CoproductBranch__Int", "CoproductLeaf__Int" ]
+    "type" : [ "CBranch__Int", "CLeaf__Int" ]
   } ]
-}, "com.sksamuel.avro4s.Recursive.CoproductLeaf__Int" ]
+}, "com.sksamuel.avro4s.Recursive.CLeaf__Int" ]
