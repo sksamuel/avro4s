@@ -58,6 +58,7 @@ trait UnresolvedEncoder[T] extends Encoder[T] {
 object Encoder
     extends LowPrio
     with BigDecimalEncoders
+    with TupleEncoders
     with TemporalEncoders
     with BaseEncoders {
 
