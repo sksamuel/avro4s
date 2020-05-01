@@ -58,25 +58,23 @@ trait ShapelessCoproductDecoders {
     override def withSchema(schemaFor: SchemaFor[CNil]): Decoder[CNil] = this
   }
 
-  implicit final def coproductDecoder[H: WeakTypeTag: Manifest, T <: Coproduct](
-                                                                                 implicit h: Decoder[H],
-                                                                                 t: Decoder[T]): ResolvableDecoder[H :+: T] = { (env, update) =>
-    val decoderH = h(env, mapFullUpdate(extractCoproductSchema, update))
-    val decoderT = t(env, update)
-    new Decoder[H :+: T] {
+  implicit final def coproductDecoder[H: WeakTypeTag, T <: Coproduct](implicit h: Decoder[H],
+                                                                      t: Decoder[T]): ResolvableDecoder[H :+: T] = {
+    (env, update) =>
+      val decoderH = h(env, mapFullUpdate(extractCoproductSchema, update))
+      val decoderT = t(env, update)
+      new Decoder[H :+: T] {
 
-      val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(decoderH.schemaFor, decoderT.schemaFor)
+        val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(decoderH.schemaFor, decoderT.schemaFor)
 
-      private val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(decoderH)
+        private val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(decoderH)
 
-      def decode(value: Any): H :+: T =
-        if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value)) else Inr(decoderT.decode(value))
+        def decode(value: Any): H :+: T =
+          if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value)) else Inr(decoderT.decode(value))
 
-      override def withSchema(schemaFor: SchemaFor[H :+: T]): Decoder[H :+: T] =
-        buildWithSchema(
-          coproductDecoder[H, T](implicitly[WeakTypeTag[H]], implicitly[Manifest[H]], h, t),
-          schemaFor)
-    }
+        override def withSchema(schemaFor: SchemaFor[H :+: T]): Decoder[H :+: T] =
+          buildWithSchema(coproductDecoder[H, T](implicitly[WeakTypeTag[H]], h, t), schemaFor)
+      }
   }
 }
 
