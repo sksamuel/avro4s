@@ -91,7 +91,7 @@ class RecursiveEncoderTest extends AnyWordSpec with Matchers {
 
   def list(values: Any*) = values.map(asAvro).asJava
 
-  def map(keyvalues: (String, Any)*) = keyvalues.toMap.mapValues(asAvro).asJava
+  def map(keyvalues: (String, Any)*) = keyvalues.toMap.map(kv => kv._1 -> asAvro(kv._2)).asJava
 
   def asAvro(value: Any): AnyRef = value match {
     case s: String => new Utf8(s)
