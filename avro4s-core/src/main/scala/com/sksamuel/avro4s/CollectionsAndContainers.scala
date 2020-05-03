@@ -14,37 +14,50 @@ trait CollectionAndContainerSchemaFors {
 
   implicit val noneSchemaFor: SchemaFor[None.type] = CollectionsAndContainers.noneSchemaFor
 
-  implicit def optionSchemaForRec[T](implicit itemSFR: SchemaFor[T]): ResolvableSchemaFor[Option[T]] =
-    (env, update) => optionSchemaFor(itemSFR(env, update))
+  implicit def optionSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Option[T]] =
+    new ResolvableSchemaFor[Option[T]] {
+      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[Option[T]] =
+        buildOptionSchemaFor(item(env, update))
+    }
 
-  implicit def eitherSchemaForRec[A, B](implicit leftSFR: SchemaFor[A],
-                                        rightSFR: SchemaFor[B]): ResolvableSchemaFor[Either[A, B]] =
-    (env, update) => eitherSchemaFor(leftSFR(env, update), rightSFR(env, update))
+  implicit def eitherSchemaFor[A, B](implicit left: SchemaFor[A], right: SchemaFor[B]): SchemaFor[Either[A, B]] =
+    new ResolvableSchemaFor[Either[A, B]] {
+      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[Either[A, B]] =
+        buildEitherSchemaFor(left(env, update), right(env, update))
+    }
 
-  private def _iterableSchemaForRec[C[X] <: Iterable[X], T](implicit itemSFR: SchemaFor[T]): ResolvableSchemaFor[C[T]] =
-    (env, update) => iterableSchemaFor(itemSFR(env, update))
+  private def _iterableSchemaFor[C[X] <: Iterable[X], T](implicit item: SchemaFor[T]): SchemaFor[C[T]] =
+    new ResolvableSchemaFor[C[T]] {
+      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[C[T]] =
+        buildIterableSchemaFor(item(env, update))
+    }
 
-  implicit def arraySchemaForRec[T](implicit itemSFR: SchemaFor[T]): ResolvableSchemaFor[Array[T]] = { (env, update) =>
-    itemSFR(env, update).map(SchemaBuilder.array.items(_))
-  }
+  implicit def arraySchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Array[T]] =
+    new ResolvableSchemaFor[Array[T]] {
+      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[Array[T]] =
+        item(env, update).map(SchemaBuilder.array.items(_))
+    }
 
-  implicit def iterableSchemaForRec[T](implicit itemSFR: SchemaFor[T]): ResolvableSchemaFor[Iterable[T]] =
-    _iterableSchemaForRec[Iterable, T](itemSFR)
+  implicit def iterableSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Iterable[T]] =
+    _iterableSchemaFor[Iterable, T](item)
 
-  implicit def listSchemaForRec[T](implicit itemSFR: SchemaFor[T]): ResolvableSchemaFor[List[T]] =
-    _iterableSchemaForRec[List, T](itemSFR)
+  implicit def listSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[List[T]] =
+    _iterableSchemaFor[List, T](item)
 
-  implicit def setSchemaForRec[T](implicit itemSFR: SchemaFor[T]): ResolvableSchemaFor[Set[T]] =
-    _iterableSchemaForRec[Set, T](itemSFR)
+  implicit def setSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Set[T]] =
+    _iterableSchemaFor[Set, T](item)
 
-  implicit def vectorSchemaForRec[T](implicit itemSFR: SchemaFor[T]): ResolvableSchemaFor[Vector[T]] =
-    _iterableSchemaForRec[Vector, T](itemSFR)
+  implicit def vectorSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Vector[T]] =
+    _iterableSchemaFor[Vector, T](item)
 
-  implicit def seqSchemaForRec[T](implicit itemSFR: SchemaFor[T]): ResolvableSchemaFor[Seq[T]] =
-    _iterableSchemaForRec[Seq, T](itemSFR)
+  implicit def seqSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Seq[T]] =
+    _iterableSchemaFor[Seq, T](item)
 
-  implicit def mapSchemaForRec[T](implicit valueSFR: SchemaFor[T]): ResolvableSchemaFor[Map[String, T]] =
-    (env, update) => mapSchemaFor(valueSFR(env, update))
+  implicit def mapSchemaFor[T](implicit value: SchemaFor[T]): SchemaFor[Map[String, T]] =
+    new ResolvableSchemaFor[Map[String, T]] {
+      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[Map[String, T]] =
+        buildMapSchemaFor(value(env, update))
+    }
 }
 
 trait CollectionAndContainerEncoders {
@@ -61,7 +74,7 @@ trait CollectionAndContainerEncoders {
 
     new Encoder[Option[T]] {
 
-      val schemaFor: SchemaFor[Option[T]] = optionSchemaFor(encoder.schemaFor)
+      val schemaFor: SchemaFor[Option[T]] = buildOptionSchemaFor(encoder.schemaFor)
 
       def encode(value: Option[T]): AnyRef = if (value.isEmpty) null else encoder.encode(value.get)
 
@@ -76,7 +89,7 @@ trait CollectionAndContainerEncoders {
     val rightEncoder = rightER(env, mapFullUpdate(extractEitherRightSchema, update))
 
     new Encoder[Either[A, B]] {
-      val schemaFor: SchemaFor[Either[A, B]] = eitherSchemaFor(leftEncoder.schemaFor, rightEncoder.schemaFor)
+      val schemaFor: SchemaFor[Either[A, B]] = buildEitherSchemaFor(leftEncoder.schemaFor, rightEncoder.schemaFor)
 
       def encode(value: Either[A, B]): AnyRef = value match {
         case Left(l)  => leftEncoder.encode(l)
@@ -93,7 +106,7 @@ trait CollectionAndContainerEncoders {
       val encoder = elemencoderRes(env, mapFullUpdate(extractIterableElementSchema, update))
 
       new Encoder[Array[T]] {
-        val schemaFor: SchemaFor[Array[T]] = iterableSchemaFor(encoder.schemaFor).forType
+        val schemaFor: SchemaFor[Array[T]] = buildIterableSchemaFor(encoder.schemaFor).forType
 
         def encode(value: Array[T]): AnyRef = value.map(encoder.encode).toList.asJava
 
@@ -107,7 +120,7 @@ trait CollectionAndContainerEncoders {
       val encoder = elemencoderRes(env, mapFullUpdate(extractIterableElementSchema, update))
 
       new Encoder[C[T]] {
-        val schemaFor: SchemaFor[C[T]] = iterableSchemaFor(encoder.schemaFor)
+        val schemaFor: SchemaFor[C[T]] = buildIterableSchemaFor(encoder.schemaFor)
 
         def encode(value: C[T]): AnyRef = value.map(encoder.encode).toList.asJava
 
@@ -128,7 +141,7 @@ trait CollectionAndContainerEncoders {
       val encoder = valueencoderRes(env, mapFullUpdate(extractMapValueSchema, update))
 
       new Encoder[Map[String, T]] {
-        val schemaFor: SchemaFor[Map[String, T]] = mapSchemaFor(encoder.schemaFor)
+        val schemaFor: SchemaFor[Map[String, T]] = buildMapSchemaFor(encoder.schemaFor)
 
         def encode(value: Map[String, T]): AnyRef = {
           val map = new util.HashMap[String, AnyRef]
@@ -157,7 +170,7 @@ trait CollectionAndContainerDecoders {
 
     new Decoder[Option[T]] {
 
-      val schemaFor: SchemaFor[Option[T]] = optionSchemaFor(decoder.schemaFor)
+      val schemaFor: SchemaFor[Option[T]] = buildOptionSchemaFor(decoder.schemaFor)
 
       def decode(value: Any): Option[T] = if (value == null) None else Option(decoder.decode(value))
 
@@ -173,7 +186,7 @@ trait CollectionAndContainerDecoders {
     val rightDecoder = rightDecoderRes(env, mapFullUpdate(extractEitherRightSchema, update))
 
     new Decoder[Either[A, B]] {
-      val schemaFor: SchemaFor[Either[A, B]] = eitherSchemaFor(leftDecoder.schemaFor, rightDecoder.schemaFor)
+      val schemaFor: SchemaFor[Either[A, B]] = buildEitherSchemaFor(leftDecoder.schemaFor, rightDecoder.schemaFor)
 
       private implicit val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding.guard(leftDecoder)
       private implicit val rightGuard: PartialFunction[Any, B] = TypeGuardedDecoding.guard(rightDecoder)
@@ -205,7 +218,7 @@ trait CollectionAndContainerDecoders {
       val decoder = elemDecoderRes(env, mapFullUpdate(extractIterableElementSchema, update))
 
       new Decoder[Array[T]] {
-        val schemaFor: SchemaFor[Array[T]] = iterableSchemaFor(decoder.schemaFor).forType
+        val schemaFor: SchemaFor[Array[T]] = buildIterableSchemaFor(decoder.schemaFor).forType
 
         def decode(value: Any): Array[T] = value match {
           case array: Array[_]               => array.map(decoder.decode)
@@ -225,7 +238,7 @@ trait CollectionAndContainerDecoders {
       val decoder = elemDecoderRes(env, mapFullUpdate(extractIterableElementSchema, update))
 
       new Decoder[C[T]] {
-        val schemaFor: SchemaFor[C[T]] = iterableSchemaFor(decoder.schemaFor)
+        val schemaFor: SchemaFor[C[T]] = buildIterableSchemaFor(decoder.schemaFor)
 
         def decode(value: Any): C[T] = value match {
           case list: java.util.Collection[_] => build(list.asScala.map(decoder.decode))
@@ -257,7 +270,7 @@ trait CollectionAndContainerDecoders {
       val decoder = valueDecoderRes(env, mapFullUpdate(extractMapValueSchema, update))
 
       new Decoder[Map[String, T]] {
-        val schemaFor: SchemaFor[Map[String, T]] = mapSchemaFor(decoder.schemaFor)
+        val schemaFor: SchemaFor[Map[String, T]] = buildMapSchemaFor(decoder.schemaFor)
 
         def decode(value: Any): Map[String, T] = value match {
           case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> decoder.decode(v) }
@@ -274,7 +287,7 @@ object CollectionsAndContainers {
   val noneSchemaFor: SchemaFor[None.type] =
     SchemaFor(SchemaBuilder.builder.nullType)
 
-  private[avro4s] def optionSchemaFor[T](schemaFor: SchemaFor[T]): SchemaFor[Option[T]] =
+  private[avro4s] def buildOptionSchemaFor[T](schemaFor: SchemaFor[T]): SchemaFor[Option[T]] =
     schemaFor.map[Option[T]](itemSchema => SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
 
   private[avro4s] def extractOptionSchema(schema: Schema): Schema = {
@@ -287,8 +300,8 @@ object CollectionsAndContainers {
     }
   }
 
-  private[avro4s] def eitherSchemaFor[A, B](leftSchemaFor: SchemaFor[A],
-                                            rightSchemaFor: SchemaFor[B]): SchemaFor[Either[A, B]] =
+  private[avro4s] def buildEitherSchemaFor[A, B](leftSchemaFor: SchemaFor[A],
+                                                 rightSchemaFor: SchemaFor[B]): SchemaFor[Either[A, B]] =
     SchemaFor(SchemaHelper.createSafeUnion(leftSchemaFor.schema, rightSchemaFor.schema), leftSchemaFor.fieldMapper)
 
   private[avro4s] def extractEitherLeftSchema(schema: Schema): Schema = {
@@ -308,7 +321,7 @@ object CollectionsAndContainers {
             s"Schema for either encoders / decoders must be a UNION of to types, received $schema")
   }
 
-  private[avro4s] def iterableSchemaFor[C[X] <: Iterable[X], T](schemaFor: SchemaFor[T]): SchemaFor[C[T]] =
+  private[avro4s] def buildIterableSchemaFor[C[X] <: Iterable[X], T](schemaFor: SchemaFor[T]): SchemaFor[C[T]] =
     schemaFor.map(SchemaBuilder.array.items(_))
 
   private[avro4s] def extractIterableElementSchema(schema: Schema): Schema = {
@@ -319,7 +332,7 @@ object CollectionsAndContainers {
     schema.getElementType
   }
 
-  private[avro4s] def mapSchemaFor[T](schemaFor: SchemaFor[T]): SchemaFor[Map[String, T]] =
+  private[avro4s] def buildMapSchemaFor[T](schemaFor: SchemaFor[T]): SchemaFor[Map[String, T]] =
     schemaFor.map(SchemaBuilder.map().values(_))
 
   private[avro4s] def extractMapValueSchema(schema: Schema): Schema = {
