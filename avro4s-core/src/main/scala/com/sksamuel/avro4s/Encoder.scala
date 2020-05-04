@@ -64,7 +64,7 @@ object Encoder
     with TemporalEncoders
     with BaseEncoders {
 
-  def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder.resolveEncoder()
+  def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 
   private class DelegatingEncoder[T, S](encoder: Encoder[T], val schemaFor: SchemaFor[S], comap: S => T)
       extends Encoder[S] {

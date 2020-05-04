@@ -17,6 +17,6 @@ object AvroSchema {
     * An implicit [[FieldMapper]] can be provided to override
     * how the field names are generated.
     */
-  def apply[T](implicit schemaFor: SchemaFor[T]): Schema = schemaFor.schema
+  def apply[T](implicit schemaFor: SchemaFor[T]): Schema = schemaFor.resolveSchemaFor().schema
 
 }

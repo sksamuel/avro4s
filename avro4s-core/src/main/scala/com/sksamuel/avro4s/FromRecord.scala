@@ -12,6 +12,9 @@ trait FromRecord[T] extends Serializable {
 
 object FromRecord {
   def apply[T](implicit decoder: Decoder[T]): FromRecord[T] = new FromRecord[T] {
-    override def from(record: IndexedRecord): T = decoder.decode(record)
+
+    val resolved = decoder.resolveDecoder()
+
+    override def from(record: IndexedRecord): T = resolved.decode(record)
   }
 }

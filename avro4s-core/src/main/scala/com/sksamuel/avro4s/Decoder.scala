@@ -66,7 +66,7 @@ object Decoder
     with TemporalDecoders
     with BaseDecoders {
 
-  def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder.resolveDecoder()
+  def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
   private class DelegatingDecoder[T, S](decoder: Decoder[T], val schemaFor: SchemaFor[S], map: T => S)
       extends Decoder[S] {

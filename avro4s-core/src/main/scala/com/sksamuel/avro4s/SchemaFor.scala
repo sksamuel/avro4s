@@ -94,5 +94,5 @@ object SchemaFor
     }
   }
 
-  def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor.resolveSchemaFor()
+  def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor
 }
