@@ -166,7 +166,7 @@ trait CollectionAndContainerDecoders {
     }
   }
 
-  implicit def eitherDecoder[A: Manifest: WeakTypeTag, B: Manifest: WeakTypeTag](
+  implicit def eitherDecoder[A: WeakTypeTag, B: WeakTypeTag](
       implicit leftDecoderRes: Decoder[A],
       rightDecoderRes: Decoder[B]): ResolvableDecoder[Either[A, B]] = { (env, update) =>
     val leftDecoder = leftDecoderRes(env, mapFullUpdate(extractEitherLeftSchema, update))
@@ -184,16 +184,14 @@ trait CollectionAndContainerDecoders {
         } else if (rightGuard.isDefinedAt(value)) {
           Right(rightGuard(value))
         } else {
-          val nameA = NameExtractor(manifest[A].runtimeClass).fullName
-          val nameB = NameExtractor(manifest[B].runtimeClass).fullName
+          val nameA = leftDecoder.schema.getFullName
+          val nameB = rightDecoder.schema.getFullName
           sys.error(s"Could not decode $value into Either[$nameA, $nameB]")
         }
 
       override def withSchema(schemaFor: SchemaFor[Either[A, B]]): Decoder[Either[A, B]] =
         buildWithSchema(eitherDecoder(
-                          manifest[A],
                           weakTypeTag[A],
-                          manifest[B],
                           weakTypeTag[B],
                           leftDecoderRes,
                           rightDecoderRes

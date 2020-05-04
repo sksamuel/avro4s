@@ -1,12 +1,12 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.generic.{GenericContainer, GenericData}
+import org.apache.avro.generic.GenericContainer
 import org.apache.avro.util.Utf8
 import scala.reflect.runtime.universe._
 
 object TypeGuardedDecoding {
 
-  def guard[T: WeakTypeTag: Manifest](decoder: Decoder[T]): PartialFunction[Any, T] = {
+  def guard[T: WeakTypeTag](decoder: Decoder[T]): PartialFunction[Any, T] = {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
@@ -24,8 +24,7 @@ object TypeGuardedDecoding {
     } else if (tpe <:< typeOf[shapeless.Coproduct]) {
       coproductDecoder(decoder)
     } else {
-      val nameExtractor = NameExtractor(manifest.runtimeClass)
-      recordDecoder(nameExtractor.fullName, decoder)
+      recordDecoder(decoder.schema.getFullName, decoder)
     }
   }
 
