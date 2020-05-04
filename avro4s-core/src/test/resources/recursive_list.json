@@ -1,0 +1,15 @@
+{
+  "type" : "record",
+  "name" : "ListTree__Int",
+  "namespace" : "com.sksamuel.avro4s.Recursive",
+  "fields" : [ {
+    "name" : "value",
+    "type" : "int"
+  }, {
+    "name" : "children",
+    "type" : {
+      "type" : "array",
+      "items" : "ListTree__Int"
+    }
+  } ]
+}
