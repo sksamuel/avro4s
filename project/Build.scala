@@ -39,7 +39,9 @@ object Build extends AutoPlugin {
       "-feature",
       "-language:higherKinds",
    //   "-Xlog-implicits",
-      "-language:existentials"
+      "-language:existentials",
+      "-Ybackend-parallelism",
+      "8"
     ),
     javacOptions := Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
