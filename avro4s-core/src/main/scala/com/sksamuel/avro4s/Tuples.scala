@@ -33,7 +33,7 @@ trait TupleEncoders {
   import Tuples._
   import com.sksamuel.avro4s.EncoderHelpers._
 
-  implicit def tuple2Encoder[A, B](implicit a: Encoder[A], b: Encoder[B]): UnresolvedEncoder[(A, B)] = {
+  implicit def tuple2Encoder[A, B](implicit a: Encoder[A], b: Encoder[B]): ResolvableEncoder[(A, B)] = {
     (env, update) =>
       val encoderA = a(env, mapTupleUpdate(0, update))
       val encoderB = b(env, mapTupleUpdate(1, update))
@@ -55,7 +55,7 @@ trait TupleEncoders {
 
   implicit def tuple3Encoder[A, B, C](implicit a: Encoder[A],
                                       b: Encoder[B],
-                                      c: Encoder[C]): UnresolvedEncoder[(A, B, C)] = { (env, update) =>
+                                      c: Encoder[C]): ResolvableEncoder[(A, B, C)] = { (env, update) =>
     val encoderA = a(env, mapTupleUpdate(0, update))
     val encoderB = b(env, mapTupleUpdate(1, update))
     val encoderC = c(env, mapTupleUpdate(2, update))
@@ -78,7 +78,7 @@ trait TupleEncoders {
   implicit def tuple4Encoder[A, B, C, D](implicit a: Encoder[A],
                                          b: Encoder[B],
                                          c: Encoder[C],
-                                         d: Encoder[D]): UnresolvedEncoder[(A, B, C, D)] = { (env, update) =>
+                                         d: Encoder[D]): ResolvableEncoder[(A, B, C, D)] = { (env, update) =>
     val encoderA = a(env, mapTupleUpdate(0, update))
     val encoderB = b(env, mapTupleUpdate(1, update))
     val encoderC = c(env, mapTupleUpdate(2, update))
@@ -109,7 +109,7 @@ trait TupleEncoders {
                                             b: Encoder[B],
                                             c: Encoder[C],
                                             d: Encoder[D],
-                                            e: Encoder[E]): UnresolvedEncoder[(A, B, C, D, E)] = { (env, update) =>
+                                            e: Encoder[E]): ResolvableEncoder[(A, B, C, D, E)] = { (env, update) =>
     val encoderA = a(env, mapTupleUpdate(0, update))
     val encoderB = b(env, mapTupleUpdate(1, update))
     val encoderC = c(env, mapTupleUpdate(2, update))

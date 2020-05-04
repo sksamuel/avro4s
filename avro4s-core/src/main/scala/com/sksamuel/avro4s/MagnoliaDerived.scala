@@ -41,7 +41,7 @@ trait MagnoliaDerivedEncoders {
 
   implicit def gen[T]: Encoder[T] = macro Magnolia.gen[T]
 
-  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Encoder, T]): Encoder[T] = new UnresolvedEncoder[T] {
+  def dispatch[T: WeakTypeTag](ctx: SealedTrait[Encoder, T]): Encoder[T] = new ResolvableEncoder[T] {
     def resolve(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
       env.get[T].getOrElse {
         DatatypeShape.of(ctx) match {
@@ -51,7 +51,7 @@ trait MagnoliaDerivedEncoders {
       }
   }
 
-  def combine[T: WeakTypeTag](ctx: CaseClass[Encoder, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): Encoder[T] = new UnresolvedEncoder[T] {
+  def combine[T: WeakTypeTag](ctx: CaseClass[Encoder, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): Encoder[T] = new ResolvableEncoder[T] {
     def resolve(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
       env.get[T].getOrElse {
         DatatypeShape.of(ctx) match {

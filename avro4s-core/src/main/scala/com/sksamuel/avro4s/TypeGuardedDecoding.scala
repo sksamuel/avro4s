@@ -2,6 +2,7 @@ package com.sksamuel.avro4s
 
 import org.apache.avro.generic.GenericContainer
 import org.apache.avro.util.Utf8
+
 import scala.reflect.runtime.universe._
 
 object TypeGuardedDecoding {

@@ -28,7 +28,7 @@ trait ShapelessCoproductEncoders {
   }
 
   implicit def coproductEncoder[H: WeakTypeTag: Manifest, T <: Coproduct](implicit h: Encoder[H],
-                                                                          t: Encoder[T]): UnresolvedEncoder[H :+: T] = {
+                                                                          t: Encoder[T]): ResolvableEncoder[H :+: T] = {
     (env, update) =>
       val encoderH = h(env, mapFullUpdate(extractCoproductSchema, update))
       val encoderT = t(env, update)

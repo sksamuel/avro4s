@@ -38,13 +38,13 @@ trait Encoder[T] extends Resolvable[Encoder, T] with SchemaAware[Encoder, T] wit
   }
 
   def apply(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T] = (self, update) match {
-    case (unresolved: UnresolvedEncoder[T], _) => unresolved.resolve(env, update)
+    case (resolvable: ResolvableEncoder[T], _) => resolvable.resolve(env, update)
     case (_, FullSchemaUpdate(sf))             => self.withSchema(sf.forType)
     case _                                     => self
   }
 }
 
-trait UnresolvedEncoder[T] extends Encoder[T] {
+trait ResolvableEncoder[T] extends Encoder[T] {
 
   def resolve(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T]
 
