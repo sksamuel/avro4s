@@ -54,6 +54,8 @@ trait ResolvableDecoder[T] extends Decoder[T] {
   def decode(value: Any): T = adhocInstance.decode(value)
 
   def schemaFor: SchemaFor[T] = adhocInstance.schemaFor
+
+  override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = adhocInstance.withSchema(schemaFor)
 }
 
 object Decoder

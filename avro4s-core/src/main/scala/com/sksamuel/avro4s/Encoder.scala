@@ -52,6 +52,8 @@ trait ResolvableEncoder[T] extends Encoder[T] {
   def encode(value: T): AnyRef = adhocInstance.encode(value)
 
   def schemaFor: SchemaFor[T] = adhocInstance.schemaFor
+
+  override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = adhocInstance.withSchema(schemaFor)
 }
 
 object Encoder
