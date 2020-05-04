@@ -10,6 +10,7 @@
     "type" : {
       "type" : "array",
       "items" : "ListTree__Int"
-    }
+    },
+    "default":[]
   } ]
 }

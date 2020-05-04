@@ -7,9 +7,11 @@
     "type" : "int"
   }, {
     "name" : "left",
-    "type" : [ "null", "OptionTree__Int" ]
+    "type" : [ "null", "OptionTree__Int" ],
+    "default":null
   }, {
     "name" : "right",
-    "type" : [ "null", "OptionTree__Int" ]
+    "type" : [ "null", "OptionTree__Int" ],
+    "default":null
   } ]
 }
