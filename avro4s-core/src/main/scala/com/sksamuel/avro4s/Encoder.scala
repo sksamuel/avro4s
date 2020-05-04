@@ -56,7 +56,6 @@ object Encoder
     extends MagnoliaDerivedEncoders
     with ShapelessCoproductEncoders
     with CollectionAndContainerEncoders
-    with TupleEncoders
     with ByteIterableEncoders
     with BigDecimalEncoders
     with TupleEncoders

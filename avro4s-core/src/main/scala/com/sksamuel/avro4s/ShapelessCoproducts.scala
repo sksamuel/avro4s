@@ -36,8 +36,8 @@ trait ShapelessCoproductEncoders {
                                                                 t: Encoder[T]): Encoder[H :+: T] =
     new ResolvableEncoder[H :+: T] {
       def resolve(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[H :+: T] = {
-        val encoderH = h(env, mapFullUpdate(extractCoproductSchema, update))
-        val encoderT = t(env, update)
+        val encoderH = h(env, mapFullUpdate(takeFirstType, update))
+        val encoderT = t(env, mapFullUpdate(dropFirstType, update))
         new Encoder[H :+: T] {
 
           val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(encoderH.schemaFor, encoderT.schemaFor)
@@ -69,8 +69,8 @@ trait ShapelessCoproductDecoders {
                                                                       t: Decoder[T]): Decoder[H :+: T] =
     new ResolvableDecoder[H :+: T] {
       def resolve(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[H :+: T] = {
-        val decoderH = h(env, mapFullUpdate(extractCoproductSchema, update))
-        val decoderT = t(env, update)
+        val decoderH = h(env, mapFullUpdate(takeFirstType, update))
+        val decoderT = t(env, mapFullUpdate(dropFirstType, update))
         new Decoder[H :+: T] {
 
           val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(decoderH.schemaFor, decoderT.schemaFor)
@@ -99,6 +99,10 @@ object ShapelessCoproducts {
                                                                  schemaForT: SchemaFor[T]): SchemaFor[H :+: T] =
     SchemaFor(SchemaHelper.createSafeUnion(schemaForH.schema, schemaForT.schema), schemaForH.fieldMapper)
 
-  private[avro4s] def extractCoproductSchema[H: WeakTypeTag: Manifest](schema: Schema): Schema =
-    SchemaHelper.extractTraitSubschema(NameExtractor(manifest.runtimeClass).fullName, schema)
+  private[avro4s] def takeFirstType(schema: Schema): Schema = schema.getTypes.get(0)
+
+  private[avro4s] def dropFirstType(schema: Schema): Schema = {
+    import scala.collection.JavaConverters._
+    Schema.createUnion(schema.getTypes.asScala.drop(1).asJava)
+  }
 }
