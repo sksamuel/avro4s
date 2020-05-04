@@ -142,7 +142,7 @@ object Records {
       if (annotations.transient) None
       else {
         val doc = valueTypeDoc(ctx, param)
-        val schema = param.typeclass.apply(nextEnv, NoUpdate).schema
+        val schema = param.typeclass.resolveSchemaFor(nextEnv, NoUpdate).schema
         Some(buildSchemaField(param, schema, annotations, record.getNamespace, fieldMapper, doc))
       }
     }.asJava

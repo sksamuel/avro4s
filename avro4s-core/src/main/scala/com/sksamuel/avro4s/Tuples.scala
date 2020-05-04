@@ -8,15 +8,17 @@ trait TupleSchemaFors {
 
   implicit def tuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] =
     new ResolvableSchemaFor[(A, B)] {
-      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[(A, B)] =
-        createTuple2SchemaFor(a(env, update), b(env, update))
+      def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[(A, B)] =
+        createTuple2SchemaFor(a.resolveSchemaFor(env, update), b.resolveSchemaFor(env, update))
     }
 
   implicit def tuple3SchemaFor[A, B, C](implicit a: SchemaFor[A],
                                         b: SchemaFor[B],
                                         c: SchemaFor[C]): SchemaFor[(A, B, C)] = new ResolvableSchemaFor[(A, B, C)] {
-    def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[(A, B, C)] =
-      createTuple3SchemaFor(a(env, update), b(env, update), c(env, update))
+    def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[(A, B, C)] =
+      createTuple3SchemaFor(a.resolveSchemaFor(env, update),
+                            b.resolveSchemaFor(env, update),
+                            c.resolveSchemaFor(env, update))
   }
 
   implicit def tuple4SchemaFor[A, B, C, D](implicit a: SchemaFor[A],
@@ -24,8 +26,11 @@ trait TupleSchemaFors {
                                            c: SchemaFor[C],
                                            d: SchemaFor[D]): SchemaFor[(A, B, C, D)] =
     new ResolvableSchemaFor[(A, B, C, D)] {
-      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[(A, B, C, D)] =
-        createTuple4SchemaFor(a(env, update), b(env, update), c(env, update), d(env, update))
+      def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[(A, B, C, D)] =
+        createTuple4SchemaFor(a.resolveSchemaFor(env, update),
+                              b.resolveSchemaFor(env, update),
+                              c.resolveSchemaFor(env, update),
+                              d.resolveSchemaFor(env, update))
     }
 
   implicit def tuple5SchemaFor[A, B, C, D, E](implicit a: SchemaFor[A],
@@ -34,8 +39,14 @@ trait TupleSchemaFors {
                                               d: SchemaFor[D],
                                               e: SchemaFor[E]): SchemaFor[(A, B, C, D, E)] =
     new ResolvableSchemaFor[(A, B, C, D, E)] {
-      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[(A, B, C, D, E)] =
-        createTuple5SchemaFor(a(env, update), b(env, update), c(env, update), d(env, update), e(env, update))
+      def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[(A, B, C, D, E)] =
+        createTuple5SchemaFor(
+          a.resolveSchemaFor(env, update),
+          b.resolveSchemaFor(env, update),
+          c.resolveSchemaFor(env, update),
+          d.resolveSchemaFor(env, update),
+          e.resolveSchemaFor(env, update)
+        )
     }
 }
 
@@ -45,9 +56,9 @@ trait TupleEncoders {
 
   implicit def tuple2Encoder[A, B](implicit a: Encoder[A], b: Encoder[B]): Encoder[(A, B)] =
     new ResolvableEncoder[(A, B)] {
-      def resolve(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[(A, B)] = {
-        val encoderA = a(env, mapTupleUpdate(0, update))
-        val encoderB = b(env, mapTupleUpdate(1, update))
+      def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[(A, B)] = {
+        val encoderA = a.resolveEncoder(env, mapTupleUpdate(0, update))
+        val encoderB = b.resolveEncoder(env, mapTupleUpdate(1, update))
 
         new Encoder[(A, B)] {
 
@@ -67,10 +78,10 @@ trait TupleEncoders {
 
   implicit def tuple3Encoder[A, B, C](implicit a: Encoder[A], b: Encoder[B], c: Encoder[C]): Encoder[(A, B, C)] =
     new ResolvableEncoder[(A, B, C)] {
-      def resolve(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[(A, B, C)] = {
-        val encoderA = a(env, mapTupleUpdate(0, update))
-        val encoderB = b(env, mapTupleUpdate(1, update))
-        val encoderC = c(env, mapTupleUpdate(2, update))
+      def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[(A, B, C)] = {
+        val encoderA = a.resolveEncoder(env, mapTupleUpdate(0, update))
+        val encoderB = b.resolveEncoder(env, mapTupleUpdate(1, update))
+        val encoderC = c.resolveEncoder(env, mapTupleUpdate(2, update))
 
         new Encoder[(A, B, C)] {
 
@@ -92,11 +103,11 @@ trait TupleEncoders {
                                          b: Encoder[B],
                                          c: Encoder[C],
                                          d: Encoder[D]): Encoder[(A, B, C, D)] = new ResolvableEncoder[(A, B, C, D)] {
-    def resolve(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[(A, B, C, D)] = {
-      val encoderA = a(env, mapTupleUpdate(0, update))
-      val encoderB = b(env, mapTupleUpdate(1, update))
-      val encoderC = c(env, mapTupleUpdate(2, update))
-      val encoderD = d(env, mapTupleUpdate(3, update))
+    def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[(A, B, C, D)] = {
+      val encoderA = a.resolveEncoder(env, mapTupleUpdate(0, update))
+      val encoderB = b.resolveEncoder(env, mapTupleUpdate(1, update))
+      val encoderC = c.resolveEncoder(env, mapTupleUpdate(2, update))
+      val encoderD = d.resolveEncoder(env, mapTupleUpdate(3, update))
 
       new Encoder[(A, B, C, D)] {
 
@@ -126,12 +137,12 @@ trait TupleEncoders {
                                             d: Encoder[D],
                                             e: Encoder[E]): Encoder[(A, B, C, D, E)] =
     new ResolvableEncoder[(A, B, C, D, E)] {
-      def resolve(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[(A, B, C, D, E)] = {
-        val encoderA = a(env, mapTupleUpdate(0, update))
-        val encoderB = b(env, mapTupleUpdate(1, update))
-        val encoderC = c(env, mapTupleUpdate(2, update))
-        val encoderD = d(env, mapTupleUpdate(3, update))
-        val encoderE = e(env, mapTupleUpdate(4, update))
+      def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[(A, B, C, D, E)] = {
+        val encoderA = a.resolveEncoder(env, mapTupleUpdate(0, update))
+        val encoderB = b.resolveEncoder(env, mapTupleUpdate(1, update))
+        val encoderC = c.resolveEncoder(env, mapTupleUpdate(2, update))
+        val encoderD = d.resolveEncoder(env, mapTupleUpdate(3, update))
+        val encoderE = e.resolveEncoder(env, mapTupleUpdate(4, update))
 
         new Encoder[(A, B, C, D, E)] {
 
@@ -165,9 +176,9 @@ trait TupleDecoders {
 
   implicit def tuple2Decoder[A, B](implicit a: Decoder[A], b: Decoder[B]): Decoder[(A, B)] =
     new ResolvableDecoder[(A, B)] {
-      def resolve(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[(A, B)] = {
-        val decoderA = a(env, mapTupleUpdate(0, update))
-        val decoderB = b(env, mapTupleUpdate(1, update))
+      def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[(A, B)] = {
+        val decoderA = a.resolveDecoder(env, mapTupleUpdate(0, update))
+        val decoderB = b.resolveDecoder(env, mapTupleUpdate(1, update))
 
         new Decoder[(A, B)] {
 
@@ -191,10 +202,10 @@ trait TupleDecoders {
                                       a: Decoder[A],
                                       b: Decoder[B],
                                       c: Decoder[C]): Decoder[(A, B, C)] = new ResolvableDecoder[(A, B, C)] {
-    def resolve(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[(A, B, C)] = {
-      val decoderA = a(env, mapTupleUpdate(0, update))
-      val decoderB = b(env, mapTupleUpdate(1, update))
-      val decoderC = c(env, mapTupleUpdate(2, update))
+    def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[(A, B, C)] = {
+      val decoderA = a.resolveDecoder(env, mapTupleUpdate(0, update))
+      val decoderB = b.resolveDecoder(env, mapTupleUpdate(1, update))
+      val decoderC = c.resolveDecoder(env, mapTupleUpdate(2, update))
 
       new Decoder[(A, B, C)] {
 
@@ -221,11 +232,11 @@ trait TupleDecoders {
                                          b: Decoder[B],
                                          c: Decoder[C],
                                          d: Decoder[D]): Decoder[(A, B, C, D)] = new ResolvableDecoder[(A, B, C, D)] {
-    def resolve(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[(A, B, C, D)] = {
-      val decoderA = a(env, mapTupleUpdate(0, update))
-      val decoderB = b(env, mapTupleUpdate(1, update))
-      val decoderC = c(env, mapTupleUpdate(2, update))
-      val decoderD = d(env, mapTupleUpdate(3, update))
+    def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[(A, B, C, D)] = {
+      val decoderA = a.resolveDecoder(env, mapTupleUpdate(0, update))
+      val decoderB = b.resolveDecoder(env, mapTupleUpdate(1, update))
+      val decoderC = c.resolveDecoder(env, mapTupleUpdate(2, update))
+      val decoderD = d.resolveDecoder(env, mapTupleUpdate(3, update))
 
       new Decoder[(A, B, C, D)] {
 
@@ -258,12 +269,12 @@ trait TupleDecoders {
                                             d: Decoder[D],
                                             e: Decoder[E]): Decoder[(A, B, C, D, E)] =
     new ResolvableDecoder[(A, B, C, D, E)] {
-      def resolve(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[(A, B, C, D, E)] = {
-        val decoderA = a(env, mapTupleUpdate(0, update))
-        val decoderB = b(env, mapTupleUpdate(1, update))
-        val decoderC = c(env, mapTupleUpdate(2, update))
-        val decoderD = d(env, mapTupleUpdate(3, update))
-        val decoderE = e(env, mapTupleUpdate(4, update))
+      def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[(A, B, C, D, E)] = {
+        val decoderA = a.resolveDecoder(env, mapTupleUpdate(0, update))
+        val decoderB = b.resolveDecoder(env, mapTupleUpdate(1, update))
+        val decoderC = c.resolveDecoder(env, mapTupleUpdate(2, update))
+        val decoderD = d.resolveDecoder(env, mapTupleUpdate(3, update))
+        val decoderE = e.resolveDecoder(env, mapTupleUpdate(4, update))
 
         new Decoder[(A, B, C, D, E)] {
 

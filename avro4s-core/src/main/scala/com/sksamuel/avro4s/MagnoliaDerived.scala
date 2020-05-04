@@ -11,7 +11,7 @@ trait MagnoliaDerivedSchemaFors {
   implicit def gen[T]: SchemaFor[T] = macro Magnolia.gen[T]
 
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[SchemaFor, T]): SchemaFor[T] = new ResolvableSchemaFor[T] {
-    def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T] = {
+    def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T] = {
       env.get[T].getOrElse {
         DatatypeShape.of(ctx) match {
           case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx, env, update)
@@ -24,7 +24,7 @@ trait MagnoliaDerivedSchemaFors {
   def combine[T: WeakTypeTag](ctx: CaseClass[SchemaFor, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): SchemaFor[T] = {
     val fm = fieldMapper
     new ResolvableSchemaFor[T] {
-      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T] = {
+      def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T] = {
         env.get[T].getOrElse {
           DatatypeShape.of(ctx) match {
             case CaseClassShape.Record    => Records.schema(ctx, env, update, fm)
@@ -42,7 +42,7 @@ trait MagnoliaDerivedEncoders {
   implicit def gen[T]: Encoder[T] = macro Magnolia.gen[T]
 
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Encoder, T]): Encoder[T] = new ResolvableEncoder[T] {
-    def resolve(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
+    def encoder(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
       env.get[T].getOrElse {
         DatatypeShape.of(ctx) match {
           case SealedTraitShape.TypeUnion => TypeUnions.encoder(ctx, env, update)
@@ -52,7 +52,7 @@ trait MagnoliaDerivedEncoders {
   }
 
   def combine[T: WeakTypeTag](ctx: CaseClass[Encoder, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): Encoder[T] = new ResolvableEncoder[T] {
-    def resolve(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
+    def encoder(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
       env.get[T].getOrElse {
         DatatypeShape.of(ctx) match {
           case CaseClassShape.Record    => Records.encoder(ctx, env, update, fieldMapper)
@@ -68,7 +68,7 @@ trait MagnoliaDerivedDecoders {
   implicit def gen[T]: Decoder[T] = macro Magnolia.gen[T]
 
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Decoder, T]): Decoder[T] = new ResolvableDecoder[T] {
-    def resolve(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
+    def decoder(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
       env.get[T].getOrElse {
         DatatypeShape.of(ctx) match {
           case SealedTraitShape.TypeUnion => TypeUnions.decoder(ctx, env, update)
@@ -78,7 +78,7 @@ trait MagnoliaDerivedDecoders {
   }
 
   def combine[T: WeakTypeTag](ctx: CaseClass[Decoder, T])(implicit fieldMapper: FieldMapper = DefaultFieldMapper): Decoder[T] = new ResolvableDecoder[T] {
-    def resolve(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
+    def decoder(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
       env.get[T].getOrElse {
         DatatypeShape.of(ctx) match {
           case CaseClassShape.Record    => Records.decoder(ctx, env, update, fieldMapper)

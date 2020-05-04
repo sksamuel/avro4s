@@ -53,7 +53,7 @@ object ValueTypes {
   def schema[T](ctx: CaseClass[SchemaFor, T],
                 env: DefinitionEnvironment[SchemaFor],
                 update: SchemaUpdate): SchemaFor[T] =
-    buildSchemaFor(ctx, ctx.parameters.head.typeclass.apply(env, update).schema, update)
+    buildSchemaFor(ctx, ctx.parameters.head.typeclass.resolveSchemaFor(env, update).schema, update)
 
   private def buildSchemaFor[Typeclass[_], T](ctx: CaseClass[Typeclass, T],
                                               paramSchema: Schema,
@@ -115,7 +115,7 @@ object ValueTypes {
     }
 
     def apply(ctx: CaseClass[Encoder, T], env: DefinitionEnvironment[Encoder], update: SchemaUpdate) = {
-      val encoder = p.typeclass.apply(env, fieldUpdate(ctx))
+      val encoder = p.typeclass.resolveEncoder(env, fieldUpdate(ctx))
       val schemaFor = buildSchemaFor(ctx, encoder.schemaFor.schema, update)
       new ValueEncoder(encoder, schemaFor)
     }
@@ -127,7 +127,7 @@ object ValueTypes {
     }
 
     def apply(ctx: CaseClass[Decoder, T], env: DefinitionEnvironment[Decoder], update: SchemaUpdate) = {
-      val decoder = p.typeclass.apply(env, fieldUpdate(ctx))
+      val decoder = p.typeclass.resolveDecoder(env, fieldUpdate(ctx))
       val schemaFor = buildSchemaFor(ctx, decoder.schemaFor.schema, update)
       new ValueDecoder(decoder, schemaFor)
     }

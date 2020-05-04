@@ -76,9 +76,9 @@ object TypeUnions {
                 env: DefinitionEnvironment[SchemaFor],
                 update: SchemaUpdate): SchemaFor[T] = {
     val subtypeSchema: ((Subtype[SchemaFor, T], SchemaUpdate)) => Schema = {
-      case (st, NamespaceUpdate(ns))     => SchemaHelper.overrideNamespace(st.typeclass.apply(env, update).schema, ns)
+      case (st, NamespaceUpdate(ns))     => SchemaHelper.overrideNamespace(st.typeclass.resolveSchemaFor(env, update).schema, ns)
       case (_, FullSchemaUpdate(schemaFor)) => schemaFor.schema
-      case (st, NoUpdate)          => st.typeclass.apply(env, update).schema
+      case (st, NoUpdate)          => st.typeclass.resolveSchemaFor(env, update).schema
     }
 
     val subtypeSchemas = enrichedSubtypes(ctx, update).map(subtypeSchema)

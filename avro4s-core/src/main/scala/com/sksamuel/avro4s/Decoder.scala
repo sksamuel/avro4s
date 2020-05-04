@@ -20,7 +20,7 @@ import scala.language.experimental.macros
   * A final example is converting a GenericData.Array or a Java collection type
   * into a Scala collection type.
   */
-trait Decoder[T] extends Resolvable[Decoder, T] with SchemaAware[Decoder, T] with Serializable { self =>
+trait Decoder[T] extends SchemaAware[Decoder, T] with Serializable { self =>
 
   /**
     * Decodes the given value to an instance of T if possible.
@@ -36,18 +36,20 @@ trait Decoder[T] extends Resolvable[Decoder, T] with SchemaAware[Decoder, T] wit
     }
   }
 
-  def apply(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T] = (self, update) match {
-    case (unresolved: ResolvableDecoder[T], _) => unresolved.resolve(env, update)
+  def resolveDecoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T] = (self, update) match {
+    case (resolvable: ResolvableDecoder[T], _) => resolvable.decoder(env, update)
     case (_, FullSchemaUpdate(sf))             => self.withSchema(sf.forType)
     case _                                     => self
   }
+
+  def resolveDecoder(): Decoder[T] = resolveDecoder(DefinitionEnvironment.empty, NoUpdate)
 }
 
 trait ResolvableDecoder[T] extends Decoder[T] {
 
-  def resolve(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T]
+  def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T]
 
-  lazy val adhocInstance = resolve(DefinitionEnvironment.empty, NoUpdate)
+  lazy val adhocInstance = decoder(DefinitionEnvironment.empty, NoUpdate)
 
   def decode(value: Any): T = adhocInstance.decode(value)
 
@@ -64,7 +66,7 @@ object Decoder
     with TemporalDecoders
     with BaseDecoders {
 
-  def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder.apply()
+  def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder.resolveDecoder()
 
   private class DelegatingDecoder[T, S](decoder: Decoder[T], val schemaFor: SchemaFor[S], map: T => S)
       extends Decoder[S] {
@@ -88,7 +90,7 @@ object Decoder
 
 object DecoderHelpers {
   def buildWithSchema[T](decoder: Decoder[T], schemaFor: SchemaFor[T]): Decoder[T] =
-    decoder(DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
+    decoder.resolveDecoder(DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
 
   def mapFullUpdate(f: Schema => Schema, update: SchemaUpdate) = update match {
     case full: FullSchemaUpdate => FullSchemaUpdate(SchemaFor(f(full.schemaFor.schema), full.schemaFor.fieldMapper))

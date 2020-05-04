@@ -46,9 +46,7 @@ object Decoding extends Bench.LocalTime with BenchmarkHelpers {
   performance of "avro4s union type with type param hand-rolled decoding" in {
 
     import benchmarks.handrolled_codecs._
-    val codec: AttributeValueCodec[Int] = AttributeValueCodec[Int]
-    implicit val attributeValueEncoder = codec.encoder
-    implicit val attributeValueDecoder = codec.decoder
+    implicit val codec: Codec[AttributeValue[Int]] = AttributeValueCodec[Int]
     implicit val schemaFor: SchemaFor[AttributeValue[Int]] = SchemaFor[AttributeValue[Int]](codec.schema)
     val recordSchemaFor = SchemaFor[RecordWithUnionAndTypeField]
     val decoder = Decoder[RecordWithUnionAndTypeField].withSchema(recordSchemaFor)

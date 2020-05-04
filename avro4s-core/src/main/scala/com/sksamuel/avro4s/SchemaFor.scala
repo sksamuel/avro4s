@@ -14,15 +14,8 @@ import scala.reflect.runtime.universe._
   * For example, a String SchemaFor could return an instance of Schema.Type.STRING
   * or Schema.Type.FIXED depending on the type required for Strings.
   */
-trait SchemaFor[T] extends Resolvable[SchemaFor, T] with Serializable {
+trait SchemaFor[T] extends Serializable {
   self =>
-
-  def apply(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T] =
-    (self, update) match {
-      case (unresolved: ResolvableSchemaFor[T], _) => unresolved.resolve(env, update)
-      case (_, FullSchemaUpdate(sf))               => sf.forType
-      case _                                       => self
-    }
 
   def schema: Schema
   def fieldMapper: FieldMapper
@@ -34,12 +27,21 @@ trait SchemaFor[T] extends Resolvable[SchemaFor, T] with Serializable {
   def map[U](fn: Schema => Schema): SchemaFor[U] = SchemaFor[U](fn(schema), fieldMapper)
 
   def forType[U]: SchemaFor[U] = map[U](identity)
+
+  def resolveSchemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T] =
+    (self, update) match {
+      case (resolvable: ResolvableSchemaFor[T], _) => resolvable.schemaFor(env, update)
+      case (_, FullSchemaUpdate(sf))               => sf.forType
+      case _                                       => self
+    }
+
+  def resolveSchemaFor(): SchemaFor[T] = resolveSchemaFor(DefinitionEnvironment.empty, NoUpdate)
 }
 
 trait ResolvableSchemaFor[T] extends SchemaFor[T] {
-  def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T]
+  def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T]
 
-  lazy val adhocInstance = resolve(DefinitionEnvironment.empty, NoUpdate)
+  lazy val adhocInstance = schemaFor(DefinitionEnvironment.empty, NoUpdate)
 
   def schema = adhocInstance.schema
   def fieldMapper: FieldMapper = adhocInstance.fieldMapper
@@ -92,5 +94,5 @@ object SchemaFor
     }
   }
 
-  def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor.apply()
+  def apply[T](implicit schemaFor: SchemaFor[T]): SchemaFor[T] = schemaFor.resolveSchemaFor()
 }

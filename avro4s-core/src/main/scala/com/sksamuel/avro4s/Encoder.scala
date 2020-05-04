@@ -18,7 +18,7 @@ import scala.language.experimental.macros
   * type Schema.Type.ENUM, the value would be encoded as an instance
   * of GenericData.EnumSymbol.
   */
-trait Encoder[T] extends Resolvable[Encoder, T] with SchemaAware[Encoder, T] with Serializable { self =>
+trait Encoder[T] extends SchemaAware[Encoder, T] with Serializable { self =>
 
   /**
     * Encodes the given value to a value supported by Avro's generic data model
@@ -34,18 +34,20 @@ trait Encoder[T] extends Resolvable[Encoder, T] with SchemaAware[Encoder, T] wit
     }
   }
 
-  def apply(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T] = (self, update) match {
-    case (resolvable: ResolvableEncoder[T], _) => resolvable.resolve(env, update)
+  def resolveEncoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T] = (self, update) match {
+    case (resolvable: ResolvableEncoder[T], _) => resolvable.encoder(env, update)
     case (_, FullSchemaUpdate(sf))             => self.withSchema(sf.forType)
     case _                                     => self
   }
+
+  def resolveEncoder(): Encoder[T] = resolveEncoder(DefinitionEnvironment.empty, NoUpdate)
 }
 
 trait ResolvableEncoder[T] extends Encoder[T] {
 
-  def resolve(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T]
+  def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T]
 
-  lazy val adhocInstance = resolve(DefinitionEnvironment.empty, NoUpdate)
+  lazy val adhocInstance = encoder(DefinitionEnvironment.empty, NoUpdate)
 
   def encode(value: T): AnyRef = adhocInstance.encode(value)
 
@@ -62,7 +64,7 @@ object Encoder
     with TemporalEncoders
     with BaseEncoders {
 
-  def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder.apply()
+  def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder.resolveEncoder()
 
   private class DelegatingEncoder[T, S](encoder: Encoder[T], val schemaFor: SchemaFor[S], comap: S => T)
       extends Encoder[S] {
@@ -85,8 +87,8 @@ object Encoder
 }
 
 object EncoderHelpers {
-  def buildWithSchema[T](encoderRec: Encoder[T], schemaFor: SchemaFor[T]): Encoder[T] =
-    encoderRec(DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
+  def buildWithSchema[T](encoder: Encoder[T], schemaFor: SchemaFor[T]): Encoder[T] =
+    encoder.resolveEncoder(DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
 
   def mapFullUpdate(f: Schema => Schema, update: SchemaUpdate) = update match {
     case full: FullSchemaUpdate => FullSchemaUpdate(SchemaFor(f(full.schemaFor.schema), full.schemaFor.fieldMapper))

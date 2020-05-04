@@ -26,11 +26,11 @@ object RecordFields {
           val field = extractField(param, sf)
 
           val fieldUpdate = FullSchemaUpdate(SchemaFor(field.schema(), sf.fieldMapper))
-          val encoder = param.typeclass.apply(env, fieldUpdate)
+          val encoder = param.typeclass.resolveEncoder(env, fieldUpdate)
           (encoder, field)
 
         case _ =>
-          val encoder = param.typeclass.apply(env, fieldUpdate(param, record, fieldMapper))
+          val encoder = param.typeclass.resolveEncoder(env, fieldUpdate(param, record, fieldMapper))
           (encoder, buildField(param, record, ctx, encoder.schema, fieldMapper))
       }
 
@@ -86,11 +86,11 @@ object RecordFields {
             (Some(field), FullSchemaUpdate(SchemaFor(field.schema(), sf.fieldMapper)), field.pos)
           }
 
-          val decoder = param.typeclass.apply(env, fieldUpdate)
+          val decoder = param.typeclass.resolveDecoder(env, fieldUpdate)
           (decoder, field, index)
 
         case _ =>
-          val decoder = param.typeclass.apply(env, fieldUpdate(param, record, fieldMapper))
+          val decoder = param.typeclass.resolveDecoder(env, fieldUpdate(param, record, fieldMapper))
           if (annotations.transient) (decoder, None, -1)
           else {
             val field = buildField(param, record, ctx, decoder.schema, fieldMapper)
