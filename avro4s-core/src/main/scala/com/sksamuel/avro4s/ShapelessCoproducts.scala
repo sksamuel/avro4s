@@ -10,12 +10,17 @@ import scala.reflect.runtime.universe._
 
 trait ShapelessCoproductSchemaFors {
 
-  implicit def singleElementSchemaFor[H](implicit h: SchemaFor[H]): ResolvableSchemaFor[H :+: CNil] =
-    (env, update) => buildSingleElementSchemaFor(h(env, update))
+  implicit def singleElementSchemaFor[H](implicit h: SchemaFor[H]): SchemaFor[H :+: CNil] =
+    new ResolvableSchemaFor[H :+: CNil] {
+      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[H :+: CNil] =
+        buildSingleElementSchemaFor(h(env, update))
+    }
 
-  implicit def coproductSchemaFor[H, T <: Coproduct](implicit h: SchemaFor[H],
-                                                     t: SchemaFor[T]): ResolvableSchemaFor[H :+: T] =
-    (env, update) => buildCoproductSchemaFor(h(env, update), t(env, update))
+  implicit def coproductSchemaFor[H, T <: Coproduct](implicit h: SchemaFor[H], t: SchemaFor[T]): SchemaFor[H :+: T] =
+    new ResolvableSchemaFor[H :+: T] {
+      def resolve(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[H :+: T] =
+        buildCoproductSchemaFor(h(env, update), t(env, update))
+    }
 }
 
 trait ShapelessCoproductEncoders {
@@ -27,24 +32,26 @@ trait ShapelessCoproductEncoders {
     override def withSchema(schemaFor: SchemaFor[CNil]): Encoder[CNil] = this
   }
 
-  implicit def coproductEncoder[H: WeakTypeTag: Manifest, T <: Coproduct](implicit h: Encoder[H],
-                                                                          t: Encoder[T]): ResolvableEncoder[H :+: T] = {
-    (env, update) =>
-      val encoderH = h(env, mapFullUpdate(extractCoproductSchema, update))
-      val encoderT = t(env, update)
-      new Encoder[H :+: T] {
+  implicit def coproductEncoder[H: WeakTypeTag, T <: Coproduct](implicit h: Encoder[H],
+                                                                t: Encoder[T]): Encoder[H :+: T] =
+    new ResolvableEncoder[H :+: T] {
+      def resolve(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[H :+: T] = {
+        val encoderH = h(env, mapFullUpdate(extractCoproductSchema, update))
+        val encoderT = t(env, update)
+        new Encoder[H :+: T] {
 
-        val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(encoderH.schemaFor, encoderT.schemaFor)
+          val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(encoderH.schemaFor, encoderT.schemaFor)
 
-        def encode(value: H :+: T): AnyRef = value match {
-          case Inl(h) => encoderH.encode(h)
-          case Inr(t) => encoderT.encode(t)
+          def encode(value: H :+: T): AnyRef = value match {
+            case Inl(h) => encoderH.encode(h)
+            case Inr(t) => encoderT.encode(t)
+          }
+
+          override def withSchema(schemaFor: SchemaFor[H :+: T]): Encoder[H :+: T] =
+            buildWithSchema(coproductEncoder(implicitly[WeakTypeTag[H]], h, t), schemaFor)
         }
-
-        override def withSchema(schemaFor: SchemaFor[H :+: T]): Encoder[H :+: T] =
-          buildWithSchema(coproductEncoder(implicitly[WeakTypeTag[H]], manifest, h, t), schemaFor)
       }
-  }
+    }
 }
 
 trait ShapelessCoproductDecoders {
@@ -59,23 +66,25 @@ trait ShapelessCoproductDecoders {
   }
 
   implicit final def coproductDecoder[H: WeakTypeTag, T <: Coproduct](implicit h: Decoder[H],
-                                                                      t: Decoder[T]): ResolvableDecoder[H :+: T] = {
-    (env, update) =>
-      val decoderH = h(env, mapFullUpdate(extractCoproductSchema, update))
-      val decoderT = t(env, update)
-      new Decoder[H :+: T] {
+                                                                      t: Decoder[T]): Decoder[H :+: T] =
+    new ResolvableDecoder[H :+: T] {
+      def resolve(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[H :+: T] = {
+        val decoderH = h(env, mapFullUpdate(extractCoproductSchema, update))
+        val decoderT = t(env, update)
+        new Decoder[H :+: T] {
 
-        val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(decoderH.schemaFor, decoderT.schemaFor)
+          val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(decoderH.schemaFor, decoderT.schemaFor)
 
-        private val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(decoderH)
+          private val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(decoderH)
 
-        def decode(value: Any): H :+: T =
-          if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value)) else Inr(decoderT.decode(value))
+          def decode(value: Any): H :+: T =
+            if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value)) else Inr(decoderT.decode(value))
 
-        override def withSchema(schemaFor: SchemaFor[H :+: T]): Decoder[H :+: T] =
-          buildWithSchema(coproductDecoder[H, T](implicitly[WeakTypeTag[H]], h, t), schemaFor)
+          override def withSchema(schemaFor: SchemaFor[H :+: T]): Decoder[H :+: T] =
+            buildWithSchema(coproductDecoder[H, T](implicitly[WeakTypeTag[H]], h, t), schemaFor)
+        }
       }
-  }
+    }
 }
 
 object ShapelessCoproducts {
