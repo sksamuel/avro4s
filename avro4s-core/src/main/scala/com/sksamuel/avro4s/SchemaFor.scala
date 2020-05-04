@@ -80,14 +80,8 @@ object SchemaFor
     with ShapelessCoproductSchemaFors
     with CollectionAndContainerSchemaFors
     with TupleSchemaFors
+    with ByteIterableSchemaFors
     with BaseSchemaFors {
-
-  // the following four implicits have to be here directly in order to avoid ambiguous implicit values errors
-
-  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
-  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = ByteArraySchemaFor.forType
-  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = ByteArraySchemaFor.forType
-  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = ByteArraySchemaFor.forType
 
   def apply[T](schema: Schema, fieldMapper: FieldMapper = DefaultFieldMapper) = {
     val s = schema

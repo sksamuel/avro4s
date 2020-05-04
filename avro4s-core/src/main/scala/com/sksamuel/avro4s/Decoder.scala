@@ -1,10 +1,7 @@
 package com.sksamuel.avro4s
 
-import java.nio.ByteBuffer
-
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NoUpdate}
-import org.apache.avro.generic.GenericFixed
-import org.apache.avro.{Schema, SchemaBuilder}
+import org.apache.avro.Schema
 
 import scala.language.experimental.macros
 
@@ -58,57 +55,14 @@ trait ResolvableDecoder[T] extends Decoder[T] {
 }
 
 object Decoder
-    extends TupleDecoders
-    with CollectionAndContainerDecoders
+    extends MagnoliaDerivedDecoders
     with ShapelessCoproductDecoders
-    with MagnoliaDerivedDecoders
+    with CollectionAndContainerDecoders
+    with TupleDecoders
+    with ByteIterableDecoders
     with BigDecimalDecoders
     with TemporalDecoders
     with BaseDecoders {
-
-  implicit val ByteArrayDecoder: Decoder[Array[Byte]] = new ByteArrayDecoderBase {
-    val schemaFor = SchemaFor(SchemaBuilder.builder().bytesType())
-  }
-
-  implicit val ByteListDecoder: Decoder[List[Byte]] = iterableByteDecoder(_.toList)
-  implicit val ByteVectorDecoder: Decoder[Vector[Byte]] = iterableByteDecoder(_.toVector)
-  implicit val ByteSeqDecoder: Decoder[Seq[Byte]] = iterableByteDecoder(_.toSeq)
-
-  private def iterableByteDecoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): Decoder[C[Byte]] =
-    new IterableByteDecoder[C](build)
-
-  private sealed trait ByteArrayDecoderBase extends Decoder[Array[Byte]] {
-
-    def decode(value: Any): Array[Byte] = value match {
-      case buffer: ByteBuffer  => buffer.array
-      case array: Array[Byte]  => array
-      case fixed: GenericFixed => fixed.bytes
-      case _                   => sys.error(s"Byte array codec cannot decode '$value'")
-    }
-
-    override def withSchema(schemaFor: SchemaFor[Array[Byte]]): Decoder[Array[Byte]] =
-      schemaFor.schema.getType match {
-        case Schema.Type.BYTES => ByteArrayDecoder
-        case Schema.Type.FIXED => new FixedByteArrayDecoder(schemaFor)
-        case _                 => sys.error(s"Byte array codec doesn't support schema type ${schemaFor.schema.getType}")
-      }
-  }
-
-  private class FixedByteArrayDecoder(val schemaFor: SchemaFor[Array[Byte]]) extends ByteArrayDecoderBase {
-    require(schema.getType == Schema.Type.FIXED)
-  }
-
-  private class IterableByteDecoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte],
-                                                         byteArrayDecoder: Decoder[Array[Byte]] = ByteArrayDecoder)
-      extends Decoder[C[Byte]] {
-
-    val schemaFor: SchemaFor[C[Byte]] = byteArrayDecoder.schemaFor.forType
-
-    def decode(value: Any): C[Byte] = build(byteArrayDecoder.decode(value))
-
-    override def withSchema(schemaFor: SchemaFor[C[Byte]]): Decoder[C[Byte]] =
-      new IterableByteDecoder(build, byteArrayDecoder.withSchema(schemaFor.map(identity)))
-  }
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder.apply()
 

@@ -1,10 +1,7 @@
 package com.sksamuel.avro4s
 
-import java.nio.ByteBuffer
-
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NoUpdate}
-import org.apache.avro.generic.GenericData
-import org.apache.avro.{Schema, SchemaBuilder}
+import org.apache.avro.Schema
 
 import scala.language.experimental.macros
 
@@ -56,53 +53,15 @@ trait ResolvableEncoder[T] extends Encoder[T] {
 }
 
 object Encoder
-    extends LowPrio
+    extends MagnoliaDerivedEncoders
+    with ShapelessCoproductEncoders
+    with CollectionAndContainerEncoders
+    with TupleEncoders
+    with ByteIterableEncoders
     with BigDecimalEncoders
     with TupleEncoders
     with TemporalEncoders
     with BaseEncoders {
-
-  implicit val ByteArrayEncoder: Encoder[Array[Byte]] = new ByteArrayEncoderBase {
-    val schemaFor = SchemaFor[Byte].map(SchemaBuilder.array.items(_))
-    def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
-  }
-
-  private def iterableByteEncoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): Encoder[C[Byte]] =
-    new IterableByteEncoder[C](build)
-
-  implicit val ByteListEncoder: Encoder[List[Byte]] = iterableByteEncoder(_.toList)
-  implicit val ByteVectorEncoder: Encoder[Vector[Byte]] = iterableByteEncoder(_.toVector)
-  implicit val ByteSeqEncoder: Encoder[Seq[Byte]] = iterableByteEncoder(_.toSeq)
-
-  private sealed trait ByteArrayEncoderBase extends Encoder[Array[Byte]] {
-    override def withSchema(schemaFor: SchemaFor[Array[Byte]]): Encoder[Array[Byte]] =
-      schemaFor.schema.getType match {
-        case Schema.Type.BYTES => ByteArrayEncoder
-        case Schema.Type.FIXED => new FixedByteArrayEncoder(schemaFor)
-        case _                 => sys.error(s"Byte array codec doesn't support schema type ${schemaFor.schema.getType}")
-      }
-  }
-
-  private class FixedByteArrayEncoder(val schemaFor: SchemaFor[Array[Byte]]) extends ByteArrayEncoderBase {
-    require(schema.getType == Schema.Type.FIXED)
-
-    def encode(value: Array[Byte]): AnyRef = {
-      val array = new Array[Byte](schema.getFixedSize)
-      System.arraycopy(value, 0, array, 0, value.length)
-      GenericData.get.createFixed(null, array, schema)
-    }
-  }
-
-  private class IterableByteEncoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte],
-                                                         byteArrayEncoder: Encoder[Array[Byte]] = ByteArrayEncoder)
-    extends Encoder[C[Byte]] {
-
-    val schemaFor: SchemaFor[C[Byte]] = byteArrayEncoder.schemaFor.forType
-    def encode(value: C[Byte]): AnyRef = byteArrayEncoder.encode(value.toArray)
-
-    override def withSchema(schemaFor: SchemaFor[C[Byte]]): Encoder[C[Byte]] =
-      new IterableByteEncoder(build, byteArrayEncoder.withSchema(schemaFor.map(identity)))
-  }
 
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder.apply()
 
@@ -125,8 +84,6 @@ object Encoder
     def comap[S](f: S => T): Encoder[S] = new DelegatingEncoder(encoder, encoder.schemaFor.forType, f)
   }
 }
-
-trait LowPrio extends CollectionAndContainerEncoders with MagnoliaDerivedEncoders with ShapelessCoproductEncoders
 
 object EncoderHelpers {
   def buildWithSchema[T](encoderRec: Encoder[T], schemaFor: SchemaFor[T]): Encoder[T] =
