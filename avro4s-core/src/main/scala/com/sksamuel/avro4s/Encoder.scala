@@ -25,6 +25,12 @@ trait Encoder[T] extends SchemaAware[Encoder, T] with Serializable { self =>
     */
   def encode(value: T): AnyRef
 
+  /**
+    * Creates a variant of this Encoder using the given schema (e.g. to use a fixed schema for byte arrays instead of
+    * the default bytes schema)
+    *
+    * @param schemaFor the schema to use
+    */
   def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
     val sf = schemaFor
     new Encoder[T] {
@@ -34,17 +40,52 @@ trait Encoder[T] extends SchemaAware[Encoder, T] with Serializable { self =>
     }
   }
 
+  /**
+    * produces an Encoder that is guaranteed to be resolved and ready to be used.
+    *
+    * This is necessary for properly setting up Encoder instances for recursive types.
+    */
+  def resolveEncoder(): Encoder[T] = resolveEncoder(DefinitionEnvironment.empty, NoUpdate)
+
+  /**
+    * For advanced use only to properly setup Encoder instances for recursive types.
+    *
+    * Resolves the Encoder with the provided environment, and (potentially) pushes down overrides from annotations on
+    * sealed traits to case classes, or from annotations on parameters to types.
+    *
+    * @param env definition environment containing already defined record encoders
+    * @param update schema changes to apply
+    */
   def resolveEncoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T] = (self, update) match {
     case (resolvable: ResolvableEncoder[T], _) => resolvable.encoder(env, update)
     case (_, FullSchemaUpdate(sf))             => self.withSchema(sf.forType)
     case _                                     => self
   }
 
-  def resolveEncoder(): Encoder[T] = resolveEncoder(DefinitionEnvironment.empty, NoUpdate)
 }
 
+/**
+  * An Encoder that needs to be resolved before it is usable. Resolution is needed to properly setup Encoder instances
+  * for recursive types.
+  *
+  * If this instance is used without resolution, it falls back to use an adhoc-resolved instance and delegates all
+  * operations to it. This involves a performance penalty of lazy val access that can be avoided by
+  * calling [[Encoder.resolveEncoder]] and using that.
+  *
+  * For examples on how to define custom ResolvableEncoder instances, see the Readme and RecursiveEncoderTest.
+  *
+  * @tparam T type this encoder is for (primitive type, case class, sealed trait, or enum e.g.).
+  */
 trait ResolvableEncoder[T] extends Encoder[T] {
 
+  /**
+    * Creates an Encoder instance (and applies schema changes given) or returns an already existing value from the
+    * given definition environment.
+    *
+    * @param env definition environment to use
+    * @param update schema update to apply
+    * @return either an already existing value from env or a new created instance.
+    */
   def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T]
 
   lazy val adhocInstance = encoder(DefinitionEnvironment.empty, NoUpdate)

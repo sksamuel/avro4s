@@ -26,19 +26,58 @@ trait SchemaFor[T] extends Serializable {
     */
   def map[U](fn: Schema => Schema): SchemaFor[U] = SchemaFor[U](fn(schema), fieldMapper)
 
+  /**
+    * Changes the type of this SchemaFor to the desired type `U` without any other modifications.
+    * @tparam U new type for SchemaFor.
+    */
   def forType[U]: SchemaFor[U] = map[U](identity)
 
+  /**
+    * produces a SchemaFor that is guaranteed to be resolved and ready to be used.
+    *
+    * This is necessary for properly setting up SchemaFor instances for recursive types.
+    */
+  def resolveSchemaFor(): SchemaFor[T] = resolveSchemaFor(DefinitionEnvironment.empty, NoUpdate)
+
+  /**
+    * For advanced use only to properly setup SchemaFor instances for recursive types.
+    *
+    * Resolves the SchemaFor with the provided environment, and (potentially) pushes down overrides from annotations on
+    * sealed traits to case classes, or from annotations on parameters to types.
+    *
+    * @param env definition environment containing already defined record schemas
+    * @param update schema changes to apply
+    */
   def resolveSchemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T] =
     (self, update) match {
       case (resolvable: ResolvableSchemaFor[T], _) => resolvable.schemaFor(env, update)
       case (_, FullSchemaUpdate(sf))               => sf.forType
       case _                                       => self
     }
-
-  def resolveSchemaFor(): SchemaFor[T] = resolveSchemaFor(DefinitionEnvironment.empty, NoUpdate)
 }
 
+/**
+  * A SchemaFor that needs to be resolved before it is usable. Resolution is needed to properly setup SchemaFor instances
+  * for recursive types.
+  *
+  * If this instance is used without resolution, it falls back to use an adhoc-resolved instance and delegates all
+  * operations to it. This involves a performance penalty of lazy val access that can be avoided by
+  * calling [[SchemaFor.resolveSchemaFor]] and using that.
+  *
+  * For examples on how to define custom ResolvableSchemaFor instances, see the Readme and RecursiveSchemaTest.
+  *
+  * @tparam T type this schema is for (primitive type, case class, sealed trait, or enum e.g.).
+  */
 trait ResolvableSchemaFor[T] extends SchemaFor[T] {
+
+  /**
+    * Creates a SchemaFor instance (and applies schema changes given) or returns an already existing value from the
+    * given definition environment.
+    *
+    * @param env definition environment to use
+    * @param update schema update to apply
+    * @return either an already existing value from env or a new created instance.
+    */
   def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T]
 
   lazy val adhocInstance = schemaFor(DefinitionEnvironment.empty, NoUpdate)

@@ -28,6 +28,12 @@ trait Decoder[T] extends SchemaAware[Decoder, T] with Serializable { self =>
     */
   def decode(value: Any): T
 
+  /**
+    * Creates a variant of this Decoder using the given schema (e.g. to use a fixed schema for byte arrays instead of
+    * the default bytes schema)
+    *
+    * @param schemaFor the schema to use
+    */
   def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
     val sf = schemaFor
     new Decoder[T] {
@@ -36,17 +42,52 @@ trait Decoder[T] extends SchemaAware[Decoder, T] with Serializable { self =>
     }
   }
 
+  /**
+    * produces a Decoder that is guaranteed to be resolved and ready to be used.
+    *
+    * This is necessary for properly setting up Decoder instances for recursive types.
+    */
+  def resolveDecoder(): Decoder[T] = resolveDecoder(DefinitionEnvironment.empty, NoUpdate)
+
+  /**
+    * For advanced use only to properly setup Decoder instances for recursive types.
+    *
+    * Resolves the Decoder with the provided environment, and (potentially) pushes down overrides from annotations on
+    * sealed traits to case classes, or from annotations on parameters to types.
+    *
+    * @param env definition environment containing already defined record encoders
+    * @param update schema changes to apply
+    */
   def resolveDecoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T] = (self, update) match {
     case (resolvable: ResolvableDecoder[T], _) => resolvable.decoder(env, update)
     case (_, FullSchemaUpdate(sf))             => self.withSchema(sf.forType)
     case _                                     => self
   }
 
-  def resolveDecoder(): Decoder[T] = resolveDecoder(DefinitionEnvironment.empty, NoUpdate)
 }
 
+/**
+  * A Decoder that needs to be resolved before it is usable. Resolution is needed to properly setup Decoder instances
+  * for recursive types.
+  *
+  * If this instance is used without resolution, it falls back to use an adhoc-resolved instance and delegates all
+  * operations to it. This involves a performance penalty of lazy val access that can be avoided by
+  * calling [[Encoder.resolveEncoder]] and using that.
+  *
+  * For examples on how to define custom ResolvableDecoder instances, see the Readme and RecursiveDecoderTest.
+  *
+  * @tparam T type this encoder is for (primitive type, case class, sealed trait, or enum e.g.).
+  */
 trait ResolvableDecoder[T] extends Decoder[T] {
 
+  /**
+    * Creates a Decoder instance (and applies schema changes given) or returns an already existing value from the
+    * given definition environment.
+    *
+    * @param env definition environment to use
+    * @param update schema update to apply
+    * @return either an already existing value from env or a new created instance.
+    */
   def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T]
 
   lazy val adhocInstance = decoder(DefinitionEnvironment.empty, NoUpdate)
