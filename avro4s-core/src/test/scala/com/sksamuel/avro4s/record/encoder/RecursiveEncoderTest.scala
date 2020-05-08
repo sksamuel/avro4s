@@ -87,6 +87,57 @@ class RecursiveEncoderTest extends AnyWordSpec with Matchers {
       Encoder[TVTree[Int]].encode(tree) shouldBe avro
     }
 
+    "support custom definitions" in {
+      // custom encoders for recursive types need to participate in forming a cyclic reference graph of encoders.
+      // this requires organizing the code carefully.
+
+      // First important steps:
+      // 1. use implicit so that Encoder.apply[Recursive.Tree[Int]] below picks this resolvable encoder for encoding branches.
+      // 2. use def so that the recursive expression compiles.
+      implicit def branchEncoder: Encoder[Recursive.Branch[Int]] = new ResolvableEncoder[Recursive.Branch[Int]] {
+
+        def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[Branch[Int]] =
+          // lookup in the definition environment whether we already have created an encoder for branch.
+          env.get[Recursive.Branch[Int]].getOrElse {
+
+            // use var here to first create an acyclic graph and close it later.
+            var treeEncoder: Encoder[Recursive.Tree[Int]] = null
+
+            // create a partially initialized encoder for branches (it lacks a value for treeEncoder on creation).
+            val encoder = new Encoder[Recursive.Branch[Int]] {
+              val schemaFor: SchemaFor[Branch[Int]] = SchemaFor[Branch[Int]]
+
+              // swaps left & right
+              def encode(value: Branch[Int]): AnyRef =
+                ImmutableRecord(schema, Seq(treeEncoder.encode(value.right), treeEncoder.encode(value.left)))
+            }
+
+            // extend the definition environment with the newly created encoder so that subsequent lookups can return it
+            val nextEnv = env.updated(encoder)
+
+            // 1. resolve the tree encoder with the extended environment;  the extended env will be passed back to the
+            //    lookup performed above.
+            // 2. complete the initialization by closing the reference cycle: the branch encoder and tree encoder now
+            //    mutually reference each other.
+            treeEncoder = Encoder.apply[Recursive.Tree[Int]].resolveEncoder(nextEnv, update)
+            encoder
+          }
+      }
+
+      // summon encoder for tree and kick off encoder resolution.
+      val encoder = Encoder[Recursive.Tree[Int]].resolveEncoder()
+
+      val tree = Branch(Leaf(1), Branch(Leaf(2), Leaf(3)))
+
+      val branch = AvroSchema[Branch[Int]]
+      val leaf = AvroSchema[Leaf[Int]]
+      val avro = record(branch, record(branch, record(leaf, 3), record(leaf, 2)), record(leaf, 1))
+
+      // use the resolved encoder.
+      encoder.encode(tree) shouldBe avro
+    }
+  }
+
   def record(schema: Schema, values: Any*): ImmutableRecord = ImmutableRecord(schema, values.map(asAvro))
 
   def list(values: Any*) = values.map(asAvro).asJava
@@ -99,4 +150,4 @@ class RecursiveEncoderTest extends AnyWordSpec with Matchers {
     case o: AnyRef => o
     case null      => null
   }
-}}
+}
