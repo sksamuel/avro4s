@@ -35,42 +35,47 @@ object ScalaEnums {
     builder(data)
   }
 
-  // TODO reduce type params
-  private abstract class BaseCodec[Typeclass[_], T](data: CodecData[Typeclass, T]) extends SchemaAware[Typeclass, T] {
-
+  private class EnumDecoder[T](data: CodecData[Decoder, T]) extends Decoder[T] {
     val schemaFor = data.schemaFor
 
     import data._
-
-    def encode(value: T): AnyRef = ctx.dispatch(value)(symbolForSubtype)
 
     def decode(value: Any): T = value match {
       case e: GenericEnumSymbol[_] => valueForSymbol(e.toString)
       case s: String               => valueForSymbol(s)
     }
 
-    protected def validateSchema(schemaFor: SchemaFor[T]): Unit = {
-      val newSchema = schemaFor.schema
-      require(newSchema.getType == Schema.Type.ENUM,
-              s"Schema type for enum codecs must be ENUM, received ${newSchema.getType}")
-      val currentSymbols = valueForSymbol.keys.toSet
-      val newSymbols = newSchema.getEnumSymbols.asScala.toSet
-      require(
-        newSymbols == currentSymbols,
-        s"Enum codec symbols cannot be changed via schema; schema symbols are ${newSymbols.mkString(",")} - codec symbols are $currentSymbols"
-      )
-    }
-  }
-
-  private class EnumDecoder[T](data: CodecData[Decoder, T]) extends BaseCodec[Decoder, T](data) with Decoder[T] {
-
     override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
-      validateSchema(schemaFor)
+      validateSchema(schemaFor, data.valueForSymbol)
       super.withSchema(schemaFor)
     }
   }
 
-  private class EnumEncoder[T](data: CodecData[Encoder, T]) extends BaseCodec[Encoder, T](data) with Encoder[T]
+  private class EnumEncoder[T](data: CodecData[Encoder, T]) extends Encoder[T] {
+    val schemaFor = data.schemaFor
+
+    import data._
+
+    def encode(value: T): AnyRef = ctx.dispatch(value)(symbolForSubtype)
+
+    override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
+      validateSchema(schemaFor, data.valueForSymbol)
+      super.withSchema(schemaFor)
+    }
+  }
+
+  private def validateSchema[T](schemaFor: SchemaFor[T], valueForSymbol: Map[String, T]): Unit = {
+    val newSchema = schemaFor.schema
+    require(newSchema.getType == Schema.Type.ENUM,
+      s"Schema type for enum codecs must be ENUM, received ${newSchema.getType}")
+    val currentSymbols = valueForSymbol.keys.toSet
+    val newSymbols = newSchema.getEnumSymbols.asScala.toSet
+    require(
+      newSymbols == currentSymbols,
+      s"Enum codec symbols cannot be changed via schema; schema symbols are ${newSymbols.mkString(",")} - codec symbols are $currentSymbols"
+    )
+  }
+
 
   private class CodecData[Typeclass[_], T](val ctx: SealedTrait[Typeclass, T],
                                            val symbolForSubtype: Map[Subtype[Typeclass, T], AnyRef],
