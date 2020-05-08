@@ -378,11 +378,10 @@ trait BaseDecoders {
   }
 
   class ScalaEnumDecoder[E <: Enumeration#Value](implicit tag: TypeTag[E]) extends Decoder[E] {
-    val mirror: Mirror = runtimeMirror(getClass.getClassLoader)
-
     val enum = tag.tpe match {
       case TypeRef(enumType, _, _) =>
         val moduleSymbol = enumType.termSymbol.asModule
+        val mirror: Mirror = runtimeMirror(getClass.getClassLoader)
         mirror.reflectModule(moduleSymbol).instance.asInstanceOf[Enumeration]
     }
 
