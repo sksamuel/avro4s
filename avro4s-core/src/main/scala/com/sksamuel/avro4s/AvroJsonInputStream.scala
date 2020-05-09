@@ -12,7 +12,9 @@ final case class AvroJsonInputStream[T](in: InputStream,
                                         writerSchema: Schema)
                                        (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
-  private val datumReader = new DefaultAwareDatumReader[GenericRecord](writerSchema, decoder.schema)
+  val resolved = decoder.resolveDecoder()
+
+  private val datumReader = new DefaultAwareDatumReader[GenericRecord](writerSchema, resolved.schema)
   private val jsonDecoder = DecoderFactory.get.jsonDecoder(writerSchema, in)
 
   private def next = Try {
@@ -22,14 +24,14 @@ final case class AvroJsonInputStream[T](in: InputStream,
   def iterator: Iterator[T] = Iterator.continually(next)
     .takeWhile(_.isSuccess)
     .map(_.get)
-    .map(decoder.decode(_))
+    .map(resolved.decode(_))
 
   def tryIterator: Iterator[Try[T]] = Iterator.continually(next)
     .takeWhile(_.isSuccess)
     .map(_.get)
-    .map(record => Try(decoder.decode(record)))
+    .map(record => Try(resolved.decode(record)))
 
-  def singleEntity: Try[T] = next.map(decoder.decode(_))
+  def singleEntity: Try[T] = next.map(resolved.decode(_))
 
   override def close(): Unit = in.close()
 }

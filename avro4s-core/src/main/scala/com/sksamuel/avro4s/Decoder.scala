@@ -1,10 +1,7 @@
 package com.sksamuel.avro4s
 
-import java.nio.ByteBuffer
-
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NoUpdate}
-import org.apache.avro.generic.GenericFixed
-import org.apache.avro.{Schema, SchemaBuilder}
+import org.apache.avro.Schema
 
 import scala.language.experimental.macros
 
@@ -23,7 +20,7 @@ import scala.language.experimental.macros
   * A final example is converting a GenericData.Array or a Java collection type
   * into a Scala collection type.
   */
-trait Decoder[T] extends Resolvable[Decoder, T] with SchemaAware[Decoder, T] with Serializable { self =>
+trait Decoder[T] extends SchemaAware[Decoder, T] with Serializable { self =>
 
   /**
     * Decodes the given value to an instance of T if possible.
@@ -31,6 +28,12 @@ trait Decoder[T] extends Resolvable[Decoder, T] with SchemaAware[Decoder, T] wit
     */
   def decode(value: Any): T
 
+  /**
+    * Creates a variant of this Decoder using the given schema (e.g. to use a fixed schema for byte arrays instead of
+    * the default bytes schema)
+    *
+    * @param schemaFor the schema to use
+    */
   def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
     val sf = schemaFor
     new Decoder[T] {
@@ -39,78 +42,74 @@ trait Decoder[T] extends Resolvable[Decoder, T] with SchemaAware[Decoder, T] wit
     }
   }
 
-  def apply(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T] = (self, update) match {
-    case (unresolved: ResolvableDecoder[T], _) => unresolved.resolve(env, update)
+  /**
+    * produces a Decoder that is guaranteed to be resolved and ready to be used.
+    *
+    * This is necessary for properly setting up Decoder instances for recursive types.
+    */
+  def resolveDecoder(): Decoder[T] = resolveDecoder(DefinitionEnvironment.empty, NoUpdate)
+
+  /**
+    * For advanced use only to properly setup Decoder instances for recursive types.
+    *
+    * Resolves the Decoder with the provided environment, and (potentially) pushes down overrides from annotations on
+    * sealed traits to case classes, or from annotations on parameters to types.
+    *
+    * @param env definition environment containing already defined record encoders
+    * @param update schema changes to apply
+    */
+  def resolveDecoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T] = (self, update) match {
+    case (resolvable: ResolvableDecoder[T], _) => resolvable.decoder(env, update)
     case (_, FullSchemaUpdate(sf))             => self.withSchema(sf.forType)
     case _                                     => self
   }
+
 }
 
+/**
+  * A Decoder that needs to be resolved before it is usable. Resolution is needed to properly setup Decoder instances
+  * for recursive types.
+  *
+  * If this instance is used without resolution, it falls back to use an adhoc-resolved instance and delegates all
+  * operations to it. This involves a performance penalty of lazy val access that can be avoided by
+  * calling [[Encoder.resolveEncoder]] and using that.
+  *
+  * For examples on how to define custom ResolvableDecoder instances, see the Readme and RecursiveDecoderTest.
+  *
+  * @tparam T type this encoder is for (primitive type, case class, sealed trait, or enum e.g.).
+  */
 trait ResolvableDecoder[T] extends Decoder[T] {
 
-  def resolve(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T]
+  /**
+    * Creates a Decoder instance (and applies schema changes given) or returns an already existing value from the
+    * given definition environment.
+    *
+    * @param env definition environment to use
+    * @param update schema update to apply
+    * @return either an already existing value from env or a new created instance.
+    */
+  def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T]
 
-  lazy val adhocInstance = resolve(DefinitionEnvironment.empty, NoUpdate)
+  lazy val adhocInstance = decoder(DefinitionEnvironment.empty, NoUpdate)
 
   def decode(value: Any): T = adhocInstance.decode(value)
 
   def schemaFor: SchemaFor[T] = adhocInstance.schemaFor
+
+  override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = adhocInstance.withSchema(schemaFor)
 }
 
 object Decoder
-    extends TupleDecoders
-    with CollectionAndContainerDecoders
+    extends MagnoliaDerivedDecoders
     with ShapelessCoproductDecoders
-    with MagnoliaDerivedDecoders
+    with CollectionAndContainerDecoders
+    with TupleDecoders
+    with ByteIterableDecoders
     with BigDecimalDecoders
     with TemporalDecoders
     with BaseDecoders {
 
-  implicit val ByteArrayDecoder: Decoder[Array[Byte]] = new ByteArrayDecoderBase {
-    val schemaFor = SchemaFor(SchemaBuilder.builder().bytesType())
-  }
-
-  implicit val ByteListDecoder: Decoder[List[Byte]] = iterableByteDecoder(_.toList)
-  implicit val ByteVectorDecoder: Decoder[Vector[Byte]] = iterableByteDecoder(_.toVector)
-  implicit val ByteSeqDecoder: Decoder[Seq[Byte]] = iterableByteDecoder(_.toSeq)
-
-  private def iterableByteDecoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): Decoder[C[Byte]] =
-    new IterableByteDecoder[C](build)
-
-  private sealed trait ByteArrayDecoderBase extends Decoder[Array[Byte]] {
-
-    def decode(value: Any): Array[Byte] = value match {
-      case buffer: ByteBuffer  => buffer.array
-      case array: Array[Byte]  => array
-      case fixed: GenericFixed => fixed.bytes
-      case _                   => sys.error(s"Byte array codec cannot decode '$value'")
-    }
-
-    override def withSchema(schemaFor: SchemaFor[Array[Byte]]): Decoder[Array[Byte]] =
-      schemaFor.schema.getType match {
-        case Schema.Type.BYTES => ByteArrayDecoder
-        case Schema.Type.FIXED => new FixedByteArrayDecoder(schemaFor)
-        case _                 => sys.error(s"Byte array codec doesn't support schema type ${schemaFor.schema.getType}")
-      }
-  }
-
-  private class FixedByteArrayDecoder(val schemaFor: SchemaFor[Array[Byte]]) extends ByteArrayDecoderBase {
-    require(schema.getType == Schema.Type.FIXED)
-  }
-
-  private class IterableByteDecoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte],
-                                                         byteArrayDecoder: Decoder[Array[Byte]] = ByteArrayDecoder)
-      extends Decoder[C[Byte]] {
-
-    val schemaFor: SchemaFor[C[Byte]] = byteArrayDecoder.schemaFor.forType
-
-    def decode(value: Any): C[Byte] = build(byteArrayDecoder.decode(value))
-
-    override def withSchema(schemaFor: SchemaFor[C[Byte]]): Decoder[C[Byte]] =
-      new IterableByteDecoder(build, byteArrayDecoder.withSchema(schemaFor.map(identity)))
-  }
-
-  def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder.apply()
+  def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
   private class DelegatingDecoder[T, S](decoder: Decoder[T], val schemaFor: SchemaFor[S], map: T => S)
       extends Decoder[S] {
@@ -134,7 +133,7 @@ object Decoder
 
 object DecoderHelpers {
   def buildWithSchema[T](decoder: Decoder[T], schemaFor: SchemaFor[T]): Decoder[T] =
-    decoder(DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
+    decoder.resolveDecoder(DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
 
   def mapFullUpdate(f: Schema => Schema, update: SchemaUpdate) = update match {
     case full: FullSchemaUpdate => FullSchemaUpdate(SchemaFor(f(full.schemaFor.schema), full.schemaFor.fieldMapper))

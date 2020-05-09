@@ -1,10 +1,7 @@
 package com.sksamuel.avro4s
 
-import java.nio.ByteBuffer
-
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NoUpdate}
-import org.apache.avro.generic.GenericData
-import org.apache.avro.{Schema, SchemaBuilder}
+import org.apache.avro.Schema
 
 import scala.language.experimental.macros
 
@@ -21,13 +18,19 @@ import scala.language.experimental.macros
   * type Schema.Type.ENUM, the value would be encoded as an instance
   * of GenericData.EnumSymbol.
   */
-trait Encoder[T] extends Resolvable[Encoder, T] with SchemaAware[Encoder, T] with Serializable { self =>
+trait Encoder[T] extends SchemaAware[Encoder, T] with Serializable { self =>
 
   /**
     * Encodes the given value to a value supported by Avro's generic data model
     */
   def encode(value: T): AnyRef
 
+  /**
+    * Creates a variant of this Encoder using the given schema (e.g. to use a fixed schema for byte arrays instead of
+    * the default bytes schema)
+    *
+    * @param schemaFor the schema to use
+    */
   def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
     val sf = schemaFor
     new Encoder[T] {
@@ -37,74 +40,74 @@ trait Encoder[T] extends Resolvable[Encoder, T] with SchemaAware[Encoder, T] wit
     }
   }
 
-  def apply(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T] = (self, update) match {
-    case (unresolved: UnresolvedEncoder[T], _) => unresolved.resolve(env, update)
+  /**
+    * produces an Encoder that is guaranteed to be resolved and ready to be used.
+    *
+    * This is necessary for properly setting up Encoder instances for recursive types.
+    */
+  def resolveEncoder(): Encoder[T] = resolveEncoder(DefinitionEnvironment.empty, NoUpdate)
+
+  /**
+    * For advanced use only to properly setup Encoder instances for recursive types.
+    *
+    * Resolves the Encoder with the provided environment, and (potentially) pushes down overrides from annotations on
+    * sealed traits to case classes, or from annotations on parameters to types.
+    *
+    * @param env definition environment containing already defined record encoders
+    * @param update schema changes to apply
+    */
+  def resolveEncoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T] = (self, update) match {
+    case (resolvable: ResolvableEncoder[T], _) => resolvable.encoder(env, update)
     case (_, FullSchemaUpdate(sf))             => self.withSchema(sf.forType)
     case _                                     => self
   }
+
 }
 
-trait UnresolvedEncoder[T] extends Encoder[T] {
+/**
+  * An Encoder that needs to be resolved before it is usable. Resolution is needed to properly setup Encoder instances
+  * for recursive types.
+  *
+  * If this instance is used without resolution, it falls back to use an adhoc-resolved instance and delegates all
+  * operations to it. This involves a performance penalty of lazy val access that can be avoided by
+  * calling [[Encoder.resolveEncoder]] and using that.
+  *
+  * For examples on how to define custom ResolvableEncoder instances, see the Readme and RecursiveEncoderTest.
+  *
+  * @tparam T type this encoder is for (primitive type, case class, sealed trait, or enum e.g.).
+  */
+trait ResolvableEncoder[T] extends Encoder[T] {
 
-  def resolve(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T]
+  /**
+    * Creates an Encoder instance (and applies schema changes given) or returns an already existing value from the
+    * given definition environment.
+    *
+    * @param env definition environment to use
+    * @param update schema update to apply
+    * @return either an already existing value from env or a new created instance.
+    */
+  def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T]
 
-  lazy val adhocInstance = resolve(DefinitionEnvironment.empty, NoUpdate)
+  lazy val adhocInstance = encoder(DefinitionEnvironment.empty, NoUpdate)
 
   def encode(value: T): AnyRef = adhocInstance.encode(value)
 
   def schemaFor: SchemaFor[T] = adhocInstance.schemaFor
+
+  override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = adhocInstance.withSchema(schemaFor)
 }
 
 object Encoder
-    extends LowPrio
+    extends MagnoliaDerivedEncoders
+    with ShapelessCoproductEncoders
+    with CollectionAndContainerEncoders
+    with ByteIterableEncoders
     with BigDecimalEncoders
     with TupleEncoders
     with TemporalEncoders
     with BaseEncoders {
 
-  implicit val ByteArrayEncoder: Encoder[Array[Byte]] = new ByteArrayEncoderBase {
-    val schemaFor = SchemaFor[Byte].map(SchemaBuilder.array.items(_))
-    def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
-  }
-
-  private def iterableByteEncoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): Encoder[C[Byte]] =
-    new IterableByteEncoder[C](build)
-
-  implicit val ByteListEncoder: Encoder[List[Byte]] = iterableByteEncoder(_.toList)
-  implicit val ByteVectorEncoder: Encoder[Vector[Byte]] = iterableByteEncoder(_.toVector)
-  implicit val ByteSeqEncoder: Encoder[Seq[Byte]] = iterableByteEncoder(_.toSeq)
-
-  private sealed trait ByteArrayEncoderBase extends Encoder[Array[Byte]] {
-    override def withSchema(schemaFor: SchemaFor[Array[Byte]]): Encoder[Array[Byte]] =
-      schemaFor.schema.getType match {
-        case Schema.Type.BYTES => ByteArrayEncoder
-        case Schema.Type.FIXED => new FixedByteArrayEncoder(schemaFor)
-        case _                 => sys.error(s"Byte array codec doesn't support schema type ${schemaFor.schema.getType}")
-      }
-  }
-
-  private class FixedByteArrayEncoder(val schemaFor: SchemaFor[Array[Byte]]) extends ByteArrayEncoderBase {
-    require(schema.getType == Schema.Type.FIXED)
-
-    def encode(value: Array[Byte]): AnyRef = {
-      val array = new Array[Byte](schema.getFixedSize)
-      System.arraycopy(value, 0, array, 0, value.length)
-      GenericData.get.createFixed(null, array, schema)
-    }
-  }
-
-  private class IterableByteEncoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte],
-                                                         byteArrayEncoder: Encoder[Array[Byte]] = ByteArrayEncoder)
-    extends Encoder[C[Byte]] {
-
-    val schemaFor: SchemaFor[C[Byte]] = byteArrayEncoder.schemaFor.forType
-    def encode(value: C[Byte]): AnyRef = byteArrayEncoder.encode(value.toArray)
-
-    override def withSchema(schemaFor: SchemaFor[C[Byte]]): Encoder[C[Byte]] =
-      new IterableByteEncoder(build, byteArrayEncoder.withSchema(schemaFor.map(identity)))
-  }
-
-  def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder.apply()
+  def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 
   private class DelegatingEncoder[T, S](encoder: Encoder[T], val schemaFor: SchemaFor[S], comap: S => T)
       extends Encoder[S] {
@@ -126,11 +129,9 @@ object Encoder
   }
 }
 
-trait LowPrio extends CollectionAndContainerEncoders with MagnoliaDerivedEncoders with ShapelessCoproductEncoders
-
 object EncoderHelpers {
-  def buildWithSchema[T](encoderRec: Encoder[T], schemaFor: SchemaFor[T]): Encoder[T] =
-    encoderRec(DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
+  def buildWithSchema[T](encoder: Encoder[T], schemaFor: SchemaFor[T]): Encoder[T] =
+    encoder.resolveEncoder(DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
 
   def mapFullUpdate(f: Schema => Schema, update: SchemaUpdate) = update match {
     case full: FullSchemaUpdate => FullSchemaUpdate(SchemaFor(f(full.schemaFor.schema), full.schemaFor.fieldMapper))

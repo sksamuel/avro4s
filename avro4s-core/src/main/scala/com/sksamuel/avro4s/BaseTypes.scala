@@ -252,12 +252,12 @@ trait BaseEncoders {
   implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag] = new ScalaEnumEncoder[E]
 
   class JavaEnumEncoder[E <: Enum[E]](implicit tag: ClassTag[E]) extends Encoder[E] {
-    val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchemaFor[E].apply()
+    val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchemaFor[E]
     def encode(value: E): AnyRef = new EnumSymbol(schema, value.name)
   }
 
   class ScalaEnumEncoder[E <: Enumeration#Value](implicit tag: TypeTag[E]) extends Encoder[E] {
-    val schemaFor: SchemaFor[E] = SchemaFor.scalaEnumSchemaFor[E].apply()
+    val schemaFor: SchemaFor[E] = SchemaFor.scalaEnumSchemaFor[E]
     def encode(value: E): AnyRef = new EnumSymbol(schema, value.toString)
   }
 }
@@ -373,20 +373,19 @@ trait BaseDecoders {
   implicit def scalaEnumDecoder[E <: Enumeration#Value: TypeTag] = new ScalaEnumDecoder[E]
 
   class JavaEnumDecoder[E <: Enum[E]](implicit tag: ClassTag[E]) extends Decoder[E] {
-    val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchemaFor[E].apply()
+    val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchemaFor[E]
     def decode(value: Any): E = Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], value.toString)
   }
 
   class ScalaEnumDecoder[E <: Enumeration#Value](implicit tag: TypeTag[E]) extends Decoder[E] {
-    val mirror: Mirror = runtimeMirror(getClass.getClassLoader)
-
     val enum = tag.tpe match {
       case TypeRef(enumType, _, _) =>
         val moduleSymbol = enumType.termSymbol.asModule
+        val mirror: Mirror = runtimeMirror(getClass.getClassLoader)
         mirror.reflectModule(moduleSymbol).instance.asInstanceOf[Enumeration]
     }
 
-    val schemaFor: SchemaFor[E] = SchemaFor.scalaEnumSchemaFor[E].apply()
+    val schemaFor: SchemaFor[E] = SchemaFor.scalaEnumSchemaFor[E]
 
     def decode(value: Any): E = enum.withName(value.toString).asInstanceOf[E]
   }

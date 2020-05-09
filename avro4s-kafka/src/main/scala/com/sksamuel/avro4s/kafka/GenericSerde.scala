@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.kafka
 
 import java.io.ByteArrayOutputStream
 
-import com.sksamuel.avro4s.{AvroFormat, AvroInputStream, AvroOutputStream, BinaryFormat, DataFormat, Decoder, Encoder, JsonFormat, SchemaFor}
+import com.sksamuel.avro4s.{AvroFormat, AvroInputStream, AvroOutputStream, AvroSchema, BinaryFormat, DataFormat, Decoder, Encoder, JsonFormat, SchemaFor}
 import org.apache.avro.Schema
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 
@@ -18,7 +18,7 @@ class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder](avroFormat: AvroFo
   with Serializer[T]
   with Serializable {
 
-  val schema: Schema = SchemaFor[T].schema
+  val schema: Schema = AvroSchema[T]
 
   override def serializer(): Serializer[T] = this
 

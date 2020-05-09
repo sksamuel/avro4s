@@ -8,7 +8,9 @@ class DefaultAvroOutputStream[T](os: OutputStream,
                                  serializer: org.apache.avro.io.Encoder)
                                 (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
 
-  private val datumWriter = new GenericDatumWriter[GenericRecord](encoder.schema)
+  val resolved = encoder.resolveEncoder()
+
+  private val datumWriter = new GenericDatumWriter[GenericRecord](resolved.schema)
 
   override def close(): Unit = {
     flush()
@@ -16,7 +18,7 @@ class DefaultAvroOutputStream[T](os: OutputStream,
   }
 
   override def write(t: T): Unit = {
-    val record = encoder.encode(t).asInstanceOf[GenericRecord]
+    val record = resolved.encode(t).asInstanceOf[GenericRecord]
     datumWriter.write(record, serializer)
   }
 

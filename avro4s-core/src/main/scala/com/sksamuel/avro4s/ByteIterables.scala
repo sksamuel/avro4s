@@ -5,15 +5,22 @@ import java.nio.ByteBuffer
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.apache.avro.generic.{GenericData, GenericFixed}
 
-trait ByteIterableDecoders {
+trait ByteIterableSchemaFors {
+  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
+  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = ByteArraySchemaFor.forType
+  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = ByteArraySchemaFor.forType
+  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = ByteArraySchemaFor.forType
+}
 
-  implicit val ByteListDecoder: Decoder[List[Byte]] = iterableByteDecoder(_.toList)
-  implicit val ByteVectorDecoder: Decoder[Vector[Byte]] = iterableByteDecoder(_.toVector)
-  implicit val ByteSeqDecoder: Decoder[Seq[Byte]] = iterableByteDecoder(_.toSeq)
+trait ByteIterableDecoders {
 
   implicit val ByteArrayDecoder: Decoder[Array[Byte]] = new ByteArrayDecoderBase {
     val schemaFor = SchemaFor[Byte].map(SchemaBuilder.array.items(_))
   }
+
+  implicit val ByteListDecoder: Decoder[List[Byte]] = iterableByteDecoder(_.toList)
+  implicit val ByteVectorDecoder: Decoder[Vector[Byte]] = iterableByteDecoder(_.toVector)
+  implicit val ByteSeqDecoder: Decoder[Seq[Byte]] = iterableByteDecoder(_.toSeq)
 
   private def iterableByteDecoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): Decoder[C[Byte]] =
     new IterableByteDecoder[C](build)

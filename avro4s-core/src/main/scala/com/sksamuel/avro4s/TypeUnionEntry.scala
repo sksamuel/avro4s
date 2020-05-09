@@ -12,7 +12,8 @@ private[avro4s] object TypeUnionEntry {
       def encodeSubtype(value: T): AnyRef = encoder.encode(st.cast(value))
     }
 
-    def apply(env: DefinitionEnvironment[Encoder], update: SchemaUpdate) = new SubtypeEncoder(st.typeclass.apply(env, update))
+    def apply(env: DefinitionEnvironment[Encoder], update: SchemaUpdate) =
+      new SubtypeEncoder(st.typeclass.resolveEncoder(env, update))
   }
 
   class UnionDecoder[T](st: Subtype[Decoder, T]) {
@@ -24,6 +25,7 @@ private[avro4s] object TypeUnionEntry {
       def decodeSubtype(value: Any): T = decoder.decode(value)
     }
 
-    def apply(env: DefinitionEnvironment[Decoder], update: SchemaUpdate) = new SubtypeDecoder(st.typeclass.apply(env, update))
+    def apply(env: DefinitionEnvironment[Decoder], update: SchemaUpdate) =
+      new SubtypeDecoder(st.typeclass.resolveDecoder(env, update))
   }
 }
