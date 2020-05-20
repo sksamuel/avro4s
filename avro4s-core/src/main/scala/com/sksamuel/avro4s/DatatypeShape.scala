@@ -5,7 +5,7 @@ import magnolia.{CaseClass, SealedTrait}
 import scala.reflect.runtime.universe._
 
 object DatatypeShape {
-  def of[TC[_], T: WeakTypeTag](ctx: SealedTrait[TC, T]): SealedTraitShape = {
+  def of[T: WeakTypeTag]: SealedTraitShape = {
     import scala.reflect.runtime.universe
 
     val runtimeMirror = universe.runtimeMirror(Thread.currentThread().getContextClassLoader)
@@ -15,7 +15,7 @@ object DatatypeShape {
     if(allSubtypesAreObjects) SealedTraitShape.ScalaEnum else SealedTraitShape.TypeUnion
   }
 
-  def of[TC[_], T](ctx: CaseClass[TC, T]): CaseClassShape =
+  def of[Typeclass[_], T](ctx: CaseClass[Typeclass, T]): CaseClassShape =
     if(ctx.isValueClass) CaseClassShape.ValueType else CaseClassShape.Record
 }
 

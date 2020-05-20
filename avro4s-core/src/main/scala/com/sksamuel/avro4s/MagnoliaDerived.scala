@@ -13,7 +13,7 @@ trait MagnoliaDerivedSchemaFors {
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[SchemaFor, T]): SchemaFor[T] = new ResolvableSchemaFor[T] {
     def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[T] = {
       env.get[T].getOrElse {
-        DatatypeShape.of(ctx) match {
+        DatatypeShape.of[T] match {
           case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx, env, update)
           case SealedTraitShape.ScalaEnum => SchemaFor[T](ScalaEnums.schema(ctx), DefaultFieldMapper)
         }
@@ -44,7 +44,7 @@ trait MagnoliaDerivedEncoders {
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Encoder, T]): Encoder[T] = new ResolvableEncoder[T] {
     def encoder(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
       env.get[T].getOrElse {
-        DatatypeShape.of(ctx) match {
+        DatatypeShape.of[T] match {
           case SealedTraitShape.TypeUnion => TypeUnions.encoder(ctx, env, update)
           case SealedTraitShape.ScalaEnum => ScalaEnums.encoder(ctx)
         }
@@ -70,7 +70,7 @@ trait MagnoliaDerivedDecoders {
   def dispatch[T: WeakTypeTag](ctx: SealedTrait[Decoder, T]): Decoder[T] = new ResolvableDecoder[T] {
     def decoder(env: DefinitionEnvironment[Typeclass], update: SchemaUpdate): Typeclass[T] =
       env.get[T].getOrElse {
-        DatatypeShape.of(ctx) match {
+        DatatypeShape.of[T] match {
           case SealedTraitShape.TypeUnion => TypeUnions.decoder(ctx, env, update)
           case SealedTraitShape.ScalaEnum => ScalaEnums.decoder(ctx)
         }
