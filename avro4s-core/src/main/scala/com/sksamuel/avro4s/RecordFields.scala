@@ -11,10 +11,14 @@ import org.apache.avro.{Schema, SchemaBuilder}
 object RecordFields {
 
   class FieldEncoder[T](val param: Param[Encoder, T]) extends Serializable {
+    // using inner class here to be able to reference param.PType below, and keep the type relation intact in
+    // the apply() method below.
     class ValueEncoder(encoder: Encoder[param.PType], val fieldName: String) extends Serializable {
       def encodeFieldValue(value: T): AnyRef = encoder.encode(param.dereference(value))
     }
 
+    // using the apply method here to create a ValueEncoder while keeping the types consistent and making sure to
+    // not accidentally capture non-serializable objects as class parameters that are only needed for creating the encoder.
     def apply(env: DefinitionEnvironment[Encoder],
               update: SchemaUpdate,
               record: Schema,
@@ -23,6 +27,9 @@ object RecordFields {
 
       val (encoder, field) = update match {
         case FullSchemaUpdate(sf) =>
+          // in a full schema update, the schema is the leading information and we derive encoder modifications from it.
+          // so we extract the field and create a schema update from its schema and apply it to the encoder
+          // via resolveEncoder.
           val field = extractField(param, sf)
 
           val fieldUpdate = FullSchemaUpdate(SchemaFor(field.schema(), sf.fieldMapper))
@@ -30,6 +37,9 @@ object RecordFields {
           (encoder, field)
 
         case _ =>
+          // Otherwise, we look for annotations on the field (such as AvroFixed or AvroNamespace) and use those to
+          // compute modifications to apply to the encoder.
+          // The field schema is then derived from the encoder schema.
           val encoder = param.typeclass.resolveEncoder(env, fieldUpdate(param, record, fieldMapper))
           (encoder, buildField(param, record, ctx, encoder.schema, fieldMapper))
       }
@@ -39,6 +49,8 @@ object RecordFields {
   }
 
   class FieldDecoder[T](val param: Param[Decoder, T]) extends Serializable {
+    // using inner class here to be able to reference param.PType below, and keep the type relation intact in
+    // the apply() method below.
     class ValueDecoder(decoder: Decoder[param.PType], val fieldName: Option[String], fieldPosition: Int)
         extends Serializable {
 
@@ -69,6 +81,8 @@ object RecordFields {
         }
     }
 
+    // using the apply method here to create a ValueDecoder while keeping the types consistent and making sure to
+    // not accidentally capture non-serializable objects as class parameters that are only needed for creating the decoder.
     def apply(idx: Int,
               env: DefinitionEnvironment[Decoder],
               update: SchemaUpdate,
@@ -79,7 +93,12 @@ object RecordFields {
       val annotations = new AnnotationExtractors(param.annotations)
       val (decoder, field, index) = update match {
         case FullSchemaUpdate(sf) =>
+          // in a full schema update, the schema is the leading information and we derive decoder modifications from it.
+          // so we extract the field and create a schema update from its schema and apply it to the decoder
+          // via resolveDecoder.
+
           val (field, fieldUpdate, index) = if (annotations.transient) {
+            // transient annotations still win over schema overrides.
             (None, NoUpdate, -1)
           } else {
             val field = extractField(param, sf)
@@ -90,10 +109,14 @@ object RecordFields {
           (decoder, field, index)
 
         case _ =>
+          // Otherwise, we look for annotations on the field (such as AvroFixed or AvroNamespace) and use those to
+          // compute modifications to apply to the decoder.
+          // The field schema is then derived from the decoder schema.
           val decoder = param.typeclass.resolveDecoder(env, fieldUpdate(param, record, fieldMapper))
           if (annotations.transient) (decoder, None, -1)
           else {
             val field = buildField(param, record, ctx, decoder.schema, fieldMapper)
+            // idx is the index position of the magnolia param (derived from the Scala case class)
             (decoder, Some(field), idx)
           }
       }
