@@ -11,18 +11,18 @@ import org.apache.avro.specific.SpecificRecord
 trait Record extends GenericRecord with SpecificRecord
 
 case class ImmutableRecord(schema: Schema, values: Seq[AnyRef]) extends Record {
-  require(schema.getType == Schema.Type.RECORD, "Cannot create an ImmutableRecord with a schema that is not a RECORD")
 
-  import scala.collection.JavaConverters._
+  require(schema.getType == Schema.Type.RECORD, "Cannot create an ImmutableRecord with a schema that is not a RECORD")
+  require(schema.getFields.size == values.size,
+    s"Schema field size (${schema.getFields.size}) and value Seq size (${values.size}) must match")
 
   override def put(key: String, v: scala.Any): Unit = throw new UnsupportedOperationException("This implementation of Record is immutable")
   override def put(i: Int, v: scala.Any): Unit = throw new UnsupportedOperationException("This implementation of Record is immutable")
 
   override def get(key: String): AnyRef = {
-    val index = schema.getFields.asScala.indexWhere(_.name == key)
-    if (index == -1)
-      sys.error(s"Field $key does not exist in this record (schema=$schema, values=$values)")
-    get(index)
+    val field = schema.getField(key)
+    if (field == null) sys.error(s"Field $key does not exist in this record (schema=$schema, values=$values)")
+    values(field.pos)
   }
 
   override def get(i: Int): AnyRef = values(i)
