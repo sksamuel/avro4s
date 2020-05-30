@@ -340,11 +340,11 @@ object Decoder {
 
   implicit def scalaEnumDecoder[E <: Enumeration#Value](implicit tag: WeakTypeTag[E]) = new Decoder[E] {
 
-    val mirror: Mirror = runtimeMirror(Thread.currentThread().getContextClassLoader)
 
     val enum = tag.tpe match {
       case TypeRef(enumType, _, _) =>
         val moduleSymbol = enumType.termSymbol.asModule
+        val mirror: Mirror = runtimeMirror(Thread.currentThread().getContextClassLoader)
         mirror.reflectModule(moduleSymbol).instance.asInstanceOf[Enumeration]
     }
 
