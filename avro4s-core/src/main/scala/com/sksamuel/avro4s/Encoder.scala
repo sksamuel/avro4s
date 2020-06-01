@@ -1,7 +1,8 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NoUpdate}
-import org.apache.avro.Schema
+import org.apache.avro.{Schema, SchemaBuilder}
+import org.apache.avro.generic.GenericData
 
 import scala.language.experimental.macros
 
@@ -118,6 +119,45 @@ object Encoder
       // pass through schema so that underlying encoder performs desired transformations.
       val modifiedEncoder = encoder.withSchema(schemaFor.forType)
       new DelegatingEncoder[T, S](modifiedEncoder, schemaFor.forType, comap)
+    }
+  }
+
+  case class EncoderField[T](name: String, schema: Schema, extractor: T => Any)
+
+  object EncoderField {
+    def string[T](name: String, extractor: T => Any) = EncoderField(name, Schema.create(Schema.Type.STRING), extractor)
+    def boolean[T](name: String, extractor: T => Any) = EncoderField(name, Schema.create(Schema.Type.BOOLEAN), extractor)
+    def double[T](name: String, extractor: T => Any) = EncoderField(name, Schema.create(Schema.Type.DOUBLE), extractor)
+    def int[T](name: String, extractor: T => Any) = EncoderField(name, Schema.create(Schema.Type.FLOAT), extractor)
+  }
+
+  def record[T](name: String,
+                namespace: String,
+                doc: Option[String] = None,
+                aliases: Seq[String] = Seq.empty,
+                props: Map[String, String] = Map.empty)
+               (fn: => List[EncoderField[T]]): Encoder[T] = {
+
+    val builder = SchemaBuilder.record(name).namespace(namespace)
+    doc.foreach(builder.doc)
+    if (aliases.nonEmpty) builder.aliases(aliases: _*)
+    props.foreach { case (key, value) => builder.prop(key, value) }
+    val fields = fn
+    val recordSchema = fields.foldLeft(builder.fields()) { case (acc, field) =>
+      acc.name(field.name).`type`(field.schema).noDefault()
+    }.endRecord()
+
+    new Encoder[T] {
+
+      override def encode(value: T): AnyRef = {
+        val record = new GenericData.Record(recordSchema)
+        for (field <- fields) {
+          record.put(field.name, field.extractor(value))
+        }
+        record
+      }
+
+      override def schemaFor: SchemaFor[T] = SchemaFor(recordSchema)
     }
   }
 
