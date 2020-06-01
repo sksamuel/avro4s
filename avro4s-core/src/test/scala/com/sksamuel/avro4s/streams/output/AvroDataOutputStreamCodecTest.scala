@@ -16,7 +16,7 @@ class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
   "AvroDataOutputStream" should {
     "include schema" in {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.data[Composer].to(baos).build(schema)
+      val output = AvroOutputStream.data[Composer].to(baos).build()
       output.write(ennio)
       output.close()
       new String(baos.toByteArray) should include("birthplace")
@@ -25,7 +25,7 @@ class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
 
     "include deflate coded in metadata when serialized with deflate" in {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.deflateCodec(CodecFactory.DEFAULT_DEFLATE_LEVEL)).build(schema)
+      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.deflateCodec(CodecFactory.DEFAULT_DEFLATE_LEVEL)).build()
       output.write(ennio)
       output.close()
       new String(baos.toByteArray) should include("deflate")
@@ -33,7 +33,7 @@ class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
 
     "include bzip2 coded in metadata when serialized with bzip2" in {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.bzip2Codec).build(schema)
+      val output = AvroOutputStream.data[Composer].to(baos).withCodec(CodecFactory.bzip2Codec).build()
       output.write(ennio)
       output.close()
       new String(baos.toByteArray) should include("bzip2")

@@ -24,6 +24,6 @@ class GithubIssue485 extends AnyFunSuite with Matchers {
     val schema = AvroSchema[CPWrapper]
     val record = new GenericData.Record(schema)
     record.put("u", new Utf8("wibble"))
-    decoder.decode(record, schema, DefaultFieldMapper) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
+    decoder.decode(record) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
   }
 }

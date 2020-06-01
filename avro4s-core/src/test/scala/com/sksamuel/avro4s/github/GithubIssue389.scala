@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.github
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, Encoder}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, Encoder}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -23,11 +23,7 @@ class GithubIssue389 extends AnyWordSpec with Matchers {
 
     "encode to an iso formatted String" in {
       def testEncode(datetime: OffsetDateTime): Unit = {
-        val encoded = Encoder[OffsetDateTime].encode(
-          datetime,
-          AvroSchema[OffsetDateTime],
-          DefaultFieldMapper
-        )
+        val encoded = Encoder[OffsetDateTime].encode(datetime)
         encoded shouldBe datetime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
       }
       testEncode(NOW)
@@ -38,11 +34,7 @@ class GithubIssue389 extends AnyWordSpec with Matchers {
     "decode an iso formatted String to an equivalent OffsetDatetime object" in {
       def testDecode(datetime: OffsetDateTime): Unit = {
         val dateTimeString = datetime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-        val decoder = Decoder[OffsetDateTime].decode(
-          dateTimeString,
-          AvroSchema[OffsetDateTime],
-          DefaultFieldMapper
-        )
+        val decoder = Decoder[OffsetDateTime].decode(dateTimeString)
         decoder shouldBe datetime
       }
       testDecode(NOW)
@@ -52,16 +44,8 @@ class GithubIssue389 extends AnyWordSpec with Matchers {
 
     "round trip encode and decode into an equivalent object" in {
       def testRoundTrip(datetime: OffsetDateTime): Unit = {
-        val encoded = Encoder[OffsetDateTime].encode(
-          datetime,
-          AvroSchema[OffsetDateTime],
-          DefaultFieldMapper
-        )
-        val decoded = Decoder[OffsetDateTime].decode(
-          encoded,
-          AvroSchema[OffsetDateTime],
-          DefaultFieldMapper
-        )
+        val encoded = Encoder[OffsetDateTime].encode(datetime)
+        val decoded = Decoder[OffsetDateTime].decode(encoded)
         decoded shouldBe datetime
       }
       testRoundTrip(NOW)

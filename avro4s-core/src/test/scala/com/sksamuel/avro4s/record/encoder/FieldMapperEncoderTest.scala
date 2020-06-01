@@ -8,9 +8,10 @@ import org.scalatest.matchers.should.Matchers
 class FieldMapperEncoderTest extends AnyFunSuite with Matchers {
 
   test("adding an in scope FieldMapper should overide the fields in an encoder") {
-    val schema = SchemaFor[NamingTest].schema(SnakeCase)
+    implicit val fieldMapper = SnakeCase
+    val schema: SchemaFor[NamingTest] = SchemaFor[NamingTest]
     val encoder = Encoder[NamingTest]
-    val record = encoder.encode(NamingTest("Foo"), schema, SnakeCase).asInstanceOf[GenericRecord]
+    val record = encoder.encode(NamingTest("Foo")).asInstanceOf[GenericRecord]
     record.get("camel_case")
   }
 

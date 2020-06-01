@@ -4,8 +4,8 @@ import eu.timepit.refined.api.{RefType, Validate}
 
 package object refined {
 
-  implicit def refinedSchemaFor[T: SchemaFor, P, F[_, _]]: SchemaFor[F[T, P]] =
-    (fieldMapper: FieldMapper) => SchemaFor[T].schema(fieldMapper)
+  implicit def refinedSchemaFor[T, P, F[_, _]](implicit schemaFor: SchemaFor[T]): SchemaFor[F[T, P]] =
+    schemaFor.forType
 
   implicit def refinedEncoder[T: Encoder, P, F[_, _] : RefType]: Encoder[F[T, P]] =
     Encoder[T].comap(RefType[F].unwrap)

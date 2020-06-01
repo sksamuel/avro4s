@@ -1,0 +1,16 @@
+{
+  "type" : "record",
+  "name" : "MapTree__Int",
+  "namespace" : "com.sksamuel.avro4s.Recursive",
+  "fields" : [ {
+    "name" : "value",
+    "type" : "int"
+  }, {
+    "name" : "children",
+    "type" : {
+      "type" : "map",
+      "values" : "MapTree__Int"
+    },
+    "default":{}
+  } ]
+}

@@ -18,11 +18,11 @@ class Github202 extends AnyFunSuite with Matchers {
 
     val v1 = Version1("hello")
     val baos = new ByteArrayOutputStream()
-    val output = AvroOutputStream.data[Version1].to(baos).build(AvroSchema[Version1])
+    val output = AvroOutputStream.data[Version1].to(baos).build()
     output.write(v1)
     output.close()
 
-    val is = AvroInputStream.data[Version2].from(baos.toByteArray).build(AvroSchema[Version1], AvroSchema[Version2])
+    val is = AvroInputStream.data[Version2].from(baos.toByteArray).build(AvroSchema[Version1])
     val v2 = is.iterator.toList.head
     is.close()
 

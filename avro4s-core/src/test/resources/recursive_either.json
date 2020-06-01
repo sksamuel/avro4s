@@ -1,0 +1,19 @@
+[ {
+  "type" : "record",
+  "name" : "EitherBranch__Int",
+  "namespace" : "com.sksamuel.avro4s.Recursive",
+  "fields" : [ {
+    "name" : "left",
+    "type" : [ "EitherBranch__Int", {
+      "type" : "record",
+      "name" : "EitherLeaf__Int",
+      "fields" : [ {
+        "name" : "value",
+        "type" : "int"
+      } ]
+    } ]
+  }, {
+    "name" : "right",
+    "type" : [ "EitherBranch__Int", "EitherLeaf__Int" ]
+  } ]
+}, "com.sksamuel.avro4s.Recursive.EitherLeaf__Int" ]

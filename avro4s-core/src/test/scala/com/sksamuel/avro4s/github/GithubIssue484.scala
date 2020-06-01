@@ -25,6 +25,6 @@ class GithubIssue484 extends AnyFunSuite with Matchers {
     val schema = AvroSchema[ScalaEnumClass]
     val record = new GenericData.Record(schema)
     record.put("colour", new EnumSymbol(schema.getField("colour").schema(), "Green"))
-    decoder.decode(record, schema, DefaultFieldMapper) shouldBe ScalaEnumClass(Colours.Green)
+    decoder.decode(record) shouldBe ScalaEnumClass(Colours.Green)
   }
 }

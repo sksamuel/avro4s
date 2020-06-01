@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, FromRecord, ToRecord}
+import com.sksamuel.avro4s.{AvroSchema, FromRecord}
 import org.apache.avro.generic.GenericData
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record.decoder
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import com.sksamuel.avro4s.{AvroAlias, AvroDataInputStream, AvroOutputStream, AvroSchema, Decoder, DefaultFieldMapper, RecordFormat}
+import com.sksamuel.avro4s._
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
@@ -25,13 +25,12 @@ class SchemaEvolutionTest extends AnyFunSuite with Matchers {
     val v1schema = AvroSchema[Version1]
     val v1 = Version1("hello")
     val baos = new ByteArrayOutputStream()
-    val output = AvroOutputStream.data[Version1].to(baos).build(v1schema)
+    val output = AvroOutputStream.data[Version1].to(baos).build()
     output.write(v1)
     output.close()
 
     // we load using a v2 schema
-    val v2schema = AvroSchema[Version2]
-    val is = new AvroDataInputStream[Version2](new ByteArrayInputStream(baos.toByteArray), Some(v1schema), Some(v2schema))
+    val is = new AvroDataInputStream[Version2](new ByteArrayInputStream(baos.toByteArray), Some(v1schema))
     val v2 = is.iterator.toList.head
 
     v2.renamed shouldBe v1.original
@@ -46,11 +45,10 @@ class SchemaEvolutionTest extends AnyFunSuite with Matchers {
   }
 
   test("when decoding, if the record is missing a field that is present in the schema with a default, use the default from the schema") {
-    val schema1 = SchemaBuilder.record("foo").fields().requiredString("a").endRecord()
-    val schema2 = SchemaBuilder.record("foo").fields().requiredString("a").optionalString("b").endRecord()
-    val record = new GenericData.Record(schema1)
+    val schema = SchemaBuilder.record("foo").fields().requiredString("a").endRecord()
+    val record = new GenericData.Record(schema)
     record.put("a", new Utf8("hello"))
-    Decoder[DefaultStringTest].decode(record, schema2, DefaultFieldMapper) shouldBe DefaultStringTest("hello")
+    Decoder[DefaultStringTest].decode(record) shouldBe DefaultStringTest("hello")
   }
 
   test("when decoding, if the record is missing a field that is present in the schema and the type is option, then set to None") {
@@ -58,6 +56,6 @@ class SchemaEvolutionTest extends AnyFunSuite with Matchers {
     val schema2 = SchemaBuilder.record("foo").fields().requiredString("a").optionalString("b").endRecord()
     val record = new GenericData.Record(schema1)
     record.put("a", new Utf8("hello"))
-    Decoder[OptionalStringTest].decode(record, schema2, DefaultFieldMapper) shouldBe OptionalStringTest("hello", None)
+    Decoder[OptionalStringTest].decode(record) shouldBe OptionalStringTest("hello", None)
   }
 }

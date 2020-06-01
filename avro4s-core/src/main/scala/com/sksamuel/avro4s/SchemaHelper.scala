@@ -1,8 +1,9 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.{JsonProperties, Schema}
+import org.apache.avro.{JsonProperties, Schema, SchemaBuilder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
+
 import scala.util.matching.Regex
 
 object SchemaHelper {

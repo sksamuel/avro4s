@@ -12,7 +12,7 @@ The features of the library are:
 * Boilerplate free serialization of Scala types into Avro types
 * Boilerplate free deserialization of Avro types to Scala types
 
-Note: This document refers to the 3.0 release train.
+Note: This document refers to the 4.0 release train.
 
 ## Schemas
 
@@ -260,25 +260,13 @@ In order to override how a schema is generated for a particular type you need to
 To do this, we just introduce a new instance of `SchemaFor` and put it in scope when we generate the schema.
 
 ```scala
-implicit object IntOverride extends SchemaFor[Int] {
-  override def schema(fieldMapper: FieldMapper): Schema = SchemaBuilder.builder.stringType
-}
+implicit val intOverride = SchemaFor[Int](SchemaBuilder.builder.stringType)
 
-case class Foo(a: String)
+case class Foo(a: Int)
 val schema = AvroSchema[Foo]
 ```
 
 Note: If you create an override like this, be aware that schemas in Avro are mutable, so don't share the values that the typeclasses return.
-
-### Recursive Schemas
-
-Avro4s supports recursive schemas, but you will have to manually force the `SchemaFor` instance, instead of letting it be generated.
-
-``` scala
-case class Recursive(payload: Int, next: Option[Recursive])
-implicit val schemaFor = SchemaFor[Recursive]
-val schema = AvroSchema[Recursive]
-```
 
 ### Transient Fields
 
@@ -334,6 +322,38 @@ Would generate the following schema:
     },
     {
       "name": "email_address",
+      "type": "string"
+    }
+  ]
+}
+```
+
+You can also define your own field mapper:
+
+```scala
+package com.sksamuel
+case class Foo(userName: String, emailAddress: String)
+implicit val short: FieldMapper = {
+  case "userName"     => "user"
+  case "emailAddress" => "email"
+}
+val schema = AvroSchema[Foo]
+```
+
+Would generate the following schema:
+
+```json
+{
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel",
+  "fields": [
+    {
+      "name": "user",
+      "type": "string"
+    },
+    {
+      "name": "email",
       "type": "string"
     }
   ]
@@ -814,6 +834,65 @@ case class Fish(remembersYou: Boolean) extends Animal
 
 Would output the types in the union as `Fish,Dog`.
 
+### Recursive Schemas
+
+Avro4s supports recursive schemas. Customizing them requires some thought, so if you can stick with the out-of-the-box
+provided schemas and customization via annotations. 
+
+### Customizing Recursive Schemas
+
+The simplest way to customize schemas for recursive types is to provide custom `SchemaFor` instances for all types that
+form the recursion. Given for example the following recursive `Tree` type,
+
+```scala
+sealed trait Tree[+T]
+case class Branch[+T](left: Tree[T], right: Tree[T]) extends Tree[T]
+case class Leaf[+T](value: T) extends Tree[T]
+```
+
+it is easy to customize recursive schemas by providing a `SchemaFor` for both `Tree` and `Branch`:
+
+```scala
+import scala.collection.JavaConverters._
+
+val leafSchema = AvroSchema[Leaf[Int]]
+val branchSchema = Schema.createRecord("CustomBranch", "custom schema", "custom", false)
+val treeSchema = Schema.createUnion(leafSchema, branchSchema)
+branchSchema.setFields(Seq(new Schema.Field("left", treeSchema), new Schema.Field("right", treeSchema)).asJava)
+
+val treeSchemaFor: SchemaFor[Tree[Int]] = SchemaFor(treeSchema)
+val branchSchemaFor: SchemaFor[Branch[Int]] = SchemaFor(branchSchema)
+```
+
+If you want to customize the schema for one type that is part of a type recursion (e.g., `Branch[Int]`) while using
+generated schemas, this can be done as follows (sticking with the above example):
+
+```scala
+// 1. Use implicit def here so that this SchemaFor gets summoned for Branch[Int] in steps 6. and 10. below
+// 2. Implement a ResolvableSchemaFor instead of SchemaFor directly so that SchemaFor creation can be deferred
+implicit def branchSchemaFor: SchemaFor[Branch[Int]] = new ResolvableSchemaFor[Branch[Int]] {
+  def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[Branch[Int]] =
+    // 3. first, check whether SchemaFor[Branch[Int]] is already defined and return that if it is 
+    env.get[Branch[Int]].getOrElse {
+      // 4. otherwise, create an incomplete SchemaFor (it initially lacks fields)
+      val record: SchemaFor[Branch[Int]] = SchemaFor(Schema.createRecord("CustomBranch", "custom schema", "custom", false))
+      // 5. extend the definition environment with the created SchemaFor[Branch[Int]]
+      val nextEnv = env.updated(record)
+      // 6. summon a schema for Tree[Int] (using the Branch[Int] from step 1. through implicits)
+      // 7. resolve the schema to get a finalized schema for Tree[Int]
+      val treeSchema = SchemaFor[Tree[Int]].resolveSchemaFor(nextEnv, NoUpdate).schema
+      // 8. close the reference cycle between Branch[Int] and Tree[Int]
+      val fields = Seq(new Schema.Field("left", treeSchema), new Schema.Field("right", treeSchema))
+      record.schema.setFields(fields.asJava)
+      // 9. return the final SchemaFor[Branch[Int]]
+      record
+    }
+}
+
+// 10. summon Schema for tree and kick off encoder resolution.
+val treeSchema = AvroSchema[Tree[Int]]
+```
+
 ## Input / Output
 
 ### Serializing
@@ -832,7 +911,7 @@ val hawaiian = Pizza("hawaiian", Seq(Ingredient("ham", 1.5, 5.6), Ingredient("pi
 
 val schema = AvroSchema[Pizza]
 
-val os = AvroOutputStream.data[Pizza].to(new File("pizzas.avro")).build(schema)
+val os = AvroOutputStream.data[Pizza].to(new File("pizzas.avro")).build()
 os.write(Seq(pepperoni, hawaiian))
 os.flush()
 os.close()
@@ -1004,6 +1083,14 @@ If a type can be mapped in multiple ways, it is listed more than once.
 | Java enumeration             	| ENUM          	|                  	| GenericEnumSymbol |
 | Scala tuples                  | RECORD            |                   | GenericRecord with SpecificRecord |
 
+To select the encoding in case multiple encoded types exist, create a new `Encoder` with a corresponding `SchemaFor` 
+instance to the via `withSchema`. For example, creating a string encoder that uses target type `BYTES` works like this:
+
+```scala
+val stringSchemaFor = SchemaFor[String](Schema.create(Schema.Type.BYTES))
+val stringEncoder = Encoder[String].withSchema(stringSchemaFor)
+``` 
+
 ### Custom Type Mappings
 
 It is very easy to add custom type mappings. To do this, we bring into scope a custom implicit of `Encoder[T]` and/or `Decoder[T]`.
@@ -1015,7 +1102,10 @@ the contents in lower case, we can do the following:
 case class Foo(a: String, b: String)
 
 implicit object FooEncoder extends Encoder[Foo] {
-  override def encode(foo: Foo, schema: Schema, fieldMapper: FieldMapper) = {
+
+  override val schemaFor = SchemaFor[Foo]
+
+  override def encode(foo: Foo) = {
     val record = new GenericData.Record(schema)
     record.put("a", foo.a.toUpperCase)
     record.put("b", foo.b.toUpperCase)
@@ -1024,7 +1114,10 @@ implicit object FooEncoder extends Encoder[Foo] {
 }
 
 implicit object FooDecoder extends Decoder[Foo] {
-  override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper) = {
+
+  override val schemaFor = SchemaFor[Foo]
+
+  override def decode(value: Any) = {
     val record = value.asInstanceOf[GenericRecord]
     Foo(record.get("a").toString.toLowerCase, record.get("b").toString.toLowerCase)
   }
@@ -1036,18 +1129,21 @@ writing out a String rather than the default Long so we must also change the sch
 and decoders.
 
 ```scala
-implicit object LocalDateTimeSchemaFor extends SchemaFor[LocalDateTime] {
-  override val schema(implicit fieldMapper: FieldMapper) = 
-    Schema.create(Schema.Type.STRING)
-}
+implicit val LocalDateTimeSchemaFor = SchemaFor[LocalDateTime](Schema.create(Schema.Type.STRING))
 
 implicit object DateTimeEncoder extends Encoder[LocalDateTime] {
-  override def apply(value: LocalDateTime, schema: Schema, fieldMapper: FieldMapper) = 
+
+  override val schemaFor = LocalDateTimeSchemaFor
+
+  override def encode(value: LocalDateTime) = 
     ISODateTimeFormat.dateTime().print(value)
 }
 
 implicit object DateTimeDecoder extends Decoder[LocalDateTime] {
-  override def apply(value: Any, field: Field)(implicit fieldMapper: FieldMapper) = 
+
+  override val schemaFor = LocalDateTimeSchemaFor
+
+  override def decode(value: Any) = 
     ISODateTimeFormat.dateTime().parseDateTime(value.toString)
 }
 ```
@@ -1163,6 +1259,63 @@ case class Foo(nonEmptyStr: String Refined NonEmpty)
 val schema = AvroSchema[Foo]
 ```
 
+### Mapping Recursive Types
+
+Avro4s supports encoders and decoders for recursive types. Customizing them is possible, but involved. As with customizing
+SchemaFor instances for recursive types, the simplest way to customize encoders and decoders is to provide a custom
+encoder and decoder for all types that form the recursion.
+
+If that isn't possible, you can customize encoders / decoders for one single type and participate in creating a cyclic
+graph of encoders / decoders. To give an example, consider the following recursive type for trees.
+
+```scala
+sealed trait Tree[+T]
+case class Branch[+T](left: Tree[T], right: Tree[T]) extends Tree[T]
+case class Leaf[+T](value: T) extends Tree[T]
+```
+
+For this, a custom `Branch[Int]` encoder can be defined as follows.
+
+```scala
+// 1. use implicit def so that Encoder.apply[Tree[Int]] in step 7. and 10. below picks this resolvable encoder for branches.
+// 2. implement a ResolvableEncoder instead of Encoder directly so that encoder creation can be deferred
+implicit def branchEncoder: Encoder[Branch[Int]] = new ResolvableEncoder[Branch[Int]] {
+
+def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[Branch[Int]] =
+  // 3. lookup in the definition environment whether we already have created an encoder for branch.
+  env.get[Branch[Int]].getOrElse {
+
+    // 4. use var here to first create an acyclic graph and close it later.
+    var treeEncoder: Encoder[Tree[Int]] = null
+
+    // 5. create a partially initialized encoder for branches (it lacks a value for treeEncoder on creation).
+    val encoder = new Encoder[Branch[Int]] {
+      val schemaFor: SchemaFor[Branch[Int]] = SchemaFor[Branch[Int]]
+
+      def encode(value: Branch[Int]): AnyRef =
+        ImmutableRecord(schema, Seq(treeEncoder.encode(value.left), treeEncoder.encode(value.right)))
+    }
+
+    // 6. extend the definition environment with the newly created encoder so that subsequent lookups (step 3.) can return it
+    val nextEnv = env.updated(encoder)
+
+    // 7. resolve the tree encoder with the extended environment; the extended env will be passed back to the lookup
+    //    performed in step 3. above.
+    // 9. complete the initialization by closing the reference cycle: the branch encoder and tree encoder now 
+    //    reference each other.
+    treeEncoder = Encoder.apply[Tree[Int]].resolveEncoder(nextEnv, NoUpdate)
+    encoder
+  }
+}
+
+// 10. summon encoder for tree and kick off encoder resolution.
+val toRecord = ToRecord[Tree[Int]]
+```
+
+Why is this so complicated? Glad you asked! Turns out that caring for performance, providing customization via 
+annotations, and using Magnolia for automatic typeclass derivation (which is great in itself) are three constraints 
+that aren't easy to combine. This design is the best we came up with; if you have a better design for this, please 
+contribute it!
 
 ## Using avro4s in your project
 
