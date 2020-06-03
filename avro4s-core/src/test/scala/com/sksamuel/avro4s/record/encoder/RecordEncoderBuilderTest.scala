@@ -19,10 +19,10 @@ class RecordEncoderBuilderTest extends AnyFunSuite with Matchers {
       namespace = "a.b.c"
     ) {
       List(
-        EncoderField.string("a", _.a),
-        EncoderField.boolean("b", _.b),
-        EncoderField.int("c", _.c),
-        EncoderField.double("d", _.d)
+        EncoderField.field("a", _.a),
+        EncoderField.field("b", _.b),
+        EncoderField.field("c", _.c),
+        EncoderField.field("d", _.d)
       )
     }
 
@@ -39,8 +39,8 @@ class RecordEncoderBuilderTest extends AnyFunSuite with Matchers {
       namespace = "a.b.c"
     ) {
       List(
-        EncoderField.string("a", _.a),
-        EncoderField.boolean("b", _.b)
+        EncoderField.field("a", _.a),
+        EncoderField.field("b", _.b)
       )
     }
 

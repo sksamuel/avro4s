@@ -137,7 +137,7 @@ object Encoder
     props.foreach { case (key, value) => builder.prop(key, value) }
     val fields = fn
     val recordSchema = fields.foldLeft(builder.fields()) { case (acc, field) =>
-      acc.name(field.name).`type`(field.schema).noDefault()
+      acc.name(field.name).`type`(field.encoder.schema).noDefault()
     }.endRecord()
 
     new Encoder[T] {
@@ -192,28 +192,13 @@ object EncoderHelpers {
   }
 }
 
-case class EncoderField[T, F](name: String, schema: Schema, extractor: T => Any, encoder: Encoder[F])
+case class EncoderField[T, F](name: String, extractor: T => Any, encoder: Encoder[F])
 
 object EncoderField {
 
-  def string[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.STRING), extractor, encoder)
 
-  def boolean[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.BOOLEAN), extractor, encoder)
+  def field[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
+    EncoderField(name, extractor, encoder)
 
-  def double[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.DOUBLE), extractor, encoder)
 
-  def int[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.INT), extractor, encoder)
-
-  def float[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.FLOAT), extractor, encoder)
-
-  def long[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.LONG), extractor, encoder)
-
-  def bytes[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.BYTES), extractor, encoder)
 }
