@@ -1,8 +1,9 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.Encoder.DelegatingEncoder
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NoUpdate}
 import org.apache.avro.{Schema, SchemaBuilder}
-import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.{GenericData, GenericRecord}
 
 import scala.language.experimental.macros
 
@@ -63,6 +64,7 @@ trait Encoder[T] extends SchemaAware[Encoder, T] with Serializable { self =>
     case _                                     => self
   }
 
+  def comap[S](f: S => T): Encoder[S] = new DelegatingEncoder(this, this.schemaFor.forType, f)
 }
 
 /**
@@ -83,7 +85,7 @@ trait ResolvableEncoder[T] extends Encoder[T] {
     * Creates an Encoder instance (and applies schema changes given) or returns an already existing value from the
     * given definition environment.
     *
-    * @param env definition environment to use
+    * @param env    definition environment to use
     * @param update schema update to apply
     * @return either an already existing value from env or a new created instance.
     */
@@ -111,7 +113,7 @@ object Encoder
   def apply[T](implicit encoder: Encoder[T]): Encoder[T] = encoder
 
   private class DelegatingEncoder[T, S](encoder: Encoder[T], val schemaFor: SchemaFor[S], comap: S => T)
-      extends Encoder[S] {
+    extends Encoder[S] {
 
     def encode(value: S): AnyRef = encoder.encode(comap(value))
 
@@ -122,21 +124,12 @@ object Encoder
     }
   }
 
-  case class EncoderField[T](name: String, schema: Schema, extractor: T => Any)
-
-  object EncoderField {
-    def string[T](name: String, extractor: T => Any) = EncoderField(name, Schema.create(Schema.Type.STRING), extractor)
-    def boolean[T](name: String, extractor: T => Any) = EncoderField(name, Schema.create(Schema.Type.BOOLEAN), extractor)
-    def double[T](name: String, extractor: T => Any) = EncoderField(name, Schema.create(Schema.Type.DOUBLE), extractor)
-    def int[T](name: String, extractor: T => Any) = EncoderField(name, Schema.create(Schema.Type.FLOAT), extractor)
-  }
-
   def record[T](name: String,
                 namespace: String,
                 doc: Option[String] = None,
                 aliases: Seq[String] = Seq.empty,
                 props: Map[String, String] = Map.empty)
-               (fn: => List[EncoderField[T]]): Encoder[T] = {
+               (fn: => List[EncoderField[T, _]]): Encoder[T] = {
 
     val builder = SchemaBuilder.record(name).namespace(namespace)
     doc.foreach(builder.doc)
@@ -149,11 +142,15 @@ object Encoder
 
     new Encoder[T] {
 
+      def addField[F](record: GenericRecord, field: EncoderField[T, F], value: T): Unit = {
+        val extracted = field.extractor(value).asInstanceOf[F]
+        val encoded = field.encoder.encode(extracted)
+        record.put(field.name, encoded)
+      }
+
       override def encode(value: T): AnyRef = {
         val record = new GenericData.Record(recordSchema)
-        for (field <- fields) {
-          record.put(field.name, field.extractor(value))
-        }
+        for (field <- fields) addField(record, field, value)
         record
       }
 
@@ -161,11 +158,27 @@ object Encoder
     }
   }
 
-  /**
-    * Enables decorating/enhancing an encoder with a transformation function
-    */
-  implicit class EncoderOps[T](val encoder: Encoder[T]) extends AnyVal {
-    def comap[S](f: S => T): Encoder[S] = new DelegatingEncoder(encoder, encoder.schemaFor.forType, f)
+  def enum[T](name: String,
+              namespace: String,
+              doc: Option[String] = None,
+              aliases: Seq[String] = Seq.empty,
+              props: Map[String, String] = Map.empty,
+              symbols: List[String])
+             (encodeFn: T => String): Encoder[T] = {
+
+    val builder = SchemaBuilder.enumeration(name).namespace(namespace)
+    props.foreach { case (key, value) => builder.prop(key, value) }
+    if (aliases.nonEmpty) builder.aliases(aliases: _*)
+    doc.foreach(builder.doc)
+    val enumSchema = builder.symbols(symbols: _*)
+
+    new Encoder[T] {
+      override def schemaFor: SchemaFor[T] = SchemaFor(enumSchema)
+      override def encode(value: T): AnyRef = {
+        val symbol = encodeFn(value)
+        new GenericData.EnumSymbol(enumSchema, symbol)
+      }
+    }
   }
 }
 
@@ -175,6 +188,32 @@ object EncoderHelpers {
 
   def mapFullUpdate(f: Schema => Schema, update: SchemaUpdate) = update match {
     case full: FullSchemaUpdate => FullSchemaUpdate(SchemaFor(f(full.schemaFor.schema), full.schemaFor.fieldMapper))
-    case _                      => update
+    case _ => update
   }
+}
+
+case class EncoderField[T, F](name: String, schema: Schema, extractor: T => Any, encoder: Encoder[F])
+
+object EncoderField {
+
+  def string[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
+    EncoderField(name, Schema.create(Schema.Type.STRING), extractor, encoder)
+
+  def boolean[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
+    EncoderField(name, Schema.create(Schema.Type.BOOLEAN), extractor, encoder)
+
+  def double[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
+    EncoderField(name, Schema.create(Schema.Type.DOUBLE), extractor, encoder)
+
+  def int[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
+    EncoderField(name, Schema.create(Schema.Type.INT), extractor, encoder)
+
+  def float[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
+    EncoderField(name, Schema.create(Schema.Type.FLOAT), extractor, encoder)
+
+  def long[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
+    EncoderField(name, Schema.create(Schema.Type.LONG), extractor, encoder)
+
+  def bytes[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
+    EncoderField(name, Schema.create(Schema.Type.BYTES), extractor, encoder)
 }
