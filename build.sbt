@@ -2,6 +2,7 @@
 
 // The root project is implicit, so we don't have to define it.
 // We do need to prevent publishing for it, though:
+import sbt._
 
 lazy val root = Project("avro4s", file("."))
   .settings(
@@ -61,16 +62,13 @@ val `avro4s-refined` = project.in(file("avro4s-refined"))
 val benchmarks = project
   .in(file("benchmarks"))
   .dependsOn(`avro4s-core`)
+  .enablePlugins(JmhPlugin)
   .settings(
-    resolvers ++= Seq(
-      "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-      "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
-    ),
     libraryDependencies ++= Seq(
-      "com.storm-enroute" %% "scalameter" % ScalaMeterVersion % Test
-    ),
-    testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
-    parallelExecution in Test := false,
-    fork in Test := true,
-    logBuffered := false
+      "pl.project13.scala" % "sbt-jmh-extras" % SbtJmhVersion,
+      "org.openjdk.jmh" % "jmh-core" % JmhVersion,
+      "org.openjdk.jmh" % "jmh-generator-asm" % JmhVersion,
+      "org.openjdk.jmh" % "jmh-generator-bytecode" % JmhVersion,
+      "org.openjdk.jmh" % "jmh-generator-reflection" % JmhVersion
+    )
   )

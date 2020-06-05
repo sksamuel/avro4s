@@ -6,7 +6,7 @@ import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 package object handrolled_codecs {
