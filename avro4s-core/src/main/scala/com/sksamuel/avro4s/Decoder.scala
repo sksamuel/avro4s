@@ -1,9 +1,12 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.Decoder.DelegatingDecoder
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NoUpdate}
 import org.apache.avro.Schema
+import org.apache.avro.generic.GenericRecord
 
 import scala.language.experimental.macros
+import scala.reflect.macros.blackbox
 
 /**
   * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,
@@ -27,6 +30,11 @@ trait Decoder[T] extends SchemaAware[Decoder, T] with Serializable { self =>
     * Otherwise throw an error.
     */
   def decode(value: Any): T
+
+  /**
+    * Transforms the decoded value to create a decoder for type S
+    */
+  def map[S](f: T => S): Decoder[S] = new DelegatingDecoder(this, schemaFor.forType, f)
 
   /**
     * Creates a variant of this Decoder using the given schema (e.g. to use a fixed schema for byte arrays instead of
@@ -99,6 +107,92 @@ trait ResolvableDecoder[T] extends Decoder[T] {
   override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = adhocInstance.withSchema(schemaFor)
 }
 
+trait DecoderField[T] {
+  def decodeField(record: GenericRecord): T
+
+  def schemaField: Schema.Field
+
+  def resolve(env: DefinitionEnvironment[Decoder]): DecoderField[T] = this
+}
+
+class SimpleDecoderField[T](name: String, decoder: Decoder[T]) extends DecoderField[T] {
+
+  def decodeField(record: GenericRecord): T = decoder.decode(record.get(name))
+
+  def schemaField = new Schema.Field(name, decoder.schema)
+
+  def map[S](f: T => S): SimpleDecoderField[S] = new SimpleDecoderField[S](name, decoder.map(f))
+
+  override def resolve(env: DefinitionEnvironment[Decoder]): DecoderField[T] =
+    new SimpleDecoderField[T](name, decoder.resolveDecoder(env, NoUpdate))
+}
+
+class DecoderBuilder[T](val name: String,
+                        val namespace: String,
+                        val doc: Option[String],
+                        val aliases: Seq[String],
+                        val props: Map[String, String]) {
+  def apply(fields: DecoderField[_]*)(constructor: Any): Decoder[T] = macro DecoderBuilder.record_impl[T]
+}
+
+object DecoderBuilder {
+
+  type BuilderContext[T] = blackbox.Context { type PrefixType = DecoderBuilder[T] }
+
+  def record_impl[T: c.WeakTypeTag](c: BuilderContext[T])(fields: c.Tree*)(constructor: c.Tree): c.Tree = {
+    import c.universe._
+
+    val decoderNames = fields.map(_ => TermName(c.freshName("decoder")))
+    val cons = TermName(c.freshName("cons"))
+
+    val decoderDeclarations = decoderNames.zip(fields).map {
+      case (name, decoder) =>
+        val typeArg = decoder.tpe.typeArgs.head
+        q"var $name: com.sksamuel.avro4s.DecoderField[$typeArg] = $decoder"
+    }
+
+    val resolveDecoders = decoderNames.map(name => q"$name = $name.resolve(extendedEnv)")
+    val schemaFields = decoderNames.map(name => q"$name.schemaField")
+    val decodeFields = decoderNames.map(name => q"$name.decodeField(record)")
+
+    val TParam = weakTypeOf[T]
+
+    q"""{
+      val $cons = $constructor
+
+      ..$decoderDeclarations
+
+      import org.apache.avro.{Schema, SchemaBuilder}
+      import org.apache.avro.generic.GenericRecord
+      import com.sksamuel.avro4s._
+      import scala.collection.JavaConverters._
+
+      new ResolvableDecoder[$TParam] {
+        def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[$TParam] = env.get[$TParam].getOrElse {
+          require(update == SchemaUpdate.NoUpdate, "Custom record decoders don't support .withSchema modifications")
+          val recordSchema = Schema.createRecord(${c.prefix}.name, ${c.prefix}.doc.orNull, ${c.prefix}.namespace, false)
+          ${c.prefix}.aliases.foreach(recordSchema.addAlias)
+          ${c.prefix}.props.foreach { case (key, value) => schema.addProp(key, value) }
+
+          val decoder = new Decoder[$TParam] {
+            val schemaFor: SchemaFor[$TParam] = SchemaFor(recordSchema)
+
+            def decode(value: Any): $TParam = value match {
+              case record: GenericRecord => $cons(..$decodeFields)
+              case _ => sys.error("This decoder can only handle GenericRecord [was " + value.getClass + "]")
+            }
+          }
+
+          val extendedEnv = env.updated(decoder)
+          ..$resolveDecoders
+          recordSchema.setFields(List(..$schemaFields).asJava)
+          decoder
+        }
+      }
+    }"""
+  }
+}
+
 object Decoder
     extends MagnoliaDerivedDecoders
     with ShapelessCoproductDecoders
@@ -111,6 +205,15 @@ object Decoder
 
   def apply[T](implicit decoder: Decoder[T]): Decoder[T] = decoder
 
+  def field[T](name: String)(implicit decoder: Decoder[T]): SimpleDecoderField[T] = new SimpleDecoderField[T](name, decoder)
+
+  def record[T](name: String,
+                namespace: String,
+                doc: Option[String] = None,
+                aliases: Seq[String] = Seq.empty,
+                props: Map[String, String] = Map.empty): DecoderBuilder[T] =
+    new DecoderBuilder[T](name, namespace, doc, aliases, props)
+
   private class DelegatingDecoder[T, S](decoder: Decoder[T], val schemaFor: SchemaFor[S], map: T => S)
       extends Decoder[S] {
 
@@ -121,13 +224,6 @@ object Decoder
       val modifiedDecoder = decoder.withSchema(schemaFor.forType)
       new DelegatingDecoder[T, S](modifiedDecoder, schemaFor.forType, map)
     }
-  }
-
-  /**
-    * Enables decorating/enhancing a decoder with a transformation function
-    */
-  implicit class DecoderOps[T](val decoder: Decoder[T]) extends AnyVal {
-    def map[S](f: T => S): Decoder[S] = new DelegatingDecoder(decoder, decoder.schemaFor.forType, f)
   }
 }
 
