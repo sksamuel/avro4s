@@ -1,11 +1,14 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.Encoder.DelegatingEncoder
+import com.sksamuel.avro4s.EncoderHelpers.FieldEncoder
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NoUpdate}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.apache.avro.generic.{GenericData, GenericRecord}
 
+import scala.reflect.runtime.universe.WeakTypeTag
 import scala.language.experimental.macros
+import scala.collection.JavaConverters._
 
 /**
   * An [[Encoder]] encodes a Scala value of type T into a compatible
@@ -124,38 +127,51 @@ object Encoder
     }
   }
 
-  def record[T](name: String,
+  def field[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
+    EncoderField(name, extractor, encoder)
+
+  def record[T: WeakTypeTag](name: String,
                 namespace: String,
                 doc: Option[String] = None,
                 aliases: Seq[String] = Seq.empty,
                 props: Map[String, String] = Map.empty)
-               (fn: => List[EncoderField[T, _]]): Encoder[T] = {
+               (fn: => List[EncoderField[T, _]]): Encoder[T] = new ResolvableEncoder[T] {
+    def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[T] =
+      env.get[T].getOrElse {
+        // we could actually pick apart a schema update if that's a desired feature.
+        require(update == NoUpdate, "Custom record encoders don't support .withSchema modifications")
+        val recordSchema = Schema.createRecord(name, doc.orNull, namespace, false)
+        aliases.foreach(recordSchema.addAlias)
+        props.foreach { case (key, value) => schema.addProp(key, value) }
+        var fieldEncoders = Seq.empty[FieldEncoder[T, _]]
 
-    val builder = SchemaBuilder.record(name).namespace(namespace)
-    doc.foreach(builder.doc)
-    if (aliases.nonEmpty) builder.aliases(aliases: _*)
-    props.foreach { case (key, value) => builder.prop(key, value) }
-    val fields = fn
-    val recordSchema = fields.foldLeft(builder.fields()) { case (acc, field) =>
-      acc.name(field.name).`type`(field.schema).noDefault()
-    }.endRecord()
+        val encoder = new Encoder[T] {
+          override val schemaFor: SchemaFor[T] = SchemaFor(recordSchema)
 
-    new Encoder[T] {
+          override def encode(value: T): AnyRef = {
+            val fields = new Array[AnyRef](fieldEncoders.size)
+            var i = 0
+            while(i < fields.length) {
+              fields(i) = fieldEncoders(i).encodeField(value)
+              i += 1
+            }
+            ImmutableRecord(schemaFor.schema, fields)
+          }
+        }
 
-      def addField[F](record: GenericRecord, field: EncoderField[T, F], value: T): Unit = {
-        val extracted = field.extractor(value).asInstanceOf[F]
-        val encoded = field.encoder.encode(extracted)
-        record.put(field.name, encoded)
+        val extendedEnv = env.updated(encoder)
+
+        val fieldsWithEncoder = fn.map { field =>
+          val fieldEncoder = field.resolve(extendedEnv)
+          val schemaField = new Schema.Field(field.name, fieldEncoder.schema)
+          schemaField -> fieldEncoder
+        }
+
+        recordSchema.setFields(fieldsWithEncoder.map(_._1).asJava)
+        fieldEncoders = fieldsWithEncoder.map(_._2).toArray[FieldEncoder[T, _]]
+
+        encoder
       }
-
-      override def encode(value: T): AnyRef = {
-        val record = new GenericData.Record(recordSchema)
-        for (field <- fields) addField(record, field, value)
-        record
-      }
-
-      override def schemaFor: SchemaFor[T] = SchemaFor(recordSchema)
-    }
   }
 
   def enum[T](name: String,
@@ -190,30 +206,15 @@ object EncoderHelpers {
     case full: FullSchemaUpdate => FullSchemaUpdate(SchemaFor(f(full.schemaFor.schema), full.schemaFor.fieldMapper))
     case _ => update
   }
+
+  class FieldEncoder[T, F](extractor: T => F, encoder: Encoder[F]) {
+    def encodeField(value: T): AnyRef = encoder.encode(extractor(value))
+
+    def schema = encoder.schemaFor.schema
+  }
 }
 
-case class EncoderField[T, F](name: String, schema: Schema, extractor: T => Any, encoder: Encoder[F])
-
-object EncoderField {
-
-  def string[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.STRING), extractor, encoder)
-
-  def boolean[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.BOOLEAN), extractor, encoder)
-
-  def double[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.DOUBLE), extractor, encoder)
-
-  def int[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.INT), extractor, encoder)
-
-  def float[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.FLOAT), extractor, encoder)
-
-  def long[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.LONG), extractor, encoder)
-
-  def bytes[T, F](name: String, extractor: T => F)(implicit encoder: Encoder[F]): EncoderField[T, F] =
-    EncoderField(name, Schema.create(Schema.Type.BYTES), extractor, encoder)
+case class EncoderField[T, F](name: String, extractor: T => F, encoder: Encoder[F]) {
+  def resolve(env: DefinitionEnvironment[Encoder]): FieldEncoder[T, F] =
+    new FieldEncoder[T, F](extractor, encoder.resolveEncoder(env, NoUpdate))
 }
