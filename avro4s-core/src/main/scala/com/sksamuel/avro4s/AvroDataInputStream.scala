@@ -4,8 +4,7 @@ import java.io.InputStream
 
 import org.apache.avro.Schema
 import org.apache.avro.file.DataFileStream
-import org.apache.avro.generic.{GenericData, GenericRecord}
-import org.apache.avro.io.DatumReader
+import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 
 import scala.util.Try
 
@@ -14,26 +13,26 @@ class AvroDataInputStream[T](in: InputStream,
                             (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
 
-  // if no reader or writer schema is specified, then we create a reader that uses what's present in the files
-  private val datumReader = writerSchema match {
-    case Some(writer) => GenericData.get.createDatumReader(writer, decoder.schema)
-    case None => GenericData.get.createDatumReader(null, decoder.schema)
+  private val dataFileReader = {
+    // if no reader or writer schema is specified, then we create a reader that uses what's present in the files
+    val datumReader = new GenericDatumReader[GenericRecord](writerSchema.orNull, decoder.schema)
+    new DataFileStream[GenericRecord](in, datumReader)
   }
 
-  private val dataFileReader = new DataFileStream[GenericRecord](in, datumReader.asInstanceOf[DatumReader[GenericRecord]])
-
   override def iterator: Iterator[T] = new Iterator[T] {
+    var record: GenericRecord = null
     override def hasNext: Boolean = dataFileReader.hasNext
     override def next(): T = {
-      val record = dataFileReader.next
+      record = dataFileReader.next(record)
       decoder.decode(record)
     }
   }
 
   override def tryIterator: Iterator[Try[T]] = new Iterator[Try[T]] {
+    var record: GenericRecord = null
     override def hasNext: Boolean = dataFileReader.hasNext
     override def next(): Try[T] = Try {
-      val record = dataFileReader.next
+      record = dataFileReader.next(record)
       decoder.decode(record)
     }
   }
