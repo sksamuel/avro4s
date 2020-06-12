@@ -21,6 +21,8 @@ object Decoding extends BenchmarkHelpers {
       new RecordWithUnionAndTypeField(new ValidInt(255, t)).toByteBuffer
     }
 
+    val avro4sSchema = AvroSchema[RecordWithUnionAndTypeField]
+
     val avro4sBytes = encode(RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t)))
 
     val (handrolledDecoder, handrolledReader) = {
@@ -58,11 +60,10 @@ class Decoding extends CommonParams with BenchmarkHelpers {
 
   def decode[T](bytes: ByteBuffer, decoder: Decoder[T], reader: GenericDatumReader[GenericRecord]): T = {
     val dec =
-      DecoderFactory.get().binaryDecoder(new ByteBufferInputStream(Collections.singletonList(bytes.duplicate)), null)
+      DecoderFactory.get().directBinaryDecoder(new ByteBufferInputStream(Collections.singletonList(bytes.duplicate)), null)
     val record = reader.read(null, dec)
     decoder.decode(record)
   }
-
 
   @Benchmark
   def avroSpecificRecord(setup: Setup, blackhole: Blackhole) = {
@@ -77,4 +78,10 @@ class Decoding extends CommonParams with BenchmarkHelpers {
   @Benchmark
   def avro4sGenerated(setup: Setup, blackhole: Blackhole) =
     blackhole.consume(decode(setup.avro4sBytes, setup.avro4sDecoder, setup.avro4sReader))
+
+  @Benchmark
+  def binaryDecoder(setup: Setup, blackhole: Blackhole) = {
+    val record = binary.BinaryCodec.RecordWithUnionAndTypeFieldBinaryCodec.readBytes(setup.avro4sBytes, setup.avro4sSchema)
+    blackhole.consume(record)
+  }
 }

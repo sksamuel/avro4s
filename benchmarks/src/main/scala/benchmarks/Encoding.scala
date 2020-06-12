@@ -66,4 +66,8 @@ class Encoding extends CommonParams with BenchmarkHelpers {
   @Benchmark
   def avro4sHandrolled(setup: Setup, blackhole: Blackhole) =
     blackhole.consume(encode(setup.record, setup.handrolledEncoder, setup.handrolledWriter))
+
+  @Benchmark
+  def binaryEncoder(setup: Setup, blackhole: Blackhole) =
+    blackhole.consume(binary.BinaryCodec.RecordWithUnionAndTypeFieldBinaryCodec.writeBytes(setup.record))
 }

@@ -4,7 +4,7 @@ import benchmarks.record.AttributeValue
 import benchmarks.record.AttributeValue.{Empty, Invalid, Valid}
 import com.sksamuel.avro4s._
 import org.apache.avro.Schema
-import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.{GenericData, GenericRecord}
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
@@ -19,7 +19,14 @@ package object handrolled_codecs {
       SchemaFor[AttributeValue[T]]
     }
 
-    val validEncoder = Encoder[Valid[T]].withSchema(schemaForValid)
+    val validEncoder = new Encoder[Valid[T]] {
+      val tEncoder = implicitly[Encoder[T]]
+      def encode(value: Valid[T]): AnyRef =
+        ImmutableRecord(schema,
+                        Array[AnyRef](tEncoder.encode(value.value), Encoder.InstantEncoder.encode(value.timestamp)))
+
+      val schemaFor: SchemaFor[Valid[T]] = schemaForValid
+    }
     val emptyEncoder = Encoder[Empty]
     val invalidEncoder = Encoder[Invalid]
 
@@ -29,7 +36,16 @@ package object handrolled_codecs {
       case i: Invalid  => invalidEncoder.encode(i)
     }
 
-    val validDecoder = Decoder[Valid[T]].withSchema(schemaForValid)
+    val validDecoder = new Decoder[Valid[T]] {
+      val tDecoder = implicitly[Decoder[T]]
+
+      def decode(value: Any): Valid[T] = {
+        val record = value.asInstanceOf[GenericRecord]
+        new Valid[T](tDecoder.decode(record.get(0)), Decoder.InstantDecoder.decode(record.get(1)))
+      }
+
+      val schemaFor: SchemaFor[Valid[T]] = schemaForValid
+    }
     val emptyDecoder = Decoder[Empty]
     val invalidDecoder = Decoder[Invalid]
 
