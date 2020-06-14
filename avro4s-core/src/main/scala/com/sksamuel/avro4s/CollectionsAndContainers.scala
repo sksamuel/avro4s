@@ -171,7 +171,8 @@ trait CollectionAndContainerDecoders {
   implicit val NoneDecoder: Decoder[None.type] = new Decoder[None.type] {
     val schemaFor: SchemaFor[None.type] = noneSchemaFor
     def decode(value: Any): None.type =
-      if (value == null) None else sys.error(s"Value $value is not null, but should be decoded to None")
+      if (value == null) None
+      else throw new Avro4sDecodingException(s"Value $value is not null, but should be decoded to None", value, this)
   }
 
   implicit def optionDecoder[T](implicit value: Decoder[T]): Decoder[Option[T]] = new ResolvableDecoder[Option[T]] {
@@ -211,7 +212,7 @@ trait CollectionAndContainerDecoders {
             } else {
               val nameA = leftDecoder.schema.getFullName
               val nameB = rightDecoder.schema.getFullName
-              sys.error(s"Could not decode $value into Either[$nameA, $nameB]")
+              throw new Avro4sDecodingException(s"Could not decode $value into Either[$nameA, $nameB]", value, this)
             }
 
           override def withSchema(schemaFor: SchemaFor[Either[A, B]]): Decoder[Either[A, B]] =
@@ -232,7 +233,7 @@ trait CollectionAndContainerDecoders {
             case array: Array[_]               => array.map(decoder.decode)
             case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toArray
             case list: Iterable[_]             => list.map(decoder.decode).toArray
-            case other                         => sys.error("Unsupported array " + other)
+            case other                         => throw new Avro4sDecodingException("Unsupported array " + other, value, this)
           }
 
           override def withSchema(schemaFor: SchemaFor[Array[T]]): Decoder[Array[T]] =
@@ -255,7 +256,7 @@ trait CollectionAndContainerDecoders {
             case array: Array[_]               =>
               // converting array to Seq in order to avoid requiring ClassTag[T] as does arrayDecoder.
               build(array.toSeq.map(decoder.decode))
-            case other => sys.error("Unsupported array " + other)
+            case other => throw new Avro4sDecodingException("Unsupported array " + other, value, this)
           }
 
           override def withSchema(schemaFor: SchemaFor[C[T]]): Decoder[C[T]] =
@@ -303,12 +304,13 @@ object CollectionsAndContainers {
     schemaFor.map[Option[T]](itemSchema => SchemaHelper.createSafeUnion(itemSchema, SchemaBuilder.builder().nullType()))
 
   private[avro4s] def extractOptionSchema(schema: Schema): Schema = {
-    require(schema.getType == Schema.Type.UNION,
-            s"Schema type for option encoders / decoders must be UNION, received ${schema.getType}")
+    if (schema.getType != Schema.Type.UNION)
+      throw new Avro4sConfigurationException(
+        s"Schema type for option encoders / decoders must be UNION, received ${schema}")
 
     schema.getTypes.asScala.find(_.getType != Schema.Type.NULL) match {
       case Some(s) => s
-      case None    => sys.error(s"Union schema $schema doesn't contain any non-null entries")
+      case None    => throw new Avro4sConfigurationException(s"Union schema $schema doesn't contain any non-null entries")
     }
   }
 
@@ -327,20 +329,21 @@ object CollectionsAndContainers {
   }
 
   private[avro4s] def validateEitherSchema(schema: Schema): Unit = {
-    require(schema.getType == Schema.Type.UNION,
-            s"Schema type for either encoders / decoders must be UNION, received ${schema.getType}")
-    require(schema.getTypes.size() == 2,
-            s"Schema for either encoders / decoders must be a UNION of to types, received $schema")
+    if (schema.getType != Schema.Type.UNION)
+      throw new Avro4sConfigurationException(
+        s"Schema type for either encoders / decoders must be UNION, received $schema")
+    if (schema.getTypes.size() != 2)
+      throw new Avro4sConfigurationException(
+        s"Schema for either encoders / decoders must be a UNION of to types, received $schema")
   }
 
   private[avro4s] def buildIterableSchemaFor[C[X] <: Iterable[X], T](schemaFor: SchemaFor[T]): SchemaFor[C[T]] =
     schemaFor.map(SchemaBuilder.array.items(_))
 
   private[avro4s] def extractIterableElementSchema(schema: Schema): Schema = {
-    require(
-      schema.getType == Schema.Type.ARRAY,
-      s"Schema type for array / list / seq / vector encoders and decoders must be ARRAY, received ${schema.getType}"
-    )
+    if (schema.getType != Schema.Type.ARRAY)
+      throw new Avro4sConfigurationException(
+        s"Schema type for array / list / seq / vector encoders and decoders must be ARRAY, received $schema")
     schema.getElementType
   }
 
@@ -348,8 +351,8 @@ object CollectionsAndContainers {
     schemaFor.map(SchemaBuilder.map().values(_))
 
   private[avro4s] def extractMapValueSchema(schema: Schema): Schema = {
-    require(schema.getType == Schema.Type.MAP,
-            s"Schema type for map encoders / decoders must be MAP, received ${schema.getType}")
+    if (schema.getType != Schema.Type.MAP)
+      throw new Avro4sConfigurationException(s"Schema type for map encoders / decoders must be MAP, received $schema")
     schema.getValueType
   }
 }

@@ -80,6 +80,6 @@ class AvroInputStreamBuilderWithSource[T: Decoder](format: AvroFormat, in: Input
     */
   def build = format match {
     case DataFormat => new AvroDataInputStream[T](in, None)
-    case _          => sys.error("Must specify a schema for binary or json formats")
+    case _          => throw new Avro4sConfigurationException("Must specify a schema for binary or json formats")
   }
 }

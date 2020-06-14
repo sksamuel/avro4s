@@ -230,13 +230,15 @@ trait BaseEncoders {
       case Schema.Type.BYTES =>
         str =>
           ByteBuffer.wrap(str.getBytes)
-      case _ => sys.error(s"Unsupported type for string schema: $schema")
+      case _ => throw new Avro4sConfigurationException(s"Unsupported type for string schema: $schema")
     }
 
     def encodeFixed(value: String): AnyRef = {
       if (value.getBytes.length > schema.getFixedSize)
-        sys.error(
-          s"Cannot write string with ${value.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
+        throw new Avro4sEncodingException(
+          s"Cannot write string with ${value.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}",
+          value,
+          this)
       GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(value.getBytes).array, schema)
     }
 
@@ -286,7 +288,7 @@ trait BaseDecoders {
       case byte: Byte   => byte.toInt
       case short: Short => short.toInt
       case int: Int     => int
-      case other        => sys.error(s"Cannot convert $other to type INT")
+      case other        => throw new Avro4sDecodingException(s"Cannot convert $other to type INT", value, this)
     }
   }
 
@@ -297,7 +299,7 @@ trait BaseDecoders {
       case short: Short => short.toLong
       case int: Int     => int.toLong
       case long: Long   => long
-      case other        => sys.error(s"Cannot convert $other to type LONG")
+      case other        => throw new Avro4sDecodingException(s"Cannot convert $other to type LONG", value, this)
     }
   }
 
@@ -327,7 +329,7 @@ trait BaseDecoders {
     def decode(value: Any): ByteBuffer = value match {
       case b: ByteBuffer  => b
       case a: Array[Byte] => ByteBuffer.wrap(a)
-      case _              => sys.error(s"Unable to decode value $value to ByteBuffer")
+      case _              => throw new Avro4sDecodingException(s"Unable to decode value $value to ByteBuffer", value, this)
     }
   }
 
@@ -335,7 +337,7 @@ trait BaseDecoders {
     val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchemaFor
     def decode(value: Any): CharSequence = value match {
       case cs: CharSequence => cs
-      case _                => sys.error(s"Unable to decode value $value to CharSequence")
+      case _                => throw new Avro4sDecodingException(s"Unable to decode value $value to CharSequence", value, this)
     }
   }
 
@@ -346,7 +348,7 @@ trait BaseDecoders {
     def decode(value: Any): Utf8 = value match {
       case u: Utf8        => u
       case b: Array[Byte] => new Utf8(b)
-      case null           => sys.error("Cannot decode <null> as utf8")
+      case null           => throw new Avro4sDecodingException("Cannot decode <null> as utf8", value, this)
       case _              => new Utf8(value.toString)
     }
   }
@@ -359,8 +361,9 @@ trait BaseDecoders {
       case chars: CharSequence => chars.toString
       case fixed: GenericFixed => new String(fixed.bytes())
       case a: Array[Byte]      => new String(a)
-      case null                => sys.error("Cannot decode <null> as a string")
-      case other               => sys.error(s"Cannot decode $other of type ${other.getClass} into a string")
+      case null                => throw new Avro4sDecodingException("Cannot decode <null> as a string", value, this)
+      case other =>
+        throw new Avro4sDecodingException(s"Cannot decode $other of type ${other.getClass} into a string", value, this)
     }
 
     override def withSchema(schemaFor: SchemaFor[String]): Decoder[String] = new StringDecoder(schemaFor)

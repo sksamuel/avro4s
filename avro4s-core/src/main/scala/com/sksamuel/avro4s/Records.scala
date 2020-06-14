@@ -60,8 +60,10 @@ class RecordDecoder[T: WeakTypeTag](ctx: CaseClass[Decoder, T], val schemaFor: S
       }
       ctx.rawConstruct(values)
     case _ =>
-      sys.error(
-        s"This decoder can only handle IndexedRecords or its subtypes such as GenericRecord [was ${value.getClass}]")
+      throw new Avro4sDecodingException(
+        s"This decoder can only handle IndexedRecords or its subtypes such as GenericRecord [was ${value.getClass}]",
+        value,
+        this)
   }
 
   override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
@@ -74,7 +76,9 @@ object Records {
 
   private[avro4s] def verifyNewSchema[T](schemaFor: SchemaFor[T]) = {
     val schemaType = schemaFor.schema.getType
-    require(schemaType == Schema.Type.RECORD, s"Schema type for record codecs must be RECORD, received $schemaType")
+    if (schemaType != Schema.Type.RECORD)
+      throw new Avro4sConfigurationException(
+        s"Schema type for record codecs must be RECORD, received ${schemaFor.schema}")
   }
 
   def encoder[T: WeakTypeTag](ctx: CaseClass[Encoder, T],
@@ -170,8 +174,8 @@ object Records {
 
     update match {
       case FullSchemaUpdate(sf) =>
-        require(sf.schema.getType == Schema.Type.RECORD,
-                s"Schema for case classes must be of type Record, got ${sf.schema.getType}")
+        if (sf.schema.getType != Schema.Type.RECORD)
+          throw new Avro4sConfigurationException(s"Schema for case classes must be of type Record, got ${sf.schema}")
         sf.schema
       case NamespaceUpdate(namespace) => newSchema(Some(namespace))
       case _                          => newSchema(None)

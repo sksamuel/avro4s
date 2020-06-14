@@ -24,7 +24,8 @@ trait BigDecimalDecoders {
         case Schema.Type.STRING => new BigDecimalStringDecoder(schemaFor, roundingMode)
         case Schema.Type.FIXED  => new BigDecimalFixedDecoder(schemaFor, roundingMode)
         case t =>
-          sys.error(s"Unable to create Decoder with schema type $t, only bytes, fixed, and string supported")
+          throw new Avro4sConfigurationException(
+            s"Unable to create Decoder with schema type $t, only bytes, fixed, and string supported")
       }
   }
 
@@ -34,7 +35,8 @@ trait BigDecimalDecoders {
 
     def decode(value: Any): BigDecimal = value match {
       case bb: ByteBuffer => converter.fromBytes(bb, schema, decimal)
-      case _              => sys.error(s"Unable to decode '$value' to BigDecimal via ByteBuffer")
+      case _ =>
+        throw new Avro4sDecodingException(s"Unable to decode '$value' to BigDecimal via ByteBuffer", value, this)
     }
   }
 
@@ -50,7 +52,8 @@ trait BigDecimalDecoders {
 
     def decode(value: Any): BigDecimal = value match {
       case f: GenericFixed => converter.fromFixed(f, schema, decimal)
-      case _               => sys.error(s"Unable to decode $value to BigDecimal via GenericFixed")
+      case _ =>
+        throw new Avro4sDecodingException(s"Unable to decode $value to BigDecimal via GenericFixed", value, this)
     }
   }
 }
@@ -69,7 +72,8 @@ trait BigDecimalEncoders {
         case Schema.Type.STRING => new BigDecimalStringEncoder(schemaFor, roundingMode)
         case Schema.Type.FIXED  => new BigDecimalFixedEncoder(schemaFor, roundingMode)
         case t =>
-          sys.error(s"Unable to create Encoder with schema type $t, only bytes, fixed, and string supported")
+          throw new Avro4sConfigurationException(
+            s"Unable to create Encoder with schema type $t, only bytes, fixed, and string supported")
       }
   }
 

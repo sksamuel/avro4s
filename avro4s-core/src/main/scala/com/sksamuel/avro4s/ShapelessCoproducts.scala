@@ -28,7 +28,8 @@ trait ShapelessCoproductEncoders {
 
   implicit val CNilEncoder: Encoder[CNil] = new Encoder[CNil] {
     val schemaFor: SchemaFor[CNil] = CNilSchemaFor
-    def encode(value: CNil): AnyRef = sys.error(s"Unexpected value '$value' of type CNil (that doesn't exist)")
+    def encode(value: CNil): AnyRef =
+      throw new Avro4sEncodingException(s"Unexpected value '$value' of type CNil (that doesn't exist)", value, this)
     override def withSchema(schemaFor: SchemaFor[CNil]): Encoder[CNil] = this
   }
 
@@ -60,7 +61,7 @@ trait ShapelessCoproductDecoders {
   implicit val CNilDecoder: Decoder[CNil] = new Decoder[CNil] {
     val schemaFor: SchemaFor[CNil] = CNilSchemaFor
 
-    def decode(value: Any): CNil = sys.error(s"Unable to decode value '$value'")
+    def decode(value: Any): CNil = throw new Avro4sDecodingException(s"Unable to decode value '$value'", value, this)
 
     override def withSchema(schemaFor: SchemaFor[CNil]): Decoder[CNil] = this
   }

@@ -158,7 +158,7 @@ object RecordFields {
     val fieldName = annotations.name.getOrElse(schemaFor.fieldMapper.to(param.label))
     val field = schemaFor.schema.getField(fieldName)
     if (field == null) {
-      sys.error(
+      throw new Avro4sConfigurationException(
         s"Unable to find field with name $fieldName for case class parameter ${param.label} in schema ${schemaFor.schema}")
     }
     field

@@ -36,7 +36,7 @@ trait TemporalEncoders {
       case TimestampNanosLogicalType =>
         t =>
           t.toEpochSecond(ZoneOffset.UTC) * 1000000000L + t.getNano.toLong
-      case _ => sys.error(s"Unsupported type for LocalDateTime: ${schemaFor.schema}")
+      case _ => throw new Avro4sConfigurationException(s"Unsupported type for LocalDateTime: ${schemaFor.schema}")
     }
 
     def encode(t: LocalDateTime): AnyRef = java.lang.Long.valueOf(encoder(t))
@@ -100,7 +100,7 @@ trait TemporalDecoders {
         case l: Long =>
           val nanos = l % 1000000
           LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000000), ZoneOffset.UTC).plusNanos(nanos)
-        case other => sys.error(s"Unsupported type for timestamp nanos ${other.getClass.getName}")
+        case other => throw new Avro4sConfigurationException(s"Unsupported type for timestamp nanos ${other.getClass.getName}")
       }
     }
 

@@ -40,9 +40,9 @@ class TypeUnionDecoder[T](ctx: SealedTrait[Decoder, T],
         codecOpt.get.decodeSubtype(container)
       } else {
         val schemaNames = decoderByName.keys.toSeq.sorted.mkString("[", ", ", "]")
-        sys.error(s"Could not find schema $schemaName in type union schemas $schemaNames")
+        throw new Avro4sDecodingException(s"Could not find schema $schemaName in type union schemas $schemaNames", value, this)
       }
-    case _ => sys.error(s"Unsupported type $value in type union decoder")
+    case _ => throw new Avro4sDecodingException(s"Unsupported type $value in type union decoder", value, this)
   }
 }
 
@@ -113,8 +113,8 @@ object TypeUnions {
 
   private[avro4s] def validateNewSchema[T](schemaFor: SchemaFor[T]) = {
     val newSchema = schemaFor.schema
-    require(newSchema.getType == Schema.Type.UNION,
-            s"Schema type for record codecs must be UNION, received ${newSchema.getType}")
+    if(newSchema.getType != Schema.Type.UNION)
+      throw new Avro4sConfigurationException(s"Schema type for record codecs must be UNION, received $newSchema")
   }
 
   def buildSchema[T](update: SchemaUpdate, schemas: Seq[Schema]): SchemaFor[T] = update match {

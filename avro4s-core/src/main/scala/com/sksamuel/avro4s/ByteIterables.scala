@@ -31,19 +31,22 @@ trait ByteIterableDecoders {
       case buffer: ByteBuffer  => buffer.array
       case array: Array[Byte]  => array
       case fixed: GenericFixed => fixed.bytes
-      case _                   => sys.error(s"Byte array codec cannot decode '$value'")
+      case _                   => throw new Avro4sDecodingException(s"Byte array decoder cannot decode '$value'", value, this)
     }
 
     override def withSchema(schemaFor: SchemaFor[Array[Byte]]): Decoder[Array[Byte]] =
       schemaFor.schema.getType match {
         case Schema.Type.BYTES => ByteArrayDecoder
         case Schema.Type.FIXED => new FixedByteArrayDecoder(schemaFor)
-        case _                 => sys.error(s"Byte array codec doesn't support schema type ${schemaFor.schema.getType}")
+        case _ =>
+          throw new Avro4sConfigurationException(
+            s"Byte array decoder doesn't support schema type ${schemaFor.schema.getType}")
       }
   }
 
   private class FixedByteArrayDecoder(val schemaFor: SchemaFor[Array[Byte]]) extends ByteArrayDecoderBase {
-    require(schema.getType == Schema.Type.FIXED)
+    if (schema.getType != Schema.Type.FIXED)
+      throw new Avro4sConfigurationException(s"Fixed byte array decoder only supports schema type FIXED, got $schema")
   }
 
   private class IterableByteDecoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte],
@@ -78,12 +81,15 @@ trait ByteIterableEncoders {
       schemaFor.schema.getType match {
         case Schema.Type.BYTES => ByteArrayEncoder
         case Schema.Type.FIXED => new FixedByteArrayEncoder(schemaFor)
-        case _                 => sys.error(s"Byte array codec doesn't support schema type ${schemaFor.schema.getType}")
+        case _ =>
+          throw new Avro4sConfigurationException(
+            s"Byte array codec doesn't support schema type ${schemaFor.schema.getType}")
       }
   }
 
   private class FixedByteArrayEncoder(val schemaFor: SchemaFor[Array[Byte]]) extends ByteArrayEncoderBase {
-    require(schema.getType == Schema.Type.FIXED)
+    if (schema.getType != Schema.Type.FIXED)
+      throw new Avro4sConfigurationException(s"Fixed byte array encoder only supports schema type FIXED, got $schema")
 
     def encode(value: Array[Byte]): AnyRef = {
       val array = new Array[Byte](schema.getFixedSize)
