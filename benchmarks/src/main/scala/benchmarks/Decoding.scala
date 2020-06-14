@@ -1,11 +1,12 @@
 package benchmarks
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.nio.ByteBuffer
 import java.util.Collections
 
 import benchmarks.record._
 import com.sksamuel.avro4s._
+import org.apache.avro.file.CodecFactory
 import org.apache.avro.generic.{GenericDatumReader, GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.{DecoderFactory, EncoderFactory}
 import org.apache.avro.util.ByteBufferInputStream
@@ -13,16 +14,7 @@ import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
 object Decoding extends BenchmarkHelpers {
-  @State(Scope.Thread)
-  class Setup {
-    val avroBytes = {
-      import benchmarks.record.generated.AttributeValue._
-      import benchmarks.record.generated._
-      new RecordWithUnionAndTypeField(new ValidInt(255, t)).toByteBuffer
-    }
-
-    val avro4sBytes = encode(RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t)))
-
+  trait Setup {
     val (handrolledDecoder, handrolledReader) = {
       import benchmarks.handrolled_codecs._
       implicit val codec: Codec[AttributeValue[Int]] = AttributeValueCodec[Int]
@@ -38,6 +30,33 @@ object Decoding extends BenchmarkHelpers {
       val reader = new GenericDatumReader[GenericRecord](decoder.schema)
       (decoder, reader)
     }
+  }
+
+  @State(Scope.Thread)
+  class AvroBytesSetup extends Setup {
+    val avroBytes = {
+      import benchmarks.record.generated.AttributeValue._
+      import benchmarks.record.generated._
+      new RecordWithUnionAndTypeField(new ValidInt(255, t)).toByteBuffer
+    }
+  }
+
+  @State(Scope.Thread)
+  class Avro4sBytesSetup extends Setup {
+    val avro4sBytes = encode(RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t)))
+  }
+
+  @State(Scope.Thread)
+  class AvroInputStreamSetup extends Setup {
+    private val outputStream = new ByteArrayOutputStream()
+    private val dataOutputStream = new AvroDataOutputStream[RecordWithUnionAndTypeField](outputStream, CodecFactory.nullCodec())
+    private val obj = RecordWithUnionAndTypeField(AttributeValue.Valid[Int](255, t))
+    dataOutputStream.write(0.to(255).map(i => RecordWithUnionAndTypeField(AttributeValue.Valid[Int](i, t))))
+    dataOutputStream.close()
+    private val bytes = outputStream.toByteArray
+
+    def avroDataStream =
+      new AvroDataInputStream[RecordWithUnionAndTypeField](new ByteArrayInputStream(bytes), None)
   }
 
   def encode[T: Encoder: SchemaFor](value: T): ByteBuffer = {
@@ -71,10 +90,14 @@ class Decoding extends CommonParams with BenchmarkHelpers {
   }
 
   @Benchmark
-  def avro4sHandrolled(setup: Setup, blackhole: Blackhole) =
+  def avro4sHandrolled(setup: Avro4sBytesSetup, blackhole: Blackhole) =
     blackhole.consume(decode(setup.avro4sBytes, setup.handrolledDecoder, setup.handrolledReader))
 
   @Benchmark
-  def avro4sGenerated(setup: Setup, blackhole: Blackhole) =
+  def avro4sGenerated(setup: Avro4sBytesSetup, blackhole: Blackhole) =
     blackhole.consume(decode(setup.avro4sBytes, setup.avro4sDecoder, setup.avro4sReader))
+  @Benchmark
+  def avroDataInputStream(setup: AvroInputStreamSetup, blackhole: Blackhole) = {
+    blackhole.consume(setup.avroDataStream.iterator.toList)
+  }
 }
