@@ -15,8 +15,10 @@ final case class AvroJsonInputStream[T](in: InputStream,
   private val datumReader = new DefaultAwareDatumReader[GenericRecord](writerSchema, decoder.schema)
   private val jsonDecoder = DecoderFactory.get.jsonDecoder(writerSchema, in)
 
+  private var record: GenericRecord = null
   private def next = Try {
-    datumReader.read(null, jsonDecoder)
+    record = datumReader.read(record, jsonDecoder)
+    record
   }
 
   def iterator: Iterator[T] = Iterator.continually(next)
