@@ -84,7 +84,7 @@ class Decoding extends CommonParams with BenchmarkHelpers {
 
 
   @Benchmark
-  def avroSpecificRecord(setup: Setup, blackhole: Blackhole) = {
+  def avroSpecificRecord(setup: AvroBytesSetup, blackhole: Blackhole) = {
     import benchmarks.record.generated._
     blackhole.consume(RecordWithUnionAndTypeField.fromByteBuffer(setup.avroBytes.duplicate))
   }
