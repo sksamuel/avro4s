@@ -24,8 +24,12 @@ class AvroBinaryInputStream[T](in: InputStream,
   private val avroDecoder = DecoderFactory.get().binaryDecoder(in, null)
 
   private val _iter = new Iterator[GenericRecord] {
+    var record: GenericRecord = null
     override def hasNext: Boolean = !avroDecoder.isEnd
-    override def next(): GenericRecord = datumReader.read(null, avroDecoder)
+    override def next(): GenericRecord = {
+      record = datumReader.read(record, avroDecoder)
+      record
+    }
   }
 
   /**
