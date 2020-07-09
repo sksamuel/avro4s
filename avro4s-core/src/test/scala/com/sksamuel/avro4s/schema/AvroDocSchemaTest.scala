@@ -31,9 +31,20 @@ class AvroDocSchemaTest extends AnyWordSpec with Matchers {
       val schema = AvroSchema[Annotated123]
       schema.toString(true) shouldBe expected.toString(true)
     }
+
+    "produce doc only on the field record when field is not a value class" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/doc_field_regular_case_class.json"))
+      val schema = AvroSchema[Message]
+
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
 case class Annotated123(a: ValueTypeForDocAnnoTest)
 @AvroDoc("wibble")
 case class ValueTypeForDocAnnoTest(s: String) extends AnyVal
+
+case class Message(record1: Record1)
+@AvroDoc("This is a record")
+case class Record1(field: String)

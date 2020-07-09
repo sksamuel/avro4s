@@ -142,6 +142,9 @@ object Records {
       if (annotations.transient) None
       else {
         val doc = valueTypeDoc(ctx, param)
+        if(doc.isDefined) {
+          println("context with doc: " + ctx.typeName.full)
+        }
         val schema = param.typeclass.resolveSchemaFor(nextEnv, NoUpdate).schema
         Some(buildSchemaField(param, schema, annotations, record.getNamespace, fieldMapper, doc))
       }
@@ -253,11 +256,19 @@ object Records {
       import scala.reflect.runtime.universe
       val mirror = universe.runtimeMirror(Thread.currentThread().getContextClassLoader)
       val sym = mirror.staticClass(ctx.typeName.full).primaryConstructor.asMethod.paramLists.head(param.index)
-      sym.typeSignature.typeSymbol.annotations.collectFirst {
-        case a if a.tree.tpe =:= typeOf[AvroDoc] =>
-          val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
-          annoValue.toString
+
+      val anyValSym = typeOf[AnyVal].typeSymbol
+      val typeSym = sym.typeSignature.typeSymbol
+      if(typeSym.isClass && typeSym.asClass.baseClasses.contains(anyValSym)) {
+        typeSym.annotations.collectFirst {
+          case a if a.tree.tpe =:= typeOf[AvroDoc] =>
+            val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
+            annoValue.toString
+        }
+      } else {
+        None
       }
+
     } catch {
       case NonFatal(_) => None
     }
