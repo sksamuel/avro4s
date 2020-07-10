@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import java.io.OutputStream
 
-import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
+import org.apache.avro.generic.GenericDatumWriter
 
 class DefaultAvroOutputStream[T](os: OutputStream,
                                  serializer: org.apache.avro.io.Encoder)
@@ -10,7 +10,7 @@ class DefaultAvroOutputStream[T](os: OutputStream,
 
   val resolved = encoder.resolveEncoder()
 
-  private val datumWriter = new GenericDatumWriter[GenericRecord](resolved.schema)
+  private val datumWriter = new GenericDatumWriter[AnyRef](resolved.schema)
 
   override def close(): Unit = {
     flush()
@@ -18,8 +18,8 @@ class DefaultAvroOutputStream[T](os: OutputStream,
   }
 
   override def write(t: T): Unit = {
-    val record = resolved.encode(t).asInstanceOf[GenericRecord]
-    datumWriter.write(record, serializer)
+    val datum = resolved.encode(t)
+    datumWriter.write(datum, serializer)
   }
 
   override def flush(): Unit = serializer.flush()
