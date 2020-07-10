@@ -15,7 +15,7 @@ trait ByteIterableSchemaFors {
 trait ByteIterableDecoders {
 
   implicit val ByteArrayDecoder: Decoder[Array[Byte]] = new ByteArrayDecoderBase {
-    val schemaFor = SchemaFor[Byte].map(SchemaBuilder.array.items(_))
+    val schemaFor = SchemaFor[Array[Byte]](SchemaBuilder.builder().bytesType())
   }
 
   implicit val ByteListDecoder: Decoder[List[Byte]] = iterableByteDecoder(_.toList)
@@ -62,7 +62,7 @@ trait ByteIterableDecoders {
 trait ByteIterableEncoders {
 
   implicit val ByteArrayEncoder: Encoder[Array[Byte]] = new ByteArrayEncoderBase {
-    val schemaFor = SchemaFor[Byte].map(SchemaBuilder.array.items(_))
+    val schemaFor = SchemaFor[Array[Byte]](SchemaBuilder.builder().bytesType())
     def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
   }
 

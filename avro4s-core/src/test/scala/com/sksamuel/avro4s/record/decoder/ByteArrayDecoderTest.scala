@@ -3,6 +3,7 @@ package com.sksamuel.avro4s.record.decoder
 import java.nio.ByteBuffer
 
 import com.sksamuel.avro4s.{AvroSchema, Decoder}
+import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericData
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -53,7 +54,9 @@ class ByteArrayDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode top level byte arrays") {
-    Decoder[Array[Byte]].decode(ByteBuffer.wrap(Array[Byte](1, 4, 9))).toList shouldBe List[Byte](1, 4, 9)
+    val decoder = Decoder[Array[Byte]].resolveDecoder()
+    decoder.schema shouldBe SchemaBuilder.builder().bytesType()
+    decoder.decode(ByteBuffer.wrap(Array[Byte](1, 4, 9))).toList shouldBe List[Byte](1, 4, 9)
   }
 
   test("decode array to bytebuffers") {
