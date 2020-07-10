@@ -31,7 +31,8 @@ object ScalaEnums {
           schema.getEnumSymbols.get(i) -> caseObject
       }.toMap
 
-    val data = new CodecData[Typeclass, T](ctx, symbolForSubtype, valueForSymbol, SchemaFor[T](schema, DefaultFieldMapper))
+    val data =
+      new CodecData[Typeclass, T](ctx, symbolForSubtype, valueForSymbol, SchemaFor[T](schema, DefaultFieldMapper))
     builder(data)
   }
 
@@ -66,16 +67,14 @@ object ScalaEnums {
 
   private def validateSchema[T](schemaFor: SchemaFor[T], valueForSymbol: Map[String, T]): Unit = {
     val newSchema = schemaFor.schema
-    require(newSchema.getType == Schema.Type.ENUM,
-      s"Schema type for enum codecs must be ENUM, received ${newSchema.getType}")
+    if (newSchema.getType != Schema.Type.ENUM)
+      throw new Avro4sConfigurationException(s"Schema type for enum codecs must be ENUM, received $newSchema")
     val currentSymbols = valueForSymbol.keys.toSet
     val newSymbols = newSchema.getEnumSymbols.asScala.toSet
-    require(
-      newSymbols == currentSymbols,
-      s"Enum codec symbols cannot be changed via schema; schema symbols are ${newSymbols.mkString(",")} - codec symbols are $currentSymbols"
-    )
+    if (newSymbols != currentSymbols)
+      throw new Avro4sConfigurationException(
+        s"Enum codec symbols cannot be changed via schema; schema symbols are ${newSymbols.mkString(",")} - codec symbols are $currentSymbols")
   }
-
 
   private class CodecData[Typeclass[_], T](val ctx: SealedTrait[Typeclass, T],
                                            val symbolForSubtype: Map[Subtype[Typeclass, T], AnyRef],

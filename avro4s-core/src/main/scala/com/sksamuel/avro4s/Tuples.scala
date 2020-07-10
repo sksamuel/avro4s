@@ -306,9 +306,10 @@ trait TupleDecoders {
 object Tuples {
 
   def extractTupleSchema(pos: Int)(schema: Schema): Schema = {
-    require(schema.getType == Schema.Type.RECORD, s"Schema type for tuples must be RECORD, received ${schema.getType}")
-    require(schema.getFields.size < pos,
-            s"Record schema for tuple has only ${schema.getFields.size} fields, more are required")
+    if(schema.getType != Schema.Type.RECORD)
+      throw new Avro4sConfigurationException(s"Schema type for tuples must be RECORD, received ${schema.getType}")
+    if(pos >= schema.getFields.size)
+      throw new Avro4sConfigurationException(s"Record schema for tuple has only ${schema.getFields.size} fields, more are required")
     schema.getFields.get(pos).schema()
   }
 

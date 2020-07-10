@@ -8,6 +8,7 @@ object AvroSchemaMerge {
   import scala.collection.JavaConverters._
 
   def apply(name: String, namespace: String, schemas: List[Schema]): Schema = {
+    // should this also be converted to throw an Avro4sExcpeption?
     require(schemas.forall(_.getType == Schema.Type.RECORD), "Can only merge records")
 
     val doc = schemas.flatMap(x => Option(x.getDoc)).mkString("; ")

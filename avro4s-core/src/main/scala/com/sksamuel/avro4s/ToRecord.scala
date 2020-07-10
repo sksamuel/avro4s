@@ -23,7 +23,10 @@ object ToRecord {
 
     def to(t: T): Record = resolved.encode(t) match {
       case record: Record => record
-      case output => sys.error(s"Cannot marshall an instance of $t to a Record (was $output)")
+      case output =>
+        throw new Avro4sEncodingException(s"Cannot marshall an instance of $t to a Record (was $output)",
+                                          output,
+                                          encoder)
     }
   }
 }
