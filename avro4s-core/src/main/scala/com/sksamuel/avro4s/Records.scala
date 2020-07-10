@@ -142,9 +142,6 @@ object Records {
       if (annotations.transient) None
       else {
         val doc = valueTypeDoc(ctx, param)
-        if(doc.isDefined) {
-          println("context with doc: " + ctx.typeName.full)
-        }
         val schema = param.typeclass.resolveSchemaFor(nextEnv, NoUpdate).schema
         Some(buildSchemaField(param, schema, annotations, record.getNamespace, fieldMapper, doc))
       }
