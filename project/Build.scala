@@ -72,9 +72,9 @@ object Build extends AutoPlugin {
       credentials += Credentials(Path.userHome / ".sbt" / "credentials.sbt")
     },
     if (isTravis) {
-      version := s"3.1.0.$travisBuildNumber-SNAPSHOT"
+      version := s"4.1.0.$travisBuildNumber-SNAPSHOT"
     } else {
-      version := "3.0.9"
+      version := "4.0.0-RC1"
     },
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
