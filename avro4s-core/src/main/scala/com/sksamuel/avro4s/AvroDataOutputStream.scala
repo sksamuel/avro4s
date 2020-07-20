@@ -20,22 +20,20 @@ case class AvroDataOutputStream[T](os: OutputStream,
                                    codec: CodecFactory)
                                   (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
 
-  val resolved = encoder.resolveEncoder()
-
-  val (writer, writeFn) = resolved.schema.getType match {
+  val (writer, writeFn) = encoder.schema.getType match {
     case Schema.Type.DOUBLE | Schema.Type.LONG | Schema.Type.BOOLEAN | Schema.Type.STRING | Schema.Type.INT | Schema.Type.FLOAT =>
-      val datumWriter = new GenericDatumWriter[T](resolved.schema)
+      val datumWriter = new GenericDatumWriter[T](encoder.schema)
       val dataFileWriter = new DataFileWriter[T](datumWriter)
       dataFileWriter.setCodec(codec)
-      dataFileWriter.create(resolved.schema, os)
+      dataFileWriter.create(encoder.schema, os)
       (dataFileWriter, (t: T) => dataFileWriter.append(t))
     case _ =>
-      val datumWriter = new GenericDatumWriter[GenericRecord](resolved.schema)
+      val datumWriter = new GenericDatumWriter[GenericRecord](encoder.schema)
       val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
       dataFileWriter.setCodec(codec)
-      dataFileWriter.create(resolved.schema, os)
+      dataFileWriter.create(encoder.schema, os)
       (dataFileWriter, (t: T) => {
-        val record = resolved.encode(t).asInstanceOf[GenericRecord]
+        val record = encoder.encode(t).asInstanceOf[GenericRecord]
         dataFileWriter.append(record)
       })
   }

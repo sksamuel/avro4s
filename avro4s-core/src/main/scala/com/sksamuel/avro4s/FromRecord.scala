@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.Schema
 import org.apache.avro.generic.IndexedRecord
 
 /**
@@ -13,8 +12,6 @@ trait FromRecord[T] extends Serializable {
 object FromRecord {
   def apply[T](implicit decoder: Decoder[T]): FromRecord[T] = new FromRecord[T] {
 
-    val resolved = decoder.resolveDecoder()
-
-    override def from(record: IndexedRecord): T = resolved.decode(record)
+    override def from(record: IndexedRecord): T = decoder.decode(record)
   }
 }

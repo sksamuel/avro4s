@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.encoder
 
-import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord}
+import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord, SchemaFor}
 import org.apache.avro.util.Utf8
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -27,6 +27,12 @@ class OptionEncoderTest extends AnyWordSpec with Matchers {
       val fooSchema = AvroSchema[Foo]
       Encoder[Test].encode(Test(Option(Foo("hello")))) shouldBe ImmutableRecord(schema, Vector(ImmutableRecord(fooSchema, Vector(new Utf8("hello")))))
       Encoder[Test].encode(Test(None)) shouldBe ImmutableRecord(schema, Vector(null))
+    }
+    "support schema overrides with either" in {
+      case class Test(a: Option[Either[String, Int]])
+      val expected = AvroSchema[Test]
+      val schema = Encoder[Test].withSchema(SchemaFor[Test]).schema
+      schema shouldBe expected
     }
   }
 }
