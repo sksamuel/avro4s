@@ -13,12 +13,11 @@ class AvroDataInputStream[T](in: InputStream,
                              writerSchema: Option[Schema])
                             (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
-  val resolved = decoder.resolveDecoder()
 
   // if no reader or writer schema is specified, then we create a reader that uses what's present in the files
   private val datumReader = writerSchema match {
-    case Some(writer) => GenericData.get.createDatumReader(writer, resolved.schema)
-    case None => GenericData.get.createDatumReader(null, resolved.schema)
+    case Some(writer) => GenericData.get.createDatumReader(writer, decoder.schema)
+    case None => GenericData.get.createDatumReader(null, decoder.schema)
   }
 
   private val dataFileReader = new DataFileStream[GenericRecord](in, datumReader.asInstanceOf[DatumReader[GenericRecord]])
@@ -27,7 +26,7 @@ class AvroDataInputStream[T](in: InputStream,
     override def hasNext: Boolean = dataFileReader.hasNext
     override def next(): T = {
       val record = dataFileReader.next
-      resolved.decode(record)
+      decoder.decode(record)
     }
   }
 
@@ -35,7 +34,7 @@ class AvroDataInputStream[T](in: InputStream,
     override def hasNext: Boolean = dataFileReader.hasNext
     override def next(): Try[T] = Try {
       val record = dataFileReader.next
-      resolved.decode(record)
+      decoder.decode(record)
     }
   }
 

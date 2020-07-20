@@ -19,9 +19,7 @@ trait ToRecord[T] extends Serializable {
 object ToRecord {
   def apply[T](implicit encoder: Encoder[T]): ToRecord[T] = new ToRecord[T] {
 
-    val resolved = encoder.resolveEncoder()
-
-    def to(t: T): Record = resolved.encode(t) match {
+    def to(t: T): Record = encoder.encode(t) match {
       case record: Record => record
       case output =>
         throw new Avro4sEncodingException(s"Cannot marshall an instance of $t to a Record (was $output)",
