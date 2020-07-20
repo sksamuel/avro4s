@@ -1,6 +1,8 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.generic.GenericContainer
+import java.nio.ByteBuffer
+
+import org.apache.avro.generic.{GenericContainer, GenericFixed}
 import org.apache.avro.util.Utf8
 
 import scala.reflect.runtime.universe._
@@ -18,6 +20,7 @@ object TypeGuardedDecoding {
     else if (tpe <:< typeOf[Long]) longDecoder(decoder)
     else if (tpe <:< typeOf[Double]) doubleDecoder(decoder)
     else if (tpe <:< typeOf[Float]) floatDecoder(decoder)
+    else if (tpe <:< typeOf[Array[Byte]]) byteArrayDecoder(decoder)
     else if (tpe <:< typeOf[Array[_]] || tpe <:< typeOf[java.util.Collection[_]] || tpe <:< typeOf[Iterable[_]]) {
       arrayDecoder(decoder)
     } else if (tpe <:< typeOf[java.util.Map[_, _]] || tpe <:< typeOf[Map[_, _]]) {
@@ -58,6 +61,12 @@ object TypeGuardedDecoding {
     case v: Array[_]                => decoder.decode(v)
     case v: java.util.Collection[_] => decoder.decode(v)
     case v: Iterable[_]             => decoder.decode(v)
+  }
+
+  private def byteArrayDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
+    case v: ByteBuffer   => decoder.decode(v)
+    case v: Array[Byte]  => decoder.decode(v)
+    case v: GenericFixed => decoder.decode(v)
   }
 
   private def mapDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
