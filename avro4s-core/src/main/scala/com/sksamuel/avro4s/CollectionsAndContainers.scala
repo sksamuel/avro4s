@@ -306,11 +306,14 @@ object CollectionsAndContainers {
   private[avro4s] def extractOptionSchema(schema: Schema): Schema = {
     if (schema.getType != Schema.Type.UNION)
       throw new Avro4sConfigurationException(
-        s"Schema type for option encoders / decoders must be UNION, received ${schema}")
+        s"Schema type for option encoders / decoders must be UNION, received $schema")
 
-    schema.getTypes.asScala.find(_.getType != Schema.Type.NULL) match {
-      case Some(s) => s
-      case None    => throw new Avro4sConfigurationException(s"Union schema $schema doesn't contain any non-null entries")
+    val schemas = schema.getTypes.asScala.filterNot(_.getType == Schema.Type.NULL)
+
+    schemas.size match {
+      case 0 => throw new Avro4sConfigurationException(s"Union schema $schema doesn't contain any non-null entries")
+      case 1 => schemas.head
+      case _ => Schema.createUnion(schemas.asJava)
     }
   }
 
