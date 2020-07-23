@@ -21,10 +21,12 @@ object ToRecord {
 
     def to(t: T): Record = encoder.encode(t) match {
       case record: Record => record
-      case output =>
-        throw new Avro4sEncodingException(s"Cannot marshall an instance of $t to a Record (was $output)",
-                                          output,
-                                          encoder)
+      case output => {
+        val clazz = output.getClass
+        throw new Avro4sEncodingException(s"Cannot marshall an instance of $t to a Record (had class $clazz, output was $output)",
+          output,
+          encoder)
+      }
     }
   }
 }
