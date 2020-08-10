@@ -207,7 +207,7 @@ class EnumSchemaTest extends AnyWordSpec with Matchers {
 
     "support optional java enums with default values" in {
 
-      case class OptionalJavaEnumWithDefaultValue(wine: Option[Wine] = Some(Wine.CabSav))
+      case class OptionalJavaEnumWithDefaultValue(wine: Option[Wine] = Option(Wine.CabSav))
 
       val schema = AvroSchema[OptionalJavaEnumWithDefaultValue]
       val expected = new org.apache.avro.Schema.Parser().parse(
@@ -776,6 +776,28 @@ class EnumSchemaTest extends AnyWordSpec with Matchers {
 
       schema.toString(true) shouldBe expected.toString(true)
     }
+
+    "named scala enum" in {
+      val schema = AvroSchema[NamedEnumFoo]
+      val expected = new org.apache.avro.Schema.Parser().parse(
+        """
+          {
+            "type" : "record",
+            "name" : "NamedEnumFoo",
+            "namespace" : "com.sksamuel.avro4s.schema",
+            "fields" : [{
+              "name" : "z",
+              "type" : {
+                "type" : "enum",
+                "name" : "NamedEnum",
+                "symbols" : [ "Temperature" ]
+              }
+            }]
+          }
+          """
+      )
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
@@ -800,3 +822,8 @@ sealed trait CupcatAnnotatedEnum
 @AvroSortPriority(0) case object SnoutleyAnnotatedEnum extends CupcatAnnotatedEnum
 @AvroSortPriority(1) case object CuppersAnnotatedEnum extends CupcatAnnotatedEnum
 
+object NamedEnum extends Enumeration {
+  val T: NamedEnum.Value = Value("Temperature")
+}
+
+case class NamedEnumFoo(z: NamedEnum.Value)

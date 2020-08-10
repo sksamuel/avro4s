@@ -85,19 +85,23 @@ trait BaseSchemaFors {
       case t @ TypeRef(_, _, _) => t
     }
 
-    val valueType = typeOf[E]
-    val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
-    val syms = pre
-      .filter { sym =>
-        !sym.isMethod &&
-        !sym.isType &&
-        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
-      }
-      .map { sym =>
-        sym.name.decodedName.toString.trim
-      }
+//    val valueType = typeOf[E]
+//    val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
+//    val syms = pre
+//      .filter { sym =>
+//        !sym.isMethod &&
+//        !sym.isType &&
+//        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
+//      }
+//      .map { sym =>
+//        sym.name.decodedName.toString.trim
+//      }
 
     val annotations: Seq[Annotation] = typeRef.pre.typeSymbol.annotations
+
+    val enumObject = tag.mirror.classLoader.loadClass(typeRef.pre.typeSymbol.fullName + "$").getField("MODULE$").get(null)
+    val valuesMethod = enumObject.getClass.getMethod("values")
+    val syms = valuesMethod.invoke(enumObject).asInstanceOf[Iterable[E]].map(_.toString).toList
 
     val maybeName = getAnnotationValue(classOf[AvroName], annotations)
     val maybeNamespace = getAnnotationValue(classOf[AvroNamespace], annotations)
