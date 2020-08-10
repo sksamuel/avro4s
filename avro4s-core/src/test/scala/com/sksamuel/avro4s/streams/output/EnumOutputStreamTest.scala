@@ -19,7 +19,7 @@ class EnumOutputStreamTest extends AnyFunSuite with Matchers with OutputStreamTe
   test("optional java enum") {
     case class Test(z: Option[Wine])
     val schema = AvroSchema[Wine]
-    writeRead(Test(Some(Wine.Malbec))) { record =>
+    writeRead(Test(Option(Wine.Malbec))) { record =>
       record.get("z") shouldBe GenericData.get.createEnum(Wine.Malbec.name, schema)
     }
     writeRead(Test(None)) { record =>
@@ -38,7 +38,7 @@ class EnumOutputStreamTest extends AnyFunSuite with Matchers with OutputStreamTe
   test("optional scala enum") {
     case class Test(z: Option[Colours.Value])
     val schema = AvroSchema[Wine]
-    writeRead(Test(Some(Colours.Green))) { record =>
+    writeRead(Test(Option(Colours.Green))) { record =>
       record.get("z") shouldBe GenericData.get.createEnum(Colours.Green.toString, schema)
     }
     writeRead(Test(None)) { record =>

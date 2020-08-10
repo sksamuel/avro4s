@@ -22,7 +22,7 @@ private[avro4s] object TypeUnionEntry {
       val schema = decoder.schema
       val fullName = schema.getFullName
 
-      def decodeSubtype(value: Any): T = decoder.decode(value)
+      def decodeSubtype(value: AvroValue): T = decoder.decode(value)
     }
 
     def apply(env: DefinitionEnvironment[Decoder], update: SchemaUpdate) =

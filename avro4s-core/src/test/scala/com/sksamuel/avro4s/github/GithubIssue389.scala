@@ -3,7 +3,8 @@ package com.sksamuel.avro4s.github
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, Encoder}
+import com.sksamuel.avro4s.AvroValue.AvroString
+import com.sksamuel.avro4s.{AvroSchema, AvroValue, Decoder, Encoder}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -34,7 +35,7 @@ class GithubIssue389 extends AnyWordSpec with Matchers {
     "decode an iso formatted String to an equivalent OffsetDatetime object" in {
       def testDecode(datetime: OffsetDateTime): Unit = {
         val dateTimeString = datetime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-        val decoder = Decoder[OffsetDateTime].decode(dateTimeString)
+        val decoder = Decoder[OffsetDateTime].decode(AvroString(dateTimeString))
         decoder shouldBe datetime
       }
       testDecode(NOW)
@@ -45,7 +46,7 @@ class GithubIssue389 extends AnyWordSpec with Matchers {
     "round trip encode and decode into an equivalent object" in {
       def testRoundTrip(datetime: OffsetDateTime): Unit = {
         val encoded = Encoder[OffsetDateTime].encode(datetime)
-        val decoded = Decoder[OffsetDateTime].decode(encoded)
+        val decoded = Decoder[OffsetDateTime].decode(AvroValue.unsafeFromAny(encoded))
         decoded shouldBe datetime
       }
       testRoundTrip(NOW)

@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 import java.util.Collections
 
 import benchmarks.record._
+import com.sksamuel.avro4s.AvroValue.AvroRecord
 import com.sksamuel.avro4s._
 import org.apache.avro.generic.{GenericDatumReader, GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.{DecoderFactory, EncoderFactory}
@@ -60,7 +61,7 @@ class Decoding extends CommonParams with BenchmarkHelpers {
     val dec =
       DecoderFactory.get().binaryDecoder(new ByteBufferInputStream(Collections.singletonList(bytes.duplicate)), null)
     val record = reader.read(null, dec)
-    decoder.decode(record)
+    decoder.decode(AvroRecord(record))
   }
 
 

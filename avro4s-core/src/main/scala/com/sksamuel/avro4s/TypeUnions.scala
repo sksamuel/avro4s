@@ -1,11 +1,11 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.AvroValue.AvroRecord
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, NoUpdate}
 import com.sksamuel.avro4s.TypeUnionEntry._
 import com.sksamuel.avro4s.TypeUnions._
 import magnolia.{SealedTrait, Subtype}
 import org.apache.avro.Schema
-import org.apache.avro.generic.GenericContainer
 
 class TypeUnionEncoder[T](ctx: SealedTrait[Encoder, T],
                           val schemaFor: SchemaFor[T],
@@ -32,12 +32,12 @@ class TypeUnionDecoder[T](ctx: SealedTrait[Decoder, T],
     TypeUnions.decoder(ctx, new DefinitionEnvironment[Decoder](), FullSchemaUpdate(schemaFor))
   }
 
-  def decode(value: Any): T = value match {
-    case container: GenericContainer =>
-      val schemaName = container.getSchema.getFullName
+  override def decode(value: AvroValue): T = value match {
+    case avro@AvroRecord(record) =>
+      val schemaName = record.getSchema.getFullName
       val codecOpt = decoderByName.get(schemaName)
       if (codecOpt.isDefined) {
-        codecOpt.get.decodeSubtype(container)
+        codecOpt.get.decodeSubtype(avro)
       } else {
         val schemaNames = decoderByName.keys.toSeq.sorted.mkString("[", ", ", "]")
         throw new Avro4sDecodingException(s"Could not find schema $schemaName in type union schemas $schemaNames", value, this)

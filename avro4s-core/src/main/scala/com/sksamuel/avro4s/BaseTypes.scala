@@ -5,10 +5,11 @@ import java.sql.{Date, Timestamp}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 import java.util.UUID
 
-import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
+import com.sksamuel.avro4s.AvroValue.{AvroBoolean, AvroByte, AvroByteArray, AvroDouble, AvroEnumSymbol, AvroFloat, AvroGenericFixed, AvroInt, AvroLong, AvroShort, AvroString}
+import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
-import org.apache.avro.generic.{GenericData, GenericFixed}
 import org.apache.avro.util.Utf8
+import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
@@ -247,11 +248,11 @@ trait BaseEncoders {
     override def withSchema(schemaFor: SchemaFor[String]): Encoder[String] = new StringEncoder(schemaFor)
   }
 
-  implicit val UUIDCodec = StringEncoder.comap[UUID](_.toString).withSchema(SchemaFor.UUIDSchemaFor)
+  implicit val UUIDCodec: Encoder[UUID] = StringEncoder.comap[UUID](_.toString).withSchema(SchemaFor.UUIDSchemaFor)
 
-  implicit def javaEnumEncoder[E <: Enum[E]: ClassTag] = new JavaEnumEncoder[E]
+  implicit def javaEnumEncoder[E <: Enum[E]: ClassTag]: JavaEnumEncoder[E] = new JavaEnumEncoder[E]
 
-  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag] = new ScalaEnumEncoder[E]
+  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: ScalaEnumEncoder[E] = new ScalaEnumEncoder[E]
 
   class JavaEnumEncoder[E <: Enum[E]](implicit tag: ClassTag[E]) extends Encoder[E] {
     val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchemaFor[E]
@@ -267,121 +268,123 @@ trait BaseEncoders {
 trait BaseDecoders {
   implicit object ByteDecoder extends Decoder[Byte] {
     val schemaFor: SchemaFor[Byte] = SchemaFor.ByteSchemaFor
-    def decode(value: Any): Byte = value match {
-      case b: Byte => b
-      case _       => value.asInstanceOf[Int].byteValue
+    override def decode(value: AvroValue): Byte = value match {
+      case AvroByte(b) => b
+      case AvroInt(int) => int.byteValue()
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 
   implicit object ShortDecoder extends Decoder[Short] {
     val schemaFor: SchemaFor[Short] = SchemaFor.ShortSchemaFor
-    def decode(value: Any): Short = value match {
-      case b: Byte  => b
-      case s: Short => s
-      case i: Int   => i.toShort
+    override def decode(value: AvroValue): Short = value match {
+      case AvroByte(b) => b.toShort
+      case AvroShort(s) => s
+      case AvroInt(int) => int.shortValue()
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 
   implicit object IntDecoder extends Decoder[Int] {
     val schemaFor: SchemaFor[Int] = SchemaFor.IntSchemaFor
-    def decode(value: Any): Int = value match {
-      case byte: Byte   => byte.toInt
-      case short: Short => short.toInt
-      case int: Int     => int
-      case other        => throw new Avro4sDecodingException(s"Cannot convert $other to type INT", value, this)
+    override def decode(value: AvroValue): Int = value match {
+      case AvroByte(b) => b.toInt
+      case AvroShort(s) => s.toInt
+      case AvroInt(int) => int
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 
   implicit object LongDecoder extends Decoder[Long] {
     val schemaFor: SchemaFor[Long] = SchemaFor.LongSchemaFor
-    def decode(value: Any): Long = value match {
-      case byte: Byte   => byte.toLong
-      case short: Short => short.toLong
-      case int: Int     => int.toLong
-      case long: Long   => long
-      case other        => throw new Avro4sDecodingException(s"Cannot convert $other to type LONG", value, this)
+    override def decode(value: AvroValue): Long = value match {
+      case AvroByte(b) => b.toLong
+      case AvroShort(s) => s.toLong
+      case AvroInt(int) => int.toLong
+      case AvroLong(long) => long
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 
   implicit object DoubleDecoder extends Decoder[Double] {
     val schemaFor: SchemaFor[Double] = SchemaFor.DoubleSchemaFor
-    def decode(value: Any): Double = value match {
-      case d: Double           => d
-      case d: java.lang.Double => d
+    override def decode(value: AvroValue): Double = value match {
+      case AvroDouble(d) => d
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 
   implicit object FloatDecoder extends Decoder[Float] {
     val schemaFor: SchemaFor[Float] = SchemaFor.FloatSchemaFor
-    def decode(value: Any): Float = value match {
-      case f: Float           => f
-      case f: java.lang.Float => f
+    override def decode(value: AvroValue): Float = value match {
+      case AvroFloat(d) => d
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 
   implicit object BooleanDecoder extends Decoder[Boolean] {
     val schemaFor: SchemaFor[Boolean] = SchemaFor.BooleanSchemaFor
-    def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
+    override def decode(value: AvroValue): Boolean = value match {
+      case AvroBoolean(b) => b
+      case _ => throw Avro4sUnsupportedValueException(value, this)
+    }
   }
 
   implicit object ByteBufferDecoder extends Decoder[ByteBuffer] {
     val schemaFor: SchemaFor[ByteBuffer] = SchemaFor.ByteBufferSchemaFor
-    def decode(value: Any): ByteBuffer = value match {
-      case b: ByteBuffer  => b
-      case a: Array[Byte] => ByteBuffer.wrap(a)
-      case _              => throw new Avro4sDecodingException(s"Unable to decode value $value to ByteBuffer", value, this)
+    override def decode(value: AvroValue): ByteBuffer = value match {
+      case AvroByteArray(bytes)  => ByteBuffer.wrap(bytes)
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 
   implicit object CharSequenceDecoder extends Decoder[CharSequence] {
     val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchemaFor
-    def decode(value: Any): CharSequence = value match {
-      case cs: CharSequence => cs
-      case _                => throw new Avro4sDecodingException(s"Unable to decode value $value to CharSequence", value, this)
-    }
+    override def decode(value: AvroValue): CharSequence = value match {
+      case AvroString(s) => s
+      case _ => throw Avro4sUnsupportedValueException(value, this)    }
   }
 
   implicit val StringDecoder: Decoder[String] = new StringDecoder(SchemaFor.StringSchemaFor)
 
   implicit val Utf8Decoder: Decoder[Utf8] = new Decoder[Utf8] {
     val schemaFor: SchemaFor[Utf8] = SchemaFor.Utf8SchemaFor
-    def decode(value: Any): Utf8 = value match {
-      case u: Utf8        => u
-      case b: Array[Byte] => new Utf8(b)
-      case null           => throw new Avro4sDecodingException("Cannot decode <null> as utf8", value, this)
-      case _              => new Utf8(value.toString)
+    override def decode(value: AvroValue): Utf8 = value match {
+      case AvroString(str) => new Utf8(str)
+      case null => throw new Avro4sDecodingException("Cannot decode <null> as utf8", value, this)
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 
   private[avro4s] class StringDecoder(val schemaFor: SchemaFor[String]) extends Decoder[String] {
 
-    def decode(value: Any): String = value match {
-      case u: Utf8             => u.toString
-      case s: String           => s
-      case chars: CharSequence => chars.toString
-      case fixed: GenericFixed => new String(fixed.bytes())
-      case a: Array[Byte]      => new String(a)
+    override def decode(value: AvroValue): String = value match {
+      case AvroString(str) => str
+      case AvroGenericFixed(fixed) => new String(fixed.bytes())
+      case AvroByteArray(bytes) => new String(bytes)
       case null                => throw new Avro4sDecodingException("Cannot decode <null> as a string", value, this)
-      case other =>
-        throw new Avro4sDecodingException(s"Cannot decode $other of type ${other.getClass} into a string", value, this)
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
 
     override def withSchema(schemaFor: SchemaFor[String]): Decoder[String] = new StringDecoder(schemaFor)
   }
 
-  implicit val UUIDDecoder = StringDecoder.map[UUID](UUID.fromString).withSchema(SchemaFor.UUIDSchemaFor)
+  implicit val UUIDDecoder: Decoder[UUID] = StringDecoder.map[UUID](UUID.fromString).withSchema(SchemaFor.UUIDSchemaFor)
 
-  implicit def javaEnumDecoder[E <: Enum[E]: ClassTag] = new JavaEnumDecoder[E]
+  implicit def javaEnumDecoder[E <: Enum[E]: ClassTag]: JavaEnumDecoder[E] = new JavaEnumDecoder[E]
 
-  implicit def scalaEnumDecoder[E <: Enumeration#Value: TypeTag] = new ScalaEnumDecoder[E]
+  implicit def scalaEnumDecoder[E <: Enumeration#Value: TypeTag]: ScalaEnumDecoder[E] = new ScalaEnumDecoder[E]
 
   class JavaEnumDecoder[E <: Enum[E]](implicit tag: ClassTag[E]) extends Decoder[E] {
     val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchemaFor[E]
-    def decode(value: Any): E = Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], value.toString)
+    override def decode(value: AvroValue): E = value match {
+      case AvroEnumSymbol(symbol) => Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], symbol.toString)
+      case AvroString(str) => Enum.valueOf(tag.runtimeClass.asInstanceOf[Class[E]], str)
+    }
   }
 
   class ScalaEnumDecoder[E <: Enumeration#Value](implicit tag: TypeTag[E]) extends Decoder[E] {
-    val enum = tag.tpe match {
+    val enum: Enumeration = tag.tpe match {
       case TypeRef(enumType, _, _) =>
         val moduleSymbol = enumType.termSymbol.asModule
         val mirror: Mirror = runtimeMirror(getClass.getClassLoader)
@@ -390,6 +393,9 @@ trait BaseDecoders {
 
     val schemaFor: SchemaFor[E] = SchemaFor.scalaEnumSchemaFor[E]
 
-    def decode(value: Any): E = enum.withName(value.toString).asInstanceOf[E]
+    override def decode(value: AvroValue): E = value match {
+      case AvroEnumSymbol(symbol) => enum.withName(symbol.toString).asInstanceOf[E]
+      case AvroString(str) => enum.withName(str).asInstanceOf[E]
+    }
   }
 }

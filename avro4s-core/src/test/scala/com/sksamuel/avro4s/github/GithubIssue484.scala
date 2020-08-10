@@ -4,7 +4,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, 
 
 import com.sksamuel.avro4s.record.decoder.ScalaEnumClass
 import com.sksamuel.avro4s.schema.Colours
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
+import com.sksamuel.avro4s.{AvroSchema, AvroValue, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.scalatest.funsuite.AnyFunSuite
@@ -25,6 +25,6 @@ class GithubIssue484 extends AnyFunSuite with Matchers {
     val schema = AvroSchema[ScalaEnumClass]
     val record = new GenericData.Record(schema)
     record.put("colour", new EnumSymbol(schema.getField("colour").schema(), "Green"))
-    decoder.decode(record) shouldBe ScalaEnumClass(Colours.Green)
+    decoder.decode(AvroValue.unsafeFromAny(record)) shouldBe ScalaEnumClass(Colours.Green)
   }
 }

@@ -6,7 +6,7 @@ import org.apache.avro.Schema
 import scala.language.experimental.macros
 
 /**
-  * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,
+  * A [[Decoder]] is used to convert an [[AvroValue]], such as a GenericRecord,
   * SpecificRecord, GenericFixed, EnumSymbol, or a basic JVM type, into a
   * target Scala type.
   *
@@ -26,7 +26,7 @@ trait Decoder[T] extends SchemaAware[Decoder, T] with Serializable { self =>
     * Decodes the given value to an instance of T if possible.
     * Otherwise throw an error.
     */
-  def decode(value: Any): T
+  def decode(value: AvroValue): T
 
   /**
     * Creates a variant of this Decoder using the given schema (e.g. to use a fixed schema for byte arrays instead of
@@ -38,7 +38,7 @@ trait Decoder[T] extends SchemaAware[Decoder, T] with Serializable { self =>
     val sf = schemaFor
     new Decoder[T] {
       def schemaFor: SchemaFor[T] = sf
-      def decode(value: Any): T = self.decode(value)
+      def decode(value: AvroValue): T = self.decode(value)
     }
   }
 
@@ -90,9 +90,9 @@ trait ResolvableDecoder[T] extends Decoder[T] {
     */
   def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[T]
 
-  lazy val adhocInstance = decoder(DefinitionEnvironment.empty, NoUpdate)
+  lazy val adhocInstance: Decoder[T] = decoder(DefinitionEnvironment.empty, NoUpdate)
 
-  def decode(value: Any): T = adhocInstance.decode(value)
+  def decode(value: AvroValue): T = adhocInstance.decode(value)
 
   def schemaFor: SchemaFor[T] = adhocInstance.schemaFor
 
@@ -114,7 +114,7 @@ object Decoder
   private class DelegatingDecoder[T, S](decoder: Decoder[T], val schemaFor: SchemaFor[S], map: T => S)
       extends Decoder[S] {
 
-    def decode(value: Any): S = map(decoder.decode(value))
+    override def decode(value: AvroValue): S = map(decoder.decode(value))
 
     override def withSchema(schemaFor: SchemaFor[S]): Decoder[S] = {
       // pass through schema so that underlying decoder performs desired transformations.
@@ -135,7 +135,7 @@ object DecoderHelpers {
   def buildWithSchema[T](decoder: Decoder[T], schemaFor: SchemaFor[T]): Decoder[T] =
     decoder.resolveDecoder(DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
 
-  def mapFullUpdate(f: Schema => Schema, update: SchemaUpdate) = update match {
+  def mapFullUpdate(f: Schema => Schema, update: SchemaUpdate): SchemaUpdate = update match {
     case full: FullSchemaUpdate => FullSchemaUpdate(SchemaFor(f(full.schemaFor.schema), full.schemaFor.fieldMapper))
     case _                      => update
   }

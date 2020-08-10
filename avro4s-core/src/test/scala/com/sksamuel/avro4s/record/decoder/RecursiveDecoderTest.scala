@@ -1,9 +1,9 @@
 package com.sksamuel.avro4s.record.decoder
 
+import com.sksamuel.avro4s.AvroValue.AvroRecord
 import com.sksamuel.avro4s.Recursive._
 import com.sksamuel.avro4s._
 import org.apache.avro.Schema
-import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -19,7 +19,7 @@ class RecursiveDecoderTest extends AnyWordSpec with Matchers {
       val leaf = AvroSchema[Leaf[String]]
       val tree = Branch(Leaf("a"), Branch(Leaf("b"), Leaf("c")))
       val avro = record(branch, record(leaf, "a"), record(branch, record(leaf, "b"), record(leaf, "c")))
-      Decoder[Tree[String]].decode(avro) shouldBe tree
+      Decoder[Tree[String]].decode(AvroValue.unsafeFromAny(avro)) shouldBe tree
     }
 
     "support mutually recursive types" in {
@@ -30,28 +30,28 @@ class RecursiveDecoderTest extends AnyWordSpec with Matchers {
         record(mutRec1,
                5,
                list(record(mutRec2, "five", list(record(mutRec1, 4, list()))), record(mutRec2, "four", list())))
-      Decoder[MutRec1].decode(avro) shouldBe rec
+      Decoder[MutRec1].decode(AvroValue.unsafeFromAny(avro)) shouldBe rec
     }
 
     "support recursive types with lists" in {
       val listTree = AvroSchema[Recursive.ListTree[Int]]
       val tree = ListTree(1, List(ListTree(2), ListTree(3)))
       val avro = record(listTree, 1, list(record(listTree, 2, list()), record(listTree, 3, list())))
-      Decoder[ListTree[Int]].decode(avro) shouldBe tree
+      Decoder[ListTree[Int]].decode(AvroValue.unsafeFromAny(avro)) shouldBe tree
     }
 
     "support recursive types with maps" in {
       val mapTree = AvroSchema[MapTree[Int]]
       val tree = MapTree[Int](1, Map("child" -> MapTree(2, Map("child" -> MapTree(3)))))
       val avro = record(mapTree, 1, map("child" -> record(mapTree, 2, map("child" -> record(mapTree, 3, map())))))
-      Decoder[MapTree[Int]].decode(avro) shouldBe tree
+      Decoder[MapTree[Int]].decode(AvroValue.unsafeFromAny(avro)) shouldBe tree
     }
 
     "support recursive types with option" in {
       val optTree = AvroSchema[OptionTree[Int]]
       val tree = OptionTree[Int](1, Some(OptionTree(2, Some(OptionTree(3)))))
       val avro = record(optTree, 1, record(optTree, 2, record(optTree, 3, null, null), null), null)
-      Decoder[OptionTree[Int]].decode(avro) shouldBe tree
+      Decoder[OptionTree[Int]].decode(AvroValue.unsafeFromAny(avro)) shouldBe tree
     }
 
     "support recursive types with either" in {
@@ -60,7 +60,7 @@ class RecursiveDecoderTest extends AnyWordSpec with Matchers {
       val tree: EitherTree[Int] =
         Left(EitherBranch(Right(EitherLeaf(1)), Left(EitherBranch(Right(EitherLeaf(2)), Right(EitherLeaf(3))))))
       val avro = record(branch, record(leaf, 1), record(branch, record(leaf, 2), record(leaf, 3)))
-      Decoder[EitherTree[Int]].decode(avro) shouldBe tree
+      Decoder[EitherTree[Int]].decode(AvroValue.unsafeFromAny(avro)) shouldBe tree
     }
 
     "support recursive types with shapeless coproduct" in {
@@ -72,7 +72,7 @@ class RecursiveDecoderTest extends AnyWordSpec with Matchers {
           CBranch(Coproduct[Tree](CLeaf(1)),
                   Coproduct[Tree](CBranch(Coproduct[Tree](CLeaf(2)), Coproduct[Tree](CLeaf(3))))))
       val avro = record(branch, record(leaf, 1), record(branch, record(leaf, 2), record(leaf, 3)))
-      Decoder[CoproductTree[Int]].decode(avro) shouldBe tree
+      Decoder[CoproductTree[Int]].decode(AvroValue.unsafeFromAny(avro)) shouldBe tree
     }
 
     "support recursive types with tuples and value types" in {
@@ -86,7 +86,7 @@ class RecursiveDecoderTest extends AnyWordSpec with Matchers {
         record(branch,
                record(pair, 1, record(leaf, 1)),
                record(pair, 2, record(branch, record(pair, 3, record(leaf, 2)), record(pair, 4, record(leaf, 3)))))
-      Decoder[TVTree[Int]].decode(avro) shouldBe tree
+      Decoder[TVTree[Int]].decode(AvroValue.unsafeFromAny(avro)) shouldBe tree
     }
 
     "support custom definitions" in {
@@ -109,9 +109,9 @@ class RecursiveDecoderTest extends AnyWordSpec with Matchers {
             val decoder = new Decoder[Recursive.Branch[Int]] {
               val schemaFor: SchemaFor[Branch[Int]] = SchemaFor[Branch[Int]]
 
-              def decode(value: Any): Branch[Int] = value match {
-                case r: GenericRecord => Branch(treeDecoder.decode(r.get(1)), treeDecoder.decode(r.get(0)))
-                case _                => throw new IllegalArgumentException(s"Branch decoder can only decode records, got $value")
+              override def decode(value: AvroValue): Branch[Int] = value match {
+                case AvroRecord(r) => Branch(treeDecoder.decode(AvroValue.unsafeFromAny(r.get(1))), treeDecoder.decode(AvroValue.unsafeFromAny(r.get(0))))
+                case _ => throw Avro4sUnsupportedValueException(value, this)
               }
             }
 
@@ -137,7 +137,7 @@ class RecursiveDecoderTest extends AnyWordSpec with Matchers {
       val avro = record(branch, record(branch, record(leaf, 3), record(leaf, 2)), record(leaf, 1))
 
       // use the resolved decoder.
-      decoder.decode(avro) shouldBe tree
+      decoder.decode(AvroValue.unsafeFromAny(avro)) shouldBe tree
     }
 
     def record(schema: Schema, values: Any*): ImmutableRecord = ImmutableRecord(schema, values.map(asAvro))

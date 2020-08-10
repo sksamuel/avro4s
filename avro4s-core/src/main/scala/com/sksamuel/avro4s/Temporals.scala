@@ -4,11 +4,13 @@ import java.sql.{Date, Timestamp}
 import java.time._
 import java.time.format.DateTimeFormatter
 
+import com.sksamuel.avro4s.AvroValue.{AvroInt, AvroLong, AvroString}
 import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
 
 trait TemporalEncoders {
-  implicit val InstantEncoder =
+
+  implicit val InstantEncoder: Encoder[Instant] =
     Encoder.LongEncoder.comap[Instant](_.toEpochMilli).withSchema(SchemaFor.InstantSchemaFor)
 
   implicit val LocalTimeEncoder: Encoder[LocalTime] = new Encoder[LocalTime] {
@@ -47,27 +49,29 @@ trait TemporalEncoders {
 
   implicit object OffsetDateTimeEncoder extends Encoder[OffsetDateTime] {
     val schemaFor: SchemaFor[OffsetDateTime] = SchemaFor.OffsetDateTimeSchemaFor
-    override def encode(value: OffsetDateTime) = value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+    override def encode(value: OffsetDateTime): String = value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
   }
 }
 
 trait TemporalDecoders {
-  implicit val InstantDecoder =
+  implicit val InstantDecoder: Decoder[Instant] =
     Decoder.LongDecoder.map[Instant](Instant.ofEpochMilli).withSchema(SchemaFor.InstantSchemaFor)
 
   implicit val LocalTimeDecoder: Decoder[LocalTime] = new Decoder[LocalTime] {
     val schemaFor: SchemaFor[LocalTime] = SchemaFor.LocalTimeSchemaFor
 
-    def decode(value: Any): LocalTime = schema.getLogicalType match {
+    override def decode(value: AvroValue): LocalTime = schema.getLogicalType match {
       case _: TimeMillis =>
         value match {
-          case i: Int  => LocalTime.ofNanoOfDay(i.toLong * 1000000L)
-          case l: Long => LocalTime.ofNanoOfDay(l * 1000000L)
+          case AvroInt(i) => LocalTime.ofNanoOfDay(i.toLong * 1000000L)
+          case AvroLong(l) => LocalTime.ofNanoOfDay(l * 1000000L)
+          case _ => throw Avro4sUnsupportedValueException(value, this)
         }
       case _: TimeMicros =>
         value match {
-          case i: Int  => LocalTime.ofNanoOfDay(i.toLong * 1000L)
-          case l: Long => LocalTime.ofNanoOfDay(l * 1000L)
+          case AvroInt(i) => LocalTime.ofNanoOfDay(i.toLong * 1000L)
+          case AvroLong(l) => LocalTime.ofNanoOfDay(l * 1000L)
+          case _ => throw Avro4sUnsupportedValueException(value, this)
         }
     }
   }
@@ -83,28 +87,30 @@ trait TemporalDecoders {
 
   class LocalDateTimeDecoder(val schemaFor: SchemaFor[LocalDateTime]) extends Decoder[LocalDateTime] {
 
-    val decoder: Any => LocalDateTime = schema.getLogicalType match {
-      case _: TimestampMillis => {
-        case i: Int  => LocalDateTime.ofInstant(Instant.ofEpochMilli(i.toLong), ZoneOffset.UTC)
-        case l: Long => LocalDateTime.ofInstant(Instant.ofEpochMilli(l), ZoneOffset.UTC)
+    def decoder(value: AvroValue): LocalDateTime = schema.getLogicalType match {
+      case _: TimestampMillis => value match {
+        case AvroInt(i)  => LocalDateTime.ofInstant(Instant.ofEpochMilli(i.toLong), ZoneOffset.UTC)
+        case AvroLong(l) => LocalDateTime.ofInstant(Instant.ofEpochMilli(l), ZoneOffset.UTC)
+        case _ => throw Avro4sUnsupportedValueException(value, this)
       }
 
-      case _: TimestampMicros => {
-        case i: Int =>
+      case _: TimestampMicros => value match {
+        case AvroInt(i) =>
           LocalDateTime.ofInstant(Instant.ofEpochMilli(i / 1000), ZoneOffset.UTC).plusNanos(i % 1000 * 1000)
-        case l: Long =>
+        case AvroLong(l) =>
           LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000), ZoneOffset.UTC).plusNanos(l % 1000 * 1000)
+        case _ => throw Avro4sUnsupportedValueException(value, this)
       }
 
-      case TimestampNanosLogicalType => {
-        case l: Long =>
+      case TimestampNanosLogicalType => value match {
+        case AvroLong(l) =>
           val nanos = l % 1000000
           LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000000), ZoneOffset.UTC).plusNanos(nanos)
-        case other => throw new Avro4sConfigurationException(s"Unsupported type for timestamp nanos ${other.getClass.getName}")
+        case _ => throw Avro4sUnsupportedValueException(value, this)
       }
     }
 
-    def decode(value: Any): LocalDateTime = decoder(value)
+    override def decode(value: AvroValue): LocalDateTime = decoder(value)
 
     override def withSchema(schemaFor: SchemaFor[LocalDateTime]): Decoder[LocalDateTime] =
       new LocalDateTimeDecoder(schemaFor)
@@ -114,7 +120,8 @@ trait TemporalDecoders {
 
     val schemaFor: SchemaFor[OffsetDateTime] = SchemaFor.OffsetDateTimeSchemaFor
 
-    def decode(value: Any): OffsetDateTime =
-      OffsetDateTime.parse(value.toString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+    override def decode(value: AvroValue): OffsetDateTime = value match {
+      case AvroString(s) => OffsetDateTime.parse(s, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+    }
   }
 }

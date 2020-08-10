@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.record
 
 import java.time.LocalDateTime
 
-import com.sksamuel.avro4s.{Decoder, Encoder}
+import com.sksamuel.avro4s.{AvroValue, Decoder, Encoder}
 import org.apache.avro.{LogicalTypes, SchemaBuilder}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -15,7 +15,7 @@ class LocalDateTimeRoundTrip extends AnyFunSuite with Matchers {
 
     val encodedLocalDateTime = Encoder[LocalDateTime].encode(localDateTime)
 
-    Decoder[LocalDateTime].decode(encodedLocalDateTime) shouldEqual localDateTime
+    Decoder[LocalDateTime].decode(AvroValue.unsafeFromAny(encodedLocalDateTime)) shouldEqual localDateTime
   }
 
   test("local date time round trip with timestamp-micros") {
@@ -26,6 +26,6 @@ class LocalDateTimeRoundTrip extends AnyFunSuite with Matchers {
 
     val encodedLocalDateTime = Encoder[LocalDateTime].encode(localDateTime)
 
-    Decoder[LocalDateTime].decode(encodedLocalDateTime) shouldEqual localDateTime
+    Decoder[LocalDateTime].decode(AvroValue.unsafeFromAny(encodedLocalDateTime)) shouldEqual localDateTime
   }
 }

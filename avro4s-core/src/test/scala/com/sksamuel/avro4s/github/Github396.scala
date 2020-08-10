@@ -34,7 +34,7 @@ class Github396 extends AnyFunSuite with Matchers {
     record.put("b_wubble", "two")
 
 
-    Decoder[Foo].decode(record) shouldBe obj
+    Decoder[Foo].decode(AvroValue.unsafeFromAny(record)) shouldBe obj
   }
 
   test("@AvroName should override fieldmapping on encoding") {

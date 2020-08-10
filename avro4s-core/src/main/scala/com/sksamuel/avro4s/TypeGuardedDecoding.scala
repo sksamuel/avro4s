@@ -1,15 +1,12 @@
 package com.sksamuel.avro4s
 
-import java.nio.ByteBuffer
-
-import org.apache.avro.generic.{GenericContainer, GenericFixed}
-import org.apache.avro.util.Utf8
+import com.sksamuel.avro4s.AvroValue.{AvroBoolean, AvroByteArray, AvroDouble, AvroFloat, AvroInt, AvroList, AvroLong, AvroMap, AvroRecord, AvroString}
 
 import scala.reflect.runtime.universe._
 
 object TypeGuardedDecoding {
 
-  def guard[T: WeakTypeTag](decoder: Decoder[T]): PartialFunction[Any, T] = {
+  def guard[T: WeakTypeTag](decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
     import scala.reflect.runtime.universe.typeOf
 
     val tpe = implicitly[WeakTypeTag[T]].tpe
@@ -32,56 +29,51 @@ object TypeGuardedDecoding {
     }
   }
 
-  private def stringDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: Utf8   => decoder.decode(v)
-    case v: String => decoder.decode(v)
+  private def stringDecoder[T](decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
+    case v: AvroString => decoder.decode(v)
   }
 
-  private def booleanDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: Boolean => decoder.decode(v)
+  private def booleanDecoder[T](decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
+    case b: AvroBoolean => decoder.decode(b)
   }
 
-  private def intDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: Int => decoder.decode(v)
+  private def intDecoder[T](decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
+    case i: AvroInt => decoder.decode(i)
   }
 
-  private def longDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: Long => decoder.decode(v)
+  private def longDecoder[T](decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
+    case v: AvroLong => decoder.decode(v)
   }
 
-  private def doubleDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: Double => decoder.decode(v)
+  private def doubleDecoder[T](decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
+    case v: AvroDouble => decoder.decode(v)
   }
 
-  private def floatDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: Float => decoder.decode(v)
+  private def floatDecoder[T](decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
+    case v: AvroFloat => decoder.decode(v)
   }
 
-  private def arrayDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: Array[_]                => decoder.decode(v)
-    case v: java.util.Collection[_] => decoder.decode(v)
-    case v: Iterable[_]             => decoder.decode(v)
+  private def arrayDecoder[T](decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
+    case v: AvroList => decoder.decode(v)
   }
 
-  private def byteArrayDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: ByteBuffer   => decoder.decode(v)
-    case v: Array[Byte]  => decoder.decode(v)
-    case v: GenericFixed => decoder.decode(v)
+  private def byteArrayDecoder[T](decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
+    case v: AvroByteArray => decoder.decode(v)
   }
 
   private def mapDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: java.util.Map[_, _] => decoder.decode(v)
+    case v: AvroMap => decoder.decode(v)
   }
 
-  private def coproductDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = scala.Function.unlift { value =>
+  private def coproductDecoder[T](decoder: Decoder[T]): PartialFunction[AvroValue, T] = scala.Function.unlift { value =>
     // this is only sort of safe because we will call TypeGuardedDecoding again in the decoder
     util.Try(decoder.decode(value)) match {
       case util.Success(cp) => Some(cp)
-      case _                => None
+      case _ => None
     }
   }
 
-  private def recordDecoder[T](typeName: String, decoder: Decoder[T]): PartialFunction[Any, T] = {
-    case v: GenericContainer if v.getSchema.getFullName == typeName => decoder.decode(v)
+  private def recordDecoder[T](typeName: String, decoder: Decoder[T]): PartialFunction[AvroValue, T] = {
+    case v: AvroRecord if v.record.getSchema.getFullName == typeName => decoder.decode(v)
   }
 }

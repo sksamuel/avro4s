@@ -10,7 +10,7 @@ class ValueTypeEncoder[T: WeakTypeTag](ctx: CaseClass[Encoder, T]) extends Encod
 
   private[avro4s] var encoder: FieldEncoder[T]#ValueEncoder = _
 
-  def schemaFor = encoder.schemaFor
+  def schemaFor: SchemaFor[T] = encoder.schemaFor
 
   def encode(value: T): AnyRef = encoder.encodeValue(value)
 
@@ -22,9 +22,9 @@ class ValueTypeDecoder[T: WeakTypeTag](ctx: CaseClass[Decoder, T]) extends Decod
 
   private[avro4s] var decoder: FieldDecoder[T]#ValueDecoder = _
 
-  def schemaFor = decoder.schemaFor
+  def schemaFor: SchemaFor[T] = decoder.schemaFor
 
-  def decode(value: Any): T = ctx.rawConstruct(List(decoder.decodeValue(value)))
+  override def decode(value: AvroValue): T = ctx.rawConstruct(List(decoder.decodeValue(value)))
 
   override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] =
     ValueTypes.decoder(ctx, DefinitionEnvironment.empty, FullSchemaUpdate(schemaFor))
@@ -114,7 +114,7 @@ object ValueTypes {
       def encodeValue(value: T): AnyRef = encoder.encode(p.dereference(value))
     }
 
-    def apply(ctx: CaseClass[Encoder, T], env: DefinitionEnvironment[Encoder], update: SchemaUpdate) = {
+    def apply(ctx: CaseClass[Encoder, T], env: DefinitionEnvironment[Encoder], update: SchemaUpdate): ValueEncoder = {
       val encoder = p.typeclass.resolveEncoder(env, fieldUpdate(ctx))
       val schemaFor = buildSchemaFor(ctx, encoder.schemaFor.schema, update)
       new ValueEncoder(encoder, schemaFor)
@@ -123,10 +123,10 @@ object ValueTypes {
 
   class FieldDecoder[T](p: Param[Decoder, T]) {
     class ValueDecoder(decoder: Decoder[p.PType], val schemaFor: SchemaFor[T]) {
-      def decodeValue(value: Any): Any = decoder.decode(value)
+      def decodeValue(value: AvroValue): Any = decoder.decode(value)
     }
 
-    def apply(ctx: CaseClass[Decoder, T], env: DefinitionEnvironment[Decoder], update: SchemaUpdate) = {
+    def apply(ctx: CaseClass[Decoder, T], env: DefinitionEnvironment[Decoder], update: SchemaUpdate): ValueDecoder = {
       val decoder = p.typeclass.resolveDecoder(env, fieldUpdate(ctx))
       val schemaFor = buildSchemaFor(ctx, decoder.schemaFor.schema, update)
       new ValueDecoder(decoder, schemaFor)

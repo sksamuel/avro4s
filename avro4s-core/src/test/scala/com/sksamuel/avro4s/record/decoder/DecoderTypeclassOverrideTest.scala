@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
+import com.sksamuel.avro4s.AvroValue.{AvroInt, AvroString}
 import com.sksamuel.avro4s._
 import org.apache.avro.SchemaBuilder
 import org.scalatest.funsuite.AnyFunSuite
@@ -22,9 +23,9 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
       val schemaFor: SchemaFor[String] = StringAsBooleanSchemaFor
 
-      override def decode(value: Any): String = value match {
-        case true => "a"
-        case false => "b"
+      override def decode(value: AvroValue): String = value match {
+        case AvroValue.AvroBoolean(true) => "a"
+        case AvroValue.AvroBoolean(false) => "b"
         case _ => sys.error("Only supporting booleans")
       }
     }
@@ -32,10 +33,10 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
     val schema = AvroSchema[StringOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true), java.lang.Integer.valueOf(123)))
-    Decoder[StringOverrideTest].decode(record1) shouldBe StringOverrideTest("a", 123)
+    Decoder[StringOverrideTest].decode(AvroValue.unsafeFromAny(record1)) shouldBe StringOverrideTest("a", 123)
 
     val record2 = ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(false), java.lang.Integer.valueOf(123)))
-    Decoder[StringOverrideTest].decode(record2) shouldBe StringOverrideTest("b", 123)
+    Decoder[StringOverrideTest].decode(AvroValue.unsafeFromAny(record2)) shouldBe StringOverrideTest("b", 123)
   }
 
   test("allow overriding built in Decoder implicit for a complex type") {
@@ -46,20 +47,21 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
       val schemaFor: SchemaFor[Foo] = FooOverrideSchemaFor
 
-      override def decode(value: Any): Foo = value match {
-        case string: String =>
+      override def decode(value: AvroValue): Foo = value match {
+        case AvroString(string) =>
           val tokens = string.split(':')
           Foo(tokens(0).toBoolean, tokens(1).toInt)
+        case _ => throw Avro4sUnsupportedValueException(value, this)
       }
     }
 
     val schema = AvroSchema[FooOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector("a", "true:123"))
-    Decoder[FooOverrideTest].decode(record1) shouldBe FooOverrideTest("a", Foo(true, 123))
+    Decoder[FooOverrideTest].decode(AvroValue.unsafeFromAny(record1)) shouldBe FooOverrideTest("a", Foo(true, 123))
 
     val record2 = ImmutableRecord(schema, Vector("b", "false:555"))
-    Decoder[FooOverrideTest].decode(record2) shouldBe FooOverrideTest("b", Foo(false, 555))
+    Decoder[FooOverrideTest].decode(AvroValue.unsafeFromAny(record2)) shouldBe FooOverrideTest("b", Foo(false, 555))
   }
 
   test("allow overriding built in Decoder implicit for a value type") {
@@ -70,19 +72,19 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
       val schemaFor: SchemaFor[FooValueType] = FooValueTypeOverrideSchemaFor
 
-      override def decode(value: Any): FooValueType = value match {
-        case i: Int => FooValueType(i.toString)
-        case i: java.lang.Integer => FooValueType(i.toString)
+      override def decode(value: AvroValue): FooValueType = value match {
+        case AvroInt(i) => FooValueType(i.toString)
+        case _ => throw Avro4sUnsupportedValueException(value, this)
       }
     }
 
     val schema = AvroSchema[ValueTypeOverrideTest]
 
     val record1 = ImmutableRecord(schema, Vector("a", java.lang.Integer.valueOf(123)))
-    Decoder[ValueTypeOverrideTest].decode(record1) shouldBe ValueTypeOverrideTest("a", FooValueType("123"))
+    Decoder[ValueTypeOverrideTest].decode(AvroValue.unsafeFromAny(record1)) shouldBe ValueTypeOverrideTest("a", FooValueType("123"))
 
     val record2 = ImmutableRecord(schema, Vector("b", java.lang.Integer.valueOf(555)))
-    Decoder[ValueTypeOverrideTest].decode(record2) shouldBe ValueTypeOverrideTest("b", FooValueType("555"))
+    Decoder[ValueTypeOverrideTest].decode(AvroValue.unsafeFromAny(record2)) shouldBe ValueTypeOverrideTest("b", FooValueType("555"))
   }
 
   test("allow overriding built in Decoder implicit for a top level value type") {
@@ -93,13 +95,13 @@ class DecoderTypeclassOverrideTest extends AnyFunSuite with Matchers {
 
       val schemaFor: SchemaFor[FooValueType] = FooValueTypeOverrideSchemaFor
 
-      override def decode(value: Any): FooValueType = value match {
-        case i: Int => FooValueType(i.toString)
-        case i: java.lang.Integer => FooValueType(i.toString)
+      override def decode(value: AvroValue): FooValueType = value match {
+        case AvroInt(i) => FooValueType(i.toString)
+        case _ => throw Avro4sUnsupportedValueException(value, this)
       }
     }
 
-    Decoder[FooValueType].decode(java.lang.Integer.valueOf(555)) shouldBe FooValueType("555")
-    Decoder[FooValueType].decode(java.lang.Integer.valueOf(1234)) shouldBe FooValueType("1234")
+    Decoder[FooValueType].decode(AvroValue.unsafeFromAny(java.lang.Integer.valueOf(555))) shouldBe FooValueType("555")
+    Decoder[FooValueType].decode(AvroValue.unsafeFromAny(java.lang.Integer.valueOf(1234))) shouldBe FooValueType("1234")
   }
 }

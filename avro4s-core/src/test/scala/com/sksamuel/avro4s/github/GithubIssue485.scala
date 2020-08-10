@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.github
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 
 import com.sksamuel.avro4s.record.decoder.CPWrapper
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper}
+import com.sksamuel.avro4s.{AvroSchema, AvroValue, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite
@@ -24,6 +24,6 @@ class GithubIssue485 extends AnyFunSuite with Matchers {
     val schema = AvroSchema[CPWrapper]
     val record = new GenericData.Record(schema)
     record.put("u", new Utf8("wibble"))
-    decoder.decode(record) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
+    decoder.decode(AvroValue.unsafeFromAny(record)) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
   }
 }

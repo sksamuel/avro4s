@@ -1,10 +1,11 @@
 package com.sksamuel.avro4s
+import com.sksamuel.avro4s.AvroValue.{AvroEnumSymbol, AvroString}
 import magnolia.{SealedTrait, Subtype}
-import org.apache.avro.generic.{GenericData, GenericEnumSymbol}
+import org.apache.avro.generic.GenericData
 import org.apache.avro.{Schema, SchemaBuilder}
 
-import scala.reflect.runtime.universe
 import scala.collection.JavaConverters._
+import scala.reflect.runtime.universe
 
 object ScalaEnums {
 
@@ -37,13 +38,13 @@ object ScalaEnums {
   }
 
   private class EnumDecoder[T](data: CodecData[Decoder, T]) extends Decoder[T] {
-    val schemaFor = data.schemaFor
+    val schemaFor: SchemaFor[T] = data.schemaFor
 
     import data._
 
-    def decode(value: Any): T = value match {
-      case e: GenericEnumSymbol[_] => valueForSymbol(e.toString)
-      case s: String               => valueForSymbol(s)
+    override def decode(value: AvroValue): T = value match {
+      case AvroEnumSymbol(symbol) => valueForSymbol(symbol.toString)
+      case AvroString(str) => valueForSymbol(str)
     }
 
     override def withSchema(schemaFor: SchemaFor[T]): Decoder[T] = {
@@ -53,7 +54,7 @@ object ScalaEnums {
   }
 
   private class EnumEncoder[T](data: CodecData[Encoder, T]) extends Encoder[T] {
-    val schemaFor = data.schemaFor
+    val schemaFor: SchemaFor[T] = data.schemaFor
 
     import data._
 

@@ -2,8 +2,9 @@ package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
 
+import com.sksamuel.avro4s.AvroValue.{AvroByteArray, AvroGenericFixed}
+import org.apache.avro.generic.GenericData
 import org.apache.avro.{Schema, SchemaBuilder}
-import org.apache.avro.generic.{GenericData, GenericFixed}
 
 trait ByteIterableSchemaFors {
   implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
@@ -15,7 +16,7 @@ trait ByteIterableSchemaFors {
 trait ByteIterableDecoders {
 
   implicit val ByteArrayDecoder: Decoder[Array[Byte]] = new ByteArrayDecoderBase {
-    val schemaFor = SchemaFor[Array[Byte]](SchemaBuilder.builder().bytesType())
+    val schemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder().bytesType())
   }
 
   implicit val ByteListDecoder: Decoder[List[Byte]] = iterableByteDecoder(_.toList)
@@ -27,11 +28,10 @@ trait ByteIterableDecoders {
 
   private sealed trait ByteArrayDecoderBase extends Decoder[Array[Byte]] {
 
-    def decode(value: Any): Array[Byte] = value match {
-      case buffer: ByteBuffer  => buffer.array
-      case array: Array[Byte]  => array
-      case fixed: GenericFixed => fixed.bytes
-      case _                   => throw new Avro4sDecodingException(s"Byte array decoder cannot decode '$value'", value, this)
+    override def decode(value: AvroValue): Array[Byte] = value match {
+      case AvroByteArray(bytes) => bytes
+      case AvroGenericFixed(fixed) => fixed.bytes()
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
 
     override def withSchema(schemaFor: SchemaFor[Array[Byte]]): Decoder[Array[Byte]] =
@@ -55,7 +55,7 @@ trait ByteIterableDecoders {
 
     val schemaFor: SchemaFor[C[Byte]] = byteArrayDecoder.schemaFor.forType
 
-    def decode(value: Any): C[Byte] = build(byteArrayDecoder.decode(value))
+    override def decode(value: AvroValue): C[Byte] = build(byteArrayDecoder.decode(value))
 
     override def withSchema(schemaFor: SchemaFor[C[Byte]]): Decoder[C[Byte]] =
       new IterableByteDecoder(build, byteArrayDecoder.withSchema(schemaFor.map(identity)))
@@ -65,7 +65,7 @@ trait ByteIterableDecoders {
 trait ByteIterableEncoders {
 
   implicit val ByteArrayEncoder: Encoder[Array[Byte]] = new ByteArrayEncoderBase {
-    val schemaFor = SchemaFor[Array[Byte]](SchemaBuilder.builder().bytesType())
+    val schemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder().bytesType())
     def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
   }
 

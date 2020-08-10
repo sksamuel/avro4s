@@ -37,7 +37,7 @@ package object handrolled_codecs {
     val emptySn: String = emptyDecoder.schema.getFullName
     val invalidSn: String = invalidDecoder.schema.getFullName
 
-    def decode(value: Any): AttributeValue[T] = {
+    override def decode(value: AvroValue): AttributeValue[T] = {
       val schema = value match {
         case r: GenericData.Record => r.getSchema
         case i: ImmutableRecord    => i.schema

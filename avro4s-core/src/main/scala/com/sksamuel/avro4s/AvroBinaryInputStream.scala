@@ -33,7 +33,7 @@ class AvroBinaryInputStream[T](in: InputStream,
     */
   override def iterator: Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = _iter.hasNext
-    override def next(): T = decoder.decode(_iter.next())
+    override def next(): T = decoder.decode(AvroValue.unsafeFromAny(_iter.next()))
   }
 
   /**
@@ -42,7 +42,7 @@ class AvroBinaryInputStream[T](in: InputStream,
     */
   override def tryIterator: Iterator[Try[T]] = new Iterator[Try[T]] {
     override def hasNext: Boolean = _iter.hasNext
-    override def next(): Try[T] = Try(decoder.decode(_iter.next()))
+    override def next(): Try[T] = Try(decoder.decode(AvroValue.unsafeFromAny(_iter.next())))
   }
 
   override def close(): Unit = in.close()

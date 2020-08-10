@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.AvroValue.AvroRecord
 import com.sksamuel.avro4s.RecordFields._
 import com.sksamuel.avro4s.Records._
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, NoUpdate}
@@ -37,8 +38,8 @@ class RecordDecoder[T: WeakTypeTag](ctx: CaseClass[Decoder, T], val schemaFor: S
 
   private[avro4s] var fieldDecoding: IndexedSeq[FieldDecoder[T]#ValueDecoder] = IndexedSeq.empty
 
-  def decode(value: Any): T = value match {
-    case record: IndexedRecord =>
+  def decode(value: AvroValue): T = value match {
+    case AvroRecord(record) =>
       // hot code path. Sacrificing functional programming to the gods of performance.
       val length = fieldDecoding.length
       val values = new Array[Any](length)

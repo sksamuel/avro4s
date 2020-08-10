@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.record.decoder
 import java.nio.ByteBuffer
 
 import com.sksamuel.avro4s.record.decoder.CPWrapper.{ISBG, ISCB}
-import com.sksamuel.avro4s.{AvroSchema, Decoder}
+import com.sksamuel.avro4s.{AvroSchema, AvroValue, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import shapeless.{:+:, CNil, Coproduct}
@@ -18,7 +18,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     val decoder = Decoder[CPWrapper]
     val record = new GenericData.Record(decoder.schema)
     record.put("u", new Utf8("wibble"))
-    decoder.decode(record) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
+    decoder.decode(AvroValue.unsafeFromAny(record)) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG]("wibble"))
   }
 
   test("coproducts with case classes") {
@@ -27,7 +27,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     gimble.put("x", new Utf8("foo"))
     val record = new GenericData.Record(decoder.schema)
     record.put("u", gimble)
-    decoder.decode(record) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))
+    decoder.decode(AvroValue.unsafeFromAny(record)) shouldBe CPWrapper(Coproduct[CPWrapper.ISBG](Gimble("foo")))
   }
 
   test("coproducts with options") {
@@ -36,7 +36,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     gimble.put("x", new Utf8("foo"))
     val record = new GenericData.Record(codec.schema)
     record.put("u", gimble)
-    codec.decode(record) shouldBe CPWithOption(Some(Coproduct[CPWrapper.ISBG](Gimble("foo"))))
+    codec.decode(AvroValue.unsafeFromAny(record)) shouldBe CPWithOption(Some(Coproduct[CPWrapper.ISBG](Gimble("foo"))))
   }
 
   test("coproduct with array") {
@@ -44,7 +44,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     val array = new GenericData.Array(AvroSchema[Seq[String]], List(new Utf8("a"), new Utf8("b")).asJava)
     val record = new GenericData.Record(schema)
     record.put("u", array)
-    Decoder[CPWithArray].decode(record) shouldBe CPWithArray(Coproduct[CPWrapper.SSI](Seq("a", "b")))
+    Decoder[CPWithArray].decode(AvroValue.unsafeFromAny(record)) shouldBe CPWithArray(Coproduct[CPWrapper.SSI](Seq("a", "b")))
   }
 
   test("coproduct with byte array") {
@@ -52,7 +52,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     val record = new GenericData.Record(schema)
     record.put("u", ByteBuffer.wrap(Array[Byte](1, 2, 3)))
 
-    val result = Decoder[CPWithByteArray].decode(record)
+    val result = Decoder[CPWithByteArray].decode(AvroValue.unsafeFromAny(record))
 
     result.u.select[Array[Byte]].get shouldBe Array[Byte](1, 2, 3)
   }
@@ -62,7 +62,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     val array = new GenericData.Array(AvroSchema[Seq[ISBG]], List(3, new Utf8("three")).asJava)
     val record = new GenericData.Record(AvroSchema[CoproductWithArrayOfCoproduct])
     record.put("union", array)
-    Decoder[CoproductWithArrayOfCoproduct].decode(record) shouldBe coproduct
+    Decoder[CoproductWithArrayOfCoproduct].decode(AvroValue.unsafeFromAny(record)) shouldBe coproduct
   }
 
   test("coproducts") {
@@ -70,7 +70,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     val record = new GenericData.Record(schema)
     record.put("union", new Utf8("foo"))
     val coproduct = Coproduct[Int :+: String :+: Boolean :+: CNil]("foo")
-    Decoder[Coproducts].decode(record) shouldBe Coproducts(coproduct)
+    Decoder[Coproducts].decode(AvroValue.unsafeFromAny(record)) shouldBe Coproducts(coproduct)
   }
 
   test("coproducts of coproducts") {
@@ -78,7 +78,7 @@ class CoproductDecoderTest extends AnyFunSuite with Matchers {
     val record = new GenericData.Record(schema)
     record.put("union", new Utf8("foo"))
     val coproduct = Coproduct[(Int :+: String :+: CNil) :+: Boolean :+: CNil](Coproduct[Int :+: String :+: CNil]("foo"))
-    Decoder[CoproductsOfCoproducts].decode(record) shouldBe CoproductsOfCoproducts(coproduct)
+    Decoder[CoproductsOfCoproducts].decode(AvroValue.unsafeFromAny(record)) shouldBe CoproductsOfCoproducts(coproduct)
   }
 }
 

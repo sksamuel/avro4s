@@ -61,7 +61,8 @@ trait ShapelessCoproductDecoders {
   implicit val CNilDecoder: Decoder[CNil] = new Decoder[CNil] {
     val schemaFor: SchemaFor[CNil] = CNilSchemaFor
 
-    def decode(value: Any): CNil = throw new Avro4sDecodingException(s"Unable to decode value '$value'", value, this)
+    override def decode(value: AvroValue): CNil =
+      throw new Avro4sDecodingException(s"Unable to decode value '$value'", value, this)
 
     override def withSchema(schemaFor: SchemaFor[CNil]): Decoder[CNil] = this
   }
@@ -76,9 +77,9 @@ trait ShapelessCoproductDecoders {
 
           val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(decoderH.schemaFor, decoderT.schemaFor)
 
-          private val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(decoderH)
+          private val elementDecoder: PartialFunction[AvroValue, H] = TypeGuardedDecoding.guard(decoderH)
 
-          def decode(value: Any): H :+: T =
+          override def decode(value: AvroValue): H :+: T =
             if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value)) else Inr(decoderT.decode(value))
 
           override def withSchema(schemaFor: SchemaFor[H :+: T]): Decoder[H :+: T] =

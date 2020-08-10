@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.generic.GenericRecord
+import com.sksamuel.avro4s.AvroValue.AvroRecord
 import org.apache.avro.{Schema, SchemaBuilder}
 
 trait TupleSchemaFors {
@@ -184,12 +184,13 @@ trait TupleDecoders {
 
           def schemaFor: SchemaFor[(A, B)] = createTuple2SchemaFor[A, B](decoderA.schemaFor, decoderB.schemaFor)
 
-          def decode(value: Any): (A, B) = {
-            val record = value.asInstanceOf[GenericRecord]
-            (
-              decoderA.decode(record.get("_1")),
-              decoderB.decode(record.get("_2"))
-            )
+          override def decode(value: AvroValue): (A, B) = value match {
+            case AvroRecord(record) =>
+              (
+                decoderA.decode(AvroValue.unsafeFromAny(record.get("_1"))),
+                decoderB.decode(AvroValue.unsafeFromAny(record.get("_2")))
+              )
+            case _ => throw Avro4sUnsupportedValueException(value, this)
           }
 
           override def withSchema(schemaFor: SchemaFor[(A, B)]): Decoder[(A, B)] =
@@ -212,13 +213,14 @@ trait TupleDecoders {
         def schemaFor: SchemaFor[(A, B, C)] =
           createTuple3SchemaFor[A, B, C](decoderA.schemaFor, decoderB.schemaFor, decoderC.schemaFor)
 
-        def decode(value: Any): (A, B, C) = {
-          val record = value.asInstanceOf[GenericRecord]
-          (
-            decoderA.decode(record.get("_1")),
-            decoderB.decode(record.get("_2")),
-            decoderC.decode(record.get("_3"))
-          )
+        override def decode(value: AvroValue): (A, B, C) = value match {
+          case AvroRecord(record) =>
+            (
+              decoderA.decode(AvroValue.unsafeFromAny(record.get("_1"))),
+              decoderB.decode(AvroValue.unsafeFromAny(record.get("_2"))),
+              decoderC.decode(AvroValue.unsafeFromAny(record.get("_3")))
+            )
+          case _ => throw Avro4sUnsupportedValueException(value, this)
         }
 
         override def withSchema(schemaFor: SchemaFor[(A, B, C)]): Decoder[(A, B, C)] =
@@ -246,14 +248,15 @@ trait TupleDecoders {
                                             decoderC.schemaFor,
                                             decoderD.schemaFor)
 
-        def decode(value: Any): (A, B, C, D) = {
-          val record = value.asInstanceOf[GenericRecord]
-          (
-            decoderA.decode(record.get("_1")),
-            decoderB.decode(record.get("_2")),
-            decoderC.decode(record.get("_3")),
-            decoderD.decode(record.get("_4"))
-          )
+        override def decode(value: AvroValue): (A, B, C, D) = value match {
+          case AvroRecord(record) =>
+            (
+              decoderA.decode(AvroValue.unsafeFromAny(record.get("_1"))),
+              decoderB.decode(AvroValue.unsafeFromAny(record.get("_2"))),
+              decoderC.decode(AvroValue.unsafeFromAny(record.get("_3"))),
+              decoderD.decode(AvroValue.unsafeFromAny(record.get("_4")))
+            )
+          case _ => throw Avro4sUnsupportedValueException(value, this)
         }
 
         override def withSchema(schemaFor: SchemaFor[(A, B, C, D)]): Decoder[(A, B, C, D)] =
@@ -285,15 +288,16 @@ trait TupleDecoders {
                                                  decoderD.schemaFor,
                                                  decoderE.schemaFor)
 
-          def decode(value: Any): (A, B, C, D, E) = {
-            val record = value.asInstanceOf[GenericRecord]
-            (
-              decoderA.decode(record.get("_1")),
-              decoderB.decode(record.get("_2")),
-              decoderC.decode(record.get("_3")),
-              decoderD.decode(record.get("_4")),
-              decoderE.decode(record.get("_5"))
-            )
+          override def decode(value: AvroValue): (A, B, C, D, E) = value match {
+            case AvroRecord(record) =>
+              (
+                decoderA.decode(AvroValue.unsafeFromAny(record.get("_1"))),
+                decoderB.decode(AvroValue.unsafeFromAny(record.get("_2"))),
+                decoderC.decode(AvroValue.unsafeFromAny(record.get("_3"))),
+                decoderD.decode(AvroValue.unsafeFromAny(record.get("_4"))),
+                decoderE.decode(AvroValue.unsafeFromAny(record.get("_5")))
+              )
+            case _ => throw Avro4sUnsupportedValueException(value, this)
           }
 
           override def withSchema(schemaFor: SchemaFor[(A, B, C, D, E)]): Decoder[(A, B, C, D, E)] =
@@ -313,7 +317,8 @@ object Tuples {
     schema.getFields.get(pos).schema()
   }
 
-  def mapTupleUpdate(pos: Int, update: SchemaUpdate) = EncoderHelpers.mapFullUpdate(extractTupleSchema(pos), update)
+  def mapTupleUpdate(pos: Int, update: SchemaUpdate): SchemaUpdate =
+    EncoderHelpers.mapFullUpdate(extractTupleSchema(pos), update)
 
   def createTuple2SchemaFor[A, B](implicit a: SchemaFor[A], b: SchemaFor[B]): SchemaFor[(A, B)] = {
     // format: off

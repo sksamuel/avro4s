@@ -2,8 +2,8 @@ package com.sksamuel.avro4s
 
 import java.util
 
+import com.sksamuel.avro4s.AvroValue.{AvroList, AvroMap, AvroNull}
 import com.sksamuel.avro4s.CollectionsAndContainers._
-
 import org.apache.avro.{Schema, SchemaBuilder}
 
 import scala.collection.JavaConverters._
@@ -95,7 +95,7 @@ trait CollectionAndContainerEncoders {
           val schemaFor: SchemaFor[Either[A, B]] = buildEitherSchemaFor(leftEncoder.schemaFor, rightEncoder.schemaFor)
 
           def encode(value: Either[A, B]): AnyRef = value match {
-            case Left(l)  => leftEncoder.encode(l)
+            case Left(l) => leftEncoder.encode(l)
             case Right(r) => rightEncoder.encode(r)
           }
 
@@ -170,7 +170,7 @@ trait CollectionAndContainerDecoders {
 
   implicit val NoneDecoder: Decoder[None.type] = new Decoder[None.type] {
     val schemaFor: SchemaFor[None.type] = noneSchemaFor
-    def decode(value: Any): None.type =
+    override def decode(value: AvroValue): None.type =
       if (value == null) None
       else throw new Avro4sDecodingException(s"Value $value is not null, but should be decoded to None", value, this)
   }
@@ -183,7 +183,10 @@ trait CollectionAndContainerDecoders {
 
         val schemaFor: SchemaFor[Option[T]] = buildOptionSchemaFor(decoder.schemaFor)
 
-        def decode(value: Any): Option[T] = if (value == null) None else Option(decoder.decode(value))
+        override def decode(value: AvroValue): Option[T] = value match {
+          case AvroNull => None
+          case _ => Option(decoder.decode(value))
+        }
 
         override def withSchema(schemaFor: SchemaFor[Option[T]]): Decoder[Option[T]] =
           buildWithSchema(optionDecoder(value), schemaFor)
@@ -201,10 +204,10 @@ trait CollectionAndContainerDecoders {
         new Decoder[Either[A, B]] {
           val schemaFor: SchemaFor[Either[A, B]] = buildEitherSchemaFor(leftDecoder.schemaFor, rightDecoder.schemaFor)
 
-          private implicit val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding.guard(leftDecoder)
-          private implicit val rightGuard: PartialFunction[Any, B] = TypeGuardedDecoding.guard(rightDecoder)
+          private implicit val leftGuard: PartialFunction[AvroValue, A] = TypeGuardedDecoding.guard(leftDecoder)
+          private implicit val rightGuard: PartialFunction[AvroValue, B] = TypeGuardedDecoding.guard(rightDecoder)
 
-          def decode(value: Any): Either[A, B] =
+          override def decode(value: AvroValue): Either[A, B] =
             if (leftGuard.isDefinedAt(value)) {
               Left(leftGuard(value))
             } else if (rightGuard.isDefinedAt(value)) {
@@ -229,11 +232,9 @@ trait CollectionAndContainerDecoders {
         new Decoder[Array[T]] {
           val schemaFor: SchemaFor[Array[T]] = buildIterableSchemaFor(decoder.schemaFor).forType
 
-          def decode(value: Any): Array[T] = value match {
-            case array: Array[_]               => array.map(decoder.decode)
-            case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toArray
-            case list: Iterable[_]             => list.map(decoder.decode).toArray
-            case other                         => throw new Avro4sDecodingException("Unsupported array " + other, value, this)
+          override def decode(value: AvroValue): Array[T] = value match {
+            case AvroList(list) => list.map(decoder.decode).toArray
+            case _ => throw Avro4sUnsupportedValueException(value, this)
           }
 
           override def withSchema(schemaFor: SchemaFor[Array[T]]): Decoder[Array[T]] =
@@ -250,13 +251,9 @@ trait CollectionAndContainerDecoders {
         new Decoder[C[T]] {
           val schemaFor: SchemaFor[C[T]] = buildIterableSchemaFor(decoder.schemaFor)
 
-          def decode(value: Any): C[T] = value match {
-            case list: java.util.Collection[_] => build(list.asScala.map(decoder.decode))
-            case list: Iterable[_]             => build(list.map(decoder.decode))
-            case array: Array[_]               =>
-              // converting array to Seq in order to avoid requiring ClassTag[T] as does arrayDecoder.
-              build(array.toSeq.map(decoder.decode))
-            case other => throw new Avro4sDecodingException("Unsupported array " + other, value, this)
+          def decode(value: AvroValue): C[T] = value match {
+            case AvroList(list) => build(list.map(decoder.decode))
+            case _ => throw Avro4sUnsupportedValueException(value, this)
           }
 
           override def withSchema(schemaFor: SchemaFor[C[T]]): Decoder[C[T]] =
@@ -284,8 +281,9 @@ trait CollectionAndContainerDecoders {
         new Decoder[Map[String, T]] {
           val schemaFor: SchemaFor[Map[String, T]] = buildMapSchemaFor(decoder.schemaFor)
 
-          def decode(value: Any): Map[String, T] = value match {
-            case map: java.util.Map[_, _] => map.asScala.toMap.map { case (k, v) => k.toString -> decoder.decode(v) }
+          override def decode(value: AvroValue): Map[String, T] = value match {
+            case AvroMap(map) =>  map.map { case (k, v) => k -> decoder.decode(v) }
+            case _ => throw Avro4sUnsupportedValueException(value, this)
           }
 
           override def withSchema(schemaFor: SchemaFor[Map[String, T]]): Decoder[Map[String, T]] =

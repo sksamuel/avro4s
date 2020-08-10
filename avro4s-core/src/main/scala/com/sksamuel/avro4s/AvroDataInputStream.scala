@@ -2,6 +2,7 @@ package com.sksamuel.avro4s
 
 import java.io.InputStream
 
+import com.sksamuel.avro4s.AvroValue.AvroRecord
 import org.apache.avro.Schema
 import org.apache.avro.file.DataFileStream
 import org.apache.avro.generic.{GenericData, GenericRecord}
@@ -26,7 +27,7 @@ class AvroDataInputStream[T](in: InputStream,
     override def hasNext: Boolean = dataFileReader.hasNext
     override def next(): T = {
       val record = dataFileReader.next
-      decoder.decode(record)
+      decoder.decode(AvroRecord(record))
     }
   }
 
@@ -34,7 +35,7 @@ class AvroDataInputStream[T](in: InputStream,
     override def hasNext: Boolean = dataFileReader.hasNext
     override def next(): Try[T] = Try {
       val record = dataFileReader.next
-      decoder.decode(record)
+      decoder.decode(AvroRecord(record))
     }
   }
 

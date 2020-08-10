@@ -1,10 +1,11 @@
 package com.sksamuel.avro4s
 
+import java.math
 import java.nio.ByteBuffer
 
+import com.sksamuel.avro4s.AvroValue.{AvroByteArray, AvroGenericFixed}
 import com.sksamuel.avro4s.BigDecimals.BigDecimalConversion
 import org.apache.avro.LogicalTypes.Decimal
-import org.apache.avro.generic.GenericFixed
 import org.apache.avro.{Conversions, Schema, SchemaBuilder}
 
 import scala.math.BigDecimal.RoundingMode
@@ -33,27 +34,25 @@ trait BigDecimalDecoders {
       extends BigDecimalDecoderBase(roundingMode)
       with BigDecimalConversion[Decoder] {
 
-    def decode(value: Any): BigDecimal = value match {
-      case bb: ByteBuffer => converter.fromBytes(bb, schema, decimal)
-      case _ =>
-        throw new Avro4sDecodingException(s"Unable to decode '$value' to BigDecimal via ByteBuffer", value, this)
+    override def decode(value: AvroValue): BigDecimal = value match {
+      case AvroByteArray(bytes) => converter.fromBytes(ByteBuffer.wrap(bytes), schema, decimal)
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 
   class BigDecimalStringDecoder(val schemaFor: SchemaFor[BigDecimal], roundingMode: RoundingMode)
       extends BigDecimalDecoderBase(roundingMode) {
 
-    def decode(value: Any): BigDecimal = BigDecimal(Decoder.StringDecoder.decode(value))
+    override def decode(value: AvroValue): BigDecimal = BigDecimal(Decoder.StringDecoder.decode(value))
   }
 
   class BigDecimalFixedDecoder(val schemaFor: SchemaFor[BigDecimal], val roundingMode: RoundingMode)
       extends BigDecimalDecoderBase(roundingMode)
       with BigDecimalConversion[Decoder] {
 
-    def decode(value: Any): BigDecimal = value match {
-      case f: GenericFixed => converter.fromFixed(f, schema, decimal)
-      case _ =>
-        throw new Avro4sDecodingException(s"Unable to decode $value to BigDecimal via GenericFixed", value, this)
+    override def decode(value: AvroValue): BigDecimal = value match {
+      case AvroGenericFixed(f) => converter.fromFixed(f, schema, decimal)
+      case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
 }
@@ -105,9 +104,9 @@ object BigDecimals {
 
     def roundingMode: RoundingMode
 
-    @transient protected lazy val decimal = schema.getLogicalType.asInstanceOf[Decimal]
+    @transient protected lazy val decimal: Decimal = schema.getLogicalType.asInstanceOf[Decimal]
     @transient protected lazy val converter = new Conversions.DecimalConversion
-    protected val rm = java.math.RoundingMode.valueOf(roundingMode.id)
+    protected val rm: math.RoundingMode = java.math.RoundingMode.valueOf(roundingMode.id)
   }
 
   implicit val AsString: SchemaFor[BigDecimal] =

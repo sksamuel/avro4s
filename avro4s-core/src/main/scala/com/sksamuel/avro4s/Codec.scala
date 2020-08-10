@@ -17,8 +17,8 @@ trait Codec[T] extends Encoder[T] with Decoder[T] with SchemaAware[Codec, T] { s
     val sf = schemaFor
     new Codec[T] {
       def schemaFor: SchemaFor[T] = sf
-      def encode(value: T): AnyRef = self.encode(value)
-      def decode(value: Any): T = self.decode(value)
+      override def encode(value: T): AnyRef = self.encode(value)
+      override def decode(value: AvroValue): T = self.decode(value)
     }
   }
 }
@@ -35,9 +35,9 @@ object Codec {
   private class DelegatingCodec[T, S](codec: Codec[T], val schemaFor: SchemaFor[S], map: T => S, comap: S => T)
     extends Codec[S] {
 
-    def encode(value: S): AnyRef = codec.encode(comap(value))
+    override def encode(value: S): AnyRef = codec.encode(comap(value))
 
-    def decode(value: Any): S = map(codec.decode(value))
+    override def decode(value: AvroValue): S = map(codec.decode(value))
 
     override def withSchema(schemaFor: SchemaFor[S]): Codec[S] = {
       // pass through schema so that underlying decoder performs desired transformations.

@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
+import com.sksamuel.avro4s.AvroValue.AvroRecord
 import com.sksamuel.avro4s.{AvroSchema, AvroTransient, Decoder}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
@@ -14,6 +15,6 @@ class TransientDecoderTest extends AnyFunSuite with Matchers {
     val schema = AvroSchema[TransientFoo]
     val record = new GenericData.Record(schema)
     record.put("a", new Utf8("hello"))
-    Decoder[TransientFoo].decode(record) shouldBe TransientFoo("hello", None)
+    Decoder[TransientFoo].decode(AvroRecord(record)) shouldBe TransientFoo("hello", None)
   }
 }

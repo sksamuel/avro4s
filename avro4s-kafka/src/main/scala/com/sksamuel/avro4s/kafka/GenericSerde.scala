@@ -9,10 +9,10 @@ import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 /**
   * Kafka Serde using Avro4s for serializing to/deserialising from case classes into Avro records, without integration
   * with the Confluent schema registry.
- *
- * The implicit schemaFor instance is used as the writer schema when deserializing, in case it needs to diverge
- * from both writer schema used in serialize, and the desired schema in deserialize.
- */
+  *
+  * The implicit schemaFor instance is used as the writer schema when deserializing, in case it needs to diverge
+  * from both writer schema used in serialize, and the desired schema in deserialize.
+  */
 class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder](avroFormat: AvroFormat = BinaryFormat) extends Serde[T]
   with Deserializer[T]
   with Serializer[T]

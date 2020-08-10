@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.AvroValue.AvroNull
 import com.sksamuel.avro4s.SchemaUpdate.{FullSchemaUpdate, NamespaceUpdate, NoUpdate}
 import magnolia.{CaseClass, Param}
 import org.apache.avro.Schema.Field
@@ -56,24 +57,24 @@ object RecordFields {
 
       def fastDecodeFieldValue(record: IndexedRecord): Any =
         if (fieldPosition == -1) defaultFieldValue
-        else tryDecode(record.get(fieldPosition))
+        else tryDecode(AvroValue.unsafeFromAny(record.get(fieldPosition)))
 
       def safeDecodeFieldValue(record: IndexedRecord): Any =
         if (fieldPosition == -1) defaultFieldValue
         else {
           val schemaField = record.getSchema.getField(fieldName.get)
-          if (schemaField == null) defaultFieldValue else tryDecode(record.get(schemaField.pos))
+          if (schemaField == null) defaultFieldValue else tryDecode(AvroValue.unsafeFromAny(record.get(schemaField.pos)))
         }
 
       @inline
       private def defaultFieldValue: Any = param.default match {
         case Some(default) => default
         // there is no default, so the field must be an option
-        case None => decoder.decode(null)
+        case None => decoder.decode(AvroNull)
       }
 
       @inline
-      private def tryDecode(value: Any): Any =
+      private def tryDecode(value: AvroValue): Any =
         try {
           decoder.decode(value)
         } catch {
