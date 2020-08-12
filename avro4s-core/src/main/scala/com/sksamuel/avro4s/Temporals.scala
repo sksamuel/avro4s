@@ -64,13 +64,13 @@ trait TemporalDecoders {
       case _: TimeMillis =>
         value match {
           case AvroInt(i) => LocalTime.ofNanoOfDay(i.toLong * 1000000L)
-          case AvroLong(l) => LocalTime.ofNanoOfDay(l * 1000000L)
+          case l: AvroLong => LocalTime.ofNanoOfDay(l.long * 1000000L)
           case _ => throw Avro4sUnsupportedValueException(value, this)
         }
       case _: TimeMicros =>
         value match {
           case AvroInt(i) => LocalTime.ofNanoOfDay(i.toLong * 1000L)
-          case AvroLong(l) => LocalTime.ofNanoOfDay(l * 1000L)
+          case l: AvroLong => LocalTime.ofNanoOfDay(l.long * 1000L)
           case _ => throw Avro4sUnsupportedValueException(value, this)
         }
     }
@@ -90,15 +90,15 @@ trait TemporalDecoders {
     def decoder(value: AvroValue): LocalDateTime = schema.getLogicalType match {
       case _: TimestampMillis => value match {
         case AvroInt(i)  => LocalDateTime.ofInstant(Instant.ofEpochMilli(i.toLong), ZoneOffset.UTC)
-        case AvroLong(l) => LocalDateTime.ofInstant(Instant.ofEpochMilli(l), ZoneOffset.UTC)
+        case l: AvroLong => LocalDateTime.ofInstant(Instant.ofEpochMilli(l.long), ZoneOffset.UTC)
         case _ => throw Avro4sUnsupportedValueException(value, this)
       }
 
       case _: TimestampMicros => value match {
         case AvroInt(i) =>
           LocalDateTime.ofInstant(Instant.ofEpochMilli(i / 1000), ZoneOffset.UTC).plusNanos(i % 1000 * 1000)
-        case AvroLong(l) =>
-          LocalDateTime.ofInstant(Instant.ofEpochMilli(l / 1000), ZoneOffset.UTC).plusNanos(l % 1000 * 1000)
+        case l: AvroLong =>
+          LocalDateTime.ofInstant(Instant.ofEpochMilli(l.long / 1000), ZoneOffset.UTC).plusNanos(l.long % 1000 * 1000)
         case _ => throw Avro4sUnsupportedValueException(value, this)
       }
 

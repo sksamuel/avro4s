@@ -280,7 +280,7 @@ trait BaseDecoders {
     override def decode(value: AvroValue): Short = value match {
       case AvroByte(b) => b.toShort
       case AvroShort(s) => s
-      case AvroInt(int) => int.shortValue()
+      case i: AvroInt => i.int.shortValue()
       case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
@@ -290,7 +290,7 @@ trait BaseDecoders {
     override def decode(value: AvroValue): Int = value match {
       case AvroByte(b) => b.toInt
       case AvroShort(s) => s.toInt
-      case AvroInt(int) => int
+      case i: AvroInt => i.int
       case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
@@ -301,7 +301,7 @@ trait BaseDecoders {
       case AvroByte(b) => b.toLong
       case AvroShort(s) => s.toLong
       case AvroInt(int) => int.toLong
-      case AvroLong(long) => long
+      case l: AvroLong => l.long
       case _ => throw Avro4sUnsupportedValueException(value, this)
     }
   }
@@ -350,7 +350,7 @@ trait BaseDecoders {
   implicit val Utf8Decoder: Decoder[Utf8] = new Decoder[Utf8] {
     val schemaFor: SchemaFor[Utf8] = SchemaFor.Utf8SchemaFor
     override def decode(value: AvroValue): Utf8 = value match {
-      case AvroString(str) => new Utf8(str)
+      case a: AvroString => new Utf8(a.str)
       case null => throw new Avro4sDecodingException("Cannot decode <null> as utf8", value, this)
       case _ => throw Avro4sUnsupportedValueException(value, this)
     }
@@ -359,7 +359,7 @@ trait BaseDecoders {
   private[avro4s] class StringDecoder(val schemaFor: SchemaFor[String]) extends Decoder[String] {
 
     override def decode(value: AvroValue): String = value match {
-      case AvroString(str) => str
+      case a: AvroString => a.str
       case AvroGenericFixed(fixed) => new String(fixed.bytes())
       case AvroByteArray(bytes) => new String(bytes)
       case null                => throw new Avro4sDecodingException("Cannot decode <null> as a string", value, this)
