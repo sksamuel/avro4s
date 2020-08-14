@@ -13,6 +13,10 @@ trait InputStreamTest extends AnyFunSuite with Matchers {
     AvroInputStream.data.from(bytes).build(implicitly[SchemaFor[T]].schema).iterator.next()
   }
 
+  def tryReadData[T: SchemaFor: Decoder](bytes: Array[Byte]) = {
+    AvroInputStream.data.from(bytes).build(implicitly[SchemaFor[T]].schema).tryIterator
+  }
+
   def writeData[T: Encoder: SchemaFor](t: T): ByteArrayOutputStream = {
     val out = new ByteArrayOutputStream
     val avro = AvroOutputStream.data[T].to(out).build()
