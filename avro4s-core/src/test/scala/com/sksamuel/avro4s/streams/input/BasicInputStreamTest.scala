@@ -1,5 +1,9 @@
 package com.sksamuel.avro4s.streams.input
 
+import com.sksamuel.avro4s._
+
+import scala.util.Failure
+
 class BasicInputStreamTest extends InputStreamTest {
 
   case class BooleanTest(z: Boolean)
@@ -11,6 +15,12 @@ class BasicInputStreamTest extends InputStreamTest {
 
   test("read write out booleans") {
     writeRead(BooleanTest(true))
+  }
+
+  test("read and skip over corrupted data") {
+    val items = tryReadData[StringTest](writeData(FloatTest(3.4F)).toByteArray).toSeq
+    items.size shouldBe 1
+    items.head shouldBe a[Failure[_]]
   }
 
   test("read write out strings") {

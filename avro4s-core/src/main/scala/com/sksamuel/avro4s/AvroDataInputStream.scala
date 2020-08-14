@@ -2,12 +2,12 @@ package com.sksamuel.avro4s
 
 import java.io.InputStream
 
-import org.apache.avro.Schema
+import org.apache.avro.{AvroRuntimeException, Schema}
 import org.apache.avro.file.DataFileStream
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.io.DatumReader
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 class AvroDataInputStream[T](in: InputStream,
                              writerSchema: Option[Schema])
@@ -32,10 +32,12 @@ class AvroDataInputStream[T](in: InputStream,
 
   override def tryIterator: Iterator[Try[T]] = new Iterator[Try[T]] {
     override def hasNext: Boolean = dataFileReader.hasNext
-    override def next(): Try[T] = Try {
-      val record = dataFileReader.next
-      decoder.decode(record)
-    }
+    override def next(): Try[T] =
+      Try(decoder.decode(dataFileReader.next)).recoverWith {
+        case t: AvroRuntimeException =>
+          dataFileReader.nextBlock() // in case of exception, skip to next block
+          Failure(t)
+      }
   }
 
   override def close(): Unit = in.close()
