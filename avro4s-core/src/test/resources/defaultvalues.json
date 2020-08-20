@@ -55,6 +55,31 @@
         "symbols": ["Malbec", "Shiraz", "CabSav", "Merlot"]
       },
       "default": "CabSav"
+    },
+    {
+      "name": "luckyNumbers",
+      "type": {
+        "type": "array",
+        "items": "int"
+      },
+      "default": [7, 9]
+    },
+    {
+      "name": "favoriteSongs",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Song",
+          "fields": [
+            {
+              "name": "title",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "default": []
     }
   ]
 }
