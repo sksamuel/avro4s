@@ -1,5 +1,7 @@
 package com.sksamuel.avro4s.schema
 
+import java.time.Instant
+
 import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -37,6 +39,11 @@ class DefaultValueSchemaTest extends AnyWordSpec with Matchers {
     "support default values for floats in top level classes" in {
       val schema = AvroSchema[ClassWithDefaultFloat]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_float.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support default values for instants in top level classes" in {
+      implicit val schema = AvroSchema[ClassWithDefaultInstant]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_instant.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support default values for maps, sets and seqs" in {
@@ -99,6 +106,7 @@ case class ClassWithDefaultBoolean(b: Boolean = true)
 case class ClassWithDefaultLong(l: Long = 1468920998000l)
 case class ClassWithDefaultFloat(f: Float = 123.458F)
 case class ClassWithDefaultDouble(d: Double = 123.456)
+case class ClassWithDefaultInstant(min: Instant = Instant.MIN, max: Instant = Instant.MAX, epoch: Instant = Instant.EPOCH)
 
 case class DefaultValues(name: String = "sammy",
                          age: Int = 21,
@@ -123,3 +131,4 @@ case class Cuppers(cupcat: Cupcat = Snoutley("hates varg"))
 case class NoVarg(cupcat: Cupcat = Rendal)
 
 case class Song(title: String)
+
