@@ -1,0 +1,31 @@
+{
+    "type": "record",
+    "name": "ClassWithDefaultInstant",
+    "namespace": "com.sksamuel.avro4s.schema",
+    "fields": [
+        {
+            "name": "min",
+            "type": {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+            },
+            "default": -9223372036854775808
+        },
+        {
+            "name": "max",
+            "type": {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+            },
+            "default": 9223372036854775807
+        },
+        {
+            "name": "epoch",
+            "type": {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+            },
+            "default": 0
+        }
+    ]
+}
