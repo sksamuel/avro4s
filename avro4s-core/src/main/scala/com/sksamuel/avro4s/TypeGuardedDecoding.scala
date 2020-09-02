@@ -21,10 +21,10 @@ object TypeGuardedDecoding {
     else if (tpe <:< typeOf[Double]) doubleDecoder(decoder)
     else if (tpe <:< typeOf[Float]) floatDecoder(decoder)
     else if (tpe <:< typeOf[Array[Byte]]) byteArrayDecoder(decoder)
-    else if (tpe <:< typeOf[Array[_]] || tpe <:< typeOf[java.util.Collection[_]] || tpe <:< typeOf[Iterable[_]]) {
-      arrayDecoder(decoder)
-    } else if (tpe <:< typeOf[java.util.Map[_, _]] || tpe <:< typeOf[Map[_, _]]) {
+    else if (tpe <:< typeOf[java.util.Map[_, _]] || tpe <:< typeOf[Map[_, _]]) {
       mapDecoder(decoder)
+    } else if (tpe <:< typeOf[Array[_]] || tpe <:< typeOf[java.util.Collection[_]] || tpe <:< typeOf[Iterable[_]]) {
+      arrayDecoder(decoder)
     } else if (tpe <:< typeOf[shapeless.Coproduct]) {
       coproductDecoder(decoder)
     } else {
