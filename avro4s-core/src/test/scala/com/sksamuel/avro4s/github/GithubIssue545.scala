@@ -10,8 +10,6 @@ import scala.reflect.runtime.universe._
 import scala.collection.JavaConverters._
 
 class GithubIssue545 extends AnyWordSpec with Matchers {
-//  implicit val left: Decoder[Map[String, String]] = _
-
   "TypeGuardedDecoding" should {
     "create a map decoder instead of an array decoder" in {
       val mapDecoder = Decoder.mapDecoder[String]
