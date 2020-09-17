@@ -997,7 +997,7 @@ val ennio = format.from(record)
 
 ## Usage as a Kafka Serde
 
-The [com.sksamuel.avro4s.kafka.GenericSerde](src/main/scala/com/sksamuel/avro4s/kafka/GenericSerde.scala) class can be used as a Kafka Serdes to serialize/deserialize case classes into Avro records with Avro4s.
+The [com.sksamuel.avro4s.kafka.GenericSerde](avro4s-kafka/src/main/scala/com/sksamuel/avro4s/kafka/GenericSerde.scala) class can be used as a Kafka Serdes to serialize/deserialize case classes into Avro records with Avro4s.
 Note that this class is not integrated with the schema registry.
 
 ```scala
