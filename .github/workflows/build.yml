@@ -43,7 +43,7 @@ jobs:
         run: sbt ++2.12.10 test
 
       - name: publish snapshot
-        run: sbt ++2.12.10 publishSigned
+        run: sbt ++2.12.10 publish
 
   scala-2_13:
     runs-on: ubuntu-latest
@@ -76,4 +76,4 @@ jobs:
         run: sbt ++2.13.3 test
 
       - name: publish snapshot
-        run: sbt ++2.12.10 publishSigned
+        run: sbt ++2.12.10 publish
