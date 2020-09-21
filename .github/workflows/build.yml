@@ -44,6 +44,9 @@ jobs:
 
       - name: publish snapshot
         run: sbt ++2.12.10 publish
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
 
   scala-2_13:
     runs-on: ubuntu-latest
@@ -77,3 +80,6 @@ jobs:
 
       - name: publish snapshot
         run: sbt ++2.12.10 publish
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
