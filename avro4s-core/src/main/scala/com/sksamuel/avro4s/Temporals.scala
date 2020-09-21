@@ -24,10 +24,19 @@ trait TemporalEncoders {
       new InstantEncoder(schemaFor)
   }
 
-  implicit val LocalTimeEncoder: Encoder[LocalTime] = new Encoder[LocalTime] {
-    val schemaFor: SchemaFor[LocalTime] = SchemaFor.LocalTimeSchemaFor
+  implicit val LocalTimeEncoder: Encoder[LocalTime] = new LocalTimeEncoder(SchemaFor.LocalTimeSchemaFor)
 
-    def encode(value: LocalTime): AnyRef = java.lang.Long.valueOf(value.toNanoOfDay / 1000)
+  private final class LocalTimeEncoder(val schemaFor: SchemaFor[LocalTime]) extends Encoder[LocalTime] {
+
+    val toNanosFactor = schema.getLogicalType match {
+      case _: TimeMicros => 1000L
+      case _: TimeMillis => 1000000L
+      case _             => throw new Avro4sConfigurationException(s"Unsupported logical type for LocalTime: ${schemaFor.schema}")
+    }
+
+    def encode(value: LocalTime): AnyRef = java.lang.Long.valueOf(value.toNanoOfDay / toNanosFactor)
+
+    override def withSchema(schemaFor: SchemaFor[LocalTime]): Encoder[LocalTime] = new LocalTimeEncoder(schemaFor)
   }
 
   implicit val LocalDateEncoder: Encoder[LocalDate] =
@@ -69,21 +78,22 @@ trait TemporalDecoders {
     override def withSchema(schemaFor: SchemaFor[Instant]): Decoder[Instant] = new InstantDecoder(schemaFor)
   }
 
-  implicit val LocalTimeDecoder: Decoder[LocalTime] = new Decoder[LocalTime] {
-    val schemaFor: SchemaFor[LocalTime] = SchemaFor.LocalTimeSchemaFor
+  implicit val LocalTimeDecoder: Decoder[LocalTime] = new LocalTimeDecoder(SchemaFor.LocalTimeSchemaFor)
 
-    def decode(value: Any): LocalTime = schema.getLogicalType match {
-      case _: TimeMillis =>
-        value match {
-          case l: Long => LocalTime.ofNanoOfDay(l * 1000000L)
-          case i: Int  => LocalTime.ofNanoOfDay(i.toLong * 1000000L)
-        }
-      case _: TimeMicros =>
-        value match {
-          case l: Long => LocalTime.ofNanoOfDay(l * 1000L)
-          case i: Int  => LocalTime.ofNanoOfDay(i.toLong * 1000L)
-        }
+  private final class LocalTimeDecoder(val schemaFor: SchemaFor[LocalTime]) extends Decoder[LocalTime] {
+
+    val toNanosFactor = schema.getLogicalType match {
+      case _: TimeMicros => 1000L
+      case _: TimeMillis => 1000000L
+      case _             => throw new Avro4sConfigurationException(s"Unsupported logical type for LocalTime: ${schemaFor.schema}")
     }
+
+    def decode(value: Any): LocalTime = value match {
+      case l: Long => LocalTime.ofNanoOfDay(l * toNanosFactor)
+      case i: Int  => LocalTime.ofNanoOfDay(i.toLong * toNanosFactor)
+    }
+
+    override def withSchema(schemaFor: SchemaFor[LocalTime]): Decoder[LocalTime] = new LocalTimeDecoder(schemaFor)
   }
 
   implicit val LocalDateDecoder: Decoder[LocalDate] =
