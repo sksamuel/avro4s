@@ -53,4 +53,9 @@ class GenericSerdeTest extends AnyFlatSpec with Matchers {
     ) shouldBe someValue
   }
 
+  "round trip with tombstone" should "yield back tombstone" in {
+    val binarySerde = new GenericSerde[TheKafkaValue](BinaryFormat)
+    val tombstone: TheKafkaValue = null
+    binarySerde.deserialize("any-topic", binarySerde.serialize("any-topic", tombstone)) shouldBe tombstone
+  }
 }

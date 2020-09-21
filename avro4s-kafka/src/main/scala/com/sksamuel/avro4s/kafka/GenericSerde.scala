@@ -45,17 +45,19 @@ class GenericSerde[T >: Null : SchemaFor : Encoder : Decoder](avroFormat: AvroFo
   override def configure(configs: java.util.Map[String, _], isKey: Boolean): Unit = ()
 
   override def serialize(topic: String, data: T): Array[Byte] = {
-    val baos = new ByteArrayOutputStream()
+    if (data == null) null else {
+      val baos = new ByteArrayOutputStream()
 
-    val avroOutputStream = avroFormat match {
-      case BinaryFormat => AvroOutputStream.binary[T]
-      case JsonFormat => AvroOutputStream.json[T]
-      case DataFormat => AvroOutputStream.data[T]
+      val avroOutputStream = avroFormat match {
+        case BinaryFormat => AvroOutputStream.binary[T]
+        case JsonFormat => AvroOutputStream.json[T]
+        case DataFormat => AvroOutputStream.data[T]
+      }
+
+      val output = avroOutputStream.to(baos).build()
+      output.write(data)
+      output.close()
+      baos.toByteArray
     }
-
-    val output = avroOutputStream.to(baos).build()
-    output.write(data)
-    output.close()
-    baos.toByteArray
   }
 }
