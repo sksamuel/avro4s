@@ -1,4 +1,3 @@
-import com.typesafe.sbt.SbtPgp
 import sbt.Keys._
 import sbt._
 
@@ -9,27 +8,32 @@ object Build extends AutoPlugin {
     val org = "com.sksamuel.avro4s"
     val AvroVersion = "1.9.2"
     val Log4jVersion = "1.2.17"
-    val ScalatestVersion = "3.2.1"
+    val ScalatestVersion = "3.2.2"
     val Slf4jVersion = "1.7.30"
     val Json4sVersion = "3.6.9"
     val CatsVersion = "2.0.0-RC2"
     val ShapelessVersion = "2.3.3"
-    val RefinedVersion = "0.9.15"
-    val MagnoliaVersion = "0.17.0"
+    val RefinedVersion = "0.9.16"
+    val MagnoliaVersion = "0.16.0"
     val SbtJmhVersion = "0.3.7"
     val JmhVersion = "1.23"
   }
 
   import autoImport._
 
-  def isTravis = System.getenv("TRAVIS") == "true"
-  def travisBuildNumber = System.getenv("TRAVIS_BUILD_NUMBER")
+  def isGithubActions = sys.env.getOrElse("CI", "false") == "true"
+  def releaseVersion = sys.env.getOrElse("RELEASE_VERSION", "")
+  def isRelease = releaseVersion != ""
+  def githubRunNumber = sys.env.getOrElse("GITHUB_RUN_NUMBER", "")
+  def ossrhUsername = sys.env.getOrElse("OSSRH_USERNAME", "")
+  def ossrhPassword = sys.env.getOrElse("OSSRH_PASSWORD", "")
+  def publishVersion = if (isRelease) "4.0.0" else "4.1.0." + githubRunNumber + "-SNAPSHOT"
 
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
-    scalaVersion := "2.12.10",
-    crossScalaVersions := Seq("2.12.10", "2.13.1"),
+    scalaVersion := "2.13.3",
+    crossScalaVersions := Seq("2.12.10", "2.13.3"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(
@@ -59,26 +63,20 @@ object Build extends AutoPlugin {
   val publishingSettings = Seq(
     publishMavenStyle := true,
     publishArtifact in Test := false,
-    SbtPgp.autoImport.useGpg := true,
-    SbtPgp.autoImport.useGpgAgent := true,
-    if (isTravis) {
+    if (isGithubActions) {
       credentials += Credentials(
         "Sonatype Nexus Repository Manager",
         "oss.sonatype.org",
-        sys.env.getOrElse("OSSRH_USERNAME", ""),
-        sys.env.getOrElse("OSSRH_PASSWORD", "")
+        ossrhUsername,
+        ossrhPassword
       )
     } else {
       credentials += Credentials(Path.userHome / ".sbt" / "credentials.sbt")
     },
-    if (isTravis) {
-      version := s"4.1.0.$travisBuildNumber-SNAPSHOT"
-    } else {
-      version := "4.0.0-RC1"
-    },
+    version := publishVersion,
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
-      if (isTravis) {
+      if (isRelease) {
         Some("snapshots" at s"${nexus}content/repositories/snapshots")
       } else {
         Some("releases" at s"${nexus}service/local/staging/deploy/maven2")

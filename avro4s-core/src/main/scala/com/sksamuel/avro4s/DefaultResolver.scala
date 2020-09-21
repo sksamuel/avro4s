@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.UUID
 
 import org.apache.avro.LogicalTypes.Decimal
@@ -26,6 +27,7 @@ object DefaultResolver {
     case u: Utf8 => u.toString
     case uuid: UUID => uuid.toString
     case enum: GenericEnumSymbol[_] => enum.toString
+    case instant: Instant => customInstantDefault(instant)
     case fixed: GenericFixed => fixed.bytes()
     case bd: BigDecimal => bd.toString()
     case byteBuffer: ByteBuffer if schema.getLogicalType.isInstanceOf[Decimal] =>
@@ -40,6 +42,7 @@ object DefaultResolver {
     case x: scala.Float => java.lang.Float.valueOf(x)
     case x: Map[_,_] => x.asJava
     case x: Seq[_] => x.asJava
+    case x: Set[_] => x.asJava
     case shapeless.Inl(x) => apply(x, schema)
     case p: Product => customDefault(p, schema)
     case v if isScalaEnumeration(v) => customScalaEnumDefault(value)

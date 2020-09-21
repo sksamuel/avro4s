@@ -1,6 +1,6 @@
 # ![logo.png](logo.png)
 
-[![Build Status](https://travis-ci.org/sksamuel/avro4s.png)](https://travis-ci.org/sksamuel/avro4s)
+![build](https://github.com/sksamuel/avro4s/workflows/build/badge.svg)
 [<img src="https://img.shields.io/maven-central/v/com.sksamuel.avro4s/avro4s-core_2.12.svg?label=latest%20release%20for%202.12"/>](http://search.maven.org/#search%7Cga%7C1%7Cavro4s-core_2.12)
 [<img src="https://img.shields.io/maven-central/v/com.sksamuel.avro4s/avro4s-core_2.13.svg?label=latest%20release%20for%202.13"/>](http://search.maven.org/#search%7Cga%7C1%7Cavro4s-core_2.13)
 [<img src="https://img.shields.io/nexus/s/https/oss.sonatype.org/com.sksamuel.avro4s/avro4s-core_2.12.svg?label=latest%20snapshot&style=plastic"/>](https://oss.sonatype.org/content/repositories/snapshots/com/sksamuel/avro4s/)
@@ -997,7 +997,7 @@ val ennio = format.from(record)
 
 ## Usage as a Kafka Serde
 
-The [com.sksamuel.avro4s.kafka.GenericSerde](src/main/scala/com/sksamuel/avro4s/kafka/GenericSerde.scala) class can be used as a Kafka Serdes to serialize/deserialize case classes into Avro records with Avro4s.
+The [com.sksamuel.avro4s.kafka.GenericSerde](avro4s-kafka/src/main/scala/com/sksamuel/avro4s/kafka/GenericSerde.scala) class can be used as a Kafka Serdes to serialize/deserialize case classes into Avro records with Avro4s.
 Note that this class is not integrated with the schema registry.
 
 ```scala
