@@ -48,7 +48,6 @@ object Build extends AutoPlugin {
       "-Ybackend-parallelism",
       "8"
     ),
-    updateOptions := updateOptions.value.withGigahorse(false),
     javacOptions := Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
       "org.scala-lang"    % "scala-reflect"     % scalaVersion.value,
