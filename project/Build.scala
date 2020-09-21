@@ -1,4 +1,3 @@
-import com.typesafe.sbt.SbtPgp
 import sbt.Keys._
 import sbt._
 
@@ -22,10 +21,10 @@ object Build extends AutoPlugin {
 
   import autoImport._
 
-  def isGithubActions = sys.env("CI") == "true"
-  def releaseVersion = sys.env.get("RELEASE_VERSION")
-  def isRelease = releaseVersion.isDefined
-  def githubRunNumber = System.getenv("GITHUB_RUN_NUMBER")
+  def isGithubActions = sys.env.getOrElse("CI", "false") == "true"
+  def releaseVersion = sys.env.getOrElse("RELEASE_VERSION", "")
+  def isRelease = releaseVersion != ""
+  def githubRunNumber = sys.env.getOrElse("GITHUB_RUN_NUMBER", "")
   def ossrhUsername = sys.env.getOrElse("OSSRH_USERNAME", "")
   def ossrhPassword = sys.env.getOrElse("OSSRH_PASSWORD", "")
   def publishVersion = if (isRelease) "4.0.0" else "4.1.0." + githubRunNumber + "-SNAPSHOT"
@@ -64,8 +63,8 @@ object Build extends AutoPlugin {
   val publishingSettings = Seq(
     publishMavenStyle := true,
     publishArtifact in Test := false,
-    SbtPgp.autoImport.useGpg := true,
-    SbtPgp.autoImport.useGpgAgent := true,
+//    SbtPgp.autoImport.useGpg := true,
+//    SbtPgp.autoImport.useGpgAgent := true,
     if (isGithubActions) {
       credentials += Credentials(
         "Sonatype Nexus Repository Manager",

@@ -24,7 +24,7 @@ jobs:
         uses: olafurpg/setup-scala@v5
 
       - name: run tests
-        run: sbt ++2.12.10 compile
+        run: sbt ++2.12.10 test
 
   scala-2_13:
     runs-on: ubuntu-latest
@@ -38,4 +38,4 @@ jobs:
         uses: olafurpg/setup-scala@v5
 
       - name: run tests
-        run: sbt ++2.13.3 compile
+        run: sbt ++2.13.3 test
