@@ -63,7 +63,6 @@ object Build extends AutoPlugin {
   val publishingSettings = Seq(
     publishMavenStyle := true,
     publishArtifact in Test := false,
-    updateOptions := updateOptions.value.withGigahorse(false),
     credentials += Credentials(
       "Sonatype Nexus Repository Manager",
       "oss.sonatype.org",
