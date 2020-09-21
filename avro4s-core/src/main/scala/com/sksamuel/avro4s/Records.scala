@@ -96,8 +96,8 @@ object Records {
     val encoders = fieldsAndEncoders.map(_._2)
     update match {
       case FullSchemaUpdate(_) =>
-        record.getFields.asScala.map(f => encoders.find(e => e.fieldName == f.name).get).toVector
-        encoder.fieldEncoding = encoders.toVector
+        encoder.fieldEncoding =
+          record.getFields.asScala.map(f => encoders.find(e => e.fieldName == f.name).get).toVector
 
       case _ =>
         val fields = fieldsAndEncoders.map(_._1)
@@ -122,7 +122,6 @@ object Records {
     val decoders = fieldsAndDecoders.map(_._2)
     update match {
       case FullSchemaUpdate(_) =>
-        record.getFields.asScala.map(f => decoders.find(e => e.fieldName.contains(f.name)).get).toVector
         decoder.fieldDecoding = decoders.toVector
 
       case _ =>
@@ -260,7 +259,7 @@ object Records {
 
       val anyValSym = typeOf[AnyVal].typeSymbol
       val typeSym = sym.typeSignature.typeSymbol
-      if(typeSym.isClass && typeSym.asClass.baseClasses.contains(anyValSym)) {
+      if (typeSym.isClass && typeSym.asClass.baseClasses.contains(anyValSym)) {
         typeSym.annotations.collectFirst {
           case a if a.tree.tpe =:= typeOf[AvroDoc] =>
             val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
