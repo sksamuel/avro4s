@@ -23,8 +23,18 @@ jobs:
       - name: setup sbt
         uses: olafurpg/setup-scala@v5
 
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v3
+        with:
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PGP_PASSPHRASE }}
+
       - name: run tests
         run: sbt ++2.12.10 test
+
+      - name: publish snapshot
+        run: sbt ++2.12.10 publishSigned
 
   scala-2_13:
     runs-on: ubuntu-latest
@@ -37,5 +47,15 @@ jobs:
       - name: setup sbt
         uses: olafurpg/setup-scala@v5
 
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v3
+        with:
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PGP_PASSPHRASE }}
+
       - name: run tests
         run: sbt ++2.13.3 test
+
+      - name: publish snapshot
+        run: sbt ++2.12.10 publishSigned

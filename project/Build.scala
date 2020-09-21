@@ -63,8 +63,6 @@ object Build extends AutoPlugin {
   val publishingSettings = Seq(
     publishMavenStyle := true,
     publishArtifact in Test := false,
-//    SbtPgp.autoImport.useGpg := true,
-//    SbtPgp.autoImport.useGpgAgent := true,
     if (isGithubActions) {
       credentials += Credentials(
         "Sonatype Nexus Repository Manager",
