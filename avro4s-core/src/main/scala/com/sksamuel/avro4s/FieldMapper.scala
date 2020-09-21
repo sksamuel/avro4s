@@ -9,7 +9,7 @@ import scala.collection.mutable.ListBuffer
   * The [[FieldMapper]] is used to map fields in a schema to fields in a class by
   * transforming the class field name to the wire name format.
   */
-sealed trait FieldMapper {
+trait FieldMapper {
 
   /**
     * Takes a field name from a type and converts it to the wire format.
