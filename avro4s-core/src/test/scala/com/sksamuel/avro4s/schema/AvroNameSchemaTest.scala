@@ -17,7 +17,7 @@ class AvroNameSchemaTest extends AnyFunSuite with Matchers {
     @AvroName("wibble")
     case class Foo(a: String, b: String)
     val schema = AvroSchema[Foo]
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_class.json2222"))
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_class.json"))
     schema.toString(true) shouldBe expected.toString(true)
   }
 
