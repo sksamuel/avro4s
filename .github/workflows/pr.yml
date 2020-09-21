@@ -1,0 +1,37 @@
+name: pr
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - 'docs/**'
+      - '*.md'
+
+jobs:
+  scala-2.12:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout the repo
+        uses: actions/checkout@v2
+
+      - name: setup JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: '11'
+
+      - name: run tests
+        run: ./sbt ++ 2.12.10
+
+  scala-2.13:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout the repo
+        uses: actions/checkout@v2
+
+      - name: setup JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: '11'
+
+      - name: run tests
+        run: ./sbt ++ 2.13.3
