@@ -79,7 +79,7 @@ jobs:
         run: sbt ++2.13.3 test
 
       - name: publish snapshot
-        run: sbt ++2.12.10 publish
+        run: sbt ++2.13.3 publish
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}

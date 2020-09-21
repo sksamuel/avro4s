@@ -76,7 +76,7 @@ jobs:
         run: sbt ++2.13.3 test
 
       - name: publish release
-        run: sbt ++2.12.10 publishSigned
+        run: sbt ++2.13.3 publishSigned
         env:
           RELEASE_VERSION: ${{ github.event.inputs.version }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
