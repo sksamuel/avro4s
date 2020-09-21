@@ -22,8 +22,13 @@ object Build extends AutoPlugin {
 
   import autoImport._
 
-  def isTravis = System.getenv("TRAVIS") == "true"
-  def travisBuildNumber = System.getenv("TRAVIS_BUILD_NUMBER")
+  def isGithubActions = sys.env("CI") == "true"
+  def releaseVersion = sys.env.get("RELEASE_VERSION")
+  def isRelease = releaseVersion.isDefined
+  def githubRunNumber = System.getenv("GITHUB_RUN_NUMBER")
+  def ossrhUsername = sys.env.getOrElse("OSSRH_USERNAME", "")
+  def ossrhPassword = sys.env.getOrElse("OSSRH_PASSWORD", "")
+  def publishVersion = if (isRelease) "4.0.0" else "4.1.0." + githubRunNumber + "-SNAPSHOT"
 
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
@@ -61,24 +66,20 @@ object Build extends AutoPlugin {
     publishArtifact in Test := false,
     SbtPgp.autoImport.useGpg := true,
     SbtPgp.autoImport.useGpgAgent := true,
-    if (isTravis) {
+    if (isGithubActions) {
       credentials += Credentials(
         "Sonatype Nexus Repository Manager",
         "oss.sonatype.org",
-        sys.env.getOrElse("OSSRH_USERNAME", ""),
-        sys.env.getOrElse("OSSRH_PASSWORD", "")
+        ossrhUsername,
+        ossrhPassword
       )
     } else {
       credentials += Credentials(Path.userHome / ".sbt" / "credentials.sbt")
     },
-    if (isTravis) {
-      version := s"4.1.0.$travisBuildNumber-SNAPSHOT"
-    } else {
-      version := "4.0.0"
-    },
+    version := publishVersion,
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
-      if (isTravis) {
+      if (isRelease) {
         Some("snapshots" at s"${nexus}content/repositories/snapshots")
       } else {
         Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
