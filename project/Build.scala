@@ -11,7 +11,7 @@ object Build extends AutoPlugin {
     val ScalatestVersion = "3.2.2"
     val Slf4jVersion = "1.7.30"
     val Json4sVersion = "3.6.9"
-    val CatsVersion = "2.0.0-RC2"
+    val CatsVersion = "2.0.0"
     val ShapelessVersion = "2.3.3"
     val RefinedVersion = "0.9.16"
     val MagnoliaVersion = "0.16.0"
