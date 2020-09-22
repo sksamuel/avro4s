@@ -6,7 +6,7 @@ import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import com.sksamuel.avro4s.SchemaFor.TimestampNanosLogicalType
 import com.sksamuel.avro4s.{AvroSchema, Decoder, SchemaFor}
 import org.apache.avro.generic.GenericData
-import org.apache.avro.{LogicalTypes, SchemaBuilder}
+import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -42,8 +42,7 @@ class DateDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode timestamp-millis to LocalDateTime") {
-    val dateSchema = LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType)
-    val schema = SchemaBuilder.record("foo").fields().name("z").`type`(dateSchema).noDefault().endRecord()
+    val schema = recordSchemaWithLogicalType(LogicalTypes.timestampMillis)
     val record = new GenericData.Record(schema)
     record.put("z", 1572707106376L)
     Decoder[WithLocalDateTime].withSchema(SchemaFor(schema)).decode(record) shouldBe WithLocalDateTime(
@@ -51,8 +50,7 @@ class DateDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode timestamp-micros to LocalDateTime") {
-    val dateSchema = LogicalTypes.timestampMicros().addToSchema(SchemaBuilder.builder.longType)
-    val schema = SchemaBuilder.record("foo").fields().name("z").`type`(dateSchema).noDefault().endRecord()
+    val schema = recordSchemaWithLogicalType(LogicalTypes.timestampMicros)
     val record = new GenericData.Record(schema)
     record.put("z", 1572707106376001L)
     Decoder[WithLocalDateTime].withSchema(SchemaFor(schema)).decode(record) shouldBe WithLocalDateTime(
@@ -60,8 +58,7 @@ class DateDecoderTest extends AnyFunSuite with Matchers {
   }
 
   test("decode timestamp-nanos to LocalDateTime") {
-    val dateSchema = TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType)
-    val schema = SchemaBuilder.record("foo").fields().name("z").`type`(dateSchema).noDefault().endRecord()
+    val schema = recordSchemaWithLogicalType(TimestampNanosLogicalType)
     val record = new GenericData.Record(schema)
     record.put("z", 1572707106376000002L)
     Decoder[WithLocalDateTime].decode(record) shouldBe WithLocalDateTime(
@@ -75,10 +72,65 @@ class DateDecoderTest extends AnyFunSuite with Matchers {
     Decoder[WithTimestamp].decode(record) shouldBe WithTimestamp(new Timestamp(1538312231000L))
   }
 
+  test("decode timestamp-millis to Timestamp") {
+    val schema = recordSchemaWithLogicalType(LogicalTypes.timestampMillis)
+    val record = new GenericData.Record(schema)
+    record.put("z", 1538312231000L)
+    Decoder[WithTimestamp].withSchema(SchemaFor(schema)).decode(record) shouldBe WithTimestamp(new Timestamp(1538312231000L))
+  }
+
+  test("decode timestamp-micros to Timestamp") {
+    val schema = recordSchemaWithLogicalType(LogicalTypes.timestampMicros)
+    val record = new GenericData.Record(schema)
+    record.put("z", 1538312231000001L)
+    val t = new Timestamp(1538312231000L)
+    t.setNanos(1000)
+    Decoder[WithTimestamp].withSchema(SchemaFor(schema)).decode(record) shouldBe WithTimestamp(timestamp(1538312231000L,1000))
+  }
+
+  test("decode timestamp-nanos to Timestamp") {
+    val schema = recordSchemaWithLogicalType(TimestampNanosLogicalType)
+    val record = new GenericData.Record(schema)
+    record.put("z", 1538312231000000001L)
+    Decoder[WithTimestamp].withSchema(SchemaFor(schema)).decode(record) shouldBe WithTimestamp(timestamp(1538312231000L, 1))
+  }
+
   test("decode long to Instant") {
     val schema = AvroSchema[WithInstant]
     val record = new GenericData.Record(schema)
     record.put("z", 1538312231000L)
     Decoder[WithInstant].decode(record) shouldBe WithInstant(Instant.ofEpochMilli(1538312231000L))
+  }
+
+  test("decode timestamp-millis to Instant") {
+    val schema = recordSchemaWithLogicalType(LogicalTypes.timestampMillis)
+    val record = new GenericData.Record(schema)
+    record.put("z", 1538312231000L)
+    Decoder[WithInstant].decode(record) shouldBe WithInstant(Instant.ofEpochMilli(1538312231000L))
+  }
+
+  test("decode timestamp-micros to Instant") {
+    val schema = recordSchemaWithLogicalType(LogicalTypes.timestampMicros)
+    val record = new GenericData.Record(schema)
+    record.put("z", 1538312231000001L)
+    Decoder[WithInstant].withSchema(SchemaFor(schema)).decode(record) shouldBe WithInstant(Instant.ofEpochMilli(1538312231000L).plusNanos(1000))
+  }
+
+  test("decode timestamp-nanos to Instant") {
+    val schema = recordSchemaWithLogicalType(TimestampNanosLogicalType)
+    val record = new GenericData.Record(schema)
+    record.put("z", 1538312231000000001L)
+    Decoder[WithInstant].withSchema(SchemaFor(schema)).decode(record) shouldBe WithInstant(Instant.ofEpochMilli(1538312231000L).plusNanos(1))
+  }
+
+  def timestamp(millis: Long, nanos: Int = 0): Timestamp = {
+    val t = new Timestamp(millis)
+    t.setNanos(nanos)
+    t
+  }
+
+  def recordSchemaWithLogicalType(logicalType: LogicalType): Schema = {
+    val dateSchema = logicalType.addToSchema(SchemaBuilder.builder.longType)
+    SchemaBuilder.record("foo").fields().name("z").`type`(dateSchema).noDefault().endRecord()
   }
 }

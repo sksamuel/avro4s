@@ -9,8 +9,7 @@ import com.sksamuel.avro4s.Temporals.{TemporalWithLogicalTypeDecoder, TemporalWi
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
 
 trait TemporalEncoders {
-  implicit val InstantEncoder =
-    Encoder.LongEncoder.comap[Instant](_.toEpochMilli).withSchema(SchemaFor.InstantSchemaFor)
+  implicit val InstantEncoder: Encoder[Instant] = new InstantEncoder(SchemaFor.InstantSchemaFor)
 
   private final class InstantEncoder(val schemaFor: SchemaFor[Instant])
       extends TemporalWithLogicalTypeEncoder[Instant] {
