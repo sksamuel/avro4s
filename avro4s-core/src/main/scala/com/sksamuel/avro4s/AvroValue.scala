@@ -10,6 +10,7 @@ enum AvroValue {
   case AvroString(str: String)
   case AvroUtf8(ut8: Utf8)
   case AvroByteArray(bytes: Array[Byte])
+  case AvroByteBuffer(buffer: ByteBuffer)
   case AvroBoolean(boolean: Boolean)
 
   case AvroByte(byte: Byte)
@@ -23,7 +24,7 @@ enum AvroValue {
   case AvroList(list: List[AvroValue])
   case AvroMap(map: Map[String, AvroValue])
   case AvroNull
-  case AvroGenericFixed(fixed: GenericFixed)
+  case Fixed(fixed: GenericFixed)
 
   case AvroRecord(record: GenericRecord)
 }
@@ -44,7 +45,7 @@ def unsafeFromAny(a: Any): AvroValue = if (a == null) AvroValue.AvroNull else a 
   case a: Array[Byte] => AvroValue.AvroByteArray(a)
   case a: Array[_] => AvroValue.AvroList(a.toList.map(unsafeFromAny))
   case e: GenericEnumSymbol[_] => AvroValue.AvroEnumSymbol(e)
-  case g: GenericFixed => AvroValue.AvroGenericFixed(g)
+  case g: GenericFixed => AvroValue.Fixed(g)
   case b: ByteBuffer => AvroValue.AvroByteArray(b.array())
   //  case m: java.util.Map[_, _] => AvroMap (m.asScala.map {
   //  case (key, value) => key.toString -> unsafeFromAny (value)
@@ -55,3 +56,5 @@ def unsafeFromAny(a: Any): AvroValue = if (a == null) AvroValue.AvroNull else a 
 }
 
 class Avro4sUnsupportedValueException(msg: String) extends RuntimeException(msg)
+class Avro4sEncodingException(msg: String) extends RuntimeException(msg)
+class Avro4sConfigurationException(msg: String) extends RuntimeException(msg)

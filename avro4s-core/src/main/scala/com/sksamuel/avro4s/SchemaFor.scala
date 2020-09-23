@@ -32,7 +32,7 @@ trait SchemaFor[T] {
   def map[U](fn: Schema => Schema): SchemaFor[U] = SchemaFor[U](fn(schema))
 }
 
-object SchemaFor {
+object SchemaFor extends BaseSchemas with DateSchemas with ByteIterableSchemas {
 
   def apply[T](schema: Schema): SchemaFor[T] = new SchemaFor[T] {
     override def schema[T]: Schema = schema
@@ -81,7 +81,7 @@ trait DateSchemas {
   implicit val TimestampSchemaFor: SchemaFor[Timestamp] = SchemaFor[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 }
 
-trait ByteIterableSchemaFors {
+trait ByteIterableSchemas {
   implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
   implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = ByteArraySchemaFor.forType
   implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = ByteArraySchemaFor.forType
