@@ -1,9 +1,0 @@
-{
-  "type": "enum",
-  "name": "Dibble",
-  "namespace": "com.sksamuel.avro4s.schema",
-  "symbols": [
-    "Dabble",
-    "Dobble"
-  ]
-}

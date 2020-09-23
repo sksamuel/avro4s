@@ -1,6 +1,0 @@
-{
-  "type": "enum",
-  "name": "Numeric",
-  "namespace": "com.sksamuel.avro4s.schema",
-  "symbols": ["NaturalNumber", "RationalNumber", "RealNumber"]
-}

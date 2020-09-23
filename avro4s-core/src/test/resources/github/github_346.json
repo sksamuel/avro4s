@@ -1,9 +1,0 @@
-{
-  "type": "enum",
-  "name": "MyRenamedEnum",
-  "namespace": "com.foo",
-  "symbols": [
-    "Bussel",
-    "Hussel"
-  ]
-}
