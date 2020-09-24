@@ -15,6 +15,7 @@ lazy val core = project
     version := "0.1.0",
     scalaVersion := dottyVersion,
     libraryDependencies ++= List(
-      "org.apache.avro" % "avro" % "1.10.0"
+      "org.apache.avro" % "avro" % "1.10.0",
+      "com.novocode" % "junit-interface" % "0.11" % "test"
     )
   )

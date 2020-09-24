@@ -29,8 +29,11 @@ enum AvroValue {
   case AvroRecord(record: GenericRecord)
 }
 
-extension(r: AvroValue.AvroRecord) def get(name: String): Option[AvroValue] = Option(r.record.get(name)).map(unsafeFromAny)
-extension(r: AvroValue.AvroRecord) def get(i: Int): Option[AvroValue] = Option(r.record.get(i)).map(unsafeFromAny)
+extension(r: AvroValue.AvroRecord) def get(name: String): Option[AvroValue] = 
+  Option(r.record.get(name)).map(unsafeFromAny)
+  
+extension(r: AvroValue.AvroRecord) def get(i: Int): Option[AvroValue] = 
+  Option(r.record.get(i)).map(unsafeFromAny)
 
 def unsafeFromAny(a: Any): AvroValue = if (a == null) AvroValue.AvroNull else a match {
   case r: GenericRecord => AvroValue.AvroRecord(r)

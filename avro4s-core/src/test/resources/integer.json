@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Testy",
+  "namespace": "mynamespace",
+  "fields": [
+    {
+      "name": "inty",
+      "type": "int"
+    }
+  ]
+}
