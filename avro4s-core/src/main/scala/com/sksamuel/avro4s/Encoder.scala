@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
@@ -23,10 +24,35 @@ import scala.compiletime.{erasedValue, summonInline}
  * of GenericData.EnumSymbol.
  */
 trait Encoder[T] {
-  def encode(value: T, schema: Schema): AvroValue
+  self =>
+
+  /**
+   * Encodes the given value T to an instance of AvroValue if possible,
+   * otherwise returns an AvroError.
+   */
+  def encode(value: T, schema: Schema): AvroValue | AvroError
+
+  /**
+   * Returns an [[Encoder]] for type U by applying a function that maps a U
+   * to an T, before encoding as an T using this encoder.
+   */
+  def contramap[U](f: U => T): Encoder[U] = new Encoder[U] {
+    override def encode(value: U, schema: Schema) = self.encode(f(value), schema)
+  }
+
+  def map(f: AvroValue => AvroValue): Encoder[T] =
+    new Encoder[T] :
+      override def encode(value: T, schema: Schema) = self.encode(value, schema) match {
+        case error: AvroError => error
+        case value: AvroValue => f(value)
+      }
 }
 
-object Encoder extends BasicEncoders {
+object Encoder extends PrimitiveEncoders with StringEncoders {
+
+  def apply[T](f: (T) => AvroValue): Encoder[T] = new Encoder[T] {
+    override def encode(value: T, schema: Schema): AvroValue = f(value)
+  }
 
   inline given derived[T](using m: Mirror.Of[T]) as Encoder[T] = {
 
@@ -42,37 +68,24 @@ object Encoder extends BasicEncoders {
   }
 }
 
-trait BasicEncoders {
+trait PrimitiveEncoders {
 
-  given Encoder[Byte] :
-    override def encode(value: Byte, schema: Schema): AvroValue = AvroValue.AvroByte(java.lang.Byte.valueOf(value))
+  given Encoder[Byte] = Encoder(a => AvroValue.AvroByte(java.lang.Byte.valueOf(a)))
+  given Encoder[Short] = Encoder(a => AvroValue.AvroShort(java.lang.Short.valueOf(a)))
+  given Encoder[Int] = Encoder(a => AvroValue.AvroInt(java.lang.Integer.valueOf(a)))
+  given Encoder[Long] = Encoder(a => AvroValue.AvroLong(java.lang.Long.valueOf(a)))
+  given Encoder[Double] = Encoder(a => AvroValue.AvroDouble(java.lang.Double.valueOf(a)))
+  given Encoder[Float] = Encoder(a => AvroValue.AvroFloat(java.lang.Float.valueOf(a)))
+  given Encoder[Boolean] = Encoder(a => AvroValue.AvroBoolean(java.lang.Boolean.valueOf(a)))
+  given Encoder[ByteBuffer] = Encoder(a => AvroValue.AvroByteBuffer(a))
+}
 
-  given Encoder[Short] :
-    override def encode(value: Short, schema: Schema): AvroValue = AvroValue.AvroShort(java.lang.Short.valueOf(value))
+trait StringEncoders {
 
-  given Encoder[Int] :
-    override def encode(value: Int, schema: Schema): AvroValue = AvroValue.AvroInt(java.lang.Integer.valueOf(value))
+  given Encoder[CharSequence] = Encoder(a => AvroValue.AvroString(a.toString))
+  given Encoder[UUID] = stringEncoder.contramap(x => x.toString)
 
-  given Encoder[Long] :
-    override def encode(value: Long, schema: Schema): AvroValue = AvroValue.AvroLong(java.lang.Long.valueOf(value))
-
-  given Encoder[Double] :
-    override def encode(value: Double, schema: Schema): AvroValue = AvroValue.AvroDouble(java.lang.Double.valueOf(value))
-
-  given Encoder[Float] :
-    override def encode(value: Float, schema: Schema): AvroValue = AvroValue.AvroFloat(java.lang.Float.valueOf(value))
-
-  given Encoder[Boolean] :
-    override def encode(value: Boolean, schema: Schema): AvroValue = AvroValue.AvroBoolean(java.lang.Boolean.valueOf(value))
-
-  given Encoder[ByteBuffer] :
-    override def encode(value: ByteBuffer, schema: Schema): AvroValue = AvroValue.AvroByteBuffer(value)
-
-  given Encoder[CharSequence] :
-    override def encode(value: CharSequence, schema: Schema): AvroValue = AvroValue.AvroString(value.toString)
-
-  given Encoder[String] :
-
+  given stringEncoder as Encoder[String] :
     private def encodeFixed(value: String, schema: Schema): GenericData.Fixed = {
       if (value.getBytes.length > schema.getFixedSize)
         throw new Avro4sEncodingException(s"Cannot write string with ${value.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
