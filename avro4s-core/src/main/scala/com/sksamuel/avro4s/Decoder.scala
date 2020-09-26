@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import java.util.UUID
 
 import org.apache.avro.Schema
+import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
 
 import scala.deriving.Mirror
@@ -93,7 +94,7 @@ trait PrimitiveDecoders {
 }
 
 trait StringDecoders {
-  
+
   given stringDecoder as Decoder[String] :
     override def decode(value: AvroValue, schema: Schema) = value match {
       case AvroValue.AvroString(str) => str
@@ -116,16 +117,47 @@ trait StringDecoders {
 }
 
 object Decoder extends PrimitiveDecoders with StringDecoders {
-  
+
+  import scala.compiletime.{erasedValue, summonInline, constValue, constValueOpt}
+  import scala.jdk.CollectionConverters._
+
   inline given derived[T](using m: Mirror.Of[T]) as Decoder[T] = {
 
+    val decoders = summonAll[m.MirroredElemTypes]
+    val labels = labelsToList[m.MirroredElemLabels]
+
     inline m match {
-      case s: Mirror.SumOf[T] => println("SumOf")
-      case p: Mirror.ProductOf[T] => println("ProductOf")
+      case s: Mirror.SumOf[T] => ???
+      case p: Mirror.ProductOf[T] => deriveProduct(p, decoders, labels)
+    }
+  }
+
+  inline def summonAll[T]: List[Decoder[_]] = inline erasedValue[T] match {
+    case _: EmptyTuple => Nil
+    case _: (t *: ts) => summonInline[Decoder[t]] :: summonAll[ts]
+  }
+
+  inline def labelsToList[T <: Tuple]: List[String] =
+    inline erasedValue[T] match {
+      case _: Unit => Nil
+      case _: (head *: tail) => (inline constValue[head] match {
+        case str: String => str
+        case other => other.toString
+      }) :: labelsToList[tail]
+      // todo why is this Any required, why doesn't Unit grab the empty type?
+      case _: Any => Nil
     }
 
+  inline def deriveProduct[T](p: Mirror.ProductOf[T], decoders: List[Decoder[_]], labels: List[String]): Decoder[T] = {
     new Decoder[T] {
-      override def decode(value: AvroValue, schema: Schema) = ??? // case class decoding
+      override def decode(value: AvroValue, schema: Schema) = {
+        val record: GenericRecord = value.asInstanceOf[AvroValue.AvroRecord].record
+        val values = labels.zip(decoders).map { case (label, decoder) =>
+          val avroValue = unsafeFromAny(record.get(label))
+          decoder.decode(avroValue, schema.getField(label).schema())
+        }
+        p.fromProduct(Tuple.fromArray(values.toArray))
+      }
     }
   }
 }

@@ -63,6 +63,7 @@ extension(v: AvroValue) def extract(): Any = v match {
   case AvroValue.AvroString(str) => str
   case AvroValue.AvroUtf8(utf8) => utf8
   case AvroValue.AvroDouble(d) => d
+  case AvroValue.AvroFloat(f) => f
 }
 
 class Avro4sUnsupportedValueException(msg: String) extends RuntimeException(msg)
