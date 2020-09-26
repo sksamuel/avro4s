@@ -6,6 +6,8 @@ import java.util.UUID
 import org.apache.avro.Schema
 import org.apache.avro.util.Utf8
 
+import scala.deriving.Mirror
+
 /**
  * An [[Decoder]] decodes an [[AvroValue]] into a scala type T
  * using the given schema.
@@ -113,4 +115,17 @@ trait StringDecoders {
   given Decoder[UUID] = stringDecoder.map(UUID.fromString)
 }
 
-object Decoder extends PrimitiveDecoders with StringDecoders
+object Decoder extends PrimitiveDecoders with StringDecoders {
+  
+  inline given derived[T](using m: Mirror.Of[T]) as Decoder[T] = {
+
+    inline m match {
+      case s: Mirror.SumOf[T] => println("SumOf")
+      case p: Mirror.ProductOf[T] => println("ProductOf")
+    }
+
+    new Decoder[T] {
+      override def decode(value: AvroValue, schema: Schema) = ??? // case class decoding
+    }
+  }
+}

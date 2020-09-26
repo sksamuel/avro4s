@@ -4,7 +4,8 @@ import java.nio.ByteBuffer
 import java.util.UUID
 
 import org.apache.avro.Schema
-import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.specific.SpecificRecord
 import org.apache.avro.util.Utf8
 
 import scala.deriving.Mirror
@@ -50,20 +51,61 @@ trait Encoder[T] {
 
 object Encoder extends PrimitiveEncoders with StringEncoders {
 
+  import scala.compiletime.{erasedValue, summonInline, constValue, constValueOpt}
+  import scala.jdk.CollectionConverters._
+
   def apply[T](f: (T) => AvroValue): Encoder[T] = new Encoder[T] {
     override def encode(value: T, schema: Schema): AvroValue = f(value)
   }
 
   inline given derived[T](using m: Mirror.Of[T]) as Encoder[T] = {
-
+    val encoders = summonAll[m.MirroredElemTypes]
+    val labels = labelsToList[m.MirroredElemLabels]
     inline m match {
-      case s: Mirror.SumOf[T] => println("SumOf")
-      case p: Mirror.ProductOf[T] => println("ProductOf")
+      case s: Mirror.SumOf[T] => ???
+      case p: Mirror.ProductOf[T] => deriveProduct(p, encoders, labels)
+    }
+  }
+
+  inline def labelsToList[T <: Tuple]: List[String] =
+    inline erasedValue[T] match {
+      case _: Unit => Nil
+      case _: (head *: tail) => (inline constValue[head] match {
+        case str: String => str
+        case other => other.toString
+      }) :: labelsToList[tail]
+      // todo why is this Any required, why doesn't Unit grab the empty type?
+      case _: Any => Nil
     }
 
+  inline def summonAll[T]: List[Encoder[_]] = inline erasedValue[T] match {
+    case _: EmptyTuple => Nil
+    case _: (t *: ts) => summonInline[Encoder[t]] :: summonAll[ts]
+  }
+
+  inline def deriveProduct[T](p: Mirror.ProductOf[T], encoders: List[Encoder[_]], labels: List[String]): Encoder[T] = {
     new Encoder[T] {
-      override def encode(value: T, schema: Schema): AvroValue =
-        AvroValue.AvroString("foo")
+      override def encode(value: T, schema: Schema): AvroValue.AvroRecord = {
+        val map = value.asInstanceOf[Product].productIterator.zip(labels).zip(encoders).map { case ((value, label), encoder) =>
+          val encoderAny = encoder.asInstanceOf[Encoder[Any]]
+          val fieldSchema = schema.getField(label.toString).schema()
+          val encodedValue = encoderAny.encode(value, fieldSchema) match {
+            case error: AvroError => throw RuntimeException(s"error $error") // todo propogate as a term not by throwing
+            case value: AvroValue => value.extract()
+          }
+          (label.toString, encodedValue)
+        }.toMap
+
+        // the record only includes fields declared in the schema
+        // this allows us to build records that have a subset of the fields defined in a case class
+        val values = schema.getFields.asScala.map { field =>
+          map(field.name)
+        }
+
+        val record: GenericRecord = ImmutableRecord(schema, values.toIndexedSeq)
+
+        new AvroValue.AvroRecord(record)
+      }
     }
   }
 }
@@ -101,4 +143,29 @@ trait StringEncoders {
 
   given Encoder[Utf8] :
     override def encode(value: Utf8, schema: Schema): AvroValue = AvroValue.AvroUtf8(value)
+}
+
+/**
+ * An implementation of org.apache.avro.generic.GenericContainer that is both a
+ * GenericRecord and a SpecificRecord.
+ */
+trait Record extends GenericRecord with SpecificRecord
+
+case class ImmutableRecord(schema: Schema, values: IndexedSeq[Any]) extends Record {
+
+  require(schema.getType == Schema.Type.RECORD, "Cannot create an ImmutableRecord with a schema that is not a RECORD")
+  require(schema.getFields.size == values.size,
+    s"Schema field size (${schema.getFields.size}) and value Seq size (${values.size}) must match")
+
+  override def put(key: String, v: scala.Any): Unit = throw new UnsupportedOperationException("This implementation of Record is immutable")
+  override def put(i: Int, v: scala.Any): Unit = throw new UnsupportedOperationException("This implementation of Record is immutable")
+
+  override def get(key: String): Any = {
+    val field = schema.getField(key)
+    if (field == null) sys.error(s"Field $key does not exist in this record (schema=$schema, values=$values)")
+    values(field.pos)
+  }
+
+  override def get(i: Int): Any = values(i)
+  override def getSchema: Schema = schema
 }

@@ -24,15 +24,16 @@ enum AvroValue {
   case AvroList(list: List[AvroValue])
   case AvroMap(map: Map[String, AvroValue])
   case AvroNull
+
   case Fixed(fixed: GenericFixed)
 
   case AvroRecord(record: GenericRecord)
 }
 
-extension(r: AvroValue.AvroRecord) def get(name: String): Option[AvroValue] = 
+extension(r: AvroValue.AvroRecord) def get(name: String): Option[AvroValue] =
   Option(r.record.get(name)).map(unsafeFromAny)
-  
-extension(r: AvroValue.AvroRecord) def get(i: Int): Option[AvroValue] = 
+
+extension(r: AvroValue.AvroRecord) def get(i: Int): Option[AvroValue] =
   Option(r.record.get(i)).map(unsafeFromAny)
 
 def unsafeFromAny(a: Any): AvroValue = if (a == null) AvroValue.AvroNull else a match {
@@ -56,6 +57,12 @@ def unsafeFromAny(a: Any): AvroValue = if (a == null) AvroValue.AvroNull else a 
   //  case c: java.lang.Iterable[_] => AvroList (c.asScala.map (AvroValue.unsafeFromAny).toList)
   case _ => throw new Avro4sUnsupportedValueException(s"$a is not a supported type when decoding. All types must be wrapped in AvroValue.")
   //}
+}
+
+extension(v: AvroValue) def extract(): Any = v match {
+  case AvroValue.AvroString(str) => str
+  case AvroValue.AvroUtf8(utf8) => utf8
+  case AvroValue.AvroDouble(d) => d
 }
 
 class Avro4sUnsupportedValueException(msg: String) extends RuntimeException(msg)
