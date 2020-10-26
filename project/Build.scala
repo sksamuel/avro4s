@@ -14,7 +14,7 @@ object Build extends AutoPlugin {
     val CatsVersion = "2.0.0"
     val ShapelessVersion = "2.3.3"
     val RefinedVersion = "0.9.17"
-    val MagnoliaVersion = "0.16.0"
+    val MagnoliaVersion = "0.17.0"
     val SbtJmhVersion = "0.3.7"
     val JmhVersion = "1.23"
   }
