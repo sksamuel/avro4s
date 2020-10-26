@@ -14,7 +14,7 @@ object Build extends AutoPlugin {
     val CatsVersion = "2.0.0"
     val ShapelessVersion = "2.3.3"
     val RefinedVersion = "0.9.16"
-    val MagnoliaVersion = "0.16.0"
+    val MagnoliaVersion = "0.17.0"
     val SbtJmhVersion = "0.3.7"
     val JmhVersion = "1.23"
   }
@@ -33,7 +33,7 @@ object Build extends AutoPlugin {
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
     scalaVersion := "2.13.3",
-    crossScalaVersions := Seq("2.12.10", "2.13.3"),
+    crossScalaVersions := Seq("2.12.12", "2.13.3"),
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
     scalacOptions := Seq(

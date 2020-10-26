@@ -23,7 +23,9 @@ val `avro4s-core` = project.in(file("avro4s-core"))
     libraryDependencies ++= Seq(
       "com.propensive" %% "magnolia" % MagnoliaVersion,
       "com.chuusai" %% "shapeless" % ShapelessVersion,
-      "org.json4s" %% "json4s-native" % Json4sVersion
+      "org.json4s" %% "json4s-native" % Json4sVersion,
+      "com.fasterxml.jackson.core" % "jackson-core" % "2.10.2",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.10.2"
     )
   )
 
