@@ -27,6 +27,14 @@ class RefinedTest extends AnyWordSpec with Matchers {
           |}
         """.stripMargin)
     }
+
+    "generate correct schemas for a Map when refined instances are in scope" in {
+      case class Test(map: Map[String, Int], nonEmptyStr: String Refined NonEmpty)
+      val schema = AvroSchema[Test]
+
+      schema.getField("map").schema().getType shouldBe Schema.Type.MAP
+      schema.getField("nonEmptyStr").schema().getType shouldBe Schema.Type.STRING
+    }
   }
 
   "refinedEncoder" should {
