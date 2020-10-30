@@ -52,7 +52,7 @@ val `avro4s-kafka` = project.in(file("avro4s-kafka"))
   )
 
 val `avro4s-refined` = project.in(file("avro4s-refined"))
-  .dependsOn(`avro4s-core`)
+  .dependsOn(`avro4s-core` % "compile->compile;test->test")
   .settings(
     libraryDependencies ++= Seq(
       "eu.timepit" %% "refined" % RefinedVersion
