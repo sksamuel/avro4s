@@ -191,8 +191,9 @@ trait CollectionAndContainerDecoders {
     }
   }
 
-  implicit def eitherDecoder[A: WeakTypeTag, B: WeakTypeTag](implicit left: Decoder[A],
-                                                             right: Decoder[B]): Decoder[Either[A, B]] =
+  implicit def eitherDecoder[A: WeakTypeTag: TypeGuardedDecoding, B: WeakTypeTag: TypeGuardedDecoding](
+    implicit left: Decoder[A], right: Decoder[B]
+  ): Decoder[Either[A, B]] =
     new ResolvableDecoder[Either[A, B]] {
       def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[Either[A, B]] = {
         val leftDecoder = left.resolveDecoder(env, mapFullUpdate(extractEitherLeftSchema, update))
@@ -201,8 +202,8 @@ trait CollectionAndContainerDecoders {
         new Decoder[Either[A, B]] {
           val schemaFor: SchemaFor[Either[A, B]] = buildEitherSchemaFor(leftDecoder.schemaFor, rightDecoder.schemaFor)
 
-          private implicit val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding.guard(leftDecoder)
-          private implicit val rightGuard: PartialFunction[Any, B] = TypeGuardedDecoding.guard(rightDecoder)
+          private val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding[A].guard(leftDecoder)
+          private val rightGuard: PartialFunction[Any, B] = TypeGuardedDecoding[B].guard(rightDecoder)
 
           def decode(value: Any): Either[A, B] =
             if (leftGuard.isDefinedAt(value)) {
@@ -216,7 +217,7 @@ trait CollectionAndContainerDecoders {
             }
 
           override def withSchema(schemaFor: SchemaFor[Either[A, B]]): Decoder[Either[A, B]] =
-            buildWithSchema(eitherDecoder(weakTypeTag[A], weakTypeTag[B], left, right), schemaFor)
+            buildWithSchema(eitherDecoder, schemaFor)
         }
       }
     }
