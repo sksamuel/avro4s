@@ -18,6 +18,7 @@ class RefinedRoundtripTest extends InputStreamTest {
   case class Container4(map: Map[String, NonEmptyString], c3: C3, list: List[(Int, PosInt)])
   type C1b = String :+: CNil
   case class Container1b(c1: C1b)
+  case class Container5(c5: Either[NonEmptyString, Int])
 
   test("a union of one refined type inside a record should rountrip") {
     writeRead(Container1(Coproduct[C1](NonEmptyString("a"))))
@@ -39,5 +40,9 @@ class RefinedRoundtripTest extends InputStreamTest {
     val out = writeData(Container1b(Coproduct[C1b]("")))
     val result = tryReadData[Container1](out.toByteArray).next()
     result should matchPattern { case Failure(iae: IllegalArgumentException) if iae.getMessage == "Predicate isEmpty() did not fail." => }
+  }
+
+  test("an either of one refined type inside a record should roundtrip") {
+    writeRead(Container5(Left(NonEmptyString("a"))))
   }
 }
