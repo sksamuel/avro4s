@@ -7,28 +7,37 @@ import org.apache.avro.util.Utf8
 
 import scala.reflect.runtime.universe._
 
+trait TypeGuardedDecoding[T] extends Serializable {
+  def guard(decoderT: Decoder[T]): PartialFunction[Any, T]
+}
+
 object TypeGuardedDecoding {
+  private[this] final val StringType = typeOf[String]
+  private[this] final val ByteArrayType = typeOf[Array[Byte]]
+  private[this] final val JavaMapType = typeOf[java.util.Map[_, _]]
+  private[this] final val MapType = typeOf[Map[_, _]]
+  private[this] final val ArrayType = typeOf[Array[_]]
+  private[this] final val JavaCollectionType = typeOf[java.util.Collection[_]]
+  private[this] final val IterableType = typeOf[Iterable[_]]
+  private[this] final val CoproductType = typeOf[shapeless.Coproduct]
 
-  def guard[T: WeakTypeTag](decoder: Decoder[T]): PartialFunction[Any, T] = {
-    import scala.reflect.runtime.universe.typeOf
+  def apply[T](implicit ev: TypeGuardedDecoding[T]): TypeGuardedDecoding[T] = ev
 
-    val tpe = implicitly[WeakTypeTag[T]].tpe
+  implicit final def derive[T: WeakTypeTag]: TypeGuardedDecoding[T] = new TypeGuardedDecoding[T] {
+    def guard(decoder: Decoder[T]): PartialFunction[Any, T] = {
+      val tpe = implicitly[WeakTypeTag[T]].tpe
 
-    if (tpe <:< typeOf[java.lang.String]) stringDecoder(decoder)
-    else if (tpe <:< typeOf[Boolean]) booleanDecoder(decoder)
-    else if (tpe <:< typeOf[Int]) intDecoder(decoder)
-    else if (tpe <:< typeOf[Long]) longDecoder(decoder)
-    else if (tpe <:< typeOf[Double]) doubleDecoder(decoder)
-    else if (tpe <:< typeOf[Float]) floatDecoder(decoder)
-    else if (tpe <:< typeOf[Array[Byte]]) byteArrayDecoder(decoder)
-    else if (tpe <:< typeOf[java.util.Map[_, _]] || tpe <:< typeOf[Map[_, _]]) {
-      mapDecoder(decoder)
-    } else if (tpe <:< typeOf[Array[_]] || tpe <:< typeOf[java.util.Collection[_]] || tpe <:< typeOf[Iterable[_]]) {
-      arrayDecoder(decoder)
-    } else if (tpe <:< typeOf[shapeless.Coproduct]) {
-      coproductDecoder(decoder)
-    } else {
-      recordDecoder(decoder.schema.getFullName, decoder)
+      if (tpe <:< StringType) stringDecoder(decoder)
+      else if (tpe <:< WeakTypeTag.Boolean.tpe) booleanDecoder(decoder)
+      else if (tpe <:< WeakTypeTag.Int.tpe) intDecoder(decoder)
+      else if (tpe <:< WeakTypeTag.Long.tpe) longDecoder(decoder)
+      else if (tpe <:< WeakTypeTag.Double.tpe) doubleDecoder(decoder)
+      else if (tpe <:< WeakTypeTag.Float.tpe) floatDecoder(decoder)
+      else if (tpe <:< ByteArrayType) byteArrayDecoder(decoder)
+      else if (tpe <:< JavaMapType || tpe <:< MapType) mapDecoder(decoder)
+      else if (tpe <:< ArrayType || tpe <:< JavaCollectionType || tpe <:< IterableType) arrayDecoder(decoder)
+      else if (tpe <:< CoproductType) coproductDecoder(decoder)
+      else recordDecoder(decoder.schema.getFullName, decoder)
     }
   }
 
