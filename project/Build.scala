@@ -27,7 +27,7 @@ object Build extends AutoPlugin {
   def githubRunNumber = sys.env.getOrElse("GITHUB_RUN_NUMBER", "local")
   def ossrhUsername = sys.env.getOrElse("OSSRH_USERNAME", "")
   def ossrhPassword = sys.env.getOrElse("OSSRH_PASSWORD", "")
-  def publishVersion = if (isRelease) "4.0.0" else "4.1.0." + githubRunNumber + "-SNAPSHOT"
+  def publishVersion = if (isRelease) releaseVersion else "4.1.0." + githubRunNumber + "-SNAPSHOT"
 
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
