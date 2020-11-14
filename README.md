@@ -454,6 +454,43 @@ into the following AVRO `enum` schema:
 }
 ```
 
+If you just want to set the first element of the union and leave the other elements automatically 
+sorted you can use the `@AvroUnionDefault` attribute:
+
+```scala
+  sealed trait Fruit
+  @AvroUnionDefault
+  case object Unknown extends Fruit
+  case class Mango(size: Int) extends Fruit
+  case class Orange(size: Int) extends Fruit
+```
+That will generate the following AVRO schema, where the `Unknown` element will be the first of the list:
+```json
+[
+    {
+        "type" : "record",
+        "name" : "Unknown",
+        "fields" : [ ]
+    },
+    {
+        "type" : "record",
+        "name" : "Mango",
+        "fields" : [ {
+            "name" : "size",
+            "type" : "int"
+        } ]
+    },
+    {
+        "type" : "record",
+        "name" : "Orange",
+        "fields" : [ {
+            "name" : "size",
+            "type" : "int"
+        } ]
+    }
+]
+``` 
+
 #### Field Defaults vs. Enum Defaults
 
 As with any AVRO field, you can specify an enum field's default value as follows:
