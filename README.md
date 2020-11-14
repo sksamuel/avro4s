@@ -454,6 +454,53 @@ into the following AVRO `enum` schema:
 }
 ```
 
+With `@AvroSortPriority` attribute, elements are sorted in descending order, by the priority specified
+(the element with the highest priority will be put as first).
+
+According to Avro specification, when an element is not found the first compatible element defined in the union is used.
+For this reason order of the elements should not be changed when compatibility is important.
+Add new elements at the end.
+
+An alternative solution is to use the `@AvroUnionPosition` attribute passing a number that will be sorted ascending,
+from lower to upper:
+
+```scala
+  sealed trait Fruit
+  @AvroUnionPosition(0)
+  case object Unknown extends Fruit
+  @AvroUnionPosition(1)
+  case class Orange(size: Int) extends Fruit
+  @AvroUnionPosition(2)
+  case class Mango(size: Int) extends Fruit
+```
+
+This will generate the following AVRO schema:
+```json
+[
+    {
+        "type" : "record",
+        "name" : "Unknown",
+        "fields" : [ ]
+    },
+    {
+        "type" : "record",
+        "name" : "Orange",
+        "fields" : [ {
+            "name" : "size",
+            "type" : "int"
+        } ]
+    },
+    {
+        "type" : "record",
+        "name" : "Mango",
+        "fields" : [ {
+            "name" : "size",
+            "type" : "int"
+        } ]
+    }
+]
+``` 
+
 #### Field Defaults vs. Enum Defaults
 
 As with any AVRO field, you can specify an enum field's default value as follows:
