@@ -8,13 +8,13 @@ object Build extends AutoPlugin {
     val org = "com.sksamuel.avro4s"
     val AvroVersion = "1.9.2"
     val Log4jVersion = "1.2.17"
-    val ScalatestVersion = "3.2.2"
+    val ScalatestVersion = "3.2.3"
     val Slf4jVersion = "1.7.30"
     val Json4sVersion = "3.6.10"
     val CatsVersion = "2.0.0"
     val ShapelessVersion = "2.3.3"
-    val RefinedVersion = "0.9.17"
-    val MagnoliaVersion = "0.17.0"
+    val RefinedVersion = "0.9.18"
+    val MagnoliaVersion = "0.16.0"
     val SbtJmhVersion = "0.3.7"
     val JmhVersion = "1.23"
   }
@@ -27,7 +27,7 @@ object Build extends AutoPlugin {
   def githubRunNumber = sys.env.getOrElse("GITHUB_RUN_NUMBER", "local")
   def ossrhUsername = sys.env.getOrElse("OSSRH_USERNAME", "")
   def ossrhPassword = sys.env.getOrElse("OSSRH_PASSWORD", "")
-  def publishVersion = if (isRelease) "4.0.0" else "4.1.0." + githubRunNumber + "-SNAPSHOT"
+  def publishVersion = if (isRelease) releaseVersion else "4.1.0." + githubRunNumber + "-SNAPSHOT"
 
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(

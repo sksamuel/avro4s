@@ -14,7 +14,7 @@ class GithubIssue545 extends AnyWordSpec with Matchers {
     "create a map decoder instead of an array decoder" in {
       val mapDecoder = Decoder.mapDecoder[String]
 
-      val typeGuard = TypeGuardedDecoding.guard[Map[String, String]](mapDecoder)
+      val typeGuard = TypeGuardedDecoding[Map[String, String]].guard(mapDecoder)
       val value = Map().asJava
 
       typeGuard.isDefinedAt(value) shouldBe true

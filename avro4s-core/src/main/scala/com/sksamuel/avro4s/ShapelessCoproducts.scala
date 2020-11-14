@@ -66,8 +66,9 @@ trait ShapelessCoproductDecoders {
     override def withSchema(schemaFor: SchemaFor[CNil]): Decoder[CNil] = this
   }
 
-  implicit final def coproductDecoder[H: WeakTypeTag, T <: Coproduct](implicit h: Decoder[H],
-                                                                      t: Decoder[T]): Decoder[H :+: T] =
+  implicit final def coproductDecoder[H: WeakTypeTag: TypeGuardedDecoding, T <: Coproduct](
+    implicit h: Decoder[H], t: Decoder[T]
+  ): Decoder[H :+: T] =
     new ResolvableDecoder[H :+: T] {
       def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[H :+: T] = {
         val decoderH = h.resolveDecoder(env, mapFullUpdate(takeFirstType, update))
@@ -76,13 +77,13 @@ trait ShapelessCoproductDecoders {
 
           val schemaFor: SchemaFor[H :+: T] = buildCoproductSchemaFor(decoderH.schemaFor, decoderT.schemaFor)
 
-          private val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding.guard(decoderH)
+          private val elementDecoder: PartialFunction[Any, H] = TypeGuardedDecoding[H].guard(decoderH)
 
           def decode(value: Any): H :+: T =
             if (elementDecoder.isDefinedAt(value)) Inl(elementDecoder(value)) else Inr(decoderT.decode(value))
 
           override def withSchema(schemaFor: SchemaFor[H :+: T]): Decoder[H :+: T] =
-            buildWithSchema(coproductDecoder[H, T](implicitly[WeakTypeTag[H]], h, t), schemaFor)
+            buildWithSchema(coproductDecoder, schemaFor)
         }
       }
     }
