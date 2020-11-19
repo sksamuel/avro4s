@@ -401,7 +401,7 @@ object Decoder extends CoproductDecoders with TupleDecoders {
               val fullName = $fullName
               value match {
                 case record: _root_.org.apache.avro.generic.GenericRecord => $companion.apply(..$fields)
-                case _ => sys.error("This decoder decodes GenericRecord => " + fullName + " but has been invoked with " + value)
+                case _ => _root_.scala.sys.error("This decoder decodes GenericRecord => " + fullName + " but has been invoked with " + value)
               }
             }
           }
