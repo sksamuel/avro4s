@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
 
       - name: setup sbt
-        uses: olafurpg/setup-scala@v5
+        uses: olafurpg/setup-scala@v10
 
       - name: run tests
         run: sbt ++2.12.10 test
@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0
 
       - name: setup sbt
-        uses: olafurpg/setup-scala@v5
+        uses: olafurpg/setup-scala@v10
 
       - name: run tests
         run: sbt ++2.13.3 test
