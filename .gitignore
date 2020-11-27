@@ -21,3 +21,4 @@ credentials.sbt
 *.iml
 
 universe.avro
+sbt.json
