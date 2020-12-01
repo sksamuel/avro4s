@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s
 
 object Test extends App {
-  Schema2[String]
   Schema2[Foo]
 }
 
