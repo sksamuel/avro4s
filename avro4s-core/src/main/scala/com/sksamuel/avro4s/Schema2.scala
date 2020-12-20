@@ -18,8 +18,8 @@ object Schema2 {
     val classdef = symbol.tree.asInstanceOf[ClassDef]
     println("typeSymbol " + TypeTree.of[T].tpe.typeSymbol)
     println("fullName " + symbol.fullName)
-    println("annots " + symbol.annots)
-    println("fields " + symbol.fields)
+//    println("annots " + symbol.annots)
+//    println("fields " + symbol.fields)
     println("isClassDef " + symbol.isClassDef)
     println("caseFields " + symbol.caseFields)
     println("classdef " + classdef)
@@ -29,15 +29,15 @@ object Schema2 {
     '{"hello"}
   }
 
-  def natConstImpl(x: Expr[Int])(using Quotes): Expr[Int] = {
-    import quotes.reflect._
-    val xTree: Term = Term.of(x)
-    xTree match {
-       case _ =>
-        report.error("Parameter must be a known constant")
-        '{0}
-    }
-  }
+//  def natConstImpl(x: Expr[Int])(using Quotes): Expr[Int] = {
+//    import quotes.reflect._
+//    val xTree: Term = Term.of(x)
+//    xTree match {
+//       case _ =>
+//        report.error("Parameter must be a known constant")
+//        '{0}
+//    }
+//  }
 }
 
 

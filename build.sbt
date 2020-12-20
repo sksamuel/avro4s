@@ -4,7 +4,7 @@ lazy val root = project
   .settings(
     name := "avro4s",
     version := "5.0.0",
-    scalaVersion := "3.0.0-M2",
+    scalaVersion := "3.0.0-M3",
     useScala3doc := true
   )
 
@@ -13,7 +13,7 @@ lazy val core = project
   .settings(
     name := "avro4s-core",
     version := "5.0.0",
-    scalaVersion := "3.0.0-M2",
+    scalaVersion := "3.0.0-M3",
     useScala3doc := true,
     libraryDependencies ++= List(
       "org.apache.avro" % "avro" % "1.10.0",

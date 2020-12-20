@@ -2,7 +2,7 @@ package com.sksamuel.avro4s
 
 import org.apache.avro.{Schema, SchemaBuilder}
 
-object SchemaForMacros extends BaseSchemas {
+object SchemaForMacros {
 
   import scala.quoted._
   import scala.compiletime.{erasedValue, summonInline, constValue, constValueOpt}
@@ -21,6 +21,8 @@ object SchemaForMacros extends BaseSchemas {
     println(className)
 
     val classdef = symbol.tree.asInstanceOf[ClassDef]
+    
+    // TypeTree.of[V].symbol.declaredFields
 
     val fields = symbol.caseFields.map { member =>
       val name = Expr(member.name)
@@ -52,17 +54,19 @@ object SchemaForMacros extends BaseSchemas {
     val fieldSchemaFor = Expr.summon[SchemaFor[T]].get
   }
   
-  def field[T](name: Expr[String])(using Quotes, Type[T]): Expr[Schema.Field] = {
+  def field[T](name: Expr[String])(using quotes: Quotes, t: Type[T]): Expr[Schema.Field] = {
+    import quotes.reflect._
     println(s"Trying to find SchemaFor[${Type.show[T]}]")
-    val schemaFor = schemaForLookup[SchemaFor[T]]
-    println(schemaFor)
-    //val schemaFor: Expr[SchemaFor[T]] = Expr.summon[SchemaFor[T]].get
+    val schemaFor: Expr[SchemaFor[T]] = Expr.summon[SchemaFor[T]] match {
+      case Some(schemaFor) => schemaFor
+      case _ => report.error("foo"); '{???}
+    }
     '{
-        new Schema.Field($name, SchemaBuilder.builder.intType, null) 
+        new Schema.Field($name, ${schemaFor}.schema, null) 
      }
   }
 
-  def schemaForLookup[SF](using q: Quotes, t: Type[SF]): Option[Expr[SF]] = {
+  def schemaForLookup[SF: Type](using q: Quotes): Option[Expr[SF]] = {
     println(s"Trying to find ${Type.show[SF]}")
     return Expr.summon[SF]
   }

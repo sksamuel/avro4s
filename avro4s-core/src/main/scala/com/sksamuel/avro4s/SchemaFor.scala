@@ -38,15 +38,13 @@ trait SchemaFor[T]:
    */
   def map[U](fn: Schema => Schema): SchemaFor[U] = ???
 
-object SchemaFor {
+object SchemaFor extends BaseSchemas {
 
   def apply[T](s: Schema): SchemaFor[T] = new SchemaFor[T] {
     override def schema[T]: Schema = s
   }
 
-  inline given derived[T](using m: Mirror.Of[T]) as SchemaFor[T] = {
-    SchemaForMacros.derive[T]
-  }
+  inline given derived[T](using m: Mirror.Of[T]) : SchemaFor[T] = SchemaForMacros.derive[T]
 
   //  inline def schemaForProduct[T](p: Mirror.Product, recordName: String, elems: List[SchemaFor[_]], labels: List[String]): SchemaFor[T] = {
   //
@@ -93,7 +91,7 @@ object SchemaFor {
 
 trait BaseSchemas {
 
-  given intSchemaFor as SchemaFor[Int] = SchemaFor[Int](SchemaBuilder.builder.intType)
+  given intSchemaFor: SchemaFor[Int] = SchemaFor[Int](SchemaBuilder.builder.intType)
   given SchemaFor[Byte] = intSchemaFor.forType
   given SchemaFor[Short] = intSchemaFor.forType
   given SchemaFor[Long] = SchemaFor[Long](SchemaBuilder.builder.longType)
@@ -101,7 +99,7 @@ trait BaseSchemas {
   given SchemaFor[Double] = SchemaFor[Double](SchemaBuilder.builder.doubleType)
   given SchemaFor[scala.Boolean] = SchemaFor[Boolean](SchemaBuilder.builder.booleanType)
   given SchemaFor[ByteBuffer] = SchemaFor[ByteBuffer](SchemaBuilder.builder.bytesType)
-  given stringSchemaFor as SchemaFor[String] = SchemaFor[String](SchemaBuilder.builder.stringType)
+  given stringSchemaFor: SchemaFor[String] = SchemaFor[String](SchemaBuilder.builder.stringType)
   given SchemaFor[Utf8] = stringSchemaFor.forType
   given SchemaFor[CharSequence] = stringSchemaFor.forType
   given SchemaFor[UUID] = SchemaFor[UUID](LogicalTypes.uuid().addToSchema(SchemaBuilder.builder.stringType))
@@ -126,18 +124,18 @@ object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
 }
 
 trait DateSchemas {
-  given InstantSchemaFor as SchemaFor[Instant] = SchemaFor[Instant](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
-  given DateSchemaFor as SchemaFor[Date] = SchemaFor(LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType))
-  given LocalDateSchemaFor as SchemaFor[LocalDate] = DateSchemaFor.forType
-  given LocalDateTimeSchemaFor as SchemaFor[LocalDateTime] = SchemaFor(TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType))
-  given OffsetDateTimeSchemaFor as SchemaFor[OffsetDateTime] = SchemaFor(OffsetDateTimeLogicalType.addToSchema(SchemaBuilder.builder.stringType))
-  given LocalTimeSchemaFor as SchemaFor[Nothing] = SchemaFor(LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType))
-  given TimestampSchemaFor as SchemaFor[Timestamp] = SchemaFor[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
+  given InstantSchemaFor : SchemaFor[Instant] = SchemaFor[Instant](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
+  given DateSchemaFor : SchemaFor[Date] = SchemaFor(LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType))
+  given LocalDateSchemaFor : SchemaFor[LocalDate] = DateSchemaFor.forType
+  given LocalDateTimeSchemaFor : SchemaFor[LocalDateTime] = SchemaFor(TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType))
+  given OffsetDateTimeSchemaFor : SchemaFor[OffsetDateTime] = SchemaFor(OffsetDateTimeLogicalType.addToSchema(SchemaBuilder.builder.stringType))
+  given LocalTimeSchemaFor : SchemaFor[Nothing] = SchemaFor(LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType))
+  given TimestampSchemaFor : SchemaFor[Timestamp] = SchemaFor[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 }
 
 trait ByteIterableSchemas {
-  given ByteArraySchemaFor as SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
-  given ByteListSchemaFor as SchemaFor[List[Byte]] = ByteArraySchemaFor.forType
-  given ByteSeqSchemaFor as SchemaFor[Seq[Byte]] = ByteArraySchemaFor.forType
-  given ByteVectorSchemaFor as SchemaFor[Vector[Byte]] = ByteArraySchemaFor.forType
+  given ByteArraySchemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
+  given ByteListSchemaFor: SchemaFor[List[Byte]] = ByteArraySchemaFor.forType
+  given ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = ByteArraySchemaFor.forType
+  given ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = ByteArraySchemaFor.forType
 }
