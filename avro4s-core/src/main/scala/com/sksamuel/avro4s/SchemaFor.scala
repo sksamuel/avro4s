@@ -38,7 +38,7 @@ trait SchemaFor[T]:
    */
   def map[U](fn: Schema => Schema): SchemaFor[U] = ???
 
-object SchemaFor extends BaseSchemas with ByteIterableSchemas {
+object SchemaFor extends BaseSchemas with ByteIterableSchemas with CollectionSchemas {
 
   def apply[T](s: Schema): SchemaFor[T] = new SchemaFor[T] {
     override def schema[T]: Schema = s
@@ -138,4 +138,34 @@ trait ByteIterableSchemas {
   given ByteListSchemaFor: SchemaFor[List[Byte]] = ByteArraySchemaFor.forType
   given ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = ByteArraySchemaFor.forType
   given ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = ByteArraySchemaFor.forType
+}
+
+trait CollectionSchemas {
+
+  given [T](using schemaFor: SchemaFor[T]) : SchemaFor[Array[T]] = new SchemaFor[Array[T]] {
+    override def schema[T]: Schema = Schema.createArray(schemaFor.schema)
+  }
+
+//  implicit def arraySchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Array[T]] =
+//    new ResolvableSchemaFor[Array[T]] {
+//      def schemaFor(env: DefinitionEnvironment[SchemaFor], update: SchemaUpdate): SchemaFor[Array[T]] =
+//        item.resolveSchemaFor(env, update).map()
+//    }
+//
+//  implicit def iterableSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Iterable[T]] =
+//    _iterableSchemaFor[Iterable, T](item)
+//
+//  implicit def listSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[List[T]] =
+//    _iterableSchemaFor[List, T](item)
+//
+//  implicit def setSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Set[T]] =
+//    _iterableSchemaFor[Set, T](item)
+//
+//  implicit def vectorSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Vector[T]] =
+//    _iterableSchemaFor[Vector, T](item)
+//
+//  implicit def seqSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Seq[T]] =
+//    _iterableSchemaFor[Seq, T](item)
+//  
+  
 }

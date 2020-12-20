@@ -1,56 +1,53 @@
 package com.sksamuel.avro4s.schema
 
 import com.sksamuel.avro4s.{AvroSchema}
-import org.junit.Test
+import org.scalatest.funsuite.AnyFunSuite
 
-class BasicSchemasTest {
+class BasicSchemasTest extends AnyFunSuite {
 
-  @Test def booleanFieldSchemaFor() = {
+  test("boolean SchemaFor") {
     case class Testy(booly: Boolean)
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/boolean.json"))
     val schema = AvroSchema[Testy]
-    println(schema)
     assert(schema.toString(true) == expected.toString(true))
   }
 
-  @Test def byteArrayFieldSchemaFor() = {
+  test("byteArray SchemaFor") {
     case class Testy(bytes: Array[Byte])
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bytes.json"))
     val schema = AvroSchema[Testy]
     assert(schema.toString(true) == expected.toString(true))
   }
 
-  @Test def stringFieldSchemaFor() = {
+  test("string SchemaFor") {
     case class Testy(str: String)
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/string.json"))
     val schema = AvroSchema[Testy]
-    println("Generated schema = " + schema.toString(true))
-    println("expected schema = " + expected.toString(true))
     assert(schema.toString(true) == expected.toString(true))
   }
 
-  @Test def intFieldSchemaFor() = {
+  test("int SchemaFor") {
     case class Testy(inty: Int)
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/integer.json"))
     val schema = AvroSchema[Testy]
     assert(schema.toString(true) == expected.toString(true))
   }
 
-  @Test def longFieldSchemaFor() = {
+  test("long SchemaFor") {
     case class Testy(longy: Long)
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/long.json"))
     val schema = AvroSchema[Testy]
     assert(schema.toString(true) == expected.toString(true))
   }
 
-  @Test def doubleFieldSchemaFor() = {
+  test("double SchemaFor") {
     case class Testy(double: Double)
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/double.json"))
     val schema = AvroSchema[Testy]
     assert(schema.toString(true) == expected.toString(true))
   }
 
-  @Test def floatFieldSchemaFor() = {
+  test("float SchemaFor") {
     case class Testy(float: Float)
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/float.json"))
     val schema = AvroSchema[Testy]

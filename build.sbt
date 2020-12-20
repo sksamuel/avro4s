@@ -16,7 +16,8 @@ lazy val core = project
     scalaVersion := "3.0.0-M3",
     useScala3doc := true,
     libraryDependencies ++= List(
-      "org.apache.avro" % "avro" % "1.10.0",
-      "com.novocode" % "junit-interface" % "0.11" % "test"
+      "org.apache.avro" % "avro" % "1.10.1",
+      "com.novocode" % "junit-interface" % "0.11" % "test",
+      "org.scalatest" % "scalatest_3.0.0-M3" % "3.2.3" % "test"
     )
   )

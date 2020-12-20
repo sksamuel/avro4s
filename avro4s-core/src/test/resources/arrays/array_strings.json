@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "Test",
+  "namespace": "mynamespace",
+  "fields": [
+    {
+      "name": "a",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    }
+  ]
+}
