@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "Test2",
+  "namespace": "mynamespace",
+  "fields": [
+    {
+      "name": "z",
+      "type": {
+        "type": "record",
+        "name": "Tuple2",
+        "namespace": "scala",
+        "fields": [
+          {
+            "name": "_1",
+            "type": "string"
+          },
+          {
+            "name": "_2",
+            "type": "int"
+          }
+        ]
+      }
+    }
+  ]
+}

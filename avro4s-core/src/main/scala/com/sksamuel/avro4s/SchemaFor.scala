@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.schemas.BaseSchemas
-import com.sksamuel.avro4s.schemas.CollectionSchemas
+import com.sksamuel.avro4s.schemas.{BaseSchemas, CollectionSchemas, TupleSchemas}
 
 import java.nio.ByteBuffer
 import java.sql.Timestamp
@@ -10,6 +9,7 @@ import java.util
 import java.util.{Date, UUID}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
+
 import scala.deriving.Mirror
 
 object AvroSchema {
@@ -47,7 +47,7 @@ trait SchemaFor[T]:
     }
   }
 
-object SchemaFor extends BaseSchemas with ByteIterableSchemas with CollectionSchemas {
+object SchemaFor extends BaseSchemas with ByteIterableSchemas with CollectionSchemas with TupleSchemas {
 
   def apply[T](s: Schema): SchemaFor[T] = new SchemaFor[T] {
     override def schema[T]: Schema = s
