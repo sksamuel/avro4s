@@ -38,7 +38,7 @@ trait SchemaFor[T]:
    */
   def map[U](fn: Schema => Schema): SchemaFor[U] = ???
 
-object SchemaFor extends BaseSchemas {
+object SchemaFor extends BaseSchemas with ByteIterableSchemas {
 
   def apply[T](s: Schema): SchemaFor[T] = new SchemaFor[T] {
     override def schema[T]: Schema = s
