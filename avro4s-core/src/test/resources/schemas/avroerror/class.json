@@ -1,0 +1,11 @@
+{
+  "type": "error",
+  "name": "ErrorRecord",
+  "namespace": "com.sksamuel.avro4s.schema.AvroErrorTest",
+  "fields": [
+    {
+      "name": "str",
+      "type": "string"
+    }
+  ]
+}

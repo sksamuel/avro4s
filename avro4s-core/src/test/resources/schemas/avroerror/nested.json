@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "Container",
+  "namespace": "com.sksamuel.avro4s.schema.AvroErrorTest",
+  "fields": [
+    {
+      "name": "e",
+      "type": {
+        "type": "error",
+        "name": "ErrorRecord",
+        "fields": [
+          {
+            "name": "str",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}
