@@ -18,7 +18,7 @@ object Schema2 {
     val classdef = symbol.tree.asInstanceOf[ClassDef]
     println("typeSymbol " + TypeTree.of[T].tpe.typeSymbol)
     println("fullName " + symbol.fullName)
-//    println("annots " + symbol.annots)
+    println("annots " + symbol.annotations)
 //    println("fields " + symbol.fields)
     println("isClassDef " + symbol.isClassDef)
     println("caseFields " + symbol.caseFields)
@@ -39,7 +39,3 @@ object Schema2 {
 //    }
 //  }
 }
-
-
-
-

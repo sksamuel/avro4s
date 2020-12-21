@@ -15,25 +15,30 @@ object SchemaForMacros {
 
     // the symbol of the case class
     val symbol = TypeTree.of[T].tpe.typeSymbol
+    
+    // annotations on the case class
+    val annos = new Annotations(quotes)(symbol.annotations)
+    val doc: Option[String] = annos.doc
 
     // the short name of the class
-    val className = symbol.name
-    println(className)
+    val className: String = symbol.name
+    println("className=" + className)
 
     val classdef = symbol.tree.asInstanceOf[ClassDef]
     
     // TypeTree.of[V].symbol.declaredFields
 
     val fields = symbol.caseFields.map { member =>
-      val name = Expr(member.name)
+      val name = member.name
+//      print("field name = " + name)
+//      println("field ttype = " + member.getClass)
+      val annos = new Annotations(quotes)(member.annotations)
       member.tree match {
-        case valdef: ValDef =>
-          // valdef.tpt is a Tree eg TypeTree
+        case ValDef(name, tpt, rhs) =>
+          // valdef.tpt is a TypeTree
           // valdef.tpt.tpe is the TypeRepr of this type tree
-          // get the Type[?]
-          // println(valdef.tpt.tpe)
-          valdef.tpt.tpe.asType match {
-             case '[t] => field[t](name)
+          tpt.tpe.asType match {
+             case '[t] => field[t](name, annos.doc)
           }
       }
     }
@@ -45,29 +50,25 @@ object SchemaForMacros {
       val javafields = new java.util.ArrayList[Schema.Field]()
       $e.foreach { field => javafields.add(field) }
       
-      val _schema = Schema.createRecord(${Expr(className)}, null, "mynamespace", false, javafields)
+      val _schema = Schema.createRecord(${Expr(className)}, ${Expr(doc)}.getOrElse(null), "mynamespace", false, javafields)
       override def schema[T]: Schema = _schema
     }}
   }
 
-  def field[T](using quotes: Quotes, tpe: Type[T]): Unit = {
-    val fieldSchemaFor = Expr.summon[SchemaFor[T]].get
-  }
-  
-  def field[T](name: Expr[String])(using quotes: Quotes, t: Type[T]): Expr[Schema.Field] = {
+  def field[T](name: String, doc: Option[String])(using quotes: Quotes, t: Type[T]): Expr[Schema.Field] = {
     import quotes.reflect._
-    println(s"Trying to find SchemaFor[${Type.show[T]}]")
+//    println(s"Trying to find SchemaFor[${Type.show[T]}]")
     val schemaFor: Expr[SchemaFor[T]] = Expr.summon[SchemaFor[T]] match {
       case Some(schemaFor) => schemaFor
-      case _ => report.error("foo"); '{???}
+      case _ => report.error(s"Could not find schemaFor for $t"); '{???}
     }
     '{
-        new Schema.Field($name, ${schemaFor}.schema, null) 
+        new Schema.Field(${Expr(name)}, ${schemaFor}.schema, ${Expr(doc)}.getOrElse(null)) 
      }
   }
 
   def schemaForLookup[SF: Type](using q: Quotes): Option[Expr[SF]] = {
-    println(s"Trying to find ${Type.show[SF]}")
+//    println(s"Trying to find ${Type.show[SF]}")
     return Expr.summon[SF]
   }
 }

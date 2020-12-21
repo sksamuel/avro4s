@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "Annotated",
+  "namespace": "mynamespace",
+  "fields": [
+    {
+      "name": "str",
+      "doc": "string doc",
+      "type": "string"
+    },
+    {
+      "name": "long",
+      "doc": "long doc",
+      "type": "long"
+    },
+    {
+      "name": "int",
+      "type": "int"
+    }
+  ]
+}
