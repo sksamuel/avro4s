@@ -17,21 +17,21 @@ class TupleSchemaTest extends AnyFunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-//  test("tuple 3 schema") {
-//    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple3.json"))
-//    val schema = AvroSchema[Test3]
-//    schema.toString(true) shouldBe expected.toString(true)
-//  }
-//
-//  test("tuple 4 schema") {
-//    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple4.json"))
-//    val schema = AvroSchema[Test4]
-//    schema.toString(true) shouldBe expected.toString(true)
-//  }
-//
-//  test("tuple 5 schema") {
-//    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/tuple5.json"))
-//    val schema = AvroSchema[Test5]
-//    schema.toString(true) shouldBe expected.toString(true)
-//  }
+  test("tuple 3 schema") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schemas/tuples/tuple3.json"))
+    val schema = AvroSchema[Test3]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("tuple 4 schema") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schemas/tuples/tuple4.json"))
+    val schema = AvroSchema[Test4]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("tuple 5 schema") {
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schemas/tuples/tuple5.json"))
+    val schema = AvroSchema[Test5]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
 }
