@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schemas
 
-import com.sksamuel.avro4s.{OffsetDateTimeLogicalType, SchemaFor, TimestampNanosLogicalType}
+import com.sksamuel.avro4s.SchemaFor
 import org.apache.avro.{LogicalTypes, SchemaBuilder}
 
 import java.sql.Timestamp

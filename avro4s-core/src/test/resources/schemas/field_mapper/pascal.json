@@ -1,0 +1,36 @@
+{
+  "type": "record",
+  "name": "NamingStrategyTest",
+  "namespace": "com.sksamuel.avro4s.schema",
+  "fields": [
+    {
+      "name": "CamelCase",
+      "type": "string"
+    },
+    {
+      "name": "Lower",
+      "type": "string"
+    },
+    {
+      "name": "MultipleWordsInThis",
+      "type": "string"
+    },
+    {
+      "name": "StartsWithUpper",
+      "type": "string"
+    },
+    {
+      "name": "Nested",
+      "type": {
+        "type": "record",
+        "name": "NamingStrategy2",
+        "fields": [
+          {
+            "name": "CamelCase",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}

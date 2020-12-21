@@ -1,12 +1,12 @@
 package com.sksamuel.avro4s.schemas
 
-import com.sksamuel.avro4s.SchemaFor
+import com.sksamuel.avro4s.{DefaultFieldMapper, FieldMapper, SchemaConfiguration, SchemaFor}
 import org.apache.avro.Schema
 
 trait CollectionSchemas:
 
   given [T](using schemaFor: SchemaFor[T]) : SchemaFor[Array[T]] = new SchemaFor[Array[T]] {
-    override def schema[T]: Schema = Schema.createArray(schemaFor.schema)
+    override def schema(config: SchemaConfiguration): Schema = Schema.createArray(schemaFor.schema(config))
   }
 
 //  implicit def iterableSchemaFor[T](implicit item: SchemaFor[T]): SchemaFor[Iterable[T]] =

@@ -1,12 +1,13 @@
-package com.sksamuel.avro4s
+package com.sksamuel.avro4s.schemas
 
+import com.sksamuel.avro4s.{Annotations, Names, SchemaConfiguration, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
 
-object SchemaForMacros {
+object MacroSchemaFor {
 
-  import scala.quoted._
-  import scala.compiletime.{erasedValue, summonInline, constValue, constValueOpt}
   import scala.collection.convert.AsJavaConverters
+  import scala.compiletime.{constValue, constValueOpt, erasedValue, summonInline}
+  import scala.quoted._
 
   inline def derive[T]: SchemaFor[T] = ${deriveImpl[T]}
 
@@ -21,7 +22,7 @@ object SchemaForMacros {
 
     val defaultNamespace = names.namespace
     println("default = "+ defaultNamespace)
-    
+
     // annotations on the case class
     val annos = new Annotations(quotes)(symbol.annotations)
     val error = annos.error
@@ -30,13 +31,13 @@ object SchemaForMacros {
 
     // the short name of the class
     val className: String = symbol.name
-    
+
     // TypeTree.of[V].symbol.declaredFields
 
     val fields = symbol.caseFields.map { member =>
       val name = member.name
       val annos = new Annotations(quotes)(member.annotations)
-      
+
       member.tree match {
         case ValDef(name, tpt, rhs) =>
           // valdef.tpt is a TypeTree
@@ -48,29 +49,39 @@ object SchemaForMacros {
     }
     val e = Varargs(fields)
     // println(e)
-    
-    '{new SchemaFor[T] {
 
-      val javafields = new java.util.ArrayList[Schema.Field]()
-      $e.foreach { field => javafields.add(field) }
-      
-      val _schema = Schema.createRecord(${Expr(className)}, ${Expr(doc)}.orNull, ${Expr(namespace)}, ${Expr(error)}, javafields)
-      override def schema[T]: Schema = _schema
+    '{new SchemaFor[T] {
+      override def schema(config: SchemaConfiguration): Schema = {
+        val fields = new java.util.ArrayList[Schema.Field]()
+        $e.foreach { fieldFor => fields.add(fieldFor.field(config)) }
+        Schema.createRecord(${Expr(className)}, ${Expr(doc)}.orNull, ${Expr(namespace)}, ${Expr(error)}, fields)
+      }
     }}
   }
 
-  def field[T](name: String, doc: Option[String], namespace: Option[String])(using quotes: Quotes, t: Type[T]): Expr[Schema.Field] = {
+  def field[T](name: String, doc: Option[String], namespace: Option[String])(using quotes: Quotes, t: Type[T]): Expr[FieldFor] = {
     import quotes.reflect._
-    
+
     val schemaFor: Expr[SchemaFor[T]] = Expr.summon[SchemaFor[T]] match {
       case Some(schemaFor) => schemaFor
       case _ => report.error(s"Could not find schemaFor for $t"); '{???}
     }
-    
-    '{
-        new Schema.Field(${Expr(name)}, ${schemaFor}.schema, ${Expr(doc)}.getOrElse(null)) 
-     }
+
+    '{new FieldFor {
+      override def field(config: SchemaConfiguration): Schema.Field = {
+        val n = config.mapper.to(${Expr(name)})
+        val d = ${Expr(doc)}.getOrElse(null)
+        new Schema.Field(n, ${schemaFor}.schema(config), d)
+      }
+    }}
   }
+}
+
+/**
+ * Typeclass that generates a field when provided a config
+ */
+trait FieldFor {
+  def field(config: SchemaConfiguration): Schema.Field
 }
 
 case class FieldRef(name: String)
