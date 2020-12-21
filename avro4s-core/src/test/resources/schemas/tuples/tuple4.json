@@ -1,7 +1,6 @@
 {
   "type": "record",
   "name": "Test4",
-  "namespace": "mynamespace",
   "fields": [
     {
       "name": "z",

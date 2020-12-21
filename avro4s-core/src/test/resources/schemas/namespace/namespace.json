@@ -1,6 +1,7 @@
 {
   "type": "record",
   "name": "Annotated",
+  "namespace": "mynamespace",
   "doc": "hello; is it me you're looking for",
   "fields": [
     {

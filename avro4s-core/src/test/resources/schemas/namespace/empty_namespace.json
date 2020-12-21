@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "Testy",
+  "name": "Foo",
   "fields": [
     {
       "name": "str",

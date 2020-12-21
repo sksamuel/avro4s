@@ -1,6 +1,7 @@
 {
   "type": "record",
-  "name": "Testy",
+  "name": "Annotated",
+  "namespace": "mynamespace",
   "fields": [
     {
       "name": "str",

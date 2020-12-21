@@ -1,7 +1,6 @@
 {
   "type": "record",
   "name": "Testy",
-  "namespace": "mynamespace",
   "fields": [
     {
       "name": "longy",
