@@ -1,6 +1,7 @@
 {
   "type": "record",
   "name": "Test5",
+  "namespace": "com.sksamuel.avro4s.schema.TupleSchemaTest",
   "fields": [
     {
       "name": "z",

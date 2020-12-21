@@ -1,12 +1,25 @@
 {
   "type": "record",
-  "name": "Annotated",
-  "namespace": "mynamespace",
-  "doc": "hello; is it me you're looking for",
+  "name": "AnnotatedNamespace",
+  "namespace": "com.yuval",
   "fields": [
     {
-      "name": "str",
+      "name": "a",
       "type": "string"
+    },
+    {
+      "name": "b",
+      "type": {
+        "type": "record",
+        "name": "InternalAnnotated",
+        "namespace": "com.yuval.internal",
+        "fields": [
+          {
+            "name": "c",
+            "type": "int"
+          }
+        ]
+      }
     }
   ]
 }

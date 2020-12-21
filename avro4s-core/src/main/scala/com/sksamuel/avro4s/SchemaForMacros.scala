@@ -14,19 +14,23 @@ object SchemaForMacros {
     import quotes.reflect._
 
     // the symbol of the case class
-    val symbol = TypeTree.of[T].tpe.typeSymbol
+    val classtpe = TypeTree.of[T].tpe
+    val symbol = classtpe.typeSymbol
+    val classdef = symbol.tree.asInstanceOf[ClassDef]
+    val names = new Names(quotes)(classdef, symbol)
+
+    val defaultNamespace = names.namespace
+    println("default = "+ defaultNamespace)
     
     // annotations on the case class
     val annos = new Annotations(quotes)(symbol.annotations)
     val doc: Option[String] = annos.doc
-    val namespace: Option[String] = annos.namespace
-    println("namespace=" + namespace)
+    val namespace: String = annos.namespace.map(_.replaceAll("[^a-zA-Z0-9_.]", "")).getOrElse(names.namespace)
 
     // the short name of the class
     val className: String = symbol.name
 //    println("className=" + className)
 
-    val classdef = symbol.tree.asInstanceOf[ClassDef]
     
     // TypeTree.of[V].symbol.declaredFields
 
@@ -53,7 +57,7 @@ object SchemaForMacros {
       val javafields = new java.util.ArrayList[Schema.Field]()
       $e.foreach { field => javafields.add(field) }
       
-      val _schema = Schema.createRecord(${Expr(className)}, ${Expr(doc)}.orNull, ${Expr(namespace)}.orNull, false, javafields)
+      val _schema = Schema.createRecord(${Expr(className)}, ${Expr(doc)}.orNull, ${Expr(namespace)}, false, javafields)
       override def schema[T]: Schema = _schema
     }}
   }

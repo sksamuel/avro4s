@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "Test",
+  "namespace": "com.sksamuel.avro4s.schema.ArraySchemasTest",
+  "fields": [
+    {
+      "name": "a",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Nested",
+          "fields": [
+            {
+              "name": "b",
+              "type": "string"
+            },
+            {
+              "name": "c",
+              "type": "int"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 {
   "type": "record",
   "name": "Testy",
+  "namespace": "com.sksamuel.avro4s.schema.BasicSchemasTest",
   "fields": [
     {
       "name": "float",

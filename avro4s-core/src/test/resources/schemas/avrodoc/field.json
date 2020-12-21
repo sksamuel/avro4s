@@ -1,6 +1,7 @@
 {
   "type": "record",
   "name": "Annotated",
+  "namespace": "com.sksamuel.avro4s.schema.AvroDocTest",
   "fields": [
     {
       "name": "str",

@@ -1,0 +1,24 @@
+{
+  "type": "record",
+  "name": "NestedTest",
+  "namespace": "com.sksamuel.avro4s.schema.NestedClassesTest",
+  "fields": [
+    {
+      "name": "foo",
+      "type": "string"
+    },
+    {
+      "name": "nested",
+      "type": {
+        "type": "record",
+        "name": "Nested",
+        "fields": [
+          {
+            "name": "goo",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}

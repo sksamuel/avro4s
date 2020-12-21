@@ -54,8 +54,3 @@ class BasicSchemasTest extends AnyFunSuite {
     assert(schema.toString(true) == expected.toString(true))
   }
 }
-
-case class Level4(str: Map[String, String])
-case class Level3(level4: Level4)
-case class Level2(level3: Level3)
-case class Level1(level2: Level2)

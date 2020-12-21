@@ -4,7 +4,7 @@ import com.sksamuel.avro4s.{AvroDoc, AvroSchema}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class AvroDocSchemaTest extends AnyWordSpec with Matchers {
+class AvroDocTest extends AnyWordSpec with Matchers {
 
   "@AvroDoc" should {
     "support doc annotation on class" in {

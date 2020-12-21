@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "Test",
+  "namespace": "com.sksamuel.avro4s.schema.ArraySchemasTest",
+  "fields": [
+    {
+      "name": "a",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Tuple2",
+          "namespace": "scala",
+          "fields": [
+            {
+              "name": "_1",
+              "type": "string"
+            },
+            {
+              "name": "_2",
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

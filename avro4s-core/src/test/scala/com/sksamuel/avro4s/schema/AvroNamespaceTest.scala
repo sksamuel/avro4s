@@ -15,16 +15,25 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
       schema.getNamespace shouldBe "com.yuval"
     }
 
-//    "support namespace annotations in nested records" in {
-//
-//      @AvroNamespace("com.yuval") case class AnnotatedNamespace(s: String, internal: InternalAnnotated)
-//      @AvroNamespace("com.yuval.internal") case class InternalAnnotated(i: Int)
-//
-//      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schemas/namespace/namespace.json"))
-//      val schema = AvroSchema[AnnotatedNamespace]
-//      schema.toString(true) shouldBe expected.toString(true)
-//    }
+    "strip non a-z0-9 chars" in {
 
+      @AvroNamespace("com.$#%#%#$%#$%$#%yuval") case class AnnotatedNamespace(s: String)
+
+      val schema = AvroSchema[AnnotatedNamespace]
+      schema.getNamespace shouldBe "com.yuval"
+    }
+
+    "support namespace annotations in nested records" in {
+
+      @AvroNamespace("com.yuval.internal") case class InternalAnnotated(c: Int)
+      @AvroNamespace("com.yuval") case class AnnotatedNamespace(a: String, b: InternalAnnotated)
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/schemas/namespace/namespace.json"))
+      val schema = AvroSchema[AnnotatedNamespace]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    
 //    "support namespace annotations on field" in {
 //
 //      case class InternalAnnotated(i: Int)
@@ -66,7 +75,7 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
 //      schema.toString(true) shouldBe expected.toString(true)
 //    }
 
-    "empty namespace" in {
+    "remove namespace when using empty string" in {
 
       @AvroNamespace("")
       case class Foo(str: String)

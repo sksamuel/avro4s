@@ -1,6 +1,7 @@
 {
   "type": "record",
   "name": "Test",
+  "namespace": "com.sksamuel.avro4s.schema.ArraySchemasTest",
   "fields": [
     {
       "name": "a",
