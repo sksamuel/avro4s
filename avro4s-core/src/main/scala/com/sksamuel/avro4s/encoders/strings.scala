@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.encoders
 
-import com.sksamuel.avro4s.{Avro4sConfigurationException, Avro4sEncodingException, Encoder, EncoderFor}
+import com.sksamuel.avro4s.{Encoder, EncoderFor}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8

@@ -1,4 +1,9 @@
-//package com.sksamuel.avro4s
+package com.sksamuel.avro4s
+
+import com.sksamuel.avro4s.decoders.PrimitiveDecoders
+import com.sksamuel.avro4s.encoders.{PrimitiveEncoders, StringEncoders}
+import org.apache.avro.Schema
+
 //
 //import java.nio.ByteBuffer
 //import java.util.UUID
@@ -9,109 +14,60 @@
 //
 //import scala.deriving.Mirror
 //
-///**
-// * An [[Decoder]] decodes an [[AvroValue]] into a scala type T
-// * using the given schema.
-// *
-// * For example, a Decoder[String] would convert an input of type Utf8 -
-// * which is one of the ways Avro can encode strings - into a plain Java String.
-// *
-// * Another example, a decoder for Option[String] would handle inputs of null
-// * by emitting a None, and a non-null input by emitting the decoded value
-// * wrapped in a Some.
-// */
-//trait Decoder[T] {
-//  self =>
-//
-//  /**
-//   * Decodes the given AvroValue to an instance of T if possible, or
-//   * returns an AvroError.
-//   */
-//  def decode(value: AvroValue, schema: Schema): T | AvroError
-//
-//  /**
-//   * Creates a Decoder[U] by applying a function T => U to the
-//   * output of this decoder.
-//   */
-//  def map[U](f: T => U): Decoder[U] =
-//    new Decoder[U] :
-//      override def decode(value: AvroValue, schema: Schema) =
-//        self.decode(value, schema) match {
-//          case error: AvroError => error
-//          case t: T => f(t)
-//        }
-//}
-//
-//enum AvroError {
-//  case DecodingError(msg: String)
-//}
-//
-//trait PrimitiveDecoders {
-//
-//  given Decoder[ByteBuffer] with {
-//    override def decode(value: AvroValue, schema: Schema) = value match {
-//      case AvroValue.AvroByteBuffer(bb) => bb
-//      case AvroValue.AvroByteArray(bytes) => ByteBuffer.wrap(bytes)
-//      case _ => AvroError.DecodingError(s"Unsupported operation $value => ByteBuffer")
-//    }
-//  }
-//
-//  given Decoder[Boolean] :
-//    override def decode(value: AvroValue, schema: Schema) = value match {
-//      case AvroValue.AvroBoolean(a) => a
-//      case _ => AvroError.DecodingError(s"Unsupported operation $value => Boolean")
-//    }
-//
-//
-//  given Decoder[Int] :
-//    override def decode(value: AvroValue, schema: Schema) = value match {
-//      case AvroValue.AvroByte(a) => a.toInt
-//      case AvroValue.AvroShort(a) => a.toInt
-//      case AvroValue.AvroInt(a) => a.toInt
-//      case _ => AvroError.DecodingError(s"Unsupported operation $value => Int")
-//    }
-//
-//  given Decoder[Long] :
-//    override def decode(value: AvroValue, schema: Schema) = value match {
-//      case AvroValue.AvroLong(a) => a
-//      case AvroValue.AvroByte(a) => a.toLong
-//      case AvroValue.AvroShort(a) => a.toLong
-//      case AvroValue.AvroInt(a) => a.toLong
-//      case _ => AvroError.DecodingError(s"Unsupported operation $value => Long")
-//    }
-//
-//  given Decoder[Double] :
-//    override def decode(value: AvroValue, schema: Schema) = value match {
-//      case AvroValue.AvroDouble(d) => d
-//      case _ => AvroError.DecodingError(s"Unsupported operation $value => Double")
-//    }
-//
-//  given Decoder[Float] :
-//    override def decode(value: AvroValue, schema: Schema) = value match {
-//      case AvroValue.AvroFloat(f) => f
-//      case _ => AvroError.DecodingError(s"Unsupported operation $value => Float")
-//    }
-//}
-//
+/**
+ * An [[Decoder]] decodes a JVM value into a scala type T.
+ *
+ * For example, a Decoder[String] could convert an input of type Utf8 into a plain Java String.
+ *
+ * Another example, a decoder for Option[String] would handle inputs of null
+ * by emitting a None, and a non-null input by emitting the decoded value
+ * wrapped in a Some.
+ */
+trait Decoder[T] {
+  self =>
+
+  /**
+   * Decodes the given AvroValue to an instance of T if possible, or
+   * returns an AvroError.
+   */
+  def decode(value: Any): T
+
+  /**
+   * Creates a Decoder[U] by applying a function T => U to the
+   * output of this decoder.
+   */
+  //  def map[U](f: T => U): Decoder[U] = new Decoder[U] :
+  //    override def decode(value: Any) =
+  //      self.decode(value) match {
+  //        case error: AvroError => error
+  //        case t: T => f(t)
+  //      }
+}
+
+trait DecoderFor[T] { self =>
+  
+  def decoder(schema: Schema): Decoder[T]
+
+  def map[U](f: T => U) = new DecoderFor[U] {
+    override def decoder(schema: Schema): Decoder[U] = new Decoder[U] {
+      override def decode(value: Any): U = f(self.decoder(schema).decode(value))
+    }
+  }
+}
+
+object DecoderFor extends PrimitiveDecoders {
+
+  /**
+   * Returns a [[DecoderFor]] that generates a value [T] without needing a schema.
+   */
+  def apply[T](f: Any => T) = new DecoderFor[T] {
+    override def decoder(schema: Schema): Decoder[T] = new Decoder[T] {
+      override def decode(value: Any): T = f(value)
+    }
+  }
+}
+
 //trait StringDecoders {
-//
-//  given stringDecoder as Decoder[String] :
-//    override def decode(value: AvroValue, schema: Schema) = value match {
-//      case AvroValue.AvroString(str) => str
-//      case AvroValue.AvroUtf8(utf8) => utf8.toString()
-//      case AvroValue.Fixed(fixed) => new String(fixed.bytes())
-//      case _ => AvroError.DecodingError(s"Unsupported operation $value => String")
-//    }
-//
-//  given Decoder[Utf8] :
-//    override def decode(value: AvroValue, schema: Schema) = value match {
-//      case AvroValue.AvroUtf8(utf8) => utf8
-//      case AvroValue.AvroString(str) => new Utf8(str)
-//      case AvroValue.AvroByteArray(bytes) => new Utf8(bytes)
-//      case AvroValue.AvroByteBuffer(bb) => new Utf8(bb.array)
-//      case AvroValue.Fixed(fixed) => new Utf8(fixed.bytes())
-//      case _ => AvroError.DecodingError(s"Unsupported operation $value => Utf8")
-//    }
 //
 //  given Decoder[UUID] = stringDecoder.map(UUID.fromString)
 //}
