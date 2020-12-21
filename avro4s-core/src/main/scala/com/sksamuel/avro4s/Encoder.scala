@@ -1,9 +1,12 @@
-//package com.sksamuel.avro4s
+package com.sksamuel.avro4s
+
 //
 //import java.nio.ByteBuffer
 //import java.util.UUID
 //
-//import org.apache.avro.Schema
+
+import com.sksamuel.avro4s.encoders.{PrimitiveEncoders, StringEncoders}
+import org.apache.avro.Schema
 //import org.apache.avro.generic.{GenericData, GenericRecord}
 //import org.apache.avro.specific.SpecificRecord
 //import org.apache.avro.util.Utf8
@@ -11,94 +14,82 @@
 //import scala.deriving.Mirror
 //import scala.deriving._
 //import scala.compiletime.{erasedValue, summonInline}
-//
-///**
-// * An [[Encoder]] encodes a Scala value of type T into an [[AvroValue]]
-// * based on the given schema.
-// *
-// * For example, an encoder could encode a String as an instance of Utf8,
-// * or it could encode as an instance of GenericFixed.
-// *
-// * Another example is given a Scala enum value, the value could be encoded
-// * as an instance of GenericData.EnumSymbol.
-// *
-// * Encoders can be created from a schema which controls how they encode
-// * a particular type. See [[Encoder.create(schema)]].
-// */
-//trait Encoder[T] {
-//  self =>
-//
-//  /**
-//   * Encodes the given value T to an instance of AvroValue if possible,
-//   * otherwise returns an AvroError.
-//   */
-//  def encode(value: T): AvroValue | AvroError
-//
-//  /**
-//   * Returns an [[Encoder]] for type U by applying a function that maps a U
-//   * to an T, before encoding as an T using this encoder.
-//   */
-//  def contramap[U](f: U => T): Encoder[U] = new Encoder[U] {
-//    override def encode(value: U) = self.encode(f(value))
-//  }
-//
-//  def map(f: AvroValue => AvroValue): Encoder[T] =
-//    new Encoder[T] :
-//      override def encode(value: T) = self.encode(value) match {
-//        case error: AvroError => error
-//        case value: AvroValue => f(value)
-//      }
-//}
-//
-//object Encoder extends PrimitiveEncoders with StringEncoders {
-//
-//  import scala.compiletime.{erasedValue, summonInline, constValue, constValueOpt}
-//  import scala.jdk.CollectionConverters._
-//
-//  /**
-//   * Creates a new [[Encoder]] from the given function f.
-//   * The function is used to convert a scala value of type T to an avro value.
-//   */
-//  def apply[T](f: (T) => AvroValue): Encoder[T] = new Encoder[T] {
-//    override def encode(value: T): AvroValue = f(value)
-//  }
-//}
-//
-//trait PrimitiveEncoders {
-//
-//  given Encoder[Byte] = Encoder(a => AvroValue.AvroByte(java.lang.Byte.valueOf(a)))
-//  given Encoder[Short] = Encoder(a => AvroValue.AvroShort(java.lang.Short.valueOf(a)))
-//  given Encoder[Int] = Encoder(a => AvroValue.AvroInt(java.lang.Integer.valueOf(a)))
-//  given Encoder[Long] = Encoder(a => AvroValue.AvroLong(java.lang.Long.valueOf(a)))
-//  given Encoder[Double] = Encoder(a => AvroValue.AvroDouble(java.lang.Double.valueOf(a)))
-//  given Encoder[Float] = Encoder(a => AvroValue.AvroFloat(java.lang.Float.valueOf(a)))
-//  given Encoder[Boolean] = Encoder(a => AvroValue.AvroBoolean(java.lang.Boolean.valueOf(a)))
-//  given Encoder[ByteBuffer] = Encoder(a => AvroValue.AvroByteBuffer(a))
-//}
-//
-//trait StringEncoders {
-//
-//  given Encoder[CharSequence] = Encoder(a => AvroValue.AvroString(a.toString))
-//  given Encoder[UUID] = stringEncoder.contramap(x => x.toString)
-//
-//  given stringEncoder as Encoder[String] :
-//    override def encode(value: String) = AvroValue.AvroUtf8(new Utf8(value))
-////    private def encodeFixed(value: String): GenericData.Fixed = {
-////      if (value.getBytes.length > schema.getFixedSize)
-////        throw new Avro4sEncodingException(s"Cannot write string with ${value.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
-////      GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(value.getBytes).array, schema).asInstanceOf[GenericData.Fixed]
-////    }
-//
-////    override def encode(value: String): AvroValue = schema.getType match {
-////      case Schema.Type.STRING => AvroValue.AvroUtf8(new Utf8(value))
-////      case Schema.Type.FIXED => AvroValue.Fixed(encodeFixed(value, schema))
-////      case Schema.Type.BYTES => AvroValue.AvroByteArray(value.getBytes)
-////      case _ => throw new Avro4sConfigurationException(s"Unsupported type for string schema: $schema")
-////    }
-//
-//  given Encoder[Utf8] :
-//    override def encode(value: Utf8): AvroValue = AvroValue.AvroUtf8(value)
-//}
+
+/**
+ * An [[Encoder]] encodes a Scala value of type T into a JVM value suitable
+ * for encoding with Avro.
+ *
+ * For example, an encoder could encode a String as an instance of Utf8,
+ * or it could encode as an instance of GenericFixed.
+ *
+ * Another example is given a Scala enum value, the value could be encoded
+ * as an instance of GenericData.EnumSymbol.
+ *
+ * Encoders can be created from a schema which controls how they encode
+ * a particular type. See [[Encoder.create(schema)]].
+ */
+trait Encoder[T] { self =>
+  
+  def encode(value: T): Any
+
+  /**
+   * Returns an [[Encoder[U]] by applying a function that maps a U
+   * to an T, before encoding as an T using this encoder.
+   */
+  def contramap[U](f: U => T): Encoder[U] = new Encoder[U] {
+    override def encode(value: U) = self.encode(f(value))
+  }
+}
+
+object Encoder {
+
+  /**
+   * Creates an [[Encoder]] from the given schema, by using an implicit [[EncoderFor]].
+   * The encoderFor instance will be derived automatically using macros if it is not explicitly
+   * provided.
+   */
+  def apply[T](schema: Schema)(using encoderFor: EncoderFor[T]): Encoder[T] = encoderFor.encoder(schema)
+
+  def apply[T](f: T => Any) = new Encoder[T] {
+    override def encode(value: T): Any = f(value)
+  }
+}
+
+/**
+ * A typeclass that generates [[Encoder]] instances for a particular type from schemas.
+ */
+trait EncoderFor[T] { self =>
+  
+  /**
+   * Returns an [[Encoder[T]] when provided a schema
+   */
+  def encoder(schema: Schema): Encoder[T]
+
+  /**
+   * Returns an [[EncoderFor[U]] by applying a function that maps a U
+   * to an T, before encoding as an T using this encoder.
+   */
+  def contramap[U](f: U => T): EncoderFor[U] = new EncoderFor[U] {
+    override def encoder(schema: Schema): Encoder[U] = self.encoder(schema).contramap(f)
+  }
+}
+
+object EncoderFor extends StringEncoders with PrimitiveEncoders {
+
+  def apply[T](f: T => Any) = new EncoderFor[T] {
+    override def encoder(schema: Schema): Encoder[T] = new Encoder[T] {
+      override def encode(value: T): Any = f(value)
+    }
+  }
+
+  def identity[T] = new EncoderFor[T] {
+    override def encoder(schema: Schema): Encoder[T] = new Encoder[T] {
+      override def encode(value: T): Any = value
+    }
+  }
+}
+
+
 //
 ///**
 // * An implementation of org.apache.avro.generic.GenericContainer that is both a
