@@ -65,6 +65,10 @@ object DecoderFor extends PrimitiveDecoders {
       override def decode(value: Any): T = f(value)
     }
   }
+
+  def apply[T](_decoder: Decoder[T]) = new DecoderFor[T] {
+    override def decoder(schema: Schema): Decoder[T] = _decoder
+  }
 }
 
 //trait StringDecoders {

@@ -1,21 +1,25 @@
 package com.sksamuel.avro4s.decoders
 
-import com.sksamuel.avro4s.DecoderFor
+import com.sksamuel.avro4s.{Decoder, DecoderFor}
 import org.apache.avro.generic.GenericFixed
 import org.apache.avro.util.Utf8
 
 import java.nio.ByteBuffer
 import java.util.UUID
 
-trait PrimitiveDecoders {
-
-  given stringDecoderFor: DecoderFor[String] = DecoderFor {
+object StringDecoder extends Decoder[String] {
+  override def decode(value: Any): String = value match {
     case a: String => a.toString
     case a: Array[Byte] => String(a)
     case a: ByteBuffer => String(a.array())
     case a: Utf8 => a.toString
     case a: GenericFixed => String(a.bytes())
   }
+}
+
+trait PrimitiveDecoders {
+
+  given stringDecoderFor: DecoderFor[String] = DecoderFor(StringDecoder)
   
   given DecoderFor[UUID] = stringDecoderFor.map(UUID.fromString)
 
