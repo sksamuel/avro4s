@@ -47,5 +47,40 @@ class BinaryStreamsTest extends AnyWordSpec with Matchers {
       in.iterator.toList shouldBe List(ennio, hans)
       in.close()
     }
+
+    "finish with error" in {
+      val work = Work("work", 2020, Style.Classical)
+      val baos = new ByteArrayOutputStream()
+      val output = AvroOutputStream.binary[Work].to(baos).build()
+
+      output.write(work)
+      output.flush()
+      output.close()
+
+
+      val schemaString = AvroSchema[Composer].toString
+      val avroTestSchema = new org.apache.avro.Schema.Parser().parse(schemaString)
+      val schemaFor = com.sksamuel.avro4s.SchemaFor[Composer](avroTestSchema)
+      val schema = com.sksamuel.avro4s.AvroSchema[Composer](schemaFor)
+
+
+      val in = AvroInputStream.binary[Composer].from(baos.toByteArray).build(schema)
+      //in.iterator.toList shouldBe List(ennio, hans)
+      println(in.tryIterator.toList)
+      //in.close()
+
+
+
+//      val testInside = com.sksamuel.avro4s.AvroSchema[TestInside].toString
+//      val avroTestSchema = new org.apache.avro.Schema.Parser().parse(testInside)
+//      val schemaFor = com.sksamuel.avro4s.SchemaFor[Test](avroTestSchema)
+//      val schema = com.sksamuel.avro4s.AvroSchema[Test](schemaFor)
+//
+//      val outputStream = AvroInputStream.binary[Test].from(data).build(schema)
+//      outputStream.tryIterator.toList
+
+    }
+
+
   }
 }
