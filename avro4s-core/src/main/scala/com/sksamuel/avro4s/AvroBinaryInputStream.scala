@@ -1,11 +1,10 @@
 package com.sksamuel.avro4s
 
-import java.io.InputStream
-
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.io.DecoderFactory
 
+import java.io.InputStream
 import scala.util.Try
 
 /**

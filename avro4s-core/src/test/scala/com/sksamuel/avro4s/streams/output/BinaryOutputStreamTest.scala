@@ -54,45 +54,6 @@ class BinaryStreamsTest extends AnyWordSpec with Matchers {
       in.close()
     }
 
-//    "finish with error" in {
-//      val work = Test(3, None)
-//      val baos = new ByteArrayOutputStream()
-//      val output = AvroOutputStream.binary[Test].to(baos).build()
-//
-//      output.write(work)
-//      output.flush()
-//      output.close()
-//
-//
-//      val schemaString = AvroSchema[TestInside].toString
-//      val avroTestSchema = new org.apache.avro.Schema.Parser().parse(schemaString)
-//      val schemaForIt = com.sksamuel.avro4s.SchemaFor[TestInside](avroTestSchema)
-//      val schema = com.sksamuel.avro4s.AvroSchema[TestInside](schemaForIt)
-//
-//
-//
-//      val in = AvroInputStream.binary[Test].from(baos.toByteArray).build(schema)
-//      //in.iterator.toList shouldBe List(ennio, hans)
-//      println("-----1")
-//      val it = in.tryIterator
-//      println("------2")
-//      val list = it.toList
-//      println("------3")
-//      println(list)
-//      //in.close()
-//
-//
-//
-////      val testInside = com.sksamuel.avro4s.AvroSchema[TestInside].toString
-////      val avroTestSchema = new org.apache.avro.Schema.Parser().parse(testInside)
-////      val schemaFor = com.sksamuel.avro4s.SchemaFor[Test](avroTestSchema)
-////      val schema = com.sksamuel.avro4s.AvroSchema[Test](schemaFor)
-////
-////      val outputStream = AvroInputStream.binary[Test].from(data).build(schema)
-////      outputStream.tryIterator.toList
-//
-//    }
-
     "tryIterator finishes with failure for bad schema" in {
       val work = Work("theWorks", 2020, Style.Modern)
       val baos = new ByteArrayOutputStream()
@@ -113,7 +74,7 @@ class BinaryStreamsTest extends AnyWordSpec with Matchers {
       val it = in.tryIterator
       it.toList match {
         case List(Failure(exception)) if exception.isInstanceOf[AvroTypeException] =>
-        case _ => Assertions.fail()
+        case _ => Assertions.fail("Should have failed")
       }
     }
 
