@@ -1,11 +1,10 @@
 package com.sksamuel.avro4s
 
-import java.io.InputStream
-
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.io.DecoderFactory
 
+import java.io.InputStream
 import scala.util.Try
 
 /**
@@ -41,8 +40,15 @@ class AvroBinaryInputStream[T](in: InputStream,
     * decoding issues are wrapped.
     */
   override def tryIterator: Iterator[Try[T]] = new Iterator[Try[T]] {
-    override def hasNext: Boolean = _iter.hasNext
-    override def next(): Try[T] = Try(decoder.decode(_iter.next()))
+    var last: Option[Try[T]] = None
+
+    override def hasNext: Boolean = _iter.hasNext && last.fold(true)(_.isSuccess)
+
+    override def next(): Try[T] = {
+      val next = Try(decoder.decode(_iter.next()))
+      last = Option(next)
+      next
+    }
   }
 
   override def close(): Unit = in.close()
