@@ -13,52 +13,62 @@ class BasicEncoderTest extends AnyWordSpec with Matchers {
     "encode strings as UTF8" in {
       case class Foo(s: String)
       val schema = AvroSchema[Foo]
-      val record = Encoder.derive[Foo].encode(schema)(Foo("hello")).asInstanceOf[GenericRecord]
+      val record = Encoder[Foo].encode(schema)(Foo("hello")).asInstanceOf[GenericRecord]
       record.getSchema shouldBe schema
       record.get("s") shouldBe new Utf8("hello")
     }
-//    "encode strings as GenericFixed and pad bytes when schema is fixed" in {
-//      case class Foo(s: String)
-//
-//      val fixedSchema = SchemaFor[String](Schema.createFixed("FixedString", null, null, 7))
-//      implicit val fixedStringEncoder: Encoder[String] = Encoder.StringEncoder.withSchema(fixedSchema)
-//
-//      val record = Encoder[Foo].encode(Foo("hello")).asInstanceOf[GenericRecord]
-//      record.get("s").asInstanceOf[GenericFixed].bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
-//      // the fixed should have the right size
-//      record.get("s").asInstanceOf[GenericFixed].bytes().length shouldBe 7
-//    }
-//    "encode longs" in {
-//      case class Foo(l: Long)
-//      val schema = AvroSchema[Foo]
-//      Encoder[Foo].encode(Foo(123456L)) shouldBe ImmutableRecord(schema, Vector(java.lang.Long.valueOf(123456L)))
-//    }
-//    "encode doubles" in {
-//      case class Foo(d: Double)
-//      val schema = AvroSchema[Foo]
-//      Encoder[Foo].encode(Foo(123.435)) shouldBe ImmutableRecord(schema, Vector(java.lang.Double.valueOf(123.435D)))
-//    }
-//    "encode booleans" in {
-//      case class Foo(d: Boolean)
-//      val schema = AvroSchema[Foo]
-//      Encoder[Foo].encode(Foo(true)) shouldBe ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true)))
-//    }
-//    "encode floats" in {
-//      case class Foo(d: Float)
-//      val schema = AvroSchema[Foo]
-//      Encoder[Foo].encode(Foo(123.435F)) shouldBe ImmutableRecord(schema, Vector(java.lang.Float.valueOf(123.435F)))
-//    }
-//    "encode ints" in {
-//      case class Foo(i: Int)
-//      val schema = AvroSchema[Foo]
-//      Encoder[Foo].encode(Foo(123)) shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(123)))
-//    }
-//    "support uppercase packages" in {
-//      val schema = AvroSchema[ClassInUppercasePackage]
-//      val t = com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage("hello")
-//      schema.getFullName shouldBe "com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage"
-//      Encoder[ClassInUppercasePackage].encode(t) shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
-//    }
+    //    "encode strings as GenericFixed and pad bytes when schema is fixed" in {
+    //      case class Foo(s: String)
+    //
+    //      val fixedSchema = Schema.createFixed("FixedString", null, null, 7)
+    //      implicit val fixedStringEncoder: Encoder[String] = Encoder.stringEncoder.encode(fixedSchema)
+    //
+    //      val record = Encoder[Foo].encode(Foo("hello")).asInstanceOf[GenericRecord]
+    //      record.get("s").asInstanceOf[GenericFixed].bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
+    //      // the fixed should have the right size
+    //      record.get("s").asInstanceOf[GenericFixed].bytes().length shouldBe 7
+    //    }
+    "encode longs" in {
+      case class Foo(l: Long)
+      val schema = AvroSchema[Foo]
+      val record = Encoder[Foo].encode(schema)(Foo(123456L)).asInstanceOf[GenericRecord]
+      record.getSchema shouldBe schema
+      record.get("l") shouldBe java.lang.Long.valueOf(123456L)
+    }
+    "encode ints" in {
+      case class Foo(i: Int)
+      val schema = AvroSchema[Foo]
+      val record = Encoder[Foo].encode(schema)(Foo(123)).asInstanceOf[GenericRecord]
+      record.getSchema shouldBe schema
+      record.get("i") shouldBe java.lang.Integer.valueOf(123)
+    }
+    "encode doubles" in {
+      case class Foo(d: Double)
+      val schema = AvroSchema[Foo]
+      val record = Encoder[Foo].encode(schema)(Foo(123.435)).asInstanceOf[GenericRecord]
+      record.getSchema shouldBe schema
+      record.get("d") shouldBe java.lang.Double.valueOf(123.435D)
+    }
+    "encode booleans" in {
+      case class Foo(b: Boolean)
+      val schema = AvroSchema[Foo]
+      val record = Encoder[Foo].encode(schema)(Foo(true)).asInstanceOf[GenericRecord]
+      record.getSchema shouldBe schema
+      record.get("b") shouldBe java.lang.Boolean.valueOf(true)
+    }
+    "encode floats" in {
+      case class Foo(f: Float)
+      val schema = AvroSchema[Foo]
+      val record = Encoder[Foo].encode(schema)(Foo(123.435F)).asInstanceOf[GenericRecord]
+      record.getSchema shouldBe schema
+      record.get("f") shouldBe java.lang.Float.valueOf(123.435F)
+    }
+    //    "support uppercase packages" in {
+    //      val schema = AvroSchema[ClassInUppercasePackage]
+    //      val t = com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage("hello")
+    //      schema.getFullName shouldBe "com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage"
+    //      Encoder[ClassInUppercasePackage].encode(t) shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
+    //    }
   }
 }
 
