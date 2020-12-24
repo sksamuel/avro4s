@@ -2,22 +2,15 @@ package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.decoders.PrimitiveDecoders
 import com.sksamuel.avro4s.encoders.{PrimitiveEncoders, StringEncoders}
+import com.sksamuel.avro4s.schemas.MacroSchemaFor
 import org.apache.avro.Schema
 
-//
-//import java.nio.ByteBuffer
-//import java.util.UUID
-//
-//import org.apache.avro.Schema
-//import org.apache.avro.generic.GenericRecord
-//import org.apache.avro.util.Utf8
-//
-//import scala.deriving.Mirror
-//
+import scala.deriving.Mirror
+
 /**
  * An [[Decoder]] decodes a JVM value into a scala type T.
  *
- * For example, a Decoder[String] could convert an input of type Utf8 into a plain Java String.
+ * For example, a Decoder[String] would convert an input into a plain Java String.
  *
  * Another example, a decoder for Option[String] would handle inputs of null
  * by emitting a None, and a non-null input by emitting the decoded value
@@ -27,8 +20,8 @@ trait Decoder[T] {
   self =>
 
   /**
-   * Decodes the given AvroValue to an instance of T if possible, or
-   * returns an AvroError.
+   * Decodes the given AvroValue to an instance of T.
+   * Throws an exception if the value cannot be decoded.
    */
   def decode(value: Any): T
 
@@ -36,16 +29,21 @@ trait Decoder[T] {
    * Creates a Decoder[U] by applying a function T => U to the
    * output of this decoder.
    */
-  //  def map[U](f: T => U): Decoder[U] = new Decoder[U] :
-  //    override def decode(value: Any) =
-  //      self.decode(value) match {
-  //        case error: AvroError => error
-  //        case t: T => f(t)
-  //      }
+  def map[U](f: T => U): Decoder[U] = new Decoder[U] :
+    override def decode(value: Any) = f(self.decode(value))
 }
 
-trait DecoderFor[T] { self =>
-  
+object Decoder extends PrimitiveDecoders {
+  def apply[T](using decoder: Decoder[T]) = decoder
+
+  inline given derived[T](using m: Mirror.Of[T]): Decoder[T] = new Decoder[T] {
+    override def decode(value: Any): T = value.asInstanceOf[T]
+  }
+}
+
+trait DecoderFor[T] {
+  self =>
+
   def decoder(schema: Schema): Decoder[T]
 
   def map[U](f: T => U) = new DecoderFor[U] {

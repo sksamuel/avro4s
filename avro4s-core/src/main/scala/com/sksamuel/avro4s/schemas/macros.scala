@@ -21,7 +21,7 @@ object MacroSchemaFor {
     val names = new Names(quotes)(classdef, symbol)
 
     val defaultNamespace = names.namespace
-    println("default = "+ defaultNamespace)
+//    println("default = "+ defaultNamespace)
 
     // annotations on the case class
     val annos = new Annotations(quotes)(symbol.annotations)

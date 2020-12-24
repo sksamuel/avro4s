@@ -10,7 +10,7 @@ import java.nio.ByteBuffer
 import java.util.UUID
 
 trait BigDecimalDecoders {
-  
+
   given DecoderFor[BigDecimal] = new DecoderFor[BigDecimal] {
     override def decoder(schema: Schema): Decoder[BigDecimal] = schema.getType match {
       case Schema.Type.FIXED => BigDecimalFixedDecoder(schema)
@@ -18,7 +18,7 @@ trait BigDecimalDecoders {
       case Schema.Type.STRING => BigDecimalStringDecoder
     }
   }
-  
+
 }
 
 class BigDecimalBytesDecoder(schema: Schema) extends Decoder[BigDecimal] {
