@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.encoders
 
-import com.sksamuel.avro4s.{Annotations, Encoder, Names, SchemaConfiguration, SchemaFor}
+import com.sksamuel.avro4s.{Annotations, FieldMapper, Names, SchemaConfiguration, SchemaFor}
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericData, GenericRecord}
 
@@ -86,12 +86,10 @@ object MacroEncoder {
     }
     
     '{new Encoder[T] {
-      override def encode(schema: Schema): T => Any = {
-        { t =>
-          val record = new GenericData.Record(schema)
-          ${putFields('{t}, '{record}, '{schema})}
-          record
-        }
+      override def encode(schema: Schema, mapper: FieldMapper): T => Any = { t =>
+         val record = new GenericData.Record(schema)
+         ${putFields('{t}, '{record}, '{schema})}
+         record
       }
     }}
   }

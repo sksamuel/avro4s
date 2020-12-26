@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.schemas.{BaseSchemas, ByteIterableSchemas, CollectionSchemas, MacroSchemaFor, TupleSchemas}
+import com.sksamuel.avro4s.schemas.{BaseSchemas, ByteIterableSchemas, CollectionSchemas, MacroSchemaFor, OptionSchemas, TupleSchemas}
 
 import java.nio.ByteBuffer
 import java.sql.Timestamp
@@ -10,7 +10,6 @@ import java.util.{Date, UUID}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 
-import scala.deriving.Mirror
 
 /**
  * A [[SchemaFor]] generates an Avro Schema for a Scala or Java type.
@@ -43,7 +42,12 @@ trait SchemaFor[T]:
     }
   }
 
-object SchemaFor extends BaseSchemas with ByteIterableSchemas with CollectionSchemas with TupleSchemas {
+object SchemaFor extends BaseSchemas 
+  with ByteIterableSchemas
+  with CollectionSchemas 
+  with TupleSchemas 
+  with OptionSchemas 
+  with LowPrioritySchemas {
 
   /**
    * Returns a [[SchemaFor]] with the schema set to the given schema s.
@@ -51,12 +55,11 @@ object SchemaFor extends BaseSchemas with ByteIterableSchemas with CollectionSch
   def apply[T](s: Schema): SchemaFor[T] = new SchemaFor[T] {
     override def schema(config: SchemaConfiguration): Schema = s
   }
-  
+
   def apply[T](f: SchemaConfiguration => Schema) = new SchemaFor[T] {
     override def schema(config: SchemaConfiguration): Schema = f(config)
   }
 
-  inline given derived[T](using m: Mirror.Of[T]) : SchemaFor[T] = MacroSchemaFor.derive[T]
 }
 
 trait DeriveSchema[T]:

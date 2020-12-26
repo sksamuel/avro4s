@@ -1,0 +1,65 @@
+Building an Avro serialization library.
+
+When encoding Avro we want speed.
+
+Let's consider the following data structure for our examples:
+
+enum ShipType:
+   case Frigate, Battleship, Carrier
+
+case class Ship(name: String, shipType: ShipType, commissioned: Int)
+
+val qe = Ship("HMS Queen Elizabeth", ShipType.Carrier, 2017)
+
+The fastest approach is hand coding the serializers and deserializers.
+
+val schema = SchemaBuilder.....
+val record = new GenericData.Record(schema)
+record.put("name", qe.name)
+record.put("shipType", qe.shipType.name)
+record.put("commissioned", qe.commissioned)
+
+This will give us fast runtime performance but it means manually writing this boilerplate for each type we use.
+Also, ecah time a a data structure changes, we have to update our serdes to keep it in line. This has the potential
+for bugs - if a field is added to a type, we might well forget to include it in the serde. Dammit Jim, this isn't a dynamic
+language! We should be able to do better.
+
+Well we can. The next natural step would be to do dynamically generate these calls at runtime using reflection.
+Reflection is easy enough to understand. We can poke about the type structure to achieve the following:
+
+val record = new GenericData.Record(schema)
+classOf[Ship].getDeclaredFields.foreach { field =>
+    record.put(field.name, field.get(ship))
+}
+
+I'm using `getDeclaredFields` here to get each field that is declared specifically in the Ship type, and not fields
+inheririted from parent types. This is a very simplistic approach in Scala.....
+
+Now we have dynamic schema and encoding capabilities. If a field is added, it will be automatically included.
+
+However there are some downsides to using reflection. First of, it
+is slower than direct calls. Not a problem for one off uses, but if you're encoding and decoding in a tight loop, the
+performance hit will be noticable.
+
+Secondly, it can be flakey. By definition, the compiler can't help you out, and any
+type errors will move to runtime. For example, we may try to encode an int field as a string field. It's down to us
+and a solid test suite to ensure that doesn't happen.
+
+What if we could combine the best of both words and have derived code that had the performance of the hand cranked solution?
+
+Compile Time Generation
+=======================
+
+In Scala we can do this using the macro support. [macro explanation].
+
+The compiler will inspect our types and generate code exactly like the first example. And if our types change, the compiler
+will take care of any updates for us.
+
+val encoder = Encoder[Ship] {
+  override def encode(ship: Ship, schema: Schema) {
+    val record = new GenericData.Record(schema)
+    record.put("name", ship.name)
+    record.put("shipType", ship.shipType.name)
+    record.put("commissioned", ship.commissioned)
+  }
+}

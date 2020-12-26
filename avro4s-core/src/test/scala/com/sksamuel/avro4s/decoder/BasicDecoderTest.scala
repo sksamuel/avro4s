@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, DefaultFieldMapper, FieldMapper}
+import com.sksamuel.avro4s.{AvroSchema, DefaultFieldMapper, FieldMapper}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.scalatest.matchers.should.Matchers

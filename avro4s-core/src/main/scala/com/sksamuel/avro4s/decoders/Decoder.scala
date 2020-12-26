@@ -1,4 +1,4 @@
-package com.sksamuel.avro4s
+package com.sksamuel.avro4s.decoders
 
 import com.sksamuel.avro4s.decoders.PrimitiveDecoders
 import com.sksamuel.avro4s.encoders.{PrimitiveEncoders, StringEncoders}

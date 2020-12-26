@@ -1,0 +1,17 @@
+
+* Encoder trait with schema / mapper passed in to retrieve a function
+    def encode(schema: Schema, mapper: FieldMapper): T => Any
+    - having an encoder not encode but return an "encoder function" seems inaccurate nomenclature
+
+* Encoder trait which encodes directly
+        def encode(value: T, schema: Schema, mapper: FieldMapper): Any
+
+* Encoder trait which encodes values without reference to a schema
+    - Simplest contract - just a `def encode(value: T): Any` method
+    - Needs some trait which returns an Encoder based on a schema and ends up with "double pass" traits, ugh
+
+* Encoder trait which encodes values without needing a schema, but can be configured with a schema
+    def encode(value: T): Any
+    def withSchema(schema: Schema): Encoder[T]
+    def withMapper(mapper: FieldMapper): Encoder[T]
+    - some encoders always need a schema - eg for records to create a generic fixed

@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s.decoders
 
-import com.sksamuel.avro4s.{Decoder, DecoderFor}
 import org.apache.avro.generic.GenericFixed
 import org.apache.avro.util.Utf8
 

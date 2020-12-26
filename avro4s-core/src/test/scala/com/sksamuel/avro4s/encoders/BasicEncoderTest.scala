@@ -1,6 +1,7 @@
-package com.sksamuel.avro4s.encoder
+package com.sksamuel.avro4s.encoders
 
 import com.sksamuel.avro4s._
+import com.sksamuel.avro4s.encoders.Encoder
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
 import org.apache.avro.util.Utf8
@@ -17,19 +18,6 @@ class BasicEncoderTest extends AnyWordSpec with Matchers {
       record.getSchema shouldBe schema
       record.get("s") shouldBe new Utf8("hello")
     }
-//    "encode strings as GenericFixed and pad bytes when schema is fixed" in {
-//      case class Foo(s: String)
-//
-//      val fixedSchema = SchemaFor[String](Schema.createFixed("FixedString", null, null, 7))
-//      val schema = AvroSchema[Foo]
-//
-//            implicit val fixedStringEncoder: Encoder[String] = Encoder.stringEncoder.encode(fixedSchema)
-//
-//            val record = Encoder[Foo].encode(Foo("hello")).asInstanceOf[GenericRecord]
-//            record.get("s").asInstanceOf[GenericFixed].bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
-//             the fixed should have the right size
-//            record.get("s").asInstanceOf[GenericFixed].bytes().length shouldBe 7
-//    }
     "encode longs" in {
       case class Foo(l: Long)
       val schema = AvroSchema[Foo]

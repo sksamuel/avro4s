@@ -1,7 +1,6 @@
 package com.sksamuel.avro4s.decoders
 
 import com.sksamuel.avro4s.encoders.Avro4sDecodingException
-import com.sksamuel.avro4s.{Decoder, DecoderFor}
 import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericFixed
 import org.apache.avro.{Conversions, Schema}
