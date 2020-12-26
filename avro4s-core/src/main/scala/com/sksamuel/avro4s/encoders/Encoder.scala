@@ -18,21 +18,35 @@ import org.apache.avro.specific.SpecificRecord
  * Alternatively, given a Scala enum value, the enum could be encoded
  * as an instance of [[GenericData.EnumSymbol]] or as a String.
  *
+ * An encoder is invoked with an Avro schema, and a [[FieldMapper]] and returns
+ * a reusable function that then encodes values of type T into Avro types.
+ * 
+ * It is possible to configure encoders entirely through annotations, which is fine if your 
+ * system is self contained. But if your schemas are generated outside of avro4s, or even
+ * in another language, you may need to use these "third-party" schemas to influence the
+ * encoding process.
+ * 
+ * Some encoders use the schema to determine the encoding function to return. For example, strings
+ * can be encoded as [[UTF8]]s, [[GenericFixed]]s, [[ByteBuffers]] or [[java.lang.String]]s.
+ * Therefore the Encoder[String] typeclass instances uses the schema to select which of these
+ * implementations to use.
+ * 
+ * Other types may not require the schema at all. For example, the default Encoder[Int] always
+ * returns a java.lang.Integer regardless of any schema input.
+ *
+ * The second parameter to an encoder is the field mapper. This is used to derive
+ * the field names used when generating record or error types. By default, the field mapper will
+ * use the field names as they are defined in the type itself (from the case class). 
+ * However for interop with other systems you may wish to customize this, for example, by
+ * writing out field names in snake_case or adding a prefix.
  */
 trait Encoder[T] {
   self =>
 
-  def encode(schema: Schema, mapper: FieldMapper = DefaultFieldMapper): T => Any
-
   /**
-   * Creates a variant of this Encoder using the given schema.
-   *
-   * For example, to use a fixed schema for byte arrays instead of
-   * the default bytes schema.
-   *
-   * By default, the same encoder instance is returned. Encoders that wish
-   * to use a schema to influence their behavior should override this method.
+   * Returns the encoding function given the configuration parameters.
    */
+  def encode(schema: Schema, mapper: FieldMapper = DefaultFieldMapper): T => Any
 
   /**
    * Returns an [[Encoder[U]] by applying a function that maps a U
