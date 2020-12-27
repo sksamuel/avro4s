@@ -1,10 +1,10 @@
 package com.sksamuel.avro4s.encoders
 
-import com.sksamuel.avro4s.{Annotations, FieldMapper, Names, SchemaConfiguration, SchemaFor}
+import com.sksamuel.avro4s.{Annotations, FieldMapper, Names, SchemaConfiguration}
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericData, GenericRecord}
 
-object MacroEncoder {
+object Macros {
   import scala.quoted._
   
   inline def derive[T]: Encoder[T] = ${deriveImpl[T]}

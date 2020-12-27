@@ -1,14 +1,15 @@
-package com.sksamuel.avro4s
+package com.sksamuel.avro4s.schemas
 
-import com.sksamuel.avro4s.schemas.{BaseSchemas, ByteIterableSchemas, CollectionSchemas, MacroSchemaFor, OptionSchemas, TupleSchemas}
+import com.sksamuel.avro4s.schemas.{ByteIterableSchemas, CollectionSchemas, Macros, OptionSchemas, PrimitiveSchemas, TupleSchemas}
+import com.sksamuel.avro4s.{SchemaConfiguration}
+import org.apache.avro.util.Utf8
+import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 
 import java.nio.ByteBuffer
 import java.sql.Timestamp
 import java.time.{Instant, LocalDate, LocalDateTime, OffsetDateTime}
 import java.util
 import java.util.{Date, UUID}
-import org.apache.avro.util.Utf8
-import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 
 
 /**
@@ -42,12 +43,12 @@ trait SchemaFor[T]:
     }
   }
 
-object SchemaFor extends BaseSchemas 
+object SchemaFor extends PrimitiveSchemas 
   with ByteIterableSchemas
   with CollectionSchemas 
   with TupleSchemas 
   with OptionSchemas 
-  with LowPrioritySchemas {
+  with RecordSchemas {
 
   /**
    * Returns a [[SchemaFor]] with the schema set to the given schema s.

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.decoders
 
-import com.sksamuel.avro4s.{Annotations, Names, SchemaConfiguration, SchemaFor}
+import com.sksamuel.avro4s.{Annotations, Names, SchemaConfiguration}
 import org.apache.avro.Schema
 
 object MacroDecoder {

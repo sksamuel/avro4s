@@ -2,6 +2,7 @@ package com.sksamuel.avro4s.encoders
 
 import com.sksamuel.avro4s._
 import com.sksamuel.avro4s.encoders.Encoder
+import com.sksamuel.avro4s.schemas.SchemaFor
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericData, GenericFixed, GenericRecord}
 import org.apache.avro.util.Utf8

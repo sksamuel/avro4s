@@ -1,8 +1,8 @@
 package com.sksamuel.avro4s.encoders
 
 import com.sksamuel.avro4s.{DefaultFieldMapper, FieldMapper}
-import com.sksamuel.avro4s.encoders.{MacroEncoder, PrimitiveEncoders, StringEncoders}
-import com.sksamuel.avro4s.schemas.MacroSchemaFor
+import com.sksamuel.avro4s.encoders.{Macros, PrimitiveEncoders, StringEncoders}
+import com.sksamuel.avro4s.schemas.Macros
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.specific.SpecificRecord
@@ -57,10 +57,11 @@ trait Encoder[T] {
   }
 }
 
-object Encoder extends PrimitiveEncoders 
+object Encoder 
+  extends PrimitiveEncoders 
   with StringEncoders
   with OptionEncoders
-  with LowPriorityEncoders {
+  with RecordEncoders {
 
   def apply[T](using encoder: Encoder[T]) = encoder
 

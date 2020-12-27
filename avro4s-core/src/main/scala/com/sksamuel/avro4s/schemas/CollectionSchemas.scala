@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schemas
 
-import com.sksamuel.avro4s.{DefaultFieldMapper, FieldMapper, SchemaConfiguration, SchemaFor}
+import com.sksamuel.avro4s.{DefaultFieldMapper, FieldMapper, SchemaConfiguration}
 import org.apache.avro.Schema
 
 trait CollectionSchemas:

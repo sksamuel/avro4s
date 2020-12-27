@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.encoders
 
 import com.sksamuel.avro4s.encoders.Encoder
-import com.sksamuel.avro4s.{AvroSchema, ImmutableRecord, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, ImmutableRecord}
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.util.Utf8
 import org.scalatest.matchers.should.Matchers

@@ -1,13 +1,12 @@
 package com.sksamuel.avro4s.schemas
 
-import com.sksamuel.avro4s.SchemaFor
 import org.apache.avro.util.Utf8
 import org.apache.avro.{LogicalTypes, SchemaBuilder}
 
 import java.nio.ByteBuffer
 import java.util.UUID
 
-trait BaseSchemas:
+trait PrimitiveSchemas:
 
   given intSchemaFor: SchemaFor[Int] = SchemaFor[Int](SchemaBuilder.builder.intType)
   given SchemaFor[Byte] = intSchemaFor.forType

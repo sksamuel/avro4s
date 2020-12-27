@@ -1,9 +1,9 @@
 package com.sksamuel.avro4s.schemas
 
-import com.sksamuel.avro4s.{Annotations, Names, SchemaConfiguration, SchemaFor}
+import com.sksamuel.avro4s.{Annotations, Names, SchemaConfiguration}
 import org.apache.avro.{Schema, SchemaBuilder}
 
-object MacroSchemaFor {
+object Macros {
 
   import scala.collection.convert.AsJavaConverters
   import scala.compiletime.{constValue, constValueOpt, erasedValue, summonInline}

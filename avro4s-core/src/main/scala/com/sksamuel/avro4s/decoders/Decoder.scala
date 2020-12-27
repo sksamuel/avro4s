@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.decoders
 import com.sksamuel.avro4s.{DefaultFieldMapper, FieldMapper}
 import com.sksamuel.avro4s.decoders.PrimitiveDecoders
 import com.sksamuel.avro4s.encoders.{PrimitiveEncoders, StringEncoders}
-import com.sksamuel.avro4s.schemas.MacroSchemaFor
+import com.sksamuel.avro4s.schemas.Macros
 import org.apache.avro.Schema
 
 /**

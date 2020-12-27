@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import com.sksamuel.avro4s.schemas.SchemaFor
 import org.apache.avro.Schema
 
 object AvroSchema {
