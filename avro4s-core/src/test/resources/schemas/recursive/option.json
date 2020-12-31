@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "OptionTree",
+  "namespace": "com.sksamuel.avro4s.schema.RecursiveSchemaTest",
+  "fields": [
+    {
+      "name": "value",
+      "type": "string"
+    },
+    {
+      "name": "left",
+      "type": [
+        "null",
+        "OptionTree"
+      ],
+      "default": null
+    },
+    {
+      "name": "right",
+      "type": [
+        "null",
+        "OptionTree"
+      ],
+      "default": null
+    }
+  ]
+}

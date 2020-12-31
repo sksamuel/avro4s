@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.schemas.SchemaFor
+import com.sksamuel.avro4s.schemas.{DefinitionEnvironment, SchemaFor}
 import org.apache.avro.Schema
 
 object AvroSchema {
@@ -10,5 +10,6 @@ object AvroSchema {
    */
   def apply[T](using schemaFor: SchemaFor[T]): Schema = apply(SchemaConfiguration.default)
 
-  def apply[T](config: SchemaConfiguration)(using schemaFor: SchemaFor[T]): Schema = schemaFor.schema(config)
+  def apply[T](config: SchemaConfiguration)(using schemaFor: SchemaFor[T]): Schema = 
+    schemaFor.schema(config)
 }

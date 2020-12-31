@@ -43,12 +43,12 @@ trait SchemaFor[T]:
     }
   }
 
-object SchemaFor extends PrimitiveSchemas 
+object SchemaFor extends PrimitiveSchemas
   with ByteIterableSchemas
   with CollectionSchemas 
   with TupleSchemas 
   with OptionSchemas 
-  with RecordSchemas {
+  with MacroDerivedSchemas {
 
   /**
    * Returns a [[SchemaFor]] with the schema set to the given schema s.
