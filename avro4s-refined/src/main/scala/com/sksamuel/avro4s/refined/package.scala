@@ -18,8 +18,8 @@ package object refined {
   implicit def refinedStringMapKeyEncoder[A: Encoder, B: Encoder, P, F[_, _]: RefType](
     implicit isString: A <:< String
   ): Encoder[Map[F[A, P], B]] =
-    Encoder.mapEncoder[B].comap { theMap =>
-      theMap.map[String, B] { case (k, v) => (RefType[F].unwrap(k), v) }
+    Encoder.mapEncoder[B].comap[Map[F[A, P], B]] { theMap =>
+      theMap.map { case (k, v) => RefType[F].unwrap(k).asInstanceOf[String] -> v }
     }
 
   implicit def refinedDecoder[T: Decoder, P, F[_, _] : RefType](implicit validate: Validate[T, P]): Decoder[F[T, P]] =
