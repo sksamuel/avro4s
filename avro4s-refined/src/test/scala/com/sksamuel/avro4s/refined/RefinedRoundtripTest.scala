@@ -19,6 +19,7 @@ class RefinedRoundtripTest extends InputStreamTest {
   type C1b = String :+: CNil
   case class Container1b(c1: C1b)
   case class Container5(c5: Either[NonEmptyString, Int])
+  case class Container6(c6: Map[NonEmptyString, PosInt])
 
   test("a union of one refined type inside a record should rountrip") {
     writeRead(Container1(Coproduct[C1](NonEmptyString("a"))))
@@ -44,5 +45,11 @@ class RefinedRoundtripTest extends InputStreamTest {
 
   test("an either of one refined type inside a record should roundtrip") {
     writeRead(Container5(Left(NonEmptyString("a"))))
+  }
+
+  test("a map with refined types on both key and value should roundtrip") {
+    val key: NonEmptyString = NonEmptyString("foo")
+    val value: PosInt = PosInt(1)
+    writeRead(Container6(Map(key -> value)))
   }
 }
