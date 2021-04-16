@@ -443,7 +443,7 @@ And likewise, avro4s will convert a sealed trait such as:
 ```scala
 sealed trait Animal
 @AvroSortPriority(0) case object Cat extends Animal
-@AvroSortPriority(1) case object Dog extends Animal
+@AvroSortPriority(-1) case object Dog extends Animal
 ```
 into the following AVRO `enum` schema:
 ```json
@@ -765,7 +765,7 @@ For sealed traits, you can define the trait's default enum using the `@AvroEnumD
 @AvroEnumDefault(Dog)
 sealed trait Animal
 @AvroSortPriority(0) case object Cat extends Animal
-@AvroSortPriority(1) case object Dog extends Animal
+@AvroSortPriority(-1) case object Dog extends Animal
 ```
 resulting in the following AVRO schema:
 ```json

@@ -1,0 +1,14 @@
+[ {
+  "type" : "record",
+  "name" : "TestAnnotatedImpl",
+  "namespace" : "com.yuval",
+  "fields" : [ {
+    "name" : "value",
+    "type" : {
+      "type" : "record",
+      "name" : "AnnotatedNested",
+      "namespace" : "com.yuval.nested",
+      "fields" : [ ]
+    }
+  } ]
+} ]

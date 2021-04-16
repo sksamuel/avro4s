@@ -65,6 +65,19 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
 
+    "support namespace annotations on classes that are used by an ADT" in {
+      @AvroNamespace("com.yuval")
+      sealed trait TestAnnotated
+      final case class TestAnnotatedImpl(value: AnnotatedNested) extends TestAnnotated
+
+      @AvroNamespace("com.yuval.nested")
+      case class AnnotatedNested()
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_class_adt_field.avsc"))
+      val schema = AvroSchema[TestAnnotated]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
     "empty namespace" in {
 
       @AvroNamespace("")
