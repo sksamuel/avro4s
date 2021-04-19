@@ -29,7 +29,7 @@ object TypeGuardedDecoding {
       val tpe = implicitly[WeakTypeTag[T]].tpe
 
       if (tpe <:< StringType) stringDecoder(decoder)
-      if (tpe <:< UUIDType) uuidDecoder(decoder)
+      else if (tpe <:< UUIDType) uuidDecoder(decoder)
       else if (tpe <:< WeakTypeTag.Boolean.tpe) booleanDecoder(decoder)
       else if (tpe <:< WeakTypeTag.Int.tpe) intDecoder(decoder)
       else if (tpe <:< WeakTypeTag.Long.tpe) longDecoder(decoder)
