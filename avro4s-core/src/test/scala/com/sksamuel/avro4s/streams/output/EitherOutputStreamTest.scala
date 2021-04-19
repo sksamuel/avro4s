@@ -53,7 +53,7 @@ class EitherOutputStreamTest extends OutputStreamTest {
   test("write out either of uuids") {
     case class Test(z: Either[Double, UUID])
     writeRead(Test(Right(UUID.randomUUID()))) { record =>
-      record.get("z").isInstanceOf[String] shouldBe true
+      record.get("z").asInstanceOf[org.apache.avro.util.Utf8]
     }
   }
 
