@@ -1,11 +1,12 @@
 package com.sksamuel.avro4s.streams.output
 
 import java.util
-
 import com.sksamuel.avro4s.schema.Wine
 import org.apache.avro.AvroRuntimeException
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
+
+import java.util.UUID
 
 class EitherOutputStreamTest extends OutputStreamTest {
 
@@ -46,6 +47,13 @@ class EitherOutputStreamTest extends OutputStreamTest {
     case class Test(z: Either[Array[Int], Map[String, Boolean]])
     writeRead(Test(Right(Map("a" -> true, "b" -> false)))) { record =>
       record.get("z").asInstanceOf[util.HashMap[String, Boolean]].asScala shouldBe Map(new Utf8("a") -> true, new Utf8("b") -> false)
+    }
+  }
+
+  test("write out either of uuids") {
+    case class Test(z: Either[Double, UUID])
+    writeRead(Test(Right(UUID.randomUUID()))) { record =>
+      record.get("z").isInstanceOf[String] shouldBe true
     }
   }
 

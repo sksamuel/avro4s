@@ -247,11 +247,11 @@ trait BaseEncoders {
     override def withSchema(schemaFor: SchemaFor[String]): Encoder[String] = new StringEncoder(schemaFor)
   }
 
-  implicit val UUIDCodec = StringEncoder.comap[UUID](_.toString).withSchema(SchemaFor.UUIDSchemaFor)
+  implicit val UUIDCodec: Encoder[UUID] = StringEncoder.comap[UUID](_.toString).withSchema(SchemaFor.UUIDSchemaFor)
 
-  implicit def javaEnumEncoder[E <: Enum[E]: ClassTag] = new JavaEnumEncoder[E]
+  implicit def javaEnumEncoder[E <: Enum[E]: ClassTag]: JavaEnumEncoder[E] = new JavaEnumEncoder[E]
 
-  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag] = new ScalaEnumEncoder[E]
+  implicit def scalaEnumEncoder[E <: Enumeration#Value: TypeTag]: ScalaEnumEncoder[E] = new ScalaEnumEncoder[E]
 
   class JavaEnumEncoder[E <: Enum[E]](implicit tag: ClassTag[E]) extends Encoder[E] {
     val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchemaFor[E]
@@ -369,11 +369,11 @@ trait BaseDecoders {
     override def withSchema(schemaFor: SchemaFor[String]): Decoder[String] = new StringDecoder(schemaFor)
   }
 
-  implicit val UUIDDecoder = StringDecoder.map[UUID](UUID.fromString).withSchema(SchemaFor.UUIDSchemaFor)
+  implicit val UUIDDecoder: Decoder[UUID] = StringDecoder.map[UUID](UUID.fromString).withSchema(SchemaFor.UUIDSchemaFor)
 
-  implicit def javaEnumDecoder[E <: Enum[E]: ClassTag] = new JavaEnumDecoder[E]
+  implicit def javaEnumDecoder[E <: Enum[E]: ClassTag]: JavaEnumDecoder[E] = new JavaEnumDecoder[E]
 
-  implicit def scalaEnumDecoder[E <: Enumeration#Value: TypeTag] = new ScalaEnumDecoder[E]
+  implicit def scalaEnumDecoder[E <: Enumeration#Value: TypeTag]: ScalaEnumDecoder[E] = new ScalaEnumDecoder[E]
 
   class JavaEnumDecoder[E <: Enum[E]](implicit tag: ClassTag[E]) extends Decoder[E] {
     val schemaFor: SchemaFor[E] = SchemaFor.javaEnumSchemaFor[E]

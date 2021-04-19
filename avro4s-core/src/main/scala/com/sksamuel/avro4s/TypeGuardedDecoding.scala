@@ -1,10 +1,10 @@
 package com.sksamuel.avro4s
 
 import java.nio.ByteBuffer
-
 import org.apache.avro.generic.{GenericContainer, GenericFixed}
 import org.apache.avro.util.Utf8
 
+import java.util.UUID
 import scala.reflect.runtime.universe._
 
 trait TypeGuardedDecoding[T] extends Serializable {
@@ -13,6 +13,7 @@ trait TypeGuardedDecoding[T] extends Serializable {
 
 object TypeGuardedDecoding {
   private[this] final val StringType = typeOf[String]
+  private[this] final val UUIDType = typeOf[UUID]
   private[this] final val ByteArrayType = typeOf[Array[Byte]]
   private[this] final val JavaMapType = typeOf[java.util.Map[_, _]]
   private[this] final val MapType = typeOf[Map[_, _]]
@@ -28,6 +29,7 @@ object TypeGuardedDecoding {
       val tpe = implicitly[WeakTypeTag[T]].tpe
 
       if (tpe <:< StringType) stringDecoder(decoder)
+      if (tpe <:< UUIDType) uuidDecoder(decoder)
       else if (tpe <:< WeakTypeTag.Boolean.tpe) booleanDecoder(decoder)
       else if (tpe <:< WeakTypeTag.Int.tpe) intDecoder(decoder)
       else if (tpe <:< WeakTypeTag.Long.tpe) longDecoder(decoder)
@@ -42,6 +44,11 @@ object TypeGuardedDecoding {
   }
 
   private def stringDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
+    case v: Utf8   => decoder.decode(v)
+    case v: String => decoder.decode(v)
+  }
+
+  private def uuidDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
     case v: Utf8   => decoder.decode(v)
     case v: String => decoder.decode(v)
   }
