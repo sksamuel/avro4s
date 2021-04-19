@@ -5,7 +5,7 @@
 [<img src="https://img.shields.io/maven-central/v/com.sksamuel.avro4s/avro4s-core_2.13.svg?label=latest%20release%20for%202.13"/>](http://search.maven.org/#search%7Cga%7C1%7Cavro4s-core_2.13)
 [<img src="https://img.shields.io/nexus/s/https/oss.sonatype.org/com.sksamuel.avro4s/avro4s-core_2.12.svg?label=latest%20snapshot&style=plastic"/>](https://oss.sonatype.org/content/repositories/snapshots/com/sksamuel/avro4s/)
 
-Avro4s is a schema/class generation and serializing/deserializing library for [Avro](http://avro.apache.org/) written in Scala. The objective is to allow seamless use with Scala without the need to to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a macro based library and generates code for use with Avro at _compile time_.
+Avro4s is a schema/class generation and serializing/deserializing library for [Avro](http://avro.apache.org/) written in Scala. The objective is to allow seamless use with Scala without the need to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a macro based library and generates code for use with Avro at _compile time_.
 
 The features of the library are:
 * Schema generation from classes at compile time
@@ -1274,12 +1274,12 @@ And you want to selectively use different scale/precision for the `price` and `l
 
 ``` scala
 object Price {
-  implicit val sp = ScalePrecisionRoundingMode(10, 2)
+  implicit val sp = ScalePrecision(10, 2)
   implicit val schema = SchemaFor[Price]
 }
 
 object Product {
-  implicit val sp = ScalePrecisionRoundingMode(8, 4)
+  implicit val sp = ScalePrecision(8, 4)
   implicit val schema = SchemaFor[Product]
 }
 ```
