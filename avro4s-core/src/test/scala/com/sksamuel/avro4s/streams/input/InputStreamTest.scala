@@ -1,10 +1,11 @@
 package com.sksamuel.avro4s.streams.input
 
 import java.io.ByteArrayOutputStream
-
 import com.sksamuel.avro4s._
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+
+import scala.util.Try
 
 trait InputStreamTest extends AnyFunSuite with Matchers {
 
@@ -13,7 +14,7 @@ trait InputStreamTest extends AnyFunSuite with Matchers {
     AvroInputStream.data.from(bytes).build(implicitly[SchemaFor[T]].schema).iterator.next()
   }
 
-  def tryReadData[T: SchemaFor: Decoder](bytes: Array[Byte]) = {
+  def tryReadData[T: SchemaFor: Decoder](bytes: Array[Byte]): Iterator[Try[T]] = {
     AvroInputStream.data.from(bytes).build(implicitly[SchemaFor[T]].schema).tryIterator
   }
 
@@ -38,6 +39,19 @@ trait InputStreamTest extends AnyFunSuite with Matchers {
     out
   }
 
+  def readJson[T: SchemaFor: Decoder](out: ByteArrayOutputStream): T = readJson(out.toByteArray)
+  def readJson[T: SchemaFor: Decoder](bytes: Array[Byte]): T = {
+    AvroInputStream.json[T].from(bytes).build(implicitly[SchemaFor[T]].schema).iterator.next()
+  }
+
+  def writeJson[T: Encoder: SchemaFor](t: T): ByteArrayOutputStream = {
+    val out = new ByteArrayOutputStream
+    val avro = AvroOutputStream.json[T].to(out).build()
+    avro.write(t)
+    avro.close()
+    out
+  }
+
   def writeRead[T: Encoder: Decoder: SchemaFor](t: T): Unit = {
     {
       val out = writeData(t)
@@ -46,6 +60,10 @@ trait InputStreamTest extends AnyFunSuite with Matchers {
     {
       val out = writeBinary(t)
       readBinary(out) shouldBe t
+    }
+    {
+      val out = writeJson(t)
+      readJson(out) shouldBe t
     }
   }
 
@@ -57,6 +75,10 @@ trait InputStreamTest extends AnyFunSuite with Matchers {
     {
       val out = writeBinary(t)
       readBinary(out) shouldBe expected
+    }
+    {
+      val out = writeJson(t)
+      readJson(out) shouldBe expected
     }
   }
 }
