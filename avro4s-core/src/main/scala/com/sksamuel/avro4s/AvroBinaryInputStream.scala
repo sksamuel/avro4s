@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import org.apache.avro.Schema
-import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.generic.GenericDatumReader
 import org.apache.avro.io.DecoderFactory
 
 import java.io.InputStream
@@ -19,12 +19,12 @@ class AvroBinaryInputStream[T](in: InputStream,
                                writerSchema: Schema)
                               (implicit decoder: Decoder[T]) extends AvroInputStream[T] {
 
-  private val datumReader = new GenericDatumReader[GenericRecord](writerSchema,  decoder.schema)
+  private val datumReader = new GenericDatumReader[AnyRef](writerSchema,  decoder.schema)
   private val avroDecoder = DecoderFactory.get().binaryDecoder(in, null)
 
-  private val _iter = new Iterator[GenericRecord] {
+  private val _iter = new Iterator[AnyRef] {
     override def hasNext: Boolean = !avroDecoder.isEnd
-    override def next(): GenericRecord = datumReader.read(null, avroDecoder)
+    override def next(): AnyRef = datumReader.read(null, avroDecoder)
   }
 
   /**

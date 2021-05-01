@@ -78,4 +78,40 @@ class CollectionsInputStreamTest extends InputStreamTest {
   test("read write Vector of nested classes") {
     writeRead(VectorFoo(Vector(FooString("x"), FooString("y"))))
   }
+
+  test("read write top level List[Int]") {
+    writeRead(List(1,2,3,99999999))
+  }
+
+  test("read write top level List[ListBooleans]") {
+    writeRead(List(ListBooleans(List(true, false)), ListBooleans(List(false, true))))
+  }
+
+  test("read write top level Vector[Double]") {
+    writeRead(Vector(5.55,2.43,9.9999999))
+  }
+
+  test("read write top level Map[String, Int]") {
+    val data = Map("a" -> 111, "ç" -> 222, "阿夫罗" -> 333)
+    writeRead(data)
+  }
+
+  test("read write top level Map[String, Double]") {
+    val data = Map("a" -> 1.2, "ç" -> 34.5, "阿夫罗" -> 54.3)
+    writeRead(data)
+  }
+
+  test("read write top level Map[String, String]") {
+    val data = Map("a" -> "b", "ç" -> "đ", "阿夫罗" -> "아브로")
+    writeRead(data)
+  }
+
+  test("read write top level Map[String, MapWithNestedClasses]") {
+    val data = Map(
+      "a" -> MapWithNestedClasses(Map("1" -> FooString("b"), "1a" -> FooString("Yolo"))),
+      "ç" -> MapWithNestedClasses(Map("2" -> FooString("đ"))),
+      "阿夫罗" -> MapWithNestedClasses(Map("3" -> FooString("아브로")))
+    )
+    writeRead(data)
+  }
 }

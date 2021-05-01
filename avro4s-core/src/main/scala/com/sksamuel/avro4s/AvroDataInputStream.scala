@@ -4,7 +4,7 @@ import java.io.InputStream
 
 import org.apache.avro.{AvroRuntimeException, Schema}
 import org.apache.avro.file.DataFileStream
-import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.avro.generic.GenericData
 import org.apache.avro.io.DatumReader
 
 import scala.util.{Failure, Try}
@@ -20,7 +20,7 @@ class AvroDataInputStream[T](in: InputStream,
     case None => GenericData.get.createDatumReader(null, decoder.schema)
   }
 
-  private val dataFileReader = new DataFileStream[GenericRecord](in, datumReader.asInstanceOf[DatumReader[GenericRecord]])
+  private val dataFileReader = new DataFileStream[AnyRef](in, datumReader.asInstanceOf[DatumReader[AnyRef]])
 
   override def iterator: Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = dataFileReader.hasNext
