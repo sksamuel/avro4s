@@ -4,7 +4,7 @@ import java.io.OutputStream
 
 import org.apache.avro.Schema
 import org.apache.avro.file.{CodecFactory, DataFileWriter}
-import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
+import org.apache.avro.generic.GenericDatumWriter
 
 /**
   * An [[AvroOutputStream]] that writes the schema along with the messages.
@@ -21,20 +21,21 @@ case class AvroDataOutputStream[T](os: OutputStream,
                                   (implicit encoder: Encoder[T]) extends AvroOutputStream[T] {
 
   val (writer, writeFn) = encoder.schema.getType match {
-    case Schema.Type.DOUBLE | Schema.Type.LONG | Schema.Type.BOOLEAN | Schema.Type.STRING | Schema.Type.INT | Schema.Type.FLOAT =>
+    case Schema.Type.BOOLEAN | Schema.Type.INT | Schema.Type.LONG | Schema.Type.FLOAT | Schema.Type.DOUBLE | Schema.Type.STRING =>
       val datumWriter = new GenericDatumWriter[T](encoder.schema)
       val dataFileWriter = new DataFileWriter[T](datumWriter)
       dataFileWriter.setCodec(codec)
       dataFileWriter.create(encoder.schema, os)
+      // No encoding needed for these primitive types
       (dataFileWriter, (t: T) => dataFileWriter.append(t))
-    case _ =>
-      val datumWriter = new GenericDatumWriter[GenericRecord](encoder.schema)
-      val dataFileWriter = new DataFileWriter[GenericRecord](datumWriter)
+    case _ => // RECORD, ENUM, ARRAY, MAP, UNION, FIXED, BYTES, NULL
+      val datumWriter = new GenericDatumWriter[AnyRef](encoder.schema)
+      val dataFileWriter = new DataFileWriter[AnyRef](datumWriter)
       dataFileWriter.setCodec(codec)
       dataFileWriter.create(encoder.schema, os)
       (dataFileWriter, (t: T) => {
-        val record = encoder.encode(t).asInstanceOf[GenericRecord]
-        dataFileWriter.append(record)
+        val encoded = encoder.encode(t)
+        dataFileWriter.append(encoded)
       })
   }
 
