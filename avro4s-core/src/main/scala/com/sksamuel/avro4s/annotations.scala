@@ -86,7 +86,6 @@ trait AvroProperty extends AvroFieldReflection {
   val value: String
 }
 
-
 /**
   * This annotation is used to disable generics in the encoding
   * of a record's name.

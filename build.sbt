@@ -11,64 +11,64 @@ lazy val root = Project("avro4s", file("."))
     name := "avro4s"
   )
   .aggregate(
-    `avro4s-core`,
-    `avro4s-json`,
+    `avro4s-core`
+//    `avro4s-json`,
    // `avro4s-cats`,
-    `avro4s-kafka`,
-    `avro4s-refined`
+//    `avro4s-kafka`,
+//    `avro4s-refined`
   )
 
 val `avro4s-core` = project.in(file("avro4s-core"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.propensive" %% "magnolia" % MagnoliaVersion,
-      "com.chuusai" %% "shapeless" % ShapelessVersion,
-      "org.json4s" %% "json4s-native" % Json4sVersion
+      "com.softwaremill.magnolia" % "magnolia-core_3" % MagnoliaVersion,
+//      "com.chuusai" %% "shapeless" % ShapelessVersion,
+//      "org.json4s" %% "json4s-native" % Json4sVersion
     )
   )
 
-val `avro4s-json` = project.in(file("avro4s-json"))
-  .dependsOn(`avro4s-core`)
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.json4s" %% "json4s-native" % Json4sVersion
-    )
-  )
+//val `avro4s-json` = project.in(file("avro4s-json"))
+//  .dependsOn(`avro4s-core`)
+//  .settings(
+//    libraryDependencies ++= Seq(
+//      "org.json4s" %% "json4s-native" % Json4sVersion
+//    )
+//  )
+//
+//val `avro4s-cats` = project.in(file("avro4s-cats"))
+//  .dependsOn(`avro4s-core`)
+//  .settings(
+//    libraryDependencies ++= Seq(
+//      "org.typelevel" %% "cats-core" % CatsVersion
+//    )
+//  )
+//
+//val `avro4s-kafka` = project.in(file("avro4s-kafka"))
+//  .dependsOn(`avro4s-core`)
+//  .settings(
+//    libraryDependencies ++= Seq(
+//      "org.apache.kafka" % "kafka-clients" % "2.4.0"
+//    )
+//  )
+//
+//val `avro4s-refined` = project.in(file("avro4s-refined"))
+//  .dependsOn(`avro4s-core` % "compile->compile;test->test")
+//  .settings(
+//    libraryDependencies ++= Seq(
+//      "eu.timepit" %% "refined" % RefinedVersion
+//    )
+//  )
 
-val `avro4s-cats` = project.in(file("avro4s-cats"))
-  .dependsOn(`avro4s-core`)
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % CatsVersion
-    )
-  )
-
-val `avro4s-kafka` = project.in(file("avro4s-kafka"))
-  .dependsOn(`avro4s-core`)
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.apache.kafka" % "kafka-clients" % "2.4.0"
-    )
-  )
-
-val `avro4s-refined` = project.in(file("avro4s-refined"))
-  .dependsOn(`avro4s-core` % "compile->compile;test->test")
-  .settings(
-    libraryDependencies ++= Seq(
-      "eu.timepit" %% "refined" % RefinedVersion
-    )
-  )
-
-val benchmarks = project
-  .in(file("benchmarks"))
-  .dependsOn(`avro4s-core`)
-  .enablePlugins(JmhPlugin)
-  .settings(
-    libraryDependencies ++= Seq(
-      "pl.project13.scala" % "sbt-jmh-extras" % SbtJmhVersion,
-      "org.openjdk.jmh" % "jmh-core" % JmhVersion,
-      "org.openjdk.jmh" % "jmh-generator-asm" % JmhVersion,
-      "org.openjdk.jmh" % "jmh-generator-bytecode" % JmhVersion,
-      "org.openjdk.jmh" % "jmh-generator-reflection" % JmhVersion
-    )
-  )
+//val benchmarks = project
+//  .in(file("benchmarks"))
+//  .dependsOn(`avro4s-core`)
+//  .enablePlugins(JmhPlugin)
+//  .settings(
+//    libraryDependencies ++= Seq(
+//      "pl.project13.scala" % "sbt-jmh-extras" % SbtJmhVersion,
+//      "org.openjdk.jmh" % "jmh-core" % JmhVersion,
+//      "org.openjdk.jmh" % "jmh-generator-asm" % JmhVersion,
+//      "org.openjdk.jmh" % "jmh-generator-bytecode" % JmhVersion,
+//      "org.openjdk.jmh" % "jmh-generator-reflection" % JmhVersion
+//    )
+//  )

@@ -6,13 +6,14 @@
     {
       "name": "tea",
       "type": {
-        "type": "enum",
+        "type": "record",
         "name": "Tea",
         "namespace": "wobble",
-        "symbols": [
-          "Assam",
-          "EarlGrey",
-          "EnglishBreakfast"
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          }
         ]
       }
     }

@@ -1,7 +1,7 @@
-package com.sksamuel.avro4s
+package com.sksamuel.avro4s.avroutils
 
-import org.apache.avro.{JsonProperties, Schema}
 import org.apache.avro.Schema.Field
+import org.apache.avro.{JsonProperties, Schema}
 
 object AvroSchemaMerge {
 

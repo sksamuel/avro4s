@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import shapeless.{:+:, CNil}
+//import shapeless.{:+:, CNil}
 
 object Recursive {
 
@@ -19,9 +19,9 @@ object Recursive {
   case class EitherLeaf[T](value: T)
   case class EitherBranch[T](left: EitherTree[T], right: EitherTree[T])
 
-  type CoproductTree[T] = CBranch[T] :+: CLeaf[T] :+: CNil
-  case class CLeaf[T](value: T)
-  case class CBranch[T](left: CoproductTree[T], right: CoproductTree[T])
+//  type CoproductTree[T] = CBranch[T] :+: CLeaf[T] :+: CNil
+//  case class CLeaf[T](value: T)
+//  case class CBranch[T](left: CoproductTree[T], right: CoproductTree[T])
 
   sealed trait TVTree[+T]
   case class TreeValue[T](tree: TVTree[T]) extends AnyVal

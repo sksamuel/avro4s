@@ -4,15 +4,16 @@
   "namespace": "wibble",
   "fields": [
     {
-      "name": "africa",
+      "name": "city",
       "type": {
-        "type": "enum",
-        "name": "Africa",
+        "type": "record",
+        "name": "City",
         "namespace": "wobble",
-        "symbols": [
-          "Cameroon",
-          "Chad",
-          "Comoros"
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          }
         ]
       }
     }

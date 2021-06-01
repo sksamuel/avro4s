@@ -70,11 +70,11 @@ class BasicSchemasTest extends AnyWordSpec with Matchers {
       val schema = AvroSchema[Outer]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "accept deep nested structure" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/deepnested.json"))
-      val schema = AvroSchema[Level1]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
+//    "accept deep nested structure" in {
+//      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/deepnested.json"))
+//      val schema = AvroSchema[Level1]
+//      schema.toString(true) shouldBe expected.toString(true)
+//    }
   }
 }
 
