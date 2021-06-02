@@ -64,6 +64,3 @@ object SchemaFor extends PrimitiveSchemas
     override def schema(config: SchemaConfiguration): Schema = f(config)
   }
 }
-
-trait DeriveSchema[T]:
-  def derive(configuration: SchemaConfiguration): Schema

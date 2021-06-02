@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schemas
 
-import com.sksamuel.avro4s.typeutils.{DatatypeShape, SealedTraitShape, CaseClassShape}
+import com.sksamuel.avro4s.typeutils.{CaseClassShape, DatatypeShape, SealedTraitShape}
 import com.sksamuel.avro4s.{SchemaConfiguration, SchemaFor}
 import magnolia.{CaseClass, Derivation, SealedTrait, TypeInfo}
 import org.apache.avro.{Schema, SchemaBuilder}
