@@ -5,13 +5,6 @@
 //import org.apache.avro.{Schema, SchemaBuilder}
 //import org.apache.avro.generic.{GenericData, GenericFixed}
 //
-//trait ByteIterableSchemaFors {
-//  implicit val ByteArraySchemaFor: SchemaFor[Array[Byte]] = SchemaFor[Array[Byte]](SchemaBuilder.builder.bytesType)
-//  implicit val ByteListSchemaFor: SchemaFor[List[Byte]] = ByteArraySchemaFor.forType
-//  implicit val ByteSeqSchemaFor: SchemaFor[Seq[Byte]] = ByteArraySchemaFor.forType
-//  implicit val ByteVectorSchemaFor: SchemaFor[Vector[Byte]] = ByteArraySchemaFor.forType
-//}
-//
 //trait ByteIterableDecoders {
 //
 //  implicit val ByteArrayDecoder: Decoder[Array[Byte]] = new ByteArrayDecoderBase {
