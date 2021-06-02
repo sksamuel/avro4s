@@ -26,7 +26,7 @@ object Enums:
     }
 
     val name = maybeName.getOrElse(tag.runtimeClass.getSimpleName) //(nameExtractor.name)
-    val namespace = maybeNamespace.getOrElse(tag.runtimeClass.getPackageName) //.getOrElse(nameExtractor.namespace)
+    val namespace = maybeNamespace.getOrElse(tag.runtimeClass.getPackage.getName) //.getOrElse(nameExtractor.namespace)
 
     val maybeEnumDefault = tag.runtimeClass.getDeclaredFields.collectFirst {
       case field if field.getDeclaredAnnotations.map(_.annotationType()).contains(classOf[AvroJavaEnumDefault]) =>
