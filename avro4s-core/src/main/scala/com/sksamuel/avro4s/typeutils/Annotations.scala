@@ -1,8 +1,13 @@
 package com.sksamuel.avro4s.typeutils
 
-import com.sksamuel.avro4s.{AvroAliasable, AvroDoc, AvroDocumentable, AvroFixed, AvroName, AvroNamespace, AvroProp, AvroProperty, AvroSortPriority, AvroTransient, AvroUnionPosition}
+import com.sksamuel.avro4s.{AvroAliasable, AvroDoc, AvroDocumentable, AvroErasedName, AvroFixed, AvroName, AvroNameable, AvroNamespace, AvroProp, AvroProperty, AvroSortPriority, AvroTransient, AvroUnionPosition}
+import magnolia.TypeInfo
 
 case class Annotations(annos: Seq[Any], typeAnnos: Seq[Any]) {
+
+  def name: Option[String] = annos.collectFirst {
+    case t: AvroNameable => t.name
+  }
 
   def namespace: Option[String] = annos.collectFirst {
     case t: AvroNamespace => t.namespace
@@ -22,6 +27,10 @@ case class Annotations(annos: Seq[Any], typeAnnos: Seq[Any]) {
 
   def transient: Boolean = annos.collectFirst {
     case t: AvroTransient => t
+  }.isDefined
+
+  def erased: Boolean = annos.collectFirst {
+    case t: AvroErasedName => t
   }.isDefined
 
   /**

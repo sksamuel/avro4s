@@ -18,14 +18,14 @@ case class Names(typeInfo: TypeInfo, val annos: Annotations) {
   // Eg, List[Int] would be `List__Int`
   // Eg, Type[A, B] would be `Type__A_B`
   // this method must also take into account @AvroName on the classes used as type arguments
-  //  private val genericName = {
-  //    if (typeInfo.typeArguments.isEmpty) {
-  //      erasedName
-  //    } else {
-  //      val targs = typeInfo.typeArguments.map { typeArgInfo => NameExtractor(typeArgInfo).name }.mkString("_")
-  //      typeInfo.short + "__" + targs
-  //    }
-  //  }
+  private val genericName = {
+    if (typeInfo.typeParams.isEmpty) {
+      erasedName
+    } else {
+      val targs = typeInfo.typeParams.map { tparam => Names(tparam).name }.mkString("_")
+      typeInfo.short + "__" + targs
+    }
+  }
 
   /**
     * Returns the record name for this type to be used when creating
@@ -36,14 +36,13 @@ case class Names(typeInfo: TypeInfo, val annos: Annotations) {
     * That is a double underscore delimits the resolved name from the start of the
     * type parameters and then each type parameter is delimited by a single underscore.
     *
-    * The resolved name is the class name with any annotations applied, such
+    * The name is the class name with any annotations applied, such
     * as @AvroName or @AvroNamespace, or @AvroErasedName, which, if present,
     * means the type parameters will not be included in the final name.
     */
-  def name: String = erasedName
-  //  def name: String = typeInfo.nameAnnotation.getOrElse {
-  //    if (typeInfo.erased) erasedName else genericName
-  //  }
+  def name: String = annos.name.getOrElse {
+    if (annos.erased) erasedName else genericName
+  }
 
   /**
     * Returns the namespace for this type to be used when creating
@@ -61,12 +60,12 @@ case class Names(typeInfo: TypeInfo, val annos: Annotations) {
   }
 
 }
-//}
-//
-//object NameExtractor {
-//  def apply[F[_], T](subtype: Subtype[F, T]): NameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
-//
-//  def apply(typeName: TypeName, annos: Seq[Any]): NameExtractor = NameExtractor(TypeInfo(typeName, annos))
-//
-//  def apply[A](clazz: Class[A]): NameExtractor = NameExtractor(TypeInfo.fromClass(clazz))
-//}
+
+object Names {
+  def apply(info: TypeInfo): Names = Names(info, Annotations(Nil, Nil))
+  //  def apply[F[_], T](subtype: Subtype[F, T]): NameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
+  //
+  //  def apply(typeName: TypeName, annos: Seq[Any]): NameExtractor = NameExtractor(TypeInfo(typeName, annos))
+  //
+  //  def apply[A](clazz: Class[A]): NameExtractor = NameExtractor(TypeInfo.fromClass(clazz))
+}

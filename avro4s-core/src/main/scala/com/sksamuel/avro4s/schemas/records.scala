@@ -27,7 +27,7 @@ object Records:
       val fieldAnnos = new Annotations(param.annotations, param.typeAnnotations)
       if (fieldAnnos.transient) None
       else {
-        val doc = annos.doc //.orElse(valueTypeDoc).orNull
+        val doc = fieldAnnos.doc //.orElse(valueTypeDoc).orNull
         //        val doc = valueTypeDoc(ctx, param)
         Some(buildSchemaField(param, fieldAnnos, record.getNamespace, doc))
       }
@@ -51,7 +51,7 @@ object Records:
 
     val baseSchema = param.typeclass.schema(null)
 
-    val name = param.label
+    val name = fieldAnnos.name.getOrElse(param.label)
     val doc = fieldAnnos.doc.orElse(valueTypeDoc).orNull
     val aliases = fieldAnnos.aliases
     val props = fieldAnnos.props
