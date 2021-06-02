@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.typeutils
 import com.sksamuel.avro4s.{AvroAliasable, AvroDoc, AvroDocumentable, AvroErasedName, AvroFixed, AvroName, AvroNameable, AvroNamespace, AvroProp, AvroProperty, AvroSortPriority, AvroTransient, AvroUnionPosition}
 import magnolia.{CaseClass, TypeInfo}
 
-case class Annotations(annos: Seq[Any], typeAnnos: Seq[Any]) {
+case class Annotations(annos: Seq[Any]) {
 
   def name: Option[String] = annos.collectFirst {
     case t: AvroNameable => t.name
@@ -52,5 +52,5 @@ case class Annotations(annos: Seq[Any], typeAnnos: Seq[Any]) {
 }
 
 object Annotations {
-  def apply(ctx: CaseClass[_, _]): Annotations = Annotations(ctx.annotations, ctx.typeAnnotations)
+  def apply(ctx: CaseClass[_, _]): Annotations = Annotations(ctx.annotations)
 }

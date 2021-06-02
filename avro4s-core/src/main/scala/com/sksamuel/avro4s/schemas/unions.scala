@@ -36,7 +36,7 @@ object TypeUnions {
     val schemas = Seq(SchemaBuilder.builder().booleanType(), SchemaBuilder.builder().intType())
 
     def priority(st: SealedTrait.Subtype[SchemaFor, T, _]) =
-      new Annotations(st.annotations, st.typeAnnotations).sortPriority.getOrElse(0.0f)
+      new Annotations(st.annotations).sortPriority.getOrElse(0.0f)
 
     val sortedSubtypes = ctx.subtypes.sortWith((l, r) => priority(l) > priority(r))
       .map(_.typeclass.schema(null))

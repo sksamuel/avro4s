@@ -12,8 +12,8 @@ object Records:
 
   def schema[T](ctx: CaseClass[SchemaFor, T]): SchemaFor[T] = {
 
-    val annos = Annotations(ctx.annotations, ctx.typeAnnotations)
-    val naming = Names(ctx.typeInfo, annos)
+    val annos = Annotations(ctx.annotations)
+    val naming = Names(ctx.typeInfo, annos, ctx.typeAnnotations)
     val error = false
 
     val record = Schema.createRecord(
@@ -24,7 +24,7 @@ object Records:
     )
 
     val fields = ctx.params.toList.flatMap { param =>
-      val fieldAnnos = new Annotations(param.annotations, param.typeAnnotations)
+      val fieldAnnos = new Annotations(param.annotations)
       if (fieldAnnos.transient) None
       else {
         val doc = fieldAnnos.doc //.orElse(valueTypeDoc).orNull
