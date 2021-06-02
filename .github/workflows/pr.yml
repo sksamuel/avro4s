@@ -8,7 +8,7 @@ on:
       - '*.md'
 
 jobs:
-  scala-2_12:
+  scala-3.0:
     runs-on: ubuntu-latest
     steps:
       - name: checkout the repo
@@ -20,18 +20,4 @@ jobs:
         uses: olafurpg/setup-scala@v10
 
       - name: run tests
-        run: sbt ++2.12.10 test
-
-  scala-2_13:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout the repo
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: setup sbt
-        uses: olafurpg/setup-scala@v10
-
-      - name: run tests
-        run: sbt ++2.13.3 test
+        run: sbt test
