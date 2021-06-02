@@ -65,6 +65,16 @@ object Records:
       SchemaBuilder.fixed(name).doc(doc).namespace(fieldNamespace).size(size)
     }
 
+    // the default value may be none, in which case it was not defined, or Some(null), in which case it was defined
+    // and set to null, or something else, in which case it's a non null value
+    // todo magnolia for scala 3 doesn't support defaults yet
+    val encodedDefault: AnyRef = param.default match {
+      case None => null
+      case Some(None) => null
+      case Some(null) => null
+      case Some(other) => null// DefaultResolver(other, baseSchema)
+    }
+
     // for a union the type that has a default must be first (including null as an explicit default)
     // if there is no default then we'll move null to head (if present)
     // otherwise left as is
@@ -96,14 +106,7 @@ object Records:
 //    // the name could have been overriden with @AvroName, and then must be encoded with the field mapper
 //    val name = extractor.name.getOrElse(fieldMapper.to(param.label))
 //
-//    // the default value may be none, in which case it was not defined, or Some(null), in which case it was defined
-//    // and set to null, or something else, in which case it's a non null value
-//    val encodedDefault: AnyRef = default match {
-//      case None        => null
-//      case Some(None)  => JsonProperties.NULL_VALUE
-//      case Some(null)  => JsonProperties.NULL_VALUE
-//      case Some(other) => DefaultResolver(other, baseSchema)
-//    }
+
 //
 //
 //    // if our default value is null, then we should change the type to be nullable even if we didn't use option

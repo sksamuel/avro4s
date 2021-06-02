@@ -12,6 +12,7 @@ trait MagnoliaDerivedSchemas extends Derivation[SchemaFor] :
   def join[T](ctx: CaseClass[SchemaFor, T]): SchemaFor[T] =
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record => Records.schema(ctx)
+      case CaseClassShape.ValueType => SchemaFor(ValueTypes.schema(ctx))
     }
 
   override def split[T](ctx: SealedTrait[SchemaFor, T]): SchemaFor[T] =
