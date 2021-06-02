@@ -1,4 +1,4 @@
-//package com.sksamuel.avro4s.schema
+//package com.sksamuel.avro4s
 //
 //import com.sksamuel.avro4s.{AvroSchema, Encoder, FromRecord, ImmutableRecord, ToRecord}
 //import org.apache.avro.util.Utf8
@@ -11,7 +11,7 @@
 //    it("should serialize objects that contains simple Utf8 attributes") {
 //      case class Person(name: Utf8, alias: Utf8, age: Int)
 //
-//      ToRecord[Person].to(Person(new Utf8("Name"), new Utf8("Alias"), 30))
+//      SchemaFor[Person].to(Person(new Utf8("Name"), new Utf8("Alias"), 30))
 //    }
 //
 //    it("should serialize objects that contains simple Utf8 attributes and one attribute has a default value") {

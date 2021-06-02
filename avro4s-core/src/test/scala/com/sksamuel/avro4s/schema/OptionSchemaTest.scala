@@ -13,17 +13,17 @@ class OptionSchemaTest extends AnyFunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  //  test("support mixing optionals with unions, merging appropriately") {
-  //    val outsideOptional = AvroSchema[OptionalUnion]
-  //    val insideOptional = AvroSchema[UnionOfOptional]
-  //    val bothOptional = AvroSchema[AllOptionals]
-  //
-  //    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_union.json"))
-  //
-  //    outsideOptional.toString(true) shouldBe expected.toString(true)
-  //    insideOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "UnionOfOptional")
-  //    bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
-  //  }
+//  test("support mixing optionals with unions, merging appropriately") {
+//    val outsideOptional = AvroSchema[OptionalUnion]
+//    val insideOptional = AvroSchema[UnionOfOptional]
+//    val bothOptional = AvroSchema[AllOptionals]
+//
+//    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_union.json"))
+//
+//    outsideOptional.toString(true) shouldBe expected.toString(true)
+//    insideOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "UnionOfOptional")
+//    bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
+//  }
 
   // todo requires defaults
   //  test("move default option values to first schema as per avro spec") {
