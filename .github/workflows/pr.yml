@@ -8,7 +8,7 @@ on:
       - '*.md'
 
 jobs:
-  scala_3.0:
+  scala_3_0:
     runs-on: ubuntu-latest
     steps:
       - name: checkout the repo
