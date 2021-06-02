@@ -97,19 +97,3 @@
 //  }
 //}
 //
-//object BigDecimals {
-//
-//  private[avro4s] trait BigDecimalConversion[Typeclass[_]]
-//      extends SchemaAware[Typeclass, BigDecimal]
-//      with Serializable {
-//
-//    def roundingMode: RoundingMode
-//
-//    @transient protected lazy val decimal = schema.getLogicalType.asInstanceOf[Decimal]
-//    @transient protected lazy val converter = new Conversions.DecimalConversion
-//    protected val rm = java.math.RoundingMode.valueOf(roundingMode.id)
-//  }
-//
-//  implicit val AsString: SchemaFor[BigDecimal] =
-//    SchemaFor[BigDecimal](SchemaBuilder.builder.stringType, DefaultFieldMapper)
-//}

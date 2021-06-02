@@ -158,8 +158,7 @@
 //  implicit val TimestampSchemaFor: SchemaFor[Timestamp] =
 //    SchemaFor[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 //
-//  implicit def bigDecimalSchemaFor(implicit sp: ScalePrecision = ScalePrecision.default): SchemaFor[BigDecimal] =
-//    SchemaFor(LogicalTypes.decimal(sp.precision, sp.scale).addToSchema(SchemaBuilder.builder.bytesType))
+
 //}
 //
 //trait BaseEncoders {

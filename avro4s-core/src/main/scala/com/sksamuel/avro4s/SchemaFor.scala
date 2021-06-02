@@ -50,11 +50,7 @@ import scala.reflect.ClassTag
 //  def fieldMapper: FieldMapper = adhocInstance.fieldMapper
 //}
 //
-//case class ScalePrecision(scale: Int, precision: Int)
-//
-//object ScalePrecision {
-//  implicit val default = ScalePrecision(2, 8)
-//}
+
 
 object JavaEnumSchemaFor {
 

@@ -50,6 +50,7 @@ object SchemaFor extends PrimitiveSchemas
   with TupleSchemas
   with EnumSchemas
   with EitherSchemas
+  with BigDecimalSchemas
   with OptionSchemas
   with MagnoliaDerivedSchemas {
 
