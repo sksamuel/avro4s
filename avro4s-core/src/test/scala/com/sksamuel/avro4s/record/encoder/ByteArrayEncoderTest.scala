@@ -68,26 +68,49 @@ class ByteArrayEncoderTest extends AnyFunSuite with Matchers {
       .array().toList shouldBe List[Byte](1, 4, 9)
   }
 
-//  test("encode top level byte arrays") {
-//    val encoder = Encoder[Array[Byte]].resolveEncoder()
-//    encoder.schema shouldBe SchemaBuilder.builder().bytesType()
-//    encoder.encode(Array[Byte](1, 4, 9))
-//      .asInstanceOf[ByteBuffer]
-//      .array().toList shouldBe List[Byte](1, 4, 9)
-//  }
+  test("encode byte arrays as FIXED") {
+    val schema = SchemaBuilder.fixed("foo").size(7)
+    val fixed = Encoder[Array[Byte]]
+      .encode(schema)
+      .apply("hello".getBytes)
+      .asInstanceOf[GenericFixed]
+    fixed.bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
+    fixed.bytes().length shouldBe 7
+  }
 
-//  test("encode top level ByteBuffers") {
-//    Encoder[ByteBuffer]
-//      .apply(ByteBuffer.wrap(Array[Byte](1, 4, 9)))
-//      .asInstanceOf[ByteBuffer]
-//      .array().toList shouldBe List[Byte](1, 4, 9)
-//  }
+  test("encode byte buffers as FIXED") {
+    val schema = SchemaBuilder.fixed("foo").size(7)
+    val fixed = Encoder[ByteBuffer]
+      .encode(schema)
+      .apply(ByteBuffer.wrap("hello".getBytes))
+      .asInstanceOf[GenericFixed]
+    fixed.bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
+    fixed.bytes().length shouldBe 7
+  }
 
-//  test("support FIXED") {
-//    val schema = SchemaBuilder.fixed("foo").size(7)
-//    val fixed = Encoder.ByteArrayEncoder.withSchema(SchemaFor(schema)).encode("hello".getBytes).asInstanceOf[GenericFixed]
-//    fixed.bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
-//    fixed.bytes().length shouldBe 7
-//  }
+
+  test("encode top level byte arrays") {
+    val encoder = Encoder[Array[Byte]]
+      .encode(SchemaBuilder.builder().bytesType())
+      .apply(Array[Byte](1, 4, 9))
+      .asInstanceOf[ByteBuffer]
+      .array().toList shouldBe List[Byte](1, 4, 9)
+  }
+
+  test("encode top level ByteBuffers") {
+    val encoder = Encoder[ByteBuffer]
+      .encode(SchemaBuilder.builder().bytesType())
+      .apply(ByteBuffer.wrap(Array[Byte](1, 4, 9)))
+      .asInstanceOf[ByteBuffer]
+      .array().toList shouldBe List[Byte](1, 4, 9)
+  }
+
+  test("encode top level ByteBuffer as FIXED") {
+    val encoder = Encoder[ByteBuffer]
+      .encode(SchemaBuilder.fixed("foo").size(7))
+      .apply(ByteBuffer.wrap(Array[Byte](1, 4, 9)))
+      .asInstanceOf[GenericFixed]
+      .bytes().toList shouldBe List[Byte](1, 4, 9, 0, 0, 0, 0) // result padded to fixed size
+  }
 }
 
