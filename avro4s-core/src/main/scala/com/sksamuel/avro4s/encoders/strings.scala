@@ -8,6 +8,12 @@ import org.apache.avro.util.Utf8
 import java.nio.ByteBuffer
 import java.util.UUID
 
+trait StringEncoders:
+  given Encoder[String] = StringEncoder
+  given Encoder[Utf8] = Encoder.identity
+  given Encoder[CharSequence] = StringEncoder.contramap(_.toString())
+  given Encoder[UUID] = Encoder(x => x.toString)
+
 object StringEncoder extends Encoder[String] :
   override def encode(schema: Schema): String => Any = schema.getType match {
     case Schema.Type.STRING => UTF8StringEncoder.encode(schema)
@@ -44,11 +50,3 @@ object FixedStringEncoder extends Encoder[String] :
 //      throw new Avro4sEncodingException(s"Cannot write string with ${t.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
 //    GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(t.getBytes).array, schema).asInstanceOf[GenericData.Fixed]
 //}
-
-trait StringEncoders:
-  given Encoder[String] = StringEncoder
-  given Encoder[Utf8] = Encoder.identity
-  given Encoder[CharSequence] = StringEncoder.contramap(_.toString())
-  given Encoder[UUID] = Encoder(x => x.toString)
-
-object StringEncoders extends StringEncoders
