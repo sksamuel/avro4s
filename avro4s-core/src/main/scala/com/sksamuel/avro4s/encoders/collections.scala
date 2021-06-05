@@ -9,11 +9,17 @@ import scala.reflect.ClassTag
 trait CollectionEncoders:
 
   private def iterableEncoder[T, C[X] <: Iterable[X]](encoder: Encoder[T]): Encoder[C[T]] = new Encoder[C[T]] {
-    override def encode(t: C[T], schema: Schema): Any = t.map(encoder.encode(_, schema)).toList.asJava
+    override def encode(schema: Schema): C[T] => Any = {
+      val elementEncoder = encoder.encode(schema)
+      { t => t.map(elementEncoder.apply).toList.asJava }
+    }
   }
 
   given[T](using encoder: Encoder[T], tag: ClassTag[T]): Encoder[Array[T]] = new Encoder[Array[T]] {
-    override def encode(t: Array[T], schema: Schema): Any = t.map(encoder.encode(_, schema)).toList.asJava
+    override def encode(schema: Schema): Array[T] => Any = {
+      val elementEncoder = encoder.encode(schema)
+      { t => t.map(elementEncoder.apply).toList.asJava }
+    }
   }
 
   given[T](using encoder: Encoder[T]): Encoder[List[T]] = iterableEncoder(encoder)

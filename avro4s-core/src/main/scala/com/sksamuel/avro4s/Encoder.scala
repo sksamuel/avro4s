@@ -41,14 +41,14 @@ import org.apache.avro.specific.SpecificRecord
 trait Encoder[T] {
   self =>
 
-  def encode(t: T, schema: Schema): Any
+  def encode(schema: Schema): T => Any
 
   /**
     * Returns an [[Encoder[U]] by applying a function that maps a U
     * to an T, before encoding as an T using this encoder.
     */
   def contramap[U](f: U => T): Encoder[U] = new Encoder[U] {
-    override def encode(u: U, schema: Schema): Any = self.encode(f(u), schema)
+    override def encode(schema: Schema): U => Any = { u => self.encode(schema).apply(f(u)) }
   }
 }
 
@@ -64,7 +64,7 @@ object Encoder
     * Returns an [Encoder] that encodes using the supplied function.
     */
   def apply[T](f: T => Any) = new Encoder[T] {
-    def encode(t: T, schema: Schema): Any = f(t)
+    def encode(schema: Schema): T => Any = { t => f(t) }
   }
 
   /**

@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.encoders
 
-import com.sksamuel.avro4s.typeutils.Annotations
+import com.sksamuel.avro4s.typeutils.{Annotations, Names}
 import com.sksamuel.avro4s.{Encoder, ImmutableRecord, SchemaFor}
 import magnolia.CaseClass
 import org.apache.avro.Schema
@@ -9,16 +9,21 @@ import scala.reflect.ClassTag
 
 class RecordEncoder[T](ctx: magnolia.CaseClass[Encoder, T]) extends Encoder[T] {
 
-  private val encoders: Array[RecordFieldEncoder[T]] =
-    ctx.params.map { param => new FieldEncoder(param.typeclass, param) }.toArray
+  def encode(schema: Schema): T => Any = {
+    val encoders = ctx.params
+      .map { param => new FieldEncoder(param) }
+      .map { it => it.encode(schema) }
+      .toArray
+    { t => encodeT(schema, encoders, t) }
+  }
 
-  def encode(value: T, schema: Schema): Any = {
+  private def encodeT(schema:Schema, encoders: Array[T => Any], t: T): ImmutableRecord = {
     // hot code path. Sacrificing functional programming to the gods of performance.
     val length = encoders.length
     val values = new Array[Any](length)
     var i = 0
     while (i < length) {
-      values(i) = encoders(i).encode(value, schema)
+      values(i) = encoders(i).apply(t)
       i += 1
     }
     ImmutableRecord(schema, values) // note: array gets implicitly wrapped in an immutable container.
@@ -41,16 +46,17 @@ class RecordEncoder[T](ctx: magnolia.CaseClass[Encoder, T]) extends Encoder[T] {
   //  }
 }
 
-trait RecordFieldEncoder[T] extends Serializable :
-  def encode(t: T, schema: Schema): Any
+class FieldEncoder[T](param: magnolia.CaseClass.Param[Encoder, T]) extends Encoder[T] with Serializable :
 
-class FieldEncoder[T, F](encoder: Encoder[F],
-                         param: magnolia.CaseClass.Param[Encoder, T]) extends RecordFieldEncoder[T] :
+  private val name = Annotations(param.annotations).name.getOrElse(param.label)
 
-  override def encode(t: T, schema: Schema): Any = {
-    val fieldSchema = schema.getField(param.label).schema()
-    val value = param.deref(t).asInstanceOf[F]
-    encoder.encode(value, fieldSchema)
+  override def encode(schema: Schema): T => Any = {
+    val fieldSchema = schema.getField(name).schema()
+    val encoderF = param.typeclass.encode(fieldSchema)
+    { t =>
+      val value = param.deref(t)
+      encoderF.apply(value)
+    }
   }
 
 //  // using inner class here to be able to reference param.PType below, and keep the type relation intact in

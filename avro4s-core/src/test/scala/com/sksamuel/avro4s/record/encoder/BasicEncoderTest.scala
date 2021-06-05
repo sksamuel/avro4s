@@ -14,33 +14,33 @@ class BasicEncoderTest extends AnyWordSpec with Matchers {
     "encode longs" in {
       case class Foo(l: Long)
       val schema = AvroSchema[Foo]
-      Encoder[Foo].encode(Foo(123456L), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Long.valueOf(123456L)))
+      Encoder[Foo].encode(schema).apply(Foo(123456L)) shouldBe ImmutableRecord(schema, Vector(java.lang.Long.valueOf(123456L)))
     }
     "encode doubles" in {
       case class Foo(d: Double)
       val schema = AvroSchema[Foo]
-      Encoder[Foo].encode(Foo(123.435), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Double.valueOf(123.435D)))
+      Encoder[Foo].encode(schema).apply(Foo(123.435)) shouldBe ImmutableRecord(schema, Vector(java.lang.Double.valueOf(123.435D)))
     }
     "encode booleans" in {
       case class Foo(d: Boolean)
       val schema = AvroSchema[Foo]
-      Encoder[Foo].encode(Foo(true), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true)))
+      Encoder[Foo].encode(schema).apply(Foo(true)) shouldBe ImmutableRecord(schema, Vector(java.lang.Boolean.valueOf(true)))
     }
     "encode floats" in {
       case class Foo(d: Float)
       val schema = AvroSchema[Foo]
-      Encoder[Foo].encode(Foo(123.435F), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Float.valueOf(123.435F)))
+      Encoder[Foo].encode(schema).apply(Foo(123.435F)) shouldBe ImmutableRecord(schema, Vector(java.lang.Float.valueOf(123.435F)))
     }
     "encode ints" in {
       case class Foo(i: Int)
       val schema = AvroSchema[Foo]
-      Encoder[Foo].encode(Foo(123), schema) shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(123)))
+      Encoder[Foo].encode(schema).apply(Foo(123)) shouldBe ImmutableRecord(schema, Vector(java.lang.Integer.valueOf(123)))
     }
     "support uppercase packages" in {
       val schema = AvroSchema[ClassInUppercasePackage]
       val t = ClassInUppercasePackage("hello")
       schema.getFullName shouldBe "com.sksamuel.avro4s.examples.UppercasePkg.ClassInUppercasePackage"
-      Encoder[ClassInUppercasePackage].encode(t, schema) shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
+      Encoder[ClassInUppercasePackage].encode(schema).apply(t) shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
     }
   }
 }

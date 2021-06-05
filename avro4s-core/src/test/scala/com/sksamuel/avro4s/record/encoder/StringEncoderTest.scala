@@ -12,7 +12,7 @@ class StringEncoderTest extends AnyFunSuite with Matchers {
   test("encode strings as UTF8") {
     case class Foo(s: String)
     val schema = AvroSchema[Foo]
-    val record = Encoder[Foo].encode(Foo("hello"), schema)
+    val record = Encoder[Foo].encode(schema).apply(Foo("hello"))
     record shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
   }
 

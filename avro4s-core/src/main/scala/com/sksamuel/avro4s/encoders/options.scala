@@ -5,7 +5,7 @@ import org.apache.avro.Schema
 
 class OptionEncoder[T](encoder: Encoder[T]) extends Encoder[Option[T]] {
 
-  override def encode(option: Option[T], schema: Schema): Any = {
+  override def encode(schema: Schema): Option[T] => Any = {
     // nullables must be encoded with a union of 2 elements, where null is the first type
     require(schema.getType == Schema.Type.UNION, {
       "Options can only be encoded with a UNION schema"
@@ -15,7 +15,8 @@ class OptionEncoder[T](encoder: Encoder[T]) extends Encoder[Option[T]] {
     })
     require(schema.getTypes.get(0).getType == Schema.Type.NULL)
     val elementSchema = schema.getTypes.get(1)
-    option.fold(null)(value => encoder.encode(value, elementSchema))
+    val elementEncoder = encoder.encode(elementSchema)
+    { option => option.fold(null)(value => elementEncoder(value)) }
   }
 }
 

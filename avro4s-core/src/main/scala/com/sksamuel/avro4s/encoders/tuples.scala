@@ -5,13 +5,17 @@ import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 
 class Tuple2Encoder[A, B](a: Encoder[A], b: Encoder[B]) extends Encoder[Tuple2[A, B]] {
-  override def encode(tuple: (A, B), schema: Schema): Any = {
+  override def encode(schema: Schema): ((A, B)) => Any = {
     val fieldA: Schema.Field = schema.getFields.get(0)
     val fieldB: Schema.Field = schema.getFields.get(1)
-    val record = GenericData.Record(null)
-    record.put("_1", a.encode(tuple._1, fieldA.schema()))
-    record.put("_2", b.encode(tuple._2, fieldB.schema()))
-    record
+    val encoderA = a.encode(fieldA.schema())
+    val encoderB = b.encode(fieldB.schema())
+    { tuple =>
+      val record = GenericData.Record(schema)
+      record.put("_1", encoderA.apply(tuple._1))
+      record.put("_2", encoderB.apply(tuple._2))
+      record
+    }
   }
 }
 
