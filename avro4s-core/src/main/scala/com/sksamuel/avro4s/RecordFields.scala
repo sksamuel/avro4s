@@ -153,14 +153,5 @@
 //    Records.buildSchemaField(param, schema, new AnnotationExtractors(param.annotations), namespace, fieldMapper, doc)
 //  }
 //
-//  private def extractField[Typeclass[_]](param: Param[Typeclass, _], schemaFor: SchemaFor[_]): Field = {
-//    val annotations = new AnnotationExtractors(param.annotations)
-//    val fieldName = annotations.name.getOrElse(schemaFor.fieldMapper.to(param.label))
-//    val field = schemaFor.schema.getField(fieldName)
-//    if (field == null) {
-//      throw new Avro4sConfigurationException(
-//        s"Unable to find field with name $fieldName for case class parameter ${param.label} in schema ${schemaFor.schema}")
-//    }
-//    field
-//  }
+
 //}

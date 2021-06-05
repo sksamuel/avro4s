@@ -11,27 +11,7 @@ package com.sksamuel.avro4s
 //import scala.reflect.runtime.universe._
 //import scala.util.control.NonFatal
 //
-//class RecordEncoder[T: WeakTypeTag](ctx: CaseClass[Encoder, T], val schemaFor: SchemaFor[T]) extends Encoder[T] {
-//
-//  private[avro4s] var fieldEncoding: IndexedSeq[FieldEncoder[T]#ValueEncoder] = IndexedSeq.empty
-//
-//  def encode(value: T): AnyRef = {
-//    // hot code path. Sacrificing functional programming to the gods of performance.
-//    val length = fieldEncoding.length
-//    val values = new Array[AnyRef](length)
-//    var i = 0
-//    while (i < length) {
-//      values(i) = fieldEncoding(i).encodeFieldValue(value)
-//      i += 1
-//    }
-//    ImmutableRecord(schema, values) // note: array gets implicitly wrapped in an immutable container.
-//  }
-//
-//  override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
-//    verifyNewSchema(schemaFor)
-//    encoder(ctx, new DefinitionEnvironment[Encoder](), FullSchemaUpdate(schemaFor), schemaFor.fieldMapper)
-//  }
-//}
+
 //
 //class RecordDecoder[T: WeakTypeTag](ctx: CaseClass[Decoder, T], val schemaFor: SchemaFor[T]) extends Decoder[T] {
 //

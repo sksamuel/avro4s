@@ -1,0 +1,54 @@
+package com.sksamuel.avro4s.encoders
+
+import com.sksamuel.avro4s.{Avro4sConfigurationException, Avro4sEncodingException, Encoder, FieldMapper}
+import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData
+import org.apache.avro.util.Utf8
+
+import java.nio.ByteBuffer
+import java.util.UUID
+
+object StringEncoder extends Encoder[String] :
+  override def encode(string: String, schema: Schema): Any = schema.getType match {
+    case Schema.Type.STRING => UTF8StringEncoder.encode(string, schema)
+    case Schema.Type.BYTES => ByteStringEncoder.encode(string, schema)
+    case Schema.Type.FIXED => GenericFixedStringEncoder.encode(string, schema)
+    case _ => throw new Avro4sConfigurationException(s"Unsupported type for string schema: $schema")
+  }
+
+/**
+  * An [[Encoder]] for Strings that encodes as avro [[UTF8]]s.
+  */
+object UTF8StringEncoder extends Encoder[String] :
+  override def encode(string: String, schema: Schema): Any = new Utf8(string)
+
+/**
+  * An [[Encoder]] for Strings that encodes as [[ByteBuffer]]s.
+  */
+object ByteStringEncoder extends Encoder[String] :
+  override def encode(string: String, schema: Schema): Any = ByteBuffer.wrap(string.getBytes)
+
+/**
+  * An [[Encoder]] for Strings that encodes as [[GenericFixed]]s.
+  */
+object GenericFixedStringEncoder extends Encoder[String] :
+  override def encode(string: String, schema: Schema): Any =
+    if (string.getBytes.length > schema.getFixedSize)
+      throw new Avro4sEncodingException(s"Cannot write string with ${string.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
+    GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(string.getBytes).array, schema).asInstanceOf[GenericData.Fixed]
+
+
+//class FixedStringEncoder(size: Int) extends Encoder[String] {
+//  override def encode(t: String): Any =
+//    if (t.getBytes.length > schema.getFixedSize)
+//      throw new Avro4sEncodingException(s"Cannot write string with ${t.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
+//    GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(t.getBytes).array, schema).asInstanceOf[GenericData.Fixed]
+//}
+
+trait StringEncoders:
+  given Encoder[String] = StringEncoder
+  given Encoder[Utf8] = Encoder.identity
+  given Encoder[CharSequence] = StringEncoder.contramap(_.toString())
+  given Encoder[UUID] = Encoder(x => x.toString)
+
+object StringEncoders extends StringEncoders
