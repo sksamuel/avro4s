@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.{DefaultFieldMapper, FieldMapper}
-import com.sksamuel.avro4s.encoders.{CollectionEncoders, MagnoliaDerivedEncoder, OptionEncoders, PrimitiveEncoders, StringEncoders, TupleEncoders}
+import com.sksamuel.avro4s.encoders.{ByteIterableEncoders, CollectionEncoders, MagnoliaDerivedEncoder, OptionEncoders, PrimitiveEncoders, StringEncoders, TupleEncoders}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.specific.SpecificRecord
@@ -58,6 +58,7 @@ object Encoder
     with OptionEncoders
     with CollectionEncoders
     with StringEncoders
+    with ByteIterableEncoders
     with MagnoliaDerivedEncoder {
 
   /**
@@ -70,7 +71,7 @@ object Encoder
   /**
     * Returns an [Encoder] that encodes by simply returning the input value.
     */
-  def identity[T] = Encoder[T](t => t)
+  def identity[T]: Encoder[T] = Encoder[T](t => t)
 
   def apply[T](using encoder: Encoder[T]): Encoder[T] = encoder
 }

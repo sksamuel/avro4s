@@ -159,48 +159,6 @@
 //    SchemaFor[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
 //
 
-//}
-//
-//trait BaseEncoders {
-//  implicit object ByteEncoder extends Encoder[Byte] {
-//    val schemaFor: SchemaFor[Byte] = SchemaFor.ByteSchemaFor
-//    def encode(t: Byte): java.lang.Byte = java.lang.Byte.valueOf(t)
-//  }
-//
-//  implicit object ShortEncoder extends Encoder[Short] {
-//    val schemaFor: SchemaFor[Short] = SchemaFor.ShortSchemaFor
-//    def encode(t: Short): java.lang.Short = java.lang.Short.valueOf(t)
-//  }
-//
-//  implicit object IntEncoder extends Encoder[Int] {
-//    val schemaFor: SchemaFor[Int] = SchemaFor.IntSchemaFor
-//    def encode(value: Int): AnyRef = java.lang.Integer.valueOf(value)
-//  }
-//
-//  implicit object LongEncoder extends Encoder[Long] {
-//    val schemaFor: SchemaFor[Long] = SchemaFor.LongSchemaFor
-//    def encode(value: Long): AnyRef = java.lang.Long.valueOf(value)
-//  }
-//
-//  implicit object DoubleEncoder extends Encoder[Double] {
-//    val schemaFor: SchemaFor[Double] = SchemaFor.DoubleSchemaFor
-//    def encode(value: Double): AnyRef = java.lang.Double.valueOf(value)
-//  }
-//
-//  implicit object FloatEncoder extends Encoder[Float] {
-//    val schemaFor: SchemaFor[Float] = SchemaFor.FloatSchemaFor
-//    def encode(value: Float): AnyRef = java.lang.Float.valueOf(value)
-//  }
-//
-//  implicit object BooleanEncoder extends Encoder[Boolean] {
-//    val schemaFor: SchemaFor[Boolean] = SchemaFor.BooleanSchemaFor
-//    def encode(value: Boolean): AnyRef = java.lang.Boolean.valueOf(value)
-//  }
-//
-//  implicit object ByteBufferEncoder extends Encoder[ByteBuffer] {
-//    val schemaFor: SchemaFor[ByteBuffer] = SchemaFor.ByteBufferSchemaFor
-//    def encode(value: ByteBuffer): AnyRef = value
-//  }
 //
 //  implicit object CharSequenceEncoder extends Encoder[CharSequence] {
 //    val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchemaFor

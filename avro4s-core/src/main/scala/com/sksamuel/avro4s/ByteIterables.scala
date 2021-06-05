@@ -57,28 +57,7 @@
 //
 //trait ByteIterableEncoders {
 //
-//  implicit val ByteArrayEncoder: Encoder[Array[Byte]] = new ByteArrayEncoderBase {
-//    val schemaFor = SchemaFor[Array[Byte]](SchemaBuilder.builder().bytesType())
-//    def encode(value: Array[Byte]): AnyRef = ByteBuffer.wrap(value)
-//  }
-//
-//  private def iterableByteEncoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte]): Encoder[C[Byte]] =
-//    new IterableByteEncoder[C](build)
-//
-//  implicit val ByteListEncoder: Encoder[List[Byte]] = iterableByteEncoder(_.toList)
-//  implicit val ByteVectorEncoder: Encoder[Vector[Byte]] = iterableByteEncoder(_.toVector)
-//  implicit val ByteSeqEncoder: Encoder[Seq[Byte]] = iterableByteEncoder(_.toSeq)
-//
-//  private sealed trait ByteArrayEncoderBase extends Encoder[Array[Byte]] {
-//    override def withSchema(schemaFor: SchemaFor[Array[Byte]]): Encoder[Array[Byte]] =
-//      schemaFor.schema.getType match {
-//        case Schema.Type.BYTES => ByteArrayEncoder
-//        case Schema.Type.FIXED => new FixedByteArrayEncoder(schemaFor)
-//        case _ =>
-//          throw new Avro4sConfigurationException(
-//            s"Byte array codec doesn't support schema type ${schemaFor.schema.getType}")
-//      }
-//  }
+
 //
 //  private class FixedByteArrayEncoder(val schemaFor: SchemaFor[Array[Byte]]) extends ByteArrayEncoderBase {
 //    if (schema.getType != Schema.Type.FIXED)
@@ -90,15 +69,5 @@
 //      GenericData.get.createFixed(null, array, schema)
 //    }
 //  }
-//
-//  private class IterableByteEncoder[C[X] <: Iterable[X]](build: Array[Byte] => C[Byte],
-//                                                         byteArrayEncoder: Encoder[Array[Byte]] = ByteArrayEncoder)
-//      extends Encoder[C[Byte]] {
-//
-//    val schemaFor: SchemaFor[C[Byte]] = byteArrayEncoder.schemaFor.forType
-//    def encode(value: C[Byte]): AnyRef = byteArrayEncoder.encode(value.toArray)
-//
-//    override def withSchema(schemaFor: SchemaFor[C[Byte]]): Encoder[C[Byte]] =
-//      new IterableByteEncoder(build, byteArrayEncoder.withSchema(schemaFor.map(identity)))
-//  }
+
 //}
