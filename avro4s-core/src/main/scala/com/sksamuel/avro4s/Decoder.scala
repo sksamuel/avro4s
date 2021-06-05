@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.decoders.{MagnoliaDerivedDecoder, PrimitiveDecoders, StringDecoders}
+import com.sksamuel.avro4s.decoders.{CollectionDecoders, MagnoliaDerivedDecoder, PrimitiveDecoders, StringDecoders}
 import org.apache.avro.Schema
 
 trait Decoder[T] {
@@ -18,6 +18,7 @@ trait Decoder[T] {
 object Decoder
   extends StringDecoders
     with PrimitiveDecoders
+    with CollectionDecoders
     with MagnoliaDerivedDecoder {
   def apply[T](using decoder: Decoder[T]): Decoder[T] = decoder
 }

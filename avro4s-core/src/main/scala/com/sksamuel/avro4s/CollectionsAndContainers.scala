@@ -222,60 +222,7 @@
 //      }
 //    }
 //
-//  implicit def arrayDecoder[T: ClassTag](implicit item: Decoder[T]): Decoder[Array[T]] =
-//    new ResolvableDecoder[Array[T]] {
-//      def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[Array[T]] = {
-//        val decoder = item.resolveDecoder(env, mapFullUpdate(extractIterableElementSchema, update))
-//
-//        new Decoder[Array[T]] {
-//          val schemaFor: SchemaFor[Array[T]] = buildIterableSchemaFor(decoder.schemaFor).forType
-//
-//          def decode(value: Any): Array[T] = value match {
-//            case array: Array[_]               => array.map(decoder.decode)
-//            case list: java.util.Collection[_] => list.asScala.map(decoder.decode).toArray
-//            case list: Iterable[_]             => list.map(decoder.decode).toArray
-//            case other                         => throw new Avro4sDecodingException("Unsupported array " + other, value, this)
-//          }
-//
-//          override def withSchema(schemaFor: SchemaFor[Array[T]]): Decoder[Array[T]] =
-//            buildWithSchema(arrayDecoder(implicitly[ClassTag[T]], item), schemaFor)
-//        }
-//      }
-//    }
-//
-//  private def iterableDecoder[T, C[X] <: Iterable[X]](item: Decoder[T], build: Iterable[T] => C[T]): Decoder[C[T]] =
-//    new ResolvableDecoder[C[T]] {
-//      def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[C[T]] = {
-//        val decoder = item.resolveDecoder(env, mapFullUpdate(extractIterableElementSchema, update))
-//
-//        new Decoder[C[T]] {
-//          val schemaFor: SchemaFor[C[T]] = buildIterableSchemaFor(decoder.schemaFor)
-//
-//          def decode(value: Any): C[T] = value match {
-//            case list: java.util.Collection[_] => build(list.asScala.map(decoder.decode))
-//            case list: Iterable[_]             => build(list.map(decoder.decode))
-//            case array: Array[_]               =>
-//              // converting array to Seq in order to avoid requiring ClassTag[T] as does arrayDecoder.
-//              build(array.toSeq.map(decoder.decode))
-//            case other => throw new Avro4sDecodingException("Unsupported array " + other, value, this)
-//          }
-//
-//          override def withSchema(schemaFor: SchemaFor[C[T]]): Decoder[C[T]] =
-//            buildWithSchema(iterableDecoder(item, build), schemaFor)
-//        }
-//      }
-//    }
-//
-//  implicit def listDecoder[T](implicit decoder: Decoder[T]): Decoder[List[T]] =
-//    iterableDecoder(decoder, _.toList)
-//  implicit def mutableSeqDecoder[T](implicit decoder: Decoder[T]): Decoder[scala.collection.mutable.Seq[T]] =
-//    iterableDecoder(decoder, _.toBuffer)
-//  implicit def seqDecoder[T](implicit decoder: Decoder[T]): Decoder[Seq[T]] =
-//    iterableDecoder(decoder, _.toSeq)
-//  implicit def setDecoder[T](implicit decoder: Decoder[T]): Decoder[Set[T]] =
-//    iterableDecoder(decoder, _.toSet)
-//  implicit def vectorDecoder[T](implicit decoder: Decoder[T]): Decoder[Vector[T]] =
-//    iterableDecoder(decoder, _.toVector)
+
 //
 //  implicit def mapDecoder[T](implicit value: Decoder[T]): Decoder[Map[String, T]] =
 //    new ResolvableDecoder[Map[String, T]] {

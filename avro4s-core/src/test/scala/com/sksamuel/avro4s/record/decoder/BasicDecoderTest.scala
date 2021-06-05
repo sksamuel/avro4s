@@ -17,12 +17,6 @@ case class FooInt(i: Int)
 class BasicDecoderTest extends AnyWordSpec with Matchers {
 
   "Decoder" should {
-    "decode strings" in {
-      val schema = AvroSchema[FooString]
-      val record = new GenericData.Record(schema)
-      record.put("str", "hello")
-      Decoder[FooString].decode(schema).apply(record) shouldBe FooString("hello")
-    }
     "decode longs" in {
       val schema = AvroSchema[FooLong]
       val record = new GenericData.Record(schema)
