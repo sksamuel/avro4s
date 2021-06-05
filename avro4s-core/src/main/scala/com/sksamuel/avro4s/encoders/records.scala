@@ -9,17 +9,16 @@ import scala.reflect.ClassTag
 
 class RecordEncoder[T](ctx: magnolia.CaseClass[Encoder, T]) extends Encoder[T] {
 
+  private val encoders: Array[RecordFieldEncoder[T]] =
+    ctx.params.map { param => new FieldEncoder(param.typeclass, param) }.toArray
+
   def encode(value: T, schema: Schema): Any = {
-
-    val encoders: Array[RecordFieldEncoder[T]] =
-      ctx.params.map { param => new FieldEncoder(param.typeclass, param, schema) }.toArray
-
     // hot code path. Sacrificing functional programming to the gods of performance.
     val length = encoders.length
     val values = new Array[Any](length)
     var i = 0
     while (i < length) {
-      values(i) = encoders(i).encode(value)
+      values(i) = encoders(i).encode(value, schema)
       i += 1
     }
     ImmutableRecord(schema, values) // note: array gets implicitly wrapped in an immutable container.
@@ -43,15 +42,13 @@ class RecordEncoder[T](ctx: magnolia.CaseClass[Encoder, T]) extends Encoder[T] {
 }
 
 trait RecordFieldEncoder[T] extends Serializable :
-  def encode(t: T): Any
+  def encode(t: T, schema: Schema): Any
 
 class FieldEncoder[T, F](encoder: Encoder[F],
-                         param: magnolia.CaseClass.Param[Encoder, T],
-                         schema: Schema) extends RecordFieldEncoder[T] :
+                         param: magnolia.CaseClass.Param[Encoder, T]) extends RecordFieldEncoder[T] :
 
-  private val fieldSchema = schema.getField(param.label).schema()
-
-  override def encode(t: T): Any = {
+  override def encode(t: T, schema: Schema): Any = {
+    val fieldSchema = schema.getField(param.label).schema()
     val value = param.deref(t).asInstanceOf[F]
     encoder.encode(value, fieldSchema)
   }
