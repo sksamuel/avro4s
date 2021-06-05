@@ -12,7 +12,7 @@ object StringEncoder extends Encoder[String] :
   override def encode(schema: Schema): String => Any = schema.getType match {
     case Schema.Type.STRING => UTF8StringEncoder.encode(schema)
     case Schema.Type.BYTES => ByteStringEncoder.encode(schema)
-    case Schema.Type.FIXED => GenericFixedStringEncoder.encode(schema)
+    case Schema.Type.FIXED => FixedStringEncoder.encode(schema)
     case _ => throw new Avro4sConfigurationException(s"Unsupported type for string schema: $schema")
   }
 
@@ -31,7 +31,7 @@ object ByteStringEncoder extends Encoder[String] :
 /**
   * An [[Encoder]] for Strings that encodes as [[GenericFixed]]s.
   */
-object GenericFixedStringEncoder extends Encoder[String] :
+object FixedStringEncoder extends Encoder[String] :
   override def encode(schema: Schema): String => Any = string =>
     if (string.getBytes.length > schema.getFixedSize)
       throw new Avro4sEncodingException(s"Cannot write string with ${string.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
