@@ -257,64 +257,7 @@
 //}
 //
 //trait BaseDecoders {
-//  implicit object ByteDecoder extends Decoder[Byte] {
-//    val schemaFor: SchemaFor[Byte] = SchemaFor.ByteSchemaFor
-//    def decode(value: Any): Byte = value match {
-//      case b: Byte => b
-//      case _       => value.asInstanceOf[Int].byteValue
-//    }
-//  }
-//
-//  implicit object ShortDecoder extends Decoder[Short] {
-//    val schemaFor: SchemaFor[Short] = SchemaFor.ShortSchemaFor
-//    def decode(value: Any): Short = value match {
-//      case b: Byte  => b
-//      case s: Short => s
-//      case i: Int   => i.toShort
-//    }
-//  }
-//
-//  implicit object IntDecoder extends Decoder[Int] {
-//    val schemaFor: SchemaFor[Int] = SchemaFor.IntSchemaFor
-//    def decode(value: Any): Int = value match {
-//      case byte: Byte   => byte.toInt
-//      case short: Short => short.toInt
-//      case int: Int     => int
-//      case other        => throw new Avro4sDecodingException(s"Cannot convert $other to type INT", value, this)
-//    }
-//  }
-//
-//  implicit object LongDecoder extends Decoder[Long] {
-//    val schemaFor: SchemaFor[Long] = SchemaFor.LongSchemaFor
-//    def decode(value: Any): Long = value match {
-//      case byte: Byte   => byte.toLong
-//      case short: Short => short.toLong
-//      case int: Int     => int.toLong
-//      case long: Long   => long
-//      case other        => throw new Avro4sDecodingException(s"Cannot convert $other to type LONG", value, this)
-//    }
-//  }
-//
-//  implicit object DoubleDecoder extends Decoder[Double] {
-//    val schemaFor: SchemaFor[Double] = SchemaFor.DoubleSchemaFor
-//    def decode(value: Any): Double = value match {
-//      case d: Double           => d
-//      case d: java.lang.Double => d
-//    }
-//  }
-//
-//  implicit object FloatDecoder extends Decoder[Float] {
-//    val schemaFor: SchemaFor[Float] = SchemaFor.FloatSchemaFor
-//    def decode(value: Any): Float = value match {
-//      case f: Float           => f
-//      case f: java.lang.Float => f
-//    }
-//  }
-//
-//  implicit object BooleanDecoder extends Decoder[Boolean] {
-//    val schemaFor: SchemaFor[Boolean] = SchemaFor.BooleanSchemaFor
-//    def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
-//  }
+
 //
 //  implicit object ByteBufferDecoder extends Decoder[ByteBuffer] {
 //    val schemaFor: SchemaFor[ByteBuffer] = SchemaFor.ByteBufferSchemaFor

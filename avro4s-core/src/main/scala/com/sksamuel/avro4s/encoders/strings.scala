@@ -17,7 +17,7 @@ object StringEncoder extends Encoder[String] :
   }
 
 /**
-  * An [[Encoder]] for Strings that encodes as avro [[UTF8]]s.
+  * An [[Encoder]] for Strings that encodes as avro [[Utf8]]s.
   */
 object UTF8StringEncoder extends Encoder[String] :
   override def encode(schema: Schema): String => Any = string => new Utf8(string)

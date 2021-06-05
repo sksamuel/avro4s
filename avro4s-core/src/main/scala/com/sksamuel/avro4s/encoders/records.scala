@@ -29,11 +29,6 @@ class RecordEncoder[T](ctx: magnolia.CaseClass[Encoder, T]) extends Encoder[T] {
     ImmutableRecord(schema, values) // note: array gets implicitly wrapped in an immutable container.
   }
 
-  //  override def withSchema(schemaFor: SchemaFor[T]): Encoder[T] = {
-  //    verifyNewSchema(schemaFor)
-  //    encoder(ctx, new DefinitionEnvironment[Encoder](), FullSchemaUpdate(schemaFor), schemaFor.fieldMapper)
-  //  }
-
   //  private def extractField[Typeclass[_]](param: Param[Typeclass, _], schemaFor: SchemaFor[_]): Field = {
   //    val annotations = new Annotations(param.annotations)
   //    val fieldName = annotations.name.getOrElse("") // (schemaFor.fieldMapper.to(param.label))
