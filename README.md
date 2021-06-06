@@ -12,7 +12,12 @@ The features of the library are:
 * Boilerplate free serialization of Scala types into Avro types
 * Boilerplate free deserialization of Avro types to Scala types
 
-Note: This document refers to the 4.0 release train.
+
+## Versioning
+
+Version 5.0.x is in development and is designed for Scala 3. New feature requests are welcome. This version may have minor breaking changes compared to previous major releases.
+
+Version 4.0.x is released for Scala 2.12 and Scala 2.13 and is in support mode only. Bug reports are welcome and bug fixes will be released. No new features will be added.  
 
 ## Schemas
 
