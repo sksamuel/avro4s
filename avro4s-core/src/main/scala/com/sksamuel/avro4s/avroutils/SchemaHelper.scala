@@ -134,6 +134,27 @@ object SchemaHelper {
     Schema.createUnion(nulls.headOption.toSeq ++ rest: _*)
   }
 
+  def setError(schema: Schema): Schema = {
+    schema.getType match {
+      case Schema.Type.RECORD =>
+        val fields = schema.getFields.asScala.map { field =>
+          new Schema.Field(
+            field.name(),
+            copySchema(field.schema()),
+            field.doc,
+            field.defaultVal,
+            field.order)
+        }
+        val copy = Schema.createRecord(schema.getName, schema.getDoc, schema.getNamespace, true, fields.asJava)
+        schema.getAliases.asScala.foreach(copy.addAlias)
+        schema.getObjectProps.asScala.foreach { case (k, v) => copy.addProp(k, v) }
+        copy
+      case _ => schema
+    }
+  }
+
+  def copySchema(schema: Schema): Schema = schema
+
   /**
     * Takes an Avro schema, and overrides the namespace of that schema with the given namespace.
     */

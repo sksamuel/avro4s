@@ -121,3 +121,8 @@ case class AvroSortPriority(priority: Float) extends AvroFieldReflection
 case class AvroEnumDefault(default: Any) extends StaticAnnotation
 
 case class AvroUnionPosition(position: Int) extends StaticAnnotation
+
+/**
+  * Use this annotation to indicate that a record type should be generated as an avro error type.
+  */
+case class AvroError() extends StaticAnnotation

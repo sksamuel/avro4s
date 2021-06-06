@@ -14,7 +14,7 @@ object Records:
 
     val annos = Annotations(ctx.annotations)
     val naming = Names(ctx.typeInfo, annos, ctx.typeAnnotations)
-    val error = false
+    val error = annos.error
 
     val record = Schema.createRecord(
       naming.name.replaceAll("[^a-zA-Z0-9_]", ""),
@@ -94,7 +94,13 @@ object Records:
       .map(SchemaHelper.overrideNamespace(schemaWithOrderedUnion, _))
       .getOrElse(schemaWithOrderedUnion)
 
-    val field = new Schema.Field(name, schemaWithResolvedNamespace, doc)
+    // if the field is annotated with @AvroError then the resulting schema (if a record) is set to error
+    val schemaWithResolvedError = if (fieldAnnos.error)
+      SchemaHelper.setError(schemaWithResolvedNamespace)
+    else
+      schemaWithResolvedNamespace
+
+    val field = new Schema.Field(name, schemaWithResolvedError, doc)
     props.foreach { case (k, v) => field.addProp(k, v: AnyRef) }
     aliases.foreach(field.addAlias)
     field

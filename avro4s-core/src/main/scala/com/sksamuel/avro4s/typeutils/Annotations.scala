@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.typeutils
 
-import com.sksamuel.avro4s.{AvroAliasable, AvroDoc, AvroDocumentable, AvroErasedName, AvroFixed, AvroName, AvroNameable, AvroNamespace, AvroProp, AvroProperty, AvroSortPriority, AvroTransient, AvroUnionPosition}
+import com.sksamuel.avro4s.{AvroAliasable, AvroDoc, AvroDocumentable, AvroErasedName, AvroError, AvroFixed, AvroName, AvroNameable, AvroNamespace, AvroProp, AvroProperty, AvroSortPriority, AvroTransient, AvroUnionPosition}
 import magnolia.{CaseClass, TypeInfo}
 
 case class Annotations(annos: Seq[Any]) {
@@ -31,6 +31,10 @@ case class Annotations(annos: Seq[Any]) {
 
   def erased: Boolean = annos.collectFirst {
     case t: AvroErasedName => t
+  }.isDefined
+
+  def error: Boolean = annos.collectFirst {
+    case t: AvroError => t
   }.isDefined
 
   /**

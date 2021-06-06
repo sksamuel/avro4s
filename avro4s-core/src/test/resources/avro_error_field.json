@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "VeryCross",
+  "namespace": "com.sksamuel.avro4s.schema.AvroErrorSchemaTest",
+  "fields": [
+    {
+      "name": "flibble",
+      "type": {
+        "type": "error",
+        "name": "Flibble",
+        "fields": [
+          {
+            "name": "a",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}
