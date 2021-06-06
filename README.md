@@ -12,16 +12,25 @@ The features of the library are:
 * Boilerplate free serialization of Scala types into Avro types
 * Boilerplate free deserialization of Avro types to Scala types
 
-
 ## Versioning
 
-The `master` branch contains version 5.0.x and is currently in development. This version is designed for Scala 3. New feature requests are welcome. This version may have minor breaking changes compared to previous major releases.
+The `master` branch contains version 5.0.x and is currently in development. This version is designed for Scala 3. New
+feature requests are welcome. This version may have minor breaking changes compared to previous major releases.
 
-The previous major version is 4.0.x located at branch `release/4.0.x` and is released for Scala 2.12 and Scala 2.13. This version is in support mode only. Bug reports are welcome and bug fixes will be released. No new features will be added.  
+The previous major version is 4.0.x located at branch `release/4.0.x` and is released for Scala 2.12 and Scala 2.13.
+This version is in support mode only. Bug reports are welcome and bug fixes will be released. No new features will be
+added.
+
+Please raise PRs using branch names `scala2/*` and `scala3/*` depending on which version of Scala your work is
+targeting.
 
 ## Schemas
 
-Unlike Json, Avro is a schema based format. You'll find yourself wanting to generate schemas frequently, and writing these by hand or through the Java based `SchemaBuilder` classes can be tedious for complex domain models. Avro4s allows us to generate schemas directly from case classes at compile time via macros. This gives you both the convenience of generated code, without the annoyance of having to run a code generation step, as well as avoiding the peformance penalty of runtime reflection based code.
+Unlike Json, Avro is a schema based format. You'll find yourself wanting to generate schemas frequently, and writing
+these by hand or through the Java based `SchemaBuilder` classes can be tedious for complex domain models. Avro4s allows
+us to generate schemas directly from case classes at compile time via macros. This gives you both the convenience of
+generated code, without the annoyance of having to run a code generation step, as well as avoiding the peformance
+penalty of runtime reflection based code.
 
 Let's define some classes.
 
