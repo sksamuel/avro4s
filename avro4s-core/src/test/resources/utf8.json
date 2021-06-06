@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "Person",
+  "namespace": "com.sksamuel.avro4s.schema.Utf8Test",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "alias",
+      "type": "string"
+    },
+    {
+      "name": "age",
+      "type": "int"
+    }
+  ]
+}

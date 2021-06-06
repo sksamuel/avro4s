@@ -3,8 +3,8 @@
   "name": "Annotated",
   "namespace": "com.sksamuel.avro4s.schema.AvroAliasSchemaTest",
   "aliases": [
-    "queen",
-    "ledzep"
+    "ledzep",
+    "queen"
   ],
   "fields": [
     {

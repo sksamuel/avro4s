@@ -14,7 +14,7 @@ object Build extends AutoPlugin {
     val CatsVersion = "2.0.0"
     val RefinedVersion = "0.9.26"
     val ShapelessVersion = "2.3.7"
-    val MagnoliaVersion = "0.17.0"
+    val MagnoliaVersion = "2.0.0-M5"
     val SbtJmhVersion = "0.3.7"
     val JmhVersion = "1.23"
   }
@@ -27,36 +27,22 @@ object Build extends AutoPlugin {
   def githubRunNumber = sys.env.getOrElse("GITHUB_RUN_NUMBER", "local")
   def ossrhUsername = sys.env.getOrElse("OSSRH_USERNAME", "")
   def ossrhPassword = sys.env.getOrElse("OSSRH_PASSWORD", "")
-  def publishVersion = if (isRelease) releaseVersion else "4.1.0." + githubRunNumber + "-SNAPSHOT"
+  def publishVersion = if (isRelease) releaseVersion else "5.0.0." + githubRunNumber + "-SNAPSHOT"
 
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
-    scalaVersion := "2.13.5",
-    crossScalaVersions := Seq("2.12.10", "2.13.5"),
+    scalaVersion := "3.0.0",
     resolvers += Resolver.mavenLocal,
     parallelExecution in Test := false,
-    scalacOptions := Seq(
-      "-unchecked", "-deprecation",
-      "-encoding",
-      "utf8",
-   //   "-Xfatal-warnings",
-      "-feature",
-      "-language:higherKinds",
-   //   "-Xlog-implicits",
-      "-language:existentials",
-      "-Ybackend-parallelism",
-      "8"
-    ),
     javacOptions := Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
-      "org.scala-lang"    % "scala-reflect"     % scalaVersion.value,
-      "org.scala-lang"    % "scala-compiler"    % scalaVersion.value,
+      "org.scala-lang"    % "scala3-compiler_3" % scalaVersion.value,
       "org.apache.avro"   % "avro"              % AvroVersion,
       "org.slf4j"         % "slf4j-api"         % Slf4jVersion          % "test",
       "log4j"             % "log4j"             % Log4jVersion          % "test",
       "org.slf4j"         % "log4j-over-slf4j"  % Slf4jVersion          % "test",
-      "org.scalatest"     %% "scalatest"        % ScalatestVersion      % "test"
+      "org.scalatest"     % "scalatest_3"       % ScalatestVersion      % "test"
     )
   )
 

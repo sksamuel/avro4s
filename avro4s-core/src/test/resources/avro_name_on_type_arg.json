@@ -30,7 +30,7 @@
       "name": "b",
       "type": {
         "type": "record",
-        "name": "Generic__wibble",
+        "name": "Generic__supertypearg",
         "fields": [
           {
             "name": "value",

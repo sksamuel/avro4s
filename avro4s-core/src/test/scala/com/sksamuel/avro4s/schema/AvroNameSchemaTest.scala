@@ -21,11 +21,11 @@ class AvroNameSchemaTest extends AnyFunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("@AvroName on top level java enum") {
-    val schema = AvroSchema[MyJavaEnum]
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_java_enum.json"))
-    schema.toString(true) shouldBe expected.toString(true)
-  }
+//  test("@AvroName on top level java enum") {
+//    val schema = AvroSchema[MyJavaEnum]
+//    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_java_enum.json"))
+//    schema.toString(true) shouldBe expected.toString(true)
+//  }
 
   test("@AvroName on field level java enum") {
     case class Wibble(e: MyJavaEnum)
@@ -34,11 +34,11 @@ class AvroNameSchemaTest extends AnyFunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("@AvroName on top level ADT type") {
-    val schema = AvroSchema[Weather]
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_sealed_trait.json"))
-    schema.toString(true) shouldBe expected.toString(true)
-  }
+//  test("@AvroName on top level ADT type") {
+//    val schema = AvroSchema[Weather]
+//    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_sealed_trait.json"))
+//    schema.toString(true) shouldBe expected.toString(true)
+//  }
 
 }
 

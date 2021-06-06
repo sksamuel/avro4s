@@ -25,11 +25,11 @@ class BigDecimalSchemaTest extends AnyWordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal-scale-and-precision.json"))
       schema shouldBe expected
     }
-    "support big decimal with default" in {
-      val schema = AvroSchema[BigDecimalDefault]
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_default.json"))
-      schema shouldBe expected
-    }
+//    "support big decimal with default" in {
+//      val schema = AvroSchema[BigDecimalDefault]
+//      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_default.json"))
+//      schema shouldBe expected
+//    }
     "suport Option[BigDecimal] as a union" in {
       case class BigDecimalOption(decimal: Option[BigDecimal])
       val schema = AvroSchema[BigDecimalOption]

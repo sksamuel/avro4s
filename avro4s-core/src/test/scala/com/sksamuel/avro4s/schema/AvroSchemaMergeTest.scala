@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.AvroSchemaMerge
+import com.sksamuel.avro4s.avroutils.AvroSchemaMerge
 import org.apache.avro.SchemaBuilder
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
