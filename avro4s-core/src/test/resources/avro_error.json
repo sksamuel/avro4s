@@ -1,0 +1,11 @@
+{
+  "type": "error",
+  "name": "Flibble",
+  "namespace": "com.sksamuel.avro4s.schema.AvroErrorSchemaTest",
+  "fields": [
+    {
+      "name": "a",
+      "type": "string"
+    }
+  ]
+}
