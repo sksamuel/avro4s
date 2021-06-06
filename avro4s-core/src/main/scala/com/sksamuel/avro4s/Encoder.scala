@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.{DefaultFieldMapper, FieldMapper}
-import com.sksamuel.avro4s.encoders.{ByteIterableEncoders, CollectionEncoders, MagnoliaDerivedEncoder, OptionEncoders, PrimitiveEncoders, StringEncoders, TupleEncoders}
+import com.sksamuel.avro4s.encoders.{ByteIterableEncoders, CollectionEncoders, MagnoliaDerivedEncoder, OptionEncoders, PrimitiveEncoders, StringEncoders, TemporalEncoders, TupleEncoders}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.specific.SpecificRecord
@@ -57,6 +57,7 @@ object Encoder
     with TupleEncoders
     with OptionEncoders
     with CollectionEncoders
+    with TemporalEncoders
     with StringEncoders
     with ByteIterableEncoders
     with MagnoliaDerivedEncoder {

@@ -64,14 +64,6 @@ object JavaEnumSchemaFor {
 //    SchemaFor.scalaEnumSchemaFor.map[E](EnumHelpers.addDefault(default))
 //}
 
-//object SchemaFor
-//    extends MagnoliaDerivedSchemaFors
-//    with ShapelessCoproductSchemaFors
-//    with CollectionAndContainerSchemaFors
-//    with TupleSchemaFors
-//    with ByteIterableSchemaFors
-//    with BaseSchemaFors {
-//
 //  def apply[T](schema: Schema, fieldMapper: FieldMapper = DefaultFieldMapper) = {
 //    val s = schema
 //    val fm = fieldMapper

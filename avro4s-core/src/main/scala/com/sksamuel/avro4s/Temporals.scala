@@ -8,62 +8,7 @@
 //import com.sksamuel.avro4s.Temporals.{TemporalWithLogicalTypeDecoder, TemporalWithLogicalTypeEncoder}
 //import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
 //
-//trait TemporalEncoders {
-//  implicit val InstantEncoder: Encoder[Instant] = new InstantEncoder(SchemaFor.InstantSchemaFor)
-//
-//  private final class InstantEncoder(val schemaFor: SchemaFor[Instant])
-//      extends TemporalWithLogicalTypeEncoder[Instant] {
-//    def epochMillis(temporal: Instant): Long = temporal.toEpochMilli
-//
-//    def epochSeconds(temporal: Instant): Long = temporal.getEpochSecond
-//
-//    def nanos(temporal: Instant): Long = temporal.getNano.toLong
-//
-//    override def withSchema(schemaFor: SchemaFor[Instant]): Encoder[Instant] =
-//      new InstantEncoder(schemaFor)
-//  }
-//
-//  implicit val LocalTimeEncoder: Encoder[LocalTime] = new LocalTimeEncoder(SchemaFor.LocalTimeSchemaFor)
-//
-//  private final class LocalTimeEncoder(val schemaFor: SchemaFor[LocalTime]) extends Encoder[LocalTime] {
-//
-//    val toNanosFactor = schema.getLogicalType match {
-//      case _: TimeMicros => 1000L
-//      case _: TimeMillis => 1000000L
-//      case _             => throw new Avro4sConfigurationException(s"Unsupported logical type for LocalTime: ${schemaFor.schema}")
-//    }
-//
-//    def encode(value: LocalTime): AnyRef = java.lang.Long.valueOf(value.toNanoOfDay / toNanosFactor)
-//
-//    override def withSchema(schemaFor: SchemaFor[LocalTime]): Encoder[LocalTime] = new LocalTimeEncoder(schemaFor)
-//  }
-//
-//  implicit val LocalDateEncoder: Encoder[LocalDate] =
-//    Encoder.IntEncoder.comap[LocalDate](_.toEpochDay.toInt).withSchema(SchemaFor.LocalDateSchemaFor)
-//
-//  implicit val TimestampEncoder: Encoder[Timestamp] = InstantEncoder.comap[Timestamp](_.toInstant)
-//
-//  implicit val DateEncoder: Encoder[Date] = LocalDateEncoder.comap[Date](_.toLocalDate)
-//
-//  implicit val LocalDateTimeEncoder: Encoder[LocalDateTime] = new LocalDateTimeEncoder(SchemaFor.LocalDateTimeSchemaFor)
-//
-//  private final class LocalDateTimeEncoder(val schemaFor: SchemaFor[LocalDateTime])
-//      extends TemporalWithLogicalTypeEncoder[LocalDateTime] {
-//    def epochMillis(temporal: LocalDateTime): Long = temporal.toInstant(ZoneOffset.UTC).toEpochMilli
-//
-//    def epochSeconds(temporal: LocalDateTime): Long = temporal.toEpochSecond(ZoneOffset.UTC)
-//
-//    def nanos(temporal: LocalDateTime): Long = temporal.getNano.toLong
-//
-//    override def withSchema(schemaFor: SchemaFor[LocalDateTime]): Encoder[LocalDateTime] =
-//      new LocalDateTimeEncoder(schemaFor)
-//  }
-//
-//  implicit object OffsetDateTimeEncoder extends Encoder[OffsetDateTime] {
-//    val schemaFor: SchemaFor[OffsetDateTime] = SchemaFor.OffsetDateTimeSchemaFor
-//    override def encode(value: OffsetDateTime) = value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-//  }
-//}
+
 //
 //trait TemporalDecoders {
 //  implicit val InstantDecoder: Decoder[Instant] = new InstantDecoder(SchemaFor.InstantSchemaFor)
@@ -128,27 +73,7 @@
 //
 //object Temporals {
 //
-//  private[avro4s] abstract class TemporalWithLogicalTypeEncoder[T] extends Encoder[T] {
-//
-//    def epochMillis(temporal: T): Long
-//
-//    def epochSeconds(temporal: T): Long
-//
-//    def nanos(temporal: T): Long
-//
-//    val encoder: T => Long = schemaFor.schema.getLogicalType match {
-//      case _: TimestampMillis => epochMillis
-//      case _: TimestampMicros =>
-//        t =>
-//          epochSeconds(t) * 1000000L + nanos(t) / 1000L
-//      case TimestampNanosLogicalType =>
-//        t =>
-//          epochSeconds(t) * 1000000000L + nanos(t)
-//      case _ => throw new Avro4sConfigurationException(s"Unsupported logical type for temporal: ${schemaFor.schema}")
-//    }
-//
-//    def encode(t: T): AnyRef = java.lang.Long.valueOf(encoder(t))
-//  }
+
 //
 //  private[avro4s] abstract class TemporalWithLogicalTypeDecoder[T] extends Decoder[T] {
 //

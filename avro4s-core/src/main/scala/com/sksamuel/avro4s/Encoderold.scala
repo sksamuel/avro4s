@@ -121,12 +121,7 @@
 //    }
 //  }
 //
-//  /**
-//    * Enables decorating/enhancing an encoder with a transformation function
-//    */
-//  implicit class EncoderOps[T](val encoder: Encoder[T]) extends AnyVal {
-//    def comap[S](f: S => T): Encoder[S] = new DelegatingEncoder(encoder, encoder.schemaFor.forType, f)
-//  }
+
 //}
 //
 //object EncoderHelpers {

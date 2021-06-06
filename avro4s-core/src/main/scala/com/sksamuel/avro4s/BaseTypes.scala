@@ -126,39 +126,6 @@
 //    SchemaFor[E](schema)
 //  }
 //
-//  object TimestampNanosLogicalType extends LogicalType("timestamp-nanos") {
-//    override def validate(schema: Schema): Unit = {
-//      super.validate(schema)
-//      if (schema.getType != Schema.Type.LONG) {
-//        throw new IllegalArgumentException("Logical type timestamp-nanos must be backed by long")
-//      }
-//    }
-//  }
-//
-//  object OffsetDateTimeLogicalType extends LogicalType("datetime-with-offset") {
-//    override def validate(schema: Schema): Unit = {
-//      super.validate(schema)
-//      if (schema.getType != Schema.Type.STRING) {
-//        throw new IllegalArgumentException("Logical type iso-datetime with offset must be backed by String")
-//      }
-//    }
-//  }
-//
-//  implicit val InstantSchemaFor: SchemaFor[Instant] =
-//    SchemaFor[Instant](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
-//  implicit val DateSchemaFor: SchemaFor[Date] = SchemaFor(
-//    LogicalTypes.date().addToSchema(SchemaBuilder.builder.intType))
-//  implicit val LocalDateSchemaFor: SchemaFor[LocalDate] = DateSchemaFor.forType
-//  implicit val LocalDateTimeSchemaFor: SchemaFor[LocalDateTime] = SchemaFor(
-//    TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType))
-//  implicit val OffsetDateTimeSchemaFor: SchemaFor[OffsetDateTime] = SchemaFor(
-//    OffsetDateTimeLogicalType.addToSchema(SchemaBuilder.builder.stringType))
-//  implicit val LocalTimeSchemaFor: SchemaFor[LocalTime] = SchemaFor(
-//    LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType))
-//  implicit val TimestampSchemaFor: SchemaFor[Timestamp] =
-//    SchemaFor[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
-//
-
 //
 //  implicit object CharSequenceEncoder extends Encoder[CharSequence] {
 //    val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchemaFor

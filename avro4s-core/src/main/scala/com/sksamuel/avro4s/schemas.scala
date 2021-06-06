@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.SchemaConfiguration
-import com.sksamuel.avro4s.schemas.{ByteIterableSchemas, CollectionSchemas, DateSchemas, EitherSchemas, EnumSchemas, MagnoliaDerivedSchemas, OptionSchemas, PrimitiveSchemas, StringSchemas, TupleSchemas}
+import com.sksamuel.avro4s.schemas.{ByteIterableSchemas, CollectionSchemas, TemporalSchemas, EitherSchemas, EnumSchemas, MagnoliaDerivedSchemas, OptionSchemas, PrimitiveSchemas, StringSchemas, TupleSchemas}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
 
@@ -46,7 +46,7 @@ trait SchemaFor[T] {
 object SchemaFor
   extends PrimitiveSchemas
   with ByteIterableSchemas
-  with DateSchemas
+  with TemporalSchemas
   with CollectionSchemas
   with TupleSchemas
   with EnumSchemas

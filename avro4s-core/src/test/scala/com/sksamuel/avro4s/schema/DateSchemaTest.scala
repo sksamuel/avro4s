@@ -23,12 +23,12 @@ class DateSchemaTest extends AnyFunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  //  test("generate time logical type for LocalTime") {
-  //    case class LocalTimeTest(time: LocalTime)
-  //    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/localtime.json"))
-  //    val schema = AvroSchema[LocalTimeTest]
-  //    schema.toString(true) shouldBe expected.toString(true)
-  //  }
+  test("generate time logical type for LocalTime") {
+    case class LocalTimeTest(time: LocalTime)
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/localtime.json"))
+    val schema = AvroSchema[LocalTimeTest]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
 
   test("generate timestamp-nanos for LocalDateTime") {
     case class LocalDateTimeTest(time: LocalDateTime)
