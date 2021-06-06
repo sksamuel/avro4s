@@ -20,7 +20,7 @@ trait PrimitiveDecoders {
     }
   }
 
-  given Decoder[Int] = new BasicDecoder[Int] {
+  given IntDecoder: Decoder[Int] = new BasicDecoder[Int] {
     override def decode(value: Any): Int = value match {
       case byte: Byte => byte.toInt
       case short: Short => short.toInt
