@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchema, FieldMapper, PascalCase, SnakeCase}
+import com.sksamuel.avro4s.{AvroSchema, FieldMapper, PascalCase, SchemaFor, SnakeCase}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -9,17 +9,17 @@ class FieldMapperFieldTest extends AnyWordSpec with Matchers {
   "fieldMapper" should {
     "defaultNoChange" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/field_mapper_default.json"))
-      val schema = AvroSchema[NamingStrategyTest]
+      val schema = SchemaFor[NamingStrategyTest].schema
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support pascal case" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/field_mapper_pascal.json"))
-      val schema = AvroSchema[NamingStrategyTest](PascalCase)
+      val schema = SchemaFor[NamingStrategyTest].withFieldMapper(PascalCase).schema
       schema.toString(true) shouldBe expected.toString(true)
     }
     "support snake case" in {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/field_mapper_snake.json"))
-      val schema = AvroSchema[NamingStrategyTest](SnakeCase)
+      val schema = SchemaFor[NamingStrategyTest].withFieldMapper(SnakeCase).schema
       schema.toString(true) shouldBe expected.toString(true)
     }
   }

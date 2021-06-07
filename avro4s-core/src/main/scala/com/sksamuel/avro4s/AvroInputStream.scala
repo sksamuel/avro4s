@@ -47,12 +47,9 @@
 //    */
 //  def json[T: Decoder]: AvroInputStreamBuilder[T] = new AvroInputStreamBuilder[T](JsonFormat)
 //}
-//
-//sealed trait AvroFormat
-//object BinaryFormat extends AvroFormat
-//object JsonFormat extends AvroFormat
-//object DataFormat extends AvroFormat
-//
+
+
+
 //class AvroInputStreamBuilder[T: Decoder](format: AvroFormat) {
 //  def from(path: Path): AvroInputStreamBuilderWithSource[T] = from(Files.newInputStream(path))
 //  def from(path: String): AvroInputStreamBuilderWithSource[T] = from(Paths.get(path))
