@@ -21,7 +21,7 @@ class StringEncoderTest extends AnyFunSuite with Matchers {
 
     case class Foo(s: String)
     given SchemaFor[String] = SchemaFor.fixedStringSchemaFor("foo", 7)
-    val schema = SchemaFor[Foo].schema(null)
+    val schema = AvroSchema[Foo]
 
     val record = Encoder[Foo].encode(schema).apply(Foo("hello")).asInstanceOf[GenericRecord]
     record.get("s").asInstanceOf[GenericFixed].bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)

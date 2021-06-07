@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.avroutils
 
-import com.sksamuel.avro4s.Avro4sConfigurationException
+import com.sksamuel.avro4s.{Avro4sConfigurationException, FieldMapper}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.apache.avro.{JsonProperties, Schema, SchemaBuilder}
@@ -140,7 +140,7 @@ object SchemaHelper {
         val fields = schema.getFields.asScala.map { field =>
           new Schema.Field(
             field.name(),
-            copySchema(field.schema()),
+            field.schema(),
             field.doc,
             field.defaultVal,
             field.order)
@@ -153,7 +153,29 @@ object SchemaHelper {
     }
   }
 
-  def copySchema(schema: Schema): Schema = schema
+  def mapNames(schema: Schema, mapper: FieldMapper): Schema = {
+    schema.getType match {
+      case Schema.Type.RECORD =>
+        val fields = schema.getFields.asScala.map { field =>
+          new Schema.Field(
+            mapper.to(field.name()),
+            mapNames(field.schema(), mapper),
+            field.doc,
+            field.defaultVal,
+            field.order)
+        }
+        val copy = Schema.createRecord(schema.getName, schema.getDoc, schema.getNamespace, schema.isError, fields.asJava)
+        schema.getAliases.asScala.foreach(copy.addAlias)
+        schema.getObjectProps.asScala.foreach { case (k, v) => copy.addProp(k, v) }
+        copy
+      case Schema.Type.UNION => Schema.createUnion(schema.getTypes.asScala.map(mapNames(_, mapper)).asJava)
+      case Schema.Type.ENUM => Schema.createEnum(schema.getName, schema.getDoc, schema.getNamespace, schema.getEnumSymbols)
+      case Schema.Type.FIXED => Schema.createFixed(schema.getName, schema.getDoc, schema.getNamespace, schema.getFixedSize)
+      case Schema.Type.MAP => Schema.createMap(mapNames(schema.getValueType, mapper))
+      case Schema.Type.ARRAY => Schema.createArray(mapNames(schema.getElementType, mapper))
+      case _ => schema
+    }
+  }
 
   /**
     * Takes an Avro schema, and overrides the namespace of that schema with the given namespace.
@@ -162,7 +184,8 @@ object SchemaHelper {
     schema.getType match {
       case Schema.Type.RECORD =>
         val fields = schema.getFields.asScala.map { field =>
-          new Schema.Field(field.name(),
+          new Schema.Field(
+            field.name(),
             overrideNamespace(field.schema(), namespace),
             field.doc,
             field.defaultVal,

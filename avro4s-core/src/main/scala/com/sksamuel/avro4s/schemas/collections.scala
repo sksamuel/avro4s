@@ -9,7 +9,7 @@ trait CollectionSchemas:
     schemaFor.map(SchemaBuilder.array.items(_))
 
   given[T](using schemaFor: SchemaFor[T]): SchemaFor[Array[T]] = new SchemaFor[Array[T]] :
-    override def schema(config: SchemaConfiguration): Schema = Schema.createArray(schemaFor.schema(config))
+    override def schema: Schema = Schema.createArray(schemaFor.schema)
 
   given[T](using schemaFor: SchemaFor[T]): SchemaFor[Seq[T]] = buildIterableSchemaFor[Seq, T]
 

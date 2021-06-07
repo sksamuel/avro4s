@@ -36,6 +36,10 @@ trait FieldMapper {
   }
 }
 
+object FieldMapper {
+  val default = DefaultFieldMapper
+}
+
 case object DefaultFieldMapper extends FieldMapper {
   override def to(name: String): String = name
 }

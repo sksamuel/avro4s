@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.schemas
 
 import com.sksamuel.avro4s.avroutils.SchemaHelper
 import com.sksamuel.avro4s.typeutils.{Annotations, Names}
-import com.sksamuel.avro4s.{SchemaConfiguration, SchemaFor}
+import com.sksamuel.avro4s.{FieldMapper, SchemaConfiguration, SchemaFor}
 import magnolia.CaseClass
 import org.apache.avro.{Schema, SchemaBuilder}
 
@@ -38,7 +38,7 @@ object Records:
     annos.props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
 
     new SchemaFor[T] {
-      override def schema(config: SchemaConfiguration): Schema = record
+      override def schema: Schema = record
     }
   }
 
@@ -49,7 +49,7 @@ object Records:
                                   //                                                        fieldMapper: FieldMapper,
                                   valueTypeDoc: Option[String]): Schema.Field = {
 
-    val baseSchema = param.typeclass.schema(null)
+    val baseSchema = param.typeclass.schema
 
     val name = fieldAnnos.name.getOrElse(param.label)
     val doc = fieldAnnos.doc.orElse(valueTypeDoc).orNull

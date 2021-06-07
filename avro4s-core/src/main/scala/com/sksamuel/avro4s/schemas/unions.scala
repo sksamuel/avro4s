@@ -39,7 +39,7 @@ object TypeUnions {
       new Annotations(st.annotations).sortPriority.getOrElse(0.0f)
 
     val sortedSubtypes = ctx.subtypes.sortWith((l, r) => priority(l) > priority(r))
-      .map(_.typeclass.schema(null))
+      .map(_.typeclass.schema)
 
     SchemaFor(SchemaHelper.createSafeUnion(sortedSubtypes: _*))
   }

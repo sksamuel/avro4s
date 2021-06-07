@@ -14,12 +14,12 @@ class LocalDateTimeRoundTrip extends AnyFunSuite with Matchers {
 
     val encodedLocalDateTime = Encoder[LocalDateTime]
       .encode(SchemaFor[LocalDateTime]
-        .schema(null))
+        .schema)
       .apply(localDateTime)
 
     Decoder[LocalDateTime]
       .decode(SchemaFor[LocalDateTime]
-        .schema(null))
+        .schema)
       .apply(encodedLocalDateTime) shouldEqual localDateTime
   }
 
@@ -31,12 +31,12 @@ class LocalDateTimeRoundTrip extends AnyFunSuite with Matchers {
 
     val encodedLocalDateTime = Encoder[LocalDateTime]
       .encode(SchemaFor[LocalDateTime]
-      .schema(null))
+      .schema)
       .apply(localDateTime)
 
     Decoder[LocalDateTime]
       .decode(SchemaFor[LocalDateTime]
-      .schema(null))
+      .schema)
       .apply(encodedLocalDateTime) shouldEqual localDateTime
   }
 }

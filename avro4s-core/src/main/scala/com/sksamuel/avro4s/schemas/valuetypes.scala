@@ -29,6 +29,6 @@ object ValueTypes {
         annos.props.foreach { case (k, v) => builder.prop(k, v) }
         builder.size(size)
       case None =>
-        ctx.params.head.typeclass.schema(null)
+        ctx.params.head.typeclass.schema
     }
 }
