@@ -35,19 +35,31 @@ object AvroOutputStream {
     * Use this when you want the smallest messages possible at the cost of not having the
     * schema available in the messages for downstream clients.
     */
-  def binary[T: Encoder](schema: Schema) = new AvroOutputStreamBuilder[T](schema, AvroFormat.Binary)
+  def binary[T: Encoder](schema: Schema): AvroOutputStreamBuilder[T] =
+    new AvroOutputStreamBuilder[T](schema, AvroFormat.Binary)
+
+  def binary[T](using schemaFor: SchemaFor[T], encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
+    binary(schemaFor.schema)
 
   /**
     * An [[AvroOutputStream]] that writes as JSON.
     */
-  def json[T: Encoder](schema: Schema) = new AvroOutputStreamBuilder[T](schema, AvroFormat.Json)
+  def json[T: Encoder](schema: Schema): AvroOutputStreamBuilder[T] =
+    new AvroOutputStreamBuilder[T](schema, AvroFormat.Json)
+
+  def json[T](using schemaFor: SchemaFor[T], encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
+    json(schemaFor.schema)
 
   /**
     * An [[AvroOutputStream]] that writes the schema alongside data.
     *
     * This is the standard implementation for Avro.
     */
-  def data[T: Encoder](schema: Schema) = new AvroOutputStreamBuilder[T](schema, AvroFormat.Data)
+  def data[T: Encoder](schema: Schema): AvroOutputStreamBuilder[T] =
+    new AvroOutputStreamBuilder[T](schema, AvroFormat.Data)
+
+  def data[T](using schemaFor: SchemaFor[T], encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
+    data(schemaFor.schema)
 }
 
 class AvroOutputStreamBuilder[T: Encoder](schema: Schema, format: AvroFormat) {
