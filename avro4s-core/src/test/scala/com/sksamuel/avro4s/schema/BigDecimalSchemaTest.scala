@@ -25,6 +25,7 @@ class BigDecimalSchemaTest extends AnyWordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal-scale-and-precision.json"))
       schema shouldBe expected
     }
+    // todo once magnolia has scala 3 default support
 //    "support big decimal with default" in {
 //      val schema = AvroSchema[BigDecimalDefault]
 //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_default.json"))

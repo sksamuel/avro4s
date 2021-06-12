@@ -11,6 +11,12 @@ class EnumSchemaTest extends AnyWordSpec with Matchers {
 
   "SchemaEncoder" should {
 
+//    "support scala 3 enum types" in {
+//      val schema = AvroSchema[Sport]
+//      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/scala3_enum.json"))
+//      schema.toString(true) shouldBe expected.toString(true)
+//    }
+
     //------------------------------------------------------------------------------------------------------------------
     // java enums using the AvroJavaEnumDefault annotation
 
@@ -793,6 +799,9 @@ object Colours extends Enumeration {
 object ColoursAnnotatedEnum extends Enumeration {
   val Red, Amber, Green = Value
 }
+
+enum Sport:
+  case Boxing, Soccer, Ruggers
 
 sealed trait CupcatEnum
 @AvroSortPriority(0) case object SnoutleyEnum extends CupcatEnum

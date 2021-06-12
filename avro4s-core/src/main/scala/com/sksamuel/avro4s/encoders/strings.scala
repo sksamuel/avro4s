@@ -43,11 +43,3 @@ object FixedStringEncoder extends Encoder[String] :
     if (string.getBytes.length > schema.getFixedSize)
       throw new Avro4sEncodingException(s"Cannot write string with ${string.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
     GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(string.getBytes).array, schema).asInstanceOf[GenericData.Fixed]
-
-
-//class FixedStringEncoder(size: Int) extends Encoder[String] {
-//  override def encode(t: String): Any =
-//    if (t.getBytes.length > schema.getFixedSize)
-//      throw new Avro4sEncodingException(s"Cannot write string with ${t.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}")
-//    GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(t.getBytes).array, schema).asInstanceOf[GenericData.Fixed]
-//}
