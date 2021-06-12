@@ -59,24 +59,11 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
 
-    //    "support namespace annotations on ADTs at type level" in {
-    //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum_trait_level.json"))
-    //      val schema = AvroSchema[Africa]
-    //      schema.toString(true) shouldBe expected.toString(true)
-    //    }
-    //
-    //    "support namespace annotations on classes that are used by an ADT" in {
-    //      @AvroNamespace("com.yuval")
-    //      sealed trait TestAnnotated
-    //      final case class TestAnnotatedImpl(value: AnnotatedNested) extends TestAnnotated
-    //
-    //      @AvroNamespace("com.yuval.nested")
-    //      case class AnnotatedNested()
-    //
-    //      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_class_adt_field.avsc"))
-    //      val schema = AvroSchema[TestAnnotated]
-    //      schema.toString(true) shouldBe expected.toString(true)
-    //    }
+    "support namespace annotations on sealed trait enums at the trait level" in {
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/namespace_enum_trait_level.json"))
+      val schema = AvroSchema[Africa]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
 
     "empty namespace" in {
 
@@ -89,6 +76,12 @@ class AvroNamespaceTest extends AnyWordSpec with Matchers {
     }
   }
 }
+
+@AvroNamespace("wobble")
+sealed trait Africa
+case object Cameroon extends Africa
+case object Chad extends Africa
+case object Comoros extends Africa
 
 case class Tea(name: String)
 
