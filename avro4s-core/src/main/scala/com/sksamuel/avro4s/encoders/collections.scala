@@ -29,22 +29,14 @@ trait CollectionEncoders:
   given[T](using encoder: Encoder[T]): Encoder[Set[T]] = iterableEncoder(encoder)
   given[T](using encoder: Encoder[T]): Encoder[Vector[T]] = iterableEncoder(encoder)
 
-//  implicit def mapEncoder[T](implicit value: Encoder[T]): Encoder[Map[String, T]] =
-//    new ResolvableEncoder[Map[String, T]] {
-//      def encoder(env: DefinitionEnvironment[Encoder], update: SchemaUpdate): Encoder[Map[String, T]] = {
-//        val encoder = value.resolveEncoder(env, mapFullUpdate(extractMapValueSchema, update))
-//
-//        new Encoder[Map[String, T]] {
-//          val schemaFor: SchemaFor[Map[String, T]] = buildMapSchemaFor(encoder.schemaFor)
-//
-//          def encode(value: Map[String, T]): AnyRef = {
-//            val map = new util.HashMap[String, AnyRef]
-//            value.foreach { case (k, v) => map.put(k, encoder.encode(v)) }
-//            map
-//          }
-//
-//          override def withSchema(schemaFor: SchemaFor[Map[String, T]]): Encoder[Map[String, T]] =
-//            buildWithSchema(mapEncoder(value), schemaFor)
-//        }
-//      }
-//    }
+  given mapEncoder[T](using encoder: Encoder[T]): Encoder[Map[String, T]] = new MapEncoder[T](encoder)
+
+class MapEncoder[T](encoder: Encoder[T]) extends Encoder[Map[String, T]] :
+  override def encode(schema: Schema): Map[String, T] => Any = {
+    val encodeT = encoder.encode(schema.getValueType)
+    { value =>
+      val map = new java.util.HashMap[String, Any]
+      value.foreach { case (k, v) => map.put(k, encodeT.apply(v)) }
+      map
+    }
+  }
