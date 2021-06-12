@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schemas
 
-import com.sksamuel.avro4s.{FieldMapper, SchemaConfiguration, SchemaFor}
+import com.sksamuel.avro4s.{FieldMapper, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
 
 trait OptionSchemas {

@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.schemas
 
 import org.apache.avro.util.Utf8
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
-import com.sksamuel.avro4s.{SchemaConfiguration, SchemaFor}
+import com.sksamuel.avro4s.{SchemaFor}
 
 import java.nio.ByteBuffer
 import java.util.UUID

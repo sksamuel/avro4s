@@ -3,21 +3,21 @@ package com.sksamuel.avro4s
 import com.sksamuel.avro4s.decoders.{CollectionDecoders, EitherDecoders, MagnoliaDerivedDecoder, OptionDecoders, PrimitiveDecoders, StringDecoders, TemporalDecoders}
 import org.apache.avro.Schema
 
-///**
-//  * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,
-//  * SpecificRecord, GenericFixed, EnumSymbol, or a basic JVM type, into a
-//  * target Scala type.
-//  *
-//  * For example, a Decoder[String] would convert an input of type Utf8 -
-//  * which is one of the ways Avro can encode strings - into a plain Java String.
-//  *
-//  * Another example, a decoder for Option[String] would handle inputs of null
-//  * by emitting a None, and a non-null input by emitting the decoded value
-//  * wrapped in a Some.
-//  *
-//  * A final example is converting a GenericData.Array or a Java collection type
-//  * into a Scala collection type.
-//  */
+/**
+  * A [[Decoder]] is used to convert an Avro value, such as a GenericRecord,
+  * SpecificRecord, GenericFixed, EnumSymbol, or a basic JVM type, into a
+  * target Scala type.
+  *
+  * For example, a Decoder[String] would convert an input of type Utf8 -
+  * which is one of the ways Avro can encode strings - into a plain Java String.
+  *
+  * Another example, a decoder for Option[String] would handle inputs of null
+  * by emitting a None, and a non-null input by emitting the decoded value
+  * wrapped in a Some.
+  *
+  * A final example is converting a GenericData.Array or a Java collection type
+  * into a Scala collection type.
+  */
 trait Decoder[T] {
   self =>
 

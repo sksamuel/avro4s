@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.SchemaConfiguration
 import com.sksamuel.avro4s.avroutils.SchemaHelper
 import com.sksamuel.avro4s.schemas.{ByteIterableSchemas, CollectionSchemas, EitherSchemas, EnumSchemas, MagnoliaDerivedSchemas, OptionSchemas, PrimitiveSchemas, StringSchemas, TemporalSchemas, TupleSchemas}
 import org.apache.avro.util.Utf8

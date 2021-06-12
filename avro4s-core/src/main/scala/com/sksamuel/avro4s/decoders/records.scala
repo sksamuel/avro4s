@@ -13,8 +13,10 @@ class RecordDecoder[T](ctx: magnolia.CaseClass[Decoder, T]) extends Decoder[T] {
 
   override def decode(schema: Schema): Any => T = {
     val decoders: Array[FieldDecoder[T]] = ctx.params
-      .map { param => new FieldDecoder(param, schema) }
-      .toArray
+      .map { param =>
+        val annos = Annotations(param.annotations)
+        if (annos.transient) TransientFieldDecoder else new SchemaFieldDecoder(param, schema)
+      }.toArray
     { t => decodeT(schema, decoders, t) }
   }
 
@@ -24,20 +26,9 @@ class RecordDecoder[T](ctx: magnolia.CaseClass[Decoder, T]) extends Decoder[T] {
       val length = decoders.length
       val values = new Array[Any](length)
       var i = 0
-      // testing schema based on reference equality, as value equality on schemas is probably more expensive to check
-      // than using safe decoding.
-      if (record.getSchema() eq schema) {
-        // known schema, use fast pre-computed position-based decoding
-        while (i < length) {
-          values(i) = decoders(i).fastDecodeFieldValue(record)
-          i += 1
-        }
-      } else {
-        // use safe name-based decoding
-        while (i < length) {
-          values(i) = decoders(i).safeDecodeFieldValue(record)
-          i += 1
-        }
+      while (i < length) {
+        values(i) = decoders(i).decode(record)
+        i += 1
       }
       ctx.rawConstruct(values)
     case _ =>
@@ -47,13 +38,41 @@ class RecordDecoder[T](ctx: magnolia.CaseClass[Decoder, T]) extends Decoder[T] {
   }
 }
 
-class FieldDecoder[T](param: magnolia.CaseClass.Param[Decoder, T], schema: Schema) extends Serializable :
+trait FieldDecoder[+T] extends Serializable {
+  def decode(record: IndexedRecord): Any
+}
+
+/**
+  * Fields marked with @AvroTransient are always decoded as None's.
+  */
+object TransientFieldDecoder extends FieldDecoder[Nothing] {
+  override def decode(record: IndexedRecord): Any = None
+}
+
+/**
+  * Decodes normal fields based on the schema.
+  */
+class SchemaFieldDecoder[T](param: magnolia.CaseClass.Param[Decoder, T], schema: Schema) extends FieldDecoder[T] :
   require(schema.getType == Schema.Type.RECORD)
 
   private val fieldName = Annotations(param.annotations).name.getOrElse(param.label)
   private val fieldPosition = schema.getFields.asScala.indexWhere(_.name() == fieldName)
   private val field = schema.getField(fieldName)
   private val decoder = param.typeclass.asInstanceOf[Decoder[T]].decode(field.schema())
+  private var fast: Boolean | Null = _
+
+  override def decode(record: IndexedRecord): Any = {
+    // testing schema based on reference equality, as value equality on schemas is probably more expensive to check
+    // than using safe decoding.
+    if (fast == null) fast = (record.getSchema() eq schema)
+    if (fast == true) {
+      // known schema, use fast pre-computed position-based decoding
+      fastDecodeFieldValue(record)
+    } else {
+      // use safe name-based decoding
+      safeDecodeFieldValue(record)
+    }
+  }
 
   def fastDecodeFieldValue(record: IndexedRecord): Any =
     if (fieldPosition == -1) defaultFieldValue
