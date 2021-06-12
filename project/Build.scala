@@ -16,18 +16,18 @@ object Build extends AutoPlugin {
     val ShapelessVersion = "2.3.7"
     val MagnoliaVersion = "2.0.0-M8"
     val SbtJmhVersion = "0.3.7"
-    val JmhVersion = "1.23"
+    val JmhVersion = "1.32"
   }
 
   import autoImport._
 
-  def isGithubActions = sys.env.getOrElse("CI", "false") == "true"
-  def releaseVersion = sys.env.getOrElse("RELEASE_VERSION", "")
-  def isRelease = releaseVersion != ""
-  def githubRunNumber = sys.env.getOrElse("GITHUB_RUN_NUMBER", "local")
-  def ossrhUsername = sys.env.getOrElse("OSSRH_USERNAME", "")
-  def ossrhPassword = sys.env.getOrElse("OSSRH_PASSWORD", "")
-  def publishVersion = if (isRelease) releaseVersion else "5.0.0." + githubRunNumber + "-SNAPSHOT"
+  def isGithubActions: Boolean = sys.env.getOrElse("CI", "false") == "true"
+  def releaseVersion: String = sys.env.getOrElse("RELEASE_VERSION", "")
+  def isRelease: Boolean = releaseVersion != ""
+  def githubRunNumber: String = sys.env.getOrElse("GITHUB_RUN_NUMBER", "local")
+  def ossrhUsername: String = sys.env.getOrElse("OSSRH_USERNAME", "")
+  def ossrhPassword: String = sys.env.getOrElse("OSSRH_PASSWORD", "")
+  def publishVersion: String = if (isRelease) releaseVersion else "5.0.0." + githubRunNumber + "-SNAPSHOT"
 
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
@@ -48,7 +48,7 @@ object Build extends AutoPlugin {
 
   val publishingSettings = Seq(
     publishMavenStyle := true,
-    publishArtifact in Test := false,
+    Test / publishArtifact := false,
     credentials += Credentials(
       "Sonatype Nexus Repository Manager",
       "oss.sonatype.org",
@@ -68,8 +68,8 @@ object Build extends AutoPlugin {
       <url>https://github.com/sksamuel/avro4s</url>
         <licenses>
           <license>
-            <name>MIT</name>
-            <url>https://opensource.org/licenses/MIT</url>
+            <name>The Apache 2.0 License</name>
+            <url>https://opensource.org/licenses/Apache-2.0</url>
             <distribution>repo</distribution>
           </license>
         </licenses>
