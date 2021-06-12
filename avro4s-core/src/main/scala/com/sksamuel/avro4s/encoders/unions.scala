@@ -10,7 +10,7 @@ import org.apache.avro.Schema
 object TypeUnions {
 
   /**
-    * Builds an [[Encoder]] for a sealed trait ADT.
+    * Builds an [[Encoder]] for a sealed trait enum.
     */
   def encoder[T](ctx: SealedTrait[Encoder, T]): Encoder[T] = new Encoder[T] {
     override def encode(schema: Schema): T => Any = {

@@ -69,6 +69,34 @@ object SchemaHelper {
   }
 
   /**
+    * Throws if the given schema is not suitable for use in an either.
+    */
+  def validateEitherSchema(schema: Schema): Unit = {
+    if (schema.getType != Schema.Type.UNION)
+      throw new Avro4sConfigurationException(
+        s"Schema type for either encoders / decoders must be UNION, received $schema")
+    if (schema.getTypes.size() != 2)
+      throw new Avro4sConfigurationException(
+        s"Schema for either encoders / decoders must be a UNION of to types, received $schema")
+  }
+
+  /**
+    * Returns the subschema used for a Left in an Either.
+    */
+  def extractEitherLeftSchema(schema: Schema): Schema = {
+    validateEitherSchema(schema)
+    schema.getTypes.get(0)
+  }
+
+  /**
+    * Returns the subschema used for a Right in an Either.
+    */
+  def extractEitherRightSchema(schema: Schema): Schema = {
+    validateEitherSchema(schema)
+    schema.getTypes.get(1)
+  }
+
+  /**
     * Requires a UNION schema and will attempt to find a subschema that
     * matches the default value type. If one matches it will move that
     * schema to the head, as required by the spec.

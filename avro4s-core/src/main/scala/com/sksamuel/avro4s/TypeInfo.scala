@@ -54,34 +54,6 @@
 ////    TypeInfo.fromType(tpe)
 ////  }
 ////
-////  private def nameAnnotation(tpe: universe.Type): Option[String] = {
-////    import scala.reflect.runtime.universe._
-////
-////    tpe.typeSymbol.typeSignature.typeSymbol.annotations.collectFirst {
-////      case a if a.tree.tpe =:= typeOf[AvroName] =>
-////        val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
-////        annoValue.toString
-////    }
-////  }
-////
-////  private def namespaceAnnotation(tpe: universe.Type): Option[String] = {
-////    import scala.reflect.runtime.universe._
-////
-////    tpe.typeSymbol.typeSignature.typeSymbol.annotations.collectFirst {
-////      case a if a.tree.tpe =:= typeOf[AvroNamespace] =>
-////        val annoValue = a.tree.children.tail.head.asInstanceOf[Literal].value.value
-////        annoValue.toString
-////    }
-////  }
-////
-////  private def erased(tpe: universe.Type): Boolean = {
-////    import scala.reflect.runtime.universe._
-////
-////    tpe.typeSymbol.typeSignature.typeSymbol.annotations.exists {
-////      case a if a.tree.tpe =:= typeOf[AvroErasedName] => true
-////      case _ => false
-////    }
-////  }
 ////
 ////  def fromType(tpe: universe.Type): TypeInfo = {
 ////    TypeInfo(

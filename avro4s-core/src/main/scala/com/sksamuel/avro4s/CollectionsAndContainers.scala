@@ -28,38 +28,6 @@
 //}
 //
 //
-//  implicit def eitherDecoder[A: WeakTypeTag: TypeGuardedDecoding, B: WeakTypeTag: TypeGuardedDecoding](
-//    implicit left: Decoder[A], right: Decoder[B]
-//  ): Decoder[Either[A, B]] =
-//    new ResolvableDecoder[Either[A, B]] {
-//      def decoder(env: DefinitionEnvironment[Decoder], update: SchemaUpdate): Decoder[Either[A, B]] = {
-//        val leftDecoder = left.resolveDecoder(env, mapFullUpdate(extractEitherLeftSchema, update))
-//        val rightDecoder = right.resolveDecoder(env, mapFullUpdate(extractEitherRightSchema, update))
-//
-//        new Decoder[Either[A, B]] {
-//          val schemaFor: SchemaFor[Either[A, B]] = buildEitherSchemaFor(leftDecoder.schemaFor, rightDecoder.schemaFor)
-//
-//          private val leftGuard: PartialFunction[Any, A] = TypeGuardedDecoding[A].guard(leftDecoder)
-//          private val rightGuard: PartialFunction[Any, B] = TypeGuardedDecoding[B].guard(rightDecoder)
-//
-//          def decode(value: Any): Either[A, B] =
-//            if (leftGuard.isDefinedAt(value)) {
-//              Left(leftGuard(value))
-//            } else if (rightGuard.isDefinedAt(value)) {
-//              Right(rightGuard(value))
-//            } else {
-//              val nameA = leftDecoder.schema.getFullName
-//              val nameB = rightDecoder.schema.getFullName
-//              throw new Avro4sDecodingException(s"Could not decode $value into Either[$nameA, $nameB]", value, this)
-//            }
-//
-//          override def withSchema(schemaFor: SchemaFor[Either[A, B]]): Decoder[Either[A, B]] =
-//            buildWithSchema(eitherDecoder, schemaFor)
-//        }
-//      }
-//    }
-//
-
 //
 //  implicit def mapDecoder[T](implicit value: Decoder[T]): Decoder[Map[String, T]] =
 //    new ResolvableDecoder[Map[String, T]] {
@@ -106,24 +74,9 @@
 //                                                 rightSchemaFor: SchemaFor[B]): SchemaFor[Either[A, B]] =
 //    SchemaFor(SchemaHelper.createSafeUnion(leftSchemaFor.schema, rightSchemaFor.schema), leftSchemaFor.fieldMapper)
 //
-//  private[avro4s] def extractEitherLeftSchema(schema: Schema): Schema = {
-//    validateEitherSchema(schema)
-//    schema.getTypes.get(0)
-//  }
+
 //
-//  private[avro4s] def extractEitherRightSchema(schema: Schema): Schema = {
-//    validateEitherSchema(schema)
-//    schema.getTypes.get(1)
-//  }
-//
-//  private[avro4s] def validateEitherSchema(schema: Schema): Unit = {
-//    if (schema.getType != Schema.Type.UNION)
-//      throw new Avro4sConfigurationException(
-//        s"Schema type for either encoders / decoders must be UNION, received $schema")
-//    if (schema.getTypes.size() != 2)
-//      throw new Avro4sConfigurationException(
-//        s"Schema for either encoders / decoders must be a UNION of to types, received $schema")
-//  }
+
 //
 //  private[avro4s] def buildIterableSchemaFor[C[X] <: Iterable[X], T](schemaFor: SchemaFor[T]): SchemaFor[C[T]] =
 //    schemaFor.map(SchemaBuilder.array.items(_))

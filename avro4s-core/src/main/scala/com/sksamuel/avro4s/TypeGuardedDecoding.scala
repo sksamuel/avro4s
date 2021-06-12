@@ -1,17 +1,60 @@
-//package com.sksamuel.avro4s
-//
-//import java.nio.ByteBuffer
-//import org.apache.avro.generic.{GenericContainer, GenericFixed}
-//import org.apache.avro.util.Utf8
-//
-//import java.util.UUID
-//import scala.reflect.runtime.universe._
-//
-//trait TypeGuardedDecoding[T] extends Serializable {
-//  def guard(decoderT: Decoder[T]): PartialFunction[Any, T]
-//}
-//
-//object TypeGuardedDecoding {
+package com.sksamuel.avro4s
+
+import org.apache.avro.Schema
+
+import java.nio.ByteBuffer
+import org.apache.avro.generic.{GenericContainer, GenericFixed}
+import org.apache.avro.util.Utf8
+
+import java.util.UUID
+
+trait TypeGuardedDecoding[T] extends Serializable {
+  def guard(schema: Schema): PartialFunction[Any, Boolean]
+}
+
+object TypeGuardedDecoding {
+
+  given TypeGuardedDecoding[String] = new TypeGuardedDecoding[String] :
+    override def guard(schema: Schema): PartialFunction[Any, Boolean] = {
+      case v: Utf8 => true
+      case v: String => true
+    }
+
+  given TypeGuardedDecoding[Boolean] = new TypeGuardedDecoding[Boolean] :
+    override def guard(schema: Schema): PartialFunction[Any, Boolean] = {
+      case v: Boolean => true
+    }
+
+  given TypeGuardedDecoding[Double] = new TypeGuardedDecoding[Double] :
+    override def guard(schema: Schema): PartialFunction[Any, Boolean] = {
+      case v: Double => true
+      case v: Float => true
+    }
+
+  given TypeGuardedDecoding[Float] = new TypeGuardedDecoding[Float] :
+    override def guard(schema: Schema): PartialFunction[Any, Boolean] = {
+      case v: Float => true
+    }
+
+  given TypeGuardedDecoding[Long] = new TypeGuardedDecoding[Long] :
+    override def guard(schema: Schema): PartialFunction[Any, Boolean] = {
+      case v: Long => true
+      case v: Int => true
+      case v: Short => true
+      case v: Byte => true
+    }
+
+  given TypeGuardedDecoding[Int] = new TypeGuardedDecoding[Int] :
+    override def guard(schema: Schema): PartialFunction[Any, Boolean] = {
+      case v: Int => true
+    }
+
+  given[T]: TypeGuardedDecoding[T] = new TypeGuardedDecoding[T] :
+    override def guard(schema: Schema): PartialFunction[Any, Boolean] = {
+      case v: GenericContainer if v.getSchema.getFullName == schema.getFullName => true
+    }
+}
+
 //  private[this] final val StringType = typeOf[String]
 //  private[this] final val UUIDType = typeOf[UUID]
 //  private[this] final val ByteArrayType = typeOf[Array[Byte]]
@@ -43,45 +86,22 @@
 //    }
 //  }
 //
-//  private def stringDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: Utf8   => decoder.decode(v)
-//    case v: String => decoder.decode(v)
-//  }
+//  private def stringDecoder[T](decoder: Decoder[T])
 //
 //  private def uuidDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: Utf8   => decoder.decode(v)
+//    case v: Utf8 => decoder.decode(v)
 //    case v: String => decoder.decode(v)
-//  }
-//
-//  private def booleanDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: Boolean => decoder.decode(v)
-//  }
-//
-//  private def intDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: Int => decoder.decode(v)
-//  }
-//
-//  private def longDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: Long => decoder.decode(v)
-//  }
-//
-//  private def doubleDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: Double => decoder.decode(v)
-//  }
-//
-//  private def floatDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: Float => decoder.decode(v)
 //  }
 //
 //  private def arrayDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: Array[_]                => decoder.decode(v)
+//    case v: Array[_] => decoder.decode(v)
 //    case v: java.util.Collection[_] => decoder.decode(v)
-//    case v: Iterable[_]             => decoder.decode(v)
+//    case v: Iterable[_] => decoder.decode(v)
 //  }
 //
 //  private def byteArrayDecoder[T](decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: ByteBuffer   => decoder.decode(v)
-//    case v: Array[Byte]  => decoder.decode(v)
+//    case v: ByteBuffer => decoder.decode(v)
+//    case v: Array[Byte] => decoder.decode(v)
 //    case v: GenericFixed => decoder.decode(v)
 //  }
 //
@@ -93,11 +113,9 @@
 //    // this is only sort of safe because we will call TypeGuardedDecoding again in the decoder
 //    util.Try(decoder.decode(value)) match {
 //      case util.Success(cp) => Some(cp)
-//      case _                => None
+//      case _ => None
 //    }
 //  }
 //
-//  private def recordDecoder[T](typeName: String, decoder: Decoder[T]): PartialFunction[Any, T] = {
-//    case v: GenericContainer if v.getSchema.getFullName == typeName => decoder.decode(v)
-//  }
+
 //}
