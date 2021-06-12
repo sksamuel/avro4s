@@ -25,7 +25,7 @@ class AvroNameSchemaTest extends AnyFunSuite with Matchers {
 //    val schema = AvroSchema[MyJavaEnum]
 //    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_java_enum.json"))
 //    schema.toString(true) shouldBe expected.toString(true)
-//  }
+  //  }
 
   test("@AvroName on field level java enum") {
     case class Wibble(e: MyJavaEnum)
@@ -34,15 +34,27 @@ class AvroNameSchemaTest extends AnyFunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-//  test("@AvroName on top level ADT type") {
-//    val schema = AvroSchema[Weather]
-//    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_sealed_trait.json"))
-//    schema.toString(true) shouldBe expected.toString(true)
-//  }
+  // todo waiting for next release of magnolia
+  //  test("@AvroName on sealed trait enum") {
+  //    val schema = AvroSchema[Weather]
+  //    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_sealed_trait.json"))
+  //    schema.toString(true) shouldBe expected.toString(true)
+  //  }
 
+  // todo waiting for next release of magnolia
+  //  test("@AvroName on sealed trait enum symbol") {
+  //    val schema = AvroSchema[Benelux]
+  //    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_sealed_trait_symbol.json"))
+  //    schema.toString(true) shouldBe expected.toString(true)
+  //  }
 }
 
 @AvroName("foofoo")
 sealed trait Weather
 case object Rainy extends Weather
 case object Sunny extends Weather
+
+sealed trait Benelux
+@AvroName("foofoo")
+case object Belgium extends Benelux
+case object Luxembourg extends Benelux

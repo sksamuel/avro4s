@@ -23,14 +23,17 @@ object SchemaHelper {
 
   private val arrayTypeNamePattern: Regex = "scala.collection.immutable.::(__B)?".r
 
-  def extractTraitSubschema(fullName: String, schema: Schema): Schema = matchPrimitiveName(fullName) getOrElse {
-    if (schema.getType != Schema.Type.UNION)
-      throw new Avro4sConfigurationException(s"Can only extract subschemas from a UNION but was given $schema")
+  /**
+    * Given the full name of a record, locates the appropriate sub schema from the given union.
+    */
+  def extractTraitSubschema(fullName: String, union: Schema): Schema = matchPrimitiveName(fullName) getOrElse {
+    if (union.getType != Schema.Type.UNION)
+      throw new Avro4sConfigurationException(s"Can only extract subschemas from a UNION but was given $union")
 
-    val types = schema.getTypes
+    val types = union.getTypes
     val size = types.size
 
-    if (size == 0) throw new Avro4sConfigurationException(s"Cannot extract subschema from empty UNION $schema")
+    if (size == 0) throw new Avro4sConfigurationException(s"Cannot extract subschema from empty UNION $union")
 
     // if we are looking for an array type then find "array" first
     // this is totally not FP but what the heck it's late and it's perfectly valid
@@ -43,30 +46,25 @@ object SchemaHelper {
     }
 
     // Finds the matching schema and keeps track a null type if any.
-    // If no matching schema is found in a union of size 2 the other type is returned, regardless of its name.
+    // If the schema is size 2, and one of them is null, then the other type is returned, regardless of its name.
     // See https://github.com/sksamuel/avro4s/issues/268
-    // todo
     var result: Schema = null
     var nullIndex: Int = -1
     var i = 0
-    //    do {
-    //      val s = types.get(i)
-    //      if (s.getFullName == fullName) {
-    //        result = s
-    //      } else if (s.getType == Schema.Type.NULL) {
-    //        nullIndex = i
-    //      }
-    //
-    //      i = i + 1
-    //
-    //    } while (i < size && result == null)
+    while
+      i < size && result == null
+    do
+      val s = types.get(i)
+      if (s.getFullName == fullName) result = s
+      else if (s.getType == Schema.Type.NULL) nullIndex = i
+      i = i + 1
 
     if (result != null) { // Return the name based match
       result
     } else if (nullIndex != -1 && size == 2) { // Return the non null type.
       types.get(i - nullIndex)
     } else {
-      throw new Avro4sConfigurationException(s"Cannot find subschema for type [$fullName] in ${schema.getTypes}")
+      throw new Avro4sConfigurationException(s"Cannot find subschema for type [$fullName] in ${union.getTypes}")
     }
   }
 
