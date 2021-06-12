@@ -61,9 +61,9 @@ object SchemaFor
   with CollectionSchemas
   with TupleSchemas
   with EnumSchemas
+  with OptionSchemas
   with EitherSchemas
   with BigDecimalSchemas
-  with OptionSchemas
   with StringSchemas
   with MagnoliaDerivedSchemas {
 
