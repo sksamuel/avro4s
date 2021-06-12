@@ -16,6 +16,7 @@ trait StringEncoders:
 
 object StringEncoder extends Encoder[String] :
   override def encode(schema: Schema): String => Any = schema.getType match {
+    case Schema.Type.STRING if schema.getObjectProp("avro.java.string") == "String" => Encoder.identity[String].encode(schema)
     case Schema.Type.STRING => UTF8StringEncoder.encode(schema)
     case Schema.Type.BYTES => ByteStringEncoder.encode(schema)
     case Schema.Type.FIXED => FixedStringEncoder.encode(schema)

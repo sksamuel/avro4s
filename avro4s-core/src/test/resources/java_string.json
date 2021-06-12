@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "Foo",
+  "namespace": "com.sksamuel.avro4s.schema.StringSchemasTest",
+  "fields": [
+    {
+      "name": "s",
+      "type": {
+        "type": "string",
+        "avro.java.string": "String"
+      }
+    }
+  ]
+}

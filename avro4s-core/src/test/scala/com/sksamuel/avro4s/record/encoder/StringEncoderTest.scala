@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s.record.encoder
 
 import com.sksamuel.avro4s.encoders.FixedStringEncoder
+import com.sksamuel.avro4s.schemas.JavaStringSchemaFor
 import com.sksamuel.avro4s.{AvroSchema, Encoder, ImmutableRecord, SchemaFor}
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericFixed, GenericRecord}
@@ -15,6 +16,14 @@ class StringEncoderTest extends AnyFunSuite with Matchers {
     val schema = AvroSchema[Foo]
     val record = Encoder[Foo].encode(schema).apply(Foo("hello"))
     record shouldBe ImmutableRecord(schema, Vector(new Utf8("hello")))
+  }
+
+  test("encode strings as java strings when avro.java.string is set") {
+    case class Foo(s: String)
+    given SchemaFor[String] = JavaStringSchemaFor
+    val schema = AvroSchema[Foo]
+    val record = Encoder[Foo].encode(schema).apply(Foo("hello"))
+    record shouldBe ImmutableRecord(schema, Vector("hello"))
   }
 
   test("encode strings as GenericFixed and pad bytes when schema is fixed") {
