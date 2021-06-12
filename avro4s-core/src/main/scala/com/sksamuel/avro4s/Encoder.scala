@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s
 
 import com.sksamuel.avro4s.{DefaultFieldMapper, FieldMapper}
-import com.sksamuel.avro4s.encoders.{ByteIterableEncoders, CollectionEncoders, MagnoliaDerivedEncoder, OptionEncoders, PrimitiveEncoders, StringEncoders, TemporalEncoders, TupleEncoders}
+import com.sksamuel.avro4s.encoders.{ByteIterableEncoders, CollectionEncoders, EitherEncoders, MagnoliaDerivedEncoder, OptionEncoders, PrimitiveEncoders, StringEncoders, TemporalEncoders, TupleEncoders}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.specific.SpecificRecord
@@ -47,7 +47,7 @@ trait Encoder[T] {
     * Returns an [[Encoder[U]] by applying a function that maps a U
     * to an T, before encoding as an T using this encoder.
     */
-  def contramap[U](f: U => T): Encoder[U] = new Encoder[U] {
+  final def contramap[U](f: U => T): Encoder[U] = new Encoder[U] {
     override def encode(schema: Schema): U => Any = { u => self.encode(schema).apply(f(u)) }
   }
 }
@@ -59,6 +59,7 @@ object Encoder
     with CollectionEncoders
     with TemporalEncoders
     with StringEncoders
+    with EitherEncoders
     with ByteIterableEncoders
     with MagnoliaDerivedEncoder {
 
