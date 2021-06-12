@@ -17,6 +17,22 @@ class StringDecoderTest extends AnyFunSuite with Matchers {
     Decoder[FooString].decode(schema).apply(record) shouldBe FooString("hello")
   }
 
+  test("decode from CharSequence to CharSequence") {
+    case class CharSeqTest(val a: CharSequence)
+    val schema = AvroSchema[CharSeqTest]
+    val record = GenericData.Record(schema)
+    record.put("a", "hello".subSequence(1, 2))
+    Decoder[CharSeqTest].decode(schema).apply(record) shouldBe CharSeqTest("e")
+  }
+
+  test("decode from CharSequence to string") {
+    case class CharSeqTest(val a: String)
+    val schema = AvroSchema[CharSeqTest]
+    val record = GenericData.Record(schema)
+    record.put("a", "hello".subSequence(1, 2))
+    Decoder[CharSeqTest].decode(schema).apply(record) shouldBe CharSeqTest("e")
+  }
+
   test("decode from UTF8s to strings") {
     val schema = AvroSchema[FooString]
     val record = new GenericData.Record(schema)

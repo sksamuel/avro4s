@@ -11,6 +11,7 @@ import java.nio.ByteBuffer
 trait StringDecoders:
   given Decoder[String] = StringDecoder
   given Decoder[Utf8] = UTF8Decoder
+  given Decoder[CharSequence] = CharSequenceDecoder
 
 /**
   * A [[Decoder]] for Strings that pattern matches on the incoming type to decode.
@@ -23,9 +24,22 @@ object StringDecoder extends Decoder[String] :
     string match {
       case utf8: Utf8 => utf8.toString
       case string: String => string
+      case charseq: CharSequence => charseq.toString
       case b: Array[Byte] => new Utf8(b).toString
       case bytes: ByteBuffer => new Utf8(bytes.array()).toString
       case fixed: GenericFixed => new Utf8(fixed.bytes()).toString
+    }
+  }
+
+object CharSequenceDecoder extends Decoder[CharSequence]:
+  override def decode(schema: Schema): Any => CharSequence = { string =>
+    string match {
+      case utf8: Utf8 => utf8
+      case string: String => string
+      case charseq: CharSequence => charseq
+      case b: Array[Byte] => new Utf8(b)
+      case bytes: ByteBuffer => new Utf8(bytes.array())
+      case fixed: GenericFixed => new Utf8(fixed.bytes())
     }
   }
 

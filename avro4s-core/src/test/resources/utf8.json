@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "Person",
-  "namespace": "com.sksamuel.avro4s.schema.Utf8Test",
+  "namespace": "com.sksamuel.avro4s.schema.UtfSchemaTest",
   "fields": [
     {
       "name": "name",

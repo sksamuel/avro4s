@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "Test",
-  "namespace": "com.sksamuel.avro4s.schema.BasicSchemasTest",
+  "namespace": "com.sksamuel.avro4s.schema.StringSchemasTest",
   "fields": [
     {
       "name": "str",

@@ -20,12 +20,6 @@ class BasicSchemasTest extends AnyWordSpec with Matchers {
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "accept strings" in {
-      case class Test(str: String)
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/string.json"))
-      val schema = AvroSchema[Test]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
     "accept integer" in {
       case class Test(inty: Int)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/integer.avsc"))

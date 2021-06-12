@@ -48,6 +48,7 @@ class RecordDecoder[T](ctx: magnolia.CaseClass[Decoder, T]) extends Decoder[T] {
 }
 
 class FieldDecoder[T](param: magnolia.CaseClass.Param[Decoder, T], schema: Schema) extends Serializable :
+  require(schema.getType == Schema.Type.RECORD)
 
   private val fieldName = Annotations(param.annotations).name.getOrElse(param.label)
   private val fieldPosition = schema.getFields.asScala.indexWhere(_.name() == fieldName)
