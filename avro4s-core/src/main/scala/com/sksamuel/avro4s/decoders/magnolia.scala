@@ -7,7 +7,6 @@ import magnolia.{AutoDerivation, CaseClass, SealedTrait}
 trait MagnoliaDerivedDecoder extends AutoDerivation[Decoder] :
 
   override def join[T](ctx: CaseClass[Decoder, T]): Decoder[T] =
-    println("**" + ctx)
     DatatypeShape.of(ctx) match {
       case CaseClassShape.Record => new RecordDecoder(ctx)
       case CaseClassShape.ValueType => new RecordDecoder(ctx)

@@ -13,16 +13,12 @@ object TypeUnions {
     * Builds an [[Decoder]] for a sealed trait enum.
     */
   def decoder[T](ctx: SealedTrait[Decoder, T]): Decoder[T] = new Decoder[T] {
-    println(ctx)
     override def decode(schema: Schema): Any => T = {
       require(schema.isUnion)
 
       val decodersByName = ctx.subtypes.map { st =>
-        println("st.typeclass")
-        println(st.typeclass)
         val names = Names(st.typeInfo)
         val subschema = SchemaHelper.extractTraitSubschema(names.fullName, schema)
-        println(st.typeclass)
         names.name -> st.typeclass.decode(subschema)
       }.toMap
 
