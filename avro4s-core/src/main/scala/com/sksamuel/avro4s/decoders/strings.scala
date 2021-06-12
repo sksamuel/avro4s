@@ -1,10 +1,10 @@
 package com.sksamuel.avro4s.decoders
 
 import com.sksamuel.avro4s.encoders.{ByteStringEncoder, StringEncoder, UTF8StringEncoder}
-import com.sksamuel.avro4s.{Avro4sConfigurationException, Avro4sEncodingException, Decoder, Encoder}
-import org.apache.avro.Schema
+import com.sksamuel.avro4s.{Avro4sConfigurationException, Avro4sDecodingException, Decoder, Encoder}
 import org.apache.avro.generic.{GenericData, GenericFixed}
 import org.apache.avro.util.Utf8
+import org.apache.avro.{AvroRuntimeException, Schema}
 
 import java.nio.ByteBuffer
 
@@ -28,6 +28,7 @@ object StringDecoder extends Decoder[String] :
       case b: Array[Byte] => new Utf8(b).toString
       case bytes: ByteBuffer => new Utf8(bytes.array()).toString
       case fixed: GenericFixed => new Utf8(fixed.bytes()).toString
+      case _ => throw new Avro4sDecodingException(s"Unsupported type $string ${string.getClass} for StringDecoder", string)
     }
   }
 

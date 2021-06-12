@@ -123,35 +123,3 @@
 //
 //      field -> new ValueDecoder(decoder, field.map(_.name), index)
 //    }
-//  }
-//
-//  /**
-//    * Compute schema updates coming from annotations on the given parameter to be passed down to the
-//    * field encoder / decoder. These may be a change of the schema type to fixed or an override of the namespace.
-//    */
-//  private def fieldUpdate[Typeclass[_]](param: Param[Typeclass, _],
-//                                        record: Schema,
-//                                        fieldMapper: FieldMapper): SchemaUpdate = {
-//    val extractor = new AnnotationExtractors(param.annotations)
-//    (extractor.fixed, extractor.namespace) match {
-//      case (Some(size), namespace) =>
-//        val name = extractor.name.getOrElse(fieldMapper.to(param.label))
-//        val ns = namespace.getOrElse(record.getNamespace)
-//        FullSchemaUpdate(SchemaFor(SchemaBuilder.fixed(name).namespace(ns).size(size), fieldMapper))
-//      case (_, Some(ns)) => NamespaceUpdate(ns)
-//      case _             => NoUpdate
-//    }
-//  }
-//
-//  private def buildField[Typeclass[_]](param: Param[Typeclass, _],
-//                                       record: Schema,
-//                                       ctx: CaseClass[Typeclass, _],
-//                                       schema: Schema,
-//                                       fieldMapper: FieldMapper) = {
-//    val doc = Records.valueTypeDoc(ctx, param)
-//    val namespace = record.getNamespace
-//    Records.buildSchemaField(param, schema, new AnnotationExtractors(param.annotations), namespace, fieldMapper, doc)
-//  }
-//
-
-//}

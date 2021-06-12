@@ -32,7 +32,13 @@ class MapSchemaTest extends AnyWordSpec with Matchers {
       val schema = AvroSchema[Test]
       schema.toString(true) shouldBe expected.toString(true)
     }
-    "support maps of seqs of records" in {
+    "generate map type for a map of seqs of strings" in {
+      case class Test(map: Map[String, Seq[String]])
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map_seq_string.json"))
+      val schema = AvroSchema[Test]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "generate map type for a map of seqs of records" in {
       case class Nested(goo: String)
       case class Test(map: Map[String, Seq[Nested]])
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/map_seq_nested.json"))

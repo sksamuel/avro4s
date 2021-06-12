@@ -24,6 +24,9 @@ case class TestSetRecords(records: Set[Record])
 case class TestVectorRecords(records: Vector[Record])
 case class Record(str: String, double: Double)
 
+case class TestSeqTuple2(tuples: Seq[Tuple2[String, Int]])
+case class TestSeqTuple3(tuples: Seq[Tuple3[String, Int, Boolean]])
+
 class ArrayDecoderTest extends AnyWordSpec with Matchers {
 
   import scala.collection.JavaConverters._
@@ -166,12 +169,30 @@ class ArrayDecoderTest extends AnyWordSpec with Matchers {
       record.put("doubles", List(132.4324, 5.4, 0.123).asJava)
       Decoder[TestSetDoubles].decode(schema).apply(record) shouldBe TestSetDoubles(Set(132.4324, 5.4, 0.123))
     }
-    //    "support Seq[Tuple2] issue #156" in {
-    //      val schema = SchemaEncoder[TupleTest2]
-    //    }
-    //    "support Seq[Tuple3]" in {
-    //      val schema = SchemaEncoder[TupleTest3]
-    //    }
+
+    "support Seq[Tuple2] issue #156" in {
+      val schema = AvroSchema[TestSeqTuple2]
+
+      val z = new GenericData.Record(AvroSchema[(String, Int)])
+      z.put("_1", new Utf8("hello"))
+      z.put("_2", java.lang.Integer.valueOf(214))
+
+      val record = new GenericData.Record(schema)
+      record.put("tuples", List(z).asJava)
+      Decoder[TestSeqTuple2].decode(schema).apply(record) shouldBe TestSeqTuple2(Seq(("hello", 214)))
+    }
+    "support Seq[Tuple3]" in {
+      val schema = AvroSchema[TestSeqTuple3]
+
+      val z = new GenericData.Record(AvroSchema[(String, Int, Boolean)])
+      z.put("_1", new Utf8("hello"))
+      z.put("_2", java.lang.Integer.valueOf(214))
+      z.put("_3", java.lang.Boolean.valueOf(true))
+
+      val record = new GenericData.Record(schema)
+      record.put("tuples", List(z).asJava)
+      Decoder[TestSeqTuple3].decode(schema).apply(record) shouldBe TestSeqTuple3(Seq(("hello", 214, true)))
+    }
 
     "support top level Seq[Double]" in {
       val schema = SchemaBuilder.array().items(SchemaBuilder.builder().doubleType())
