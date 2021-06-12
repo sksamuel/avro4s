@@ -9,10 +9,6 @@ object SealedTraits {
   def schema[T](ctx: SealedTrait[SchemaFor, T]): Schema = {
 
     val symbols = ctx.subtypes.sorted(SubtypeOrdering).map { st =>
-      val annos = Annotations(st.annotations)
-      println(st.toString)
-      println(st.annotations.toList)
-      println(st.typeAnnotations.toList)
       Names(st.typeInfo, Annotations(st.annotations)).name
     }
 

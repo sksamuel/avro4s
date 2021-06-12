@@ -3,7 +3,7 @@
   "name": "Benelux",
   "namespace": "com.sksamuel.avro4s.schema",
   "symbols": [
-    "foofoo",
-    "Luxembourg"
+    "Luxembourg",
+    "foofoo"
   ]
 }
