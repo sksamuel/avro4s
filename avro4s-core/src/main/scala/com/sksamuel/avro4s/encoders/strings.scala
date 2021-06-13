@@ -1,7 +1,8 @@
 package com.sksamuel.avro4s.encoders
 
 import com.sksamuel.avro4s.{Avro4sConfigurationException, Avro4sEncodingException, Encoder, FieldMapper}
-import org.apache.avro.Schema
+import org.apache.avro.Conversions.UUIDConversion
+import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 
@@ -12,7 +13,7 @@ trait StringEncoders:
   given Encoder[String] = StringEncoder
   given Encoder[Utf8] = Encoder.identity
   given Encoder[CharSequence] = StringEncoder.contramap(_.toString())
-  given Encoder[UUID] = Encoder(x => x.toString)
+  given Encoder[UUID] = UUIDEncoder
 
 object StringEncoder extends Encoder[String] :
   override def encode(schema: Schema): String => Any = schema.getType match {
@@ -22,6 +23,9 @@ object StringEncoder extends Encoder[String] :
     case Schema.Type.FIXED => FixedStringEncoder.encode(schema)
     case _ => throw new Avro4sConfigurationException(s"Unsupported type for string schema: $schema")
   }
+
+object UUIDEncoder extends Encoder[UUID] :
+  override def encode(schema: Schema): UUID => Any = uuid => new Utf8(uuid.toString)
 
 /**
   * An [[Encoder]] for Strings that encodes as avro [[Utf8]]s.

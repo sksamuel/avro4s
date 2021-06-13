@@ -54,11 +54,11 @@ trait Encoder[T] {
 
 object Encoder
   extends PrimitiveEncoders
+    with StringEncoders
     with TupleEncoders
     with OptionEncoders
     with CollectionEncoders
     with TemporalEncoders
-    with StringEncoders
     with EitherEncoders
     with ByteIterableEncoders
     with MagnoliaDerivedEncoder {
