@@ -8,7 +8,7 @@
 //
 //class Github396 extends AnyFunSuite with Matchers {
 //
-//  implicit val fieldMapping = SnakeCase
+////  implicit val fieldMapping = SnakeCase
 //
 //  case class Foo(@AvroName("WIBBLE") aWobble: String, bWubble: String)
 //
@@ -23,7 +23,7 @@
 //  }
 //
 //  test("@AvroName should should override fieldmapping on decoding") {
-//    implicit val fieldMapper: FieldMapper = SnakeCase
+//    //    implicit val fieldMapper: FieldMapper = SnakeCase
 //
 //    val schema = AvroSchema[Foo]
 //
@@ -34,12 +34,12 @@
 //    record.put("b_wubble", "two")
 //
 //
-//    Decoder[Foo].decode(record) shouldBe obj
+//    Decoder[Foo].decode(schema).apply(record) shouldBe obj
 //  }
 //
 //  test("@AvroName should override fieldmapping on encoding") {
 //
-//    implicit val fieldMapper: FieldMapper = SnakeCase
+//    //    implicit val fieldMapper: FieldMapper = SnakeCase
 //    val schema = AvroSchema[Foo]
 //
 //    val obj = Foo("one", "two")
@@ -47,7 +47,7 @@
 //    val record = ImmutableRecord(schema, Vector(new Utf8("one"), new Utf8("two")))
 //
 //
-//    Encoder[Foo].encode(obj) shouldBe record
+//    Encoder[Foo].encode(schema).apply(obj) shouldBe record
 //  }
 //
 //}

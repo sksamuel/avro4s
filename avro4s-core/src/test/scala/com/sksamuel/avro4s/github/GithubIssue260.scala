@@ -2,9 +2,10 @@
 //
 //import com.sksamuel.avro4s.{AvroName, AvroSchema}
 //import org.apache.avro.SchemaNormalization
-//import org.scalatest.{FunSuite, Matchers}
+//import org.scalatest.funsuite.AnyFunSuite
+//import org.scalatest.matchers.should.Matchers
 //
-//class GithubIssue260 extends FunSuite with Matchers {
+//class GithubIssue260 extends AnyFunSuite with Matchers {
 //  test("Schema generated is not always the same (#260)") {
 //    val fingerprints = (1 to 100).map { _ =>
 //      SchemaNormalization.parsingFingerprint64(AvroSchema[ActivityEvent])
