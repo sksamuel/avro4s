@@ -2,12 +2,6 @@ package com.sksamuel.avro4s
 
 //import shapeless.{:+:, CNil}
 
-enum Tree[+T]derives SchemaFor :
-  case Branch(left: Tree[T], right: Tree[T])
-  case Leaf(value: T)
-
-case class Recur(r: Recur) derives SchemaFor
-
 //sealed trait Tree[+T]
 //case class Branch[+T](left: Tree[T], right: Tree[T]) extends Tree[T]
 //case class Leaf[+T](value: T) extends Tree[T]
