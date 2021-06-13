@@ -7,11 +7,13 @@ import org.apache.avro.util.Utf8
 import org.apache.avro.{AvroRuntimeException, Schema}
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
 trait StringDecoders:
   given Decoder[String] = StringDecoder
   given Decoder[Utf8] = UTF8Decoder
   given Decoder[CharSequence] = CharSequenceDecoder
+  given Decoder[UUID] = StringDecoder.map(UUID.fromString)
 
 /**
   * A [[Decoder]] for Strings that pattern matches on the incoming type to decode.

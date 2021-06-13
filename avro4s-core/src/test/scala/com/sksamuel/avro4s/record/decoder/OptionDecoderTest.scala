@@ -53,25 +53,25 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
       Decoder[OptionBoolean].decode(schema).apply(record2) shouldBe OptionBoolean(None)
     }
     // todo once magnolia has scala 3 default support
-    //    "if a field is missing, use default value" in {
-    //      val schema = AvroSchema[SchemaWithoutExpectedField]
-    //      val record = new GenericData.Record(AvroSchema[SchemaWithoutExpectedField])
-    //      Decoder[OptionStringDefault].decode(schema).apply(record) shouldBe OptionStringDefault(Some("cupcat"))
-    //    }
+    // "if a field is missing, use default value" in {
+    //   val schema = AvroSchema[SchemaWithoutExpectedField]
+    //   val record = new GenericData.Record(AvroSchema[SchemaWithoutExpectedField])
+    //   Decoder[OptionStringDefault].decode(schema).apply(record) shouldBe OptionStringDefault(Some("cupcat"))
+    // }
     // todo once magnolia has scala 3 default support
-    //    "if an enum field is missing, use default value" in {
-    //      val schema = AvroSchema[SchemaWithoutExpectedField]
-    //      val record = new GenericData.Record(AvroSchema[SchemaWithoutExpectedField])
-    //      Decoder[OptionEnumDefault].decode(schema).apply(record) shouldBe OptionEnumDefault(Some(CuppersOptionEnum))
-    //    }
+    // "if an enum field is missing, use default value" in {
+    //   val schema = AvroSchema[SchemaWithoutExpectedField]
+    //   val record = new GenericData.Record(AvroSchema[SchemaWithoutExpectedField])
+    //   Decoder[OptionEnumDefault].decode(schema).apply(record) shouldBe OptionEnumDefault(Some(CuppersOptionEnum))
+    // }
     // todo once magnolia has scala 3 default support
-//    "decode a null field to None" in {
-//      val schema = AvroSchema[OptionEnumDefaultWithNone]
-//      val record = new GenericData.Record(schema)
-//      record.put("s", null)
-//      record.put("t", "cupcat")
-//      Decoder[OptionEnumDefaultWithNone].decode(schema).apply(record) shouldBe OptionEnumDefaultWithNone(None, "cupcat")
-//    }
+    //    "decode a null field to None" in {
+    //      val schema = AvroSchema[OptionEnumDefaultWithNone]
+    //      val record = new GenericData.Record(schema)
+    //      record.put("s", null)
+    //      record.put("t", "cupcat")
+    //      Decoder[OptionEnumDefaultWithNone].decode(schema).apply(record) shouldBe OptionEnumDefaultWithNone(None, "cupcat")
+    //    }
     "option of seq of case class" in {
       val schema = AvroSchema[OptionOfSeqOfCaseClass]
       val unionSchema = schema.getField("foo").schema()
