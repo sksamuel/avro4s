@@ -27,7 +27,7 @@ trait AvroOutputStream[T] extends AutoCloseable {
   def write(ts: Seq[T]): Unit = ts.foreach(write)
 }
 
-object AvroOutputStream {
+object AvroOutputStream:
 
   /**
     * An [[AvroOutputStream]] that does not write the schema.
@@ -35,56 +35,60 @@ object AvroOutputStream {
     * Use this when you want the smallest messages possible at the cost of not having the
     * schema available in the messages for downstream clients.
     */
-  def binary[T: Encoder](schema: Schema): AvroOutputStreamBuilder[T] =
-    new AvroOutputStreamBuilder[T](schema, AvroFormat.Binary)
+  //  def binary[T](schema: Schema, encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
+  //    given Encoder[T] = encoder
+  //    new AvroOutputStreamBuilder[T](schema, AvroFormat.Binary)
 
   def binary[T](using schemaFor: SchemaFor[T], encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
-    binary(schemaFor.schema)
+    new AvroOutputStreamBuilder[T](schemaFor.schema, encoder, AvroFormat.Binary)
 
   /**
     * An [[AvroOutputStream]] that writes as JSON.
     */
-  def json[T: Encoder](schema: Schema): AvroOutputStreamBuilder[T] =
-    new AvroOutputStreamBuilder[T](schema, AvroFormat.Json)
+  //  def json[T: Encoder](schema: Schema): AvroOutputStreamBuilder[T] =
+  //    new AvroOutputStreamBuilder[T](schema, AvroFormat.Json)
 
   def json[T](using schemaFor: SchemaFor[T], encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
-    json(schemaFor.schema)
+    new AvroOutputStreamBuilder[T](schemaFor.schema, encoder, AvroFormat.Json)
 
   /**
     * An [[AvroOutputStream]] that writes the schema alongside data.
     *
     * This is the standard implementation for Avro.
     */
-  def data[T: Encoder](schema: Schema): AvroOutputStreamBuilder[T] =
-    new AvroOutputStreamBuilder[T](schema, AvroFormat.Data)
+  def data[T](schema: Schema, encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
+    new AvroOutputStreamBuilder[T](schema, encoder, AvroFormat.Data)
 
   def data[T](using schemaFor: SchemaFor[T], encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
-    data(schemaFor.schema)
-}
+    new AvroOutputStreamBuilder[T](schemaFor.schema, encoder, AvroFormat.Data)
 
-class AvroOutputStreamBuilder[T: Encoder](schema: Schema, format: AvroFormat) {
+class AvroOutputStreamBuilder[T](schema: Schema, encoder: Encoder[T], format: AvroFormat) {
   def to(path: Path): AvroOutputStreamBuilderWithSource[T] = to(Files.newOutputStream(path))
   def to(path: String): AvroOutputStreamBuilderWithSource[T] = to(Paths.get(path))
   def to(file: File): AvroOutputStreamBuilderWithSource[T] = to(file.toPath)
   def to(out: OutputStream): AvroOutputStreamBuilderWithSource[T] =
-    new AvroOutputStreamBuilderWithSource(schema, format, out)
+    new AvroOutputStreamBuilderWithSource(schema, encoder, format, out)
 }
 
-case class AvroOutputStreamBuilderWithSource[T: Encoder](schema: Schema,
-                                                         format: AvroFormat,
-                                                         out: OutputStream,
-                                                         codec: CodecFactory = CodecFactory.nullCodec) {
+case class AvroOutputStreamBuilderWithSource[T](schema: Schema,
+                                                encoder: Encoder[T],
+                                                format: AvroFormat,
+                                                out: OutputStream,
+                                                codec: CodecFactory = CodecFactory.nullCodec) {
 
   def withCodec(codec: CodecFactory) = copy(codec = codec)
 
   /**
     * Builds an [[AvroOutputStream]]
     */
-  def build(): AvroOutputStream[T] = format match {
-    case AvroFormat.Data => new AvroDataOutputStream[T](schema, out, codec)
-    case AvroFormat.Binary => new AvroBinaryOutputStream[T](schema, out, EncoderFactory.get().binaryEncoder(out, null))
-    case AvroFormat.Json =>
-      val serializer = EncoderFactory.get().jsonEncoder(schema, out)
-      new AvroBinaryOutputStream[T](schema, out, serializer)
+  def build(): AvroOutputStream[T] = {
+    given Encoder[T] = encoder
+    format match {
+      case AvroFormat.Data => new AvroDataOutputStream[T](schema, out, codec)
+      case AvroFormat.Binary => new AvroBinaryOutputStream[T](schema, out, EncoderFactory.get().binaryEncoder(out, null))
+      case AvroFormat.Json =>
+        val serializer = EncoderFactory.get().jsonEncoder(schema, out)
+        new AvroBinaryOutputStream[T](schema, out, serializer)
+    }
   }
 }

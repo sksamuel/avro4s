@@ -17,12 +17,6 @@
 //                                                 rightSchemaFor: SchemaFor[B]): SchemaFor[Either[A, B]] =
 //    SchemaFor(SchemaHelper.createSafeUnion(leftSchemaFor.schema, rightSchemaFor.schema), leftSchemaFor.fieldMapper)
 //
-
-//
-
-//
-//  private[avro4s] def buildIterableSchemaFor[C[X] <: Iterable[X], T](schemaFor: SchemaFor[T]): SchemaFor[C[T]] =
-//    schemaFor.map(SchemaBuilder.array.items(_))
 //
 //  private[avro4s] def extractIterableElementSchema(schema: Schema): Schema = {
 //    if (schema.getType != Schema.Type.ARRAY)
