@@ -184,14 +184,7 @@
 //trait BaseDecoders {
 
 //
-//  implicit object ByteBufferDecoder extends Decoder[ByteBuffer] {
-//    val schemaFor: SchemaFor[ByteBuffer] = SchemaFor.ByteBufferSchemaFor
-//    def decode(value: Any): ByteBuffer = value match {
-//      case b: ByteBuffer  => b
-//      case a: Array[Byte] => ByteBuffer.wrap(a)
-//      case _              => throw new Avro4sDecodingException(s"Unable to decode value $value to ByteBuffer", value, this)
-//    }
-//  }
+
 //
 //  implicit object CharSequenceDecoder extends Decoder[CharSequence] {
 //    val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchemaFor

@@ -9,7 +9,9 @@ import scala.jdk.CollectionConverters._
 
 class ArrayDecoder[T: ClassTag](decoder: Decoder[T]) extends Decoder[Array[T]] :
   def decode(schema: Schema): Any => Array[T] = {
-    require(schema.getType == Schema.Type.ARRAY)
+    require(schema.getType == Schema.Type.ARRAY, {
+      s"Require schema type ARRAY (was $schema)"
+    })
     val decodeT = decoder.decode(schema.getElementType)
     { value =>
       value match {
@@ -33,7 +35,9 @@ trait CollectionDecoders:
                                               build: Iterable[T] => C[T]): Decoder[C[T]] =
     new Decoder[C[T]] {
       def decode(schema: Schema): Any => C[T] = {
-        require(schema.getType == Schema.Type.ARRAY)
+        require(schema.getType == Schema.Type.ARRAY, {
+          s"Require schema type ARRAY (was $schema)"
+        })
         val decodeT = decoder.decode(schema.getElementType)
         { value =>
           value match {

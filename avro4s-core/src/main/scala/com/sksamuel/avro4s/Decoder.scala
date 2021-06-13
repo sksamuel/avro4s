@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s
 
-import com.sksamuel.avro4s.decoders.{CollectionDecoders, EitherDecoders, MagnoliaDerivedDecoder, OptionDecoders, PrimitiveDecoders, StringDecoders, TemporalDecoders}
+import com.sksamuel.avro4s.decoders.{ByteDecoders, CollectionDecoders, EitherDecoders, MagnoliaDerivedDecoder, OptionDecoders, PrimitiveDecoders, StringDecoders, TemporalDecoders}
 import org.apache.avro.Schema
 
 /**
@@ -35,6 +35,7 @@ object Decoder
     with PrimitiveDecoders
     with OptionDecoders
     with EitherDecoders
+    with ByteDecoders
     with CollectionDecoders
     with TemporalDecoders
     with MagnoliaDerivedDecoder {
