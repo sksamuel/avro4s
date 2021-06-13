@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "SealedTraitEnum",
+  "namespace": "com.sksamuel.avro4s.schema.EnumSchemaTest",
+  "fields": [
+    {
+      "name": "cupcat",
+      "type": {
+        "type": "enum",
+        "name": "CupcatEnum",
+        "namespace": "com.sksamuel.avro4s.schema",
+        "symbols": [
+          "SnoutleyEnum",
+          "CuppersEnum"
+        ]
+      }
+    }
+  ]
+}

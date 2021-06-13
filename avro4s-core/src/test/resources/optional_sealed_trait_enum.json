@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "OptionalSealedTraitEnum",
+  "namespace": "com.sksamuel.avro4s.schema.EnumSchemaTest",
+  "fields": [
+    {
+      "name": "cupcat",
+      "type": [
+        "null",
+        {
+          "type": "enum",
+          "name": "CupcatEnum",
+          "namespace": "com.sksamuel.avro4s.schema",
+          "symbols": [
+            "SnoutleyEnum",
+            "CuppersEnum"
+          ]
+        }
+      ]
+    }
+  ]
+}

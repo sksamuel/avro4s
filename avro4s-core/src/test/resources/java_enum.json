@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "JavaEnum",
+  "namespace": "com.sksamuel.avro4s.schema.EnumSchemaTest",
+  "fields": [
+    {
+      "name": "wine",
+      "type": {
+        "type": "enum",
+        "name": "Wine",
+        "namespace": "com.sksamuel.avro4s.schema",
+        "symbols": [
+          "Malbec",
+          "Shiraz",
+          "CabSav",
+          "Merlot"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "type": "enum",
+  "name": "Wine",
+  "namespace": "test",
+  "symbols": [
+    "Malbec",
+    "Shiraz",
+    "CabSav",
+    "Merlot"
+  ],
+  "default": "CabSav",
+  "hello": "world"
+}
