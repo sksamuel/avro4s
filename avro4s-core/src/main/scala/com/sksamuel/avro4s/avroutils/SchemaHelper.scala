@@ -150,10 +150,15 @@ object SchemaHelper {
     } else schema
   }
 
-  // creates a union schema type, with nested unions extracted, and duplicate nulls stripped
-  // union schemas can't contain other union schemas as a direct
-  // child, so whenever we create a union, we need to check if our
-  // children are unions and flatten
+  /**
+    * Creates a union schema type, with nested unions extracted, and duplicate nulls stripped.
+    *
+    * Union schemas can't contain other union schemas as a direct child,
+    * so whenever we create a union, we need to check if our children are unions and flatten
+    *
+    * For example, an Option[SealedTrait], would result in a union of a union, so this must be
+    * flattened into a single union.
+    */
   def createSafeUnion(schemas: Schema*): Schema = {
     val flattened = schemas.flatMap(schema => scala.util.Try(schema.getTypes.asScala).getOrElse(Seq(schema)))
     val (nulls, rest) = flattened.partition(_.getType == Schema.Type.NULL)
