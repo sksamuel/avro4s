@@ -5,6 +5,7 @@ on:
     inputs:
       version:
         description: "The release version"
+        default: '5.0.'
         required: true
       branch:
         description: "The branch to release from"
