@@ -1,26 +1,3 @@
-//package com.sksamuel.avro4s
-//
-//import java.nio.ByteBuffer
-//import java.sql.{Date, Timestamp}
-//import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
-//import java.util.UUID
-//
-//import org.apache.avro.{LogicalType, LogicalTypes, Schema, SchemaBuilder}
-//import org.apache.avro.generic.GenericData.EnumSymbol
-//import org.apache.avro.generic.{GenericData, GenericFixed}
-//import org.apache.avro.util.Utf8
-//
-//import scala.reflect.ClassTag
-//import scala.reflect.runtime.universe._
-//
-//trait BaseSchemaFors {
-//  implicit val ByteBufferSchemaFor: SchemaFor[ByteBuffer] = SchemaFor[ByteBuffer](SchemaBuilder.builder.bytesType)
-//  implicit val CharSequenceSchemaFor: SchemaFor[CharSequence] =
-//    SchemaFor[CharSequence](SchemaBuilder.builder.stringType)
-//  implicit val StringSchemaFor: SchemaFor[String] = SchemaFor[String](SchemaBuilder.builder.stringType)
-//  implicit val Utf8SchemaFor: SchemaFor[Utf8] = StringSchemaFor.forType
-//  implicit val UUIDSchemaFor: SchemaFor[UUID] =
-//    SchemaFor[UUID](LogicalTypes.uuid().addToSchema(SchemaBuilder.builder.stringType))
 //
 //  implicit def javaEnumSchemaFor[E <: Enum[_]](implicit tag: ClassTag[E]): SchemaFor[E] = {
 //    val typeInfo = TypeInfo.fromClass(tag.runtimeClass)
@@ -72,99 +49,6 @@
 //    }.flatten
 //  }
 //
-//  implicit def scalaEnumSchemaFor[E <: scala.Enumeration#Value](implicit tag: TypeTag[E]): SchemaFor[E] = {
-//
-//    val typeRef = tag.tpe match {
-//      case t @ TypeRef(_, _, _) => t
-//    }
-//
-//    val valueType = typeOf[E]
-//    val pre = typeRef.pre.typeSymbol.typeSignature.members.sorted
-//    val syms = pre
-//      .filter { sym =>
-//        !sym.isMethod &&
-//        !sym.isType &&
-//        sym.typeSignature.baseType(valueType.typeSymbol) =:= valueType
-//      }
-//      .map { sym =>
-//        sym.name.decodedName.toString.trim
-//      }
-//
-//    val annotations: Seq[Annotation] = typeRef.pre.typeSymbol.annotations
-//
-//    val maybeName = getAnnotationValue(classOf[AvroName], annotations)
-//    val maybeNamespace = getAnnotationValue(classOf[AvroNamespace], annotations)
-//    val enumDefault = getAnnotationValue(classOf[AvroEnumDefault], annotations)
-//
-//    val props: Seq[(String, String)] = annotations.collect {
-//      case a: Annotation if a.tree.tpe.typeSymbol.name.toString == classOf[AvroProp].getSimpleName =>
-//        a.tree.children.tail match {
-//          case List(key: Literal, value: Literal) => key.value.value.toString -> value.value.value.toString
-//          case _ =>
-//            throw new RuntimeException(
-//              "Failed to process an AvroProp annotation. The annotation should contain a key and value literals.")
-//        }
-//    }
-//
-//    val nameExtractor = NameExtractor(TypeInfo.fromType(typeRef.pre))
-//
-//    val name = maybeName.getOrElse(nameExtractor.name)
-//    val namespace = maybeNamespace.getOrElse(nameExtractor.namespace)
-//
-//    val schema = enumDefault
-//      .map { default =>
-//        SchemaBuilder.enumeration(name).namespace(namespace).defaultSymbol(default) symbols (syms: _*)
-//      }
-//      .getOrElse {
-//        SchemaBuilder.enumeration(name).namespace(namespace).symbols(syms: _*)
-//      }
-//
-//    props.foreach {
-//      case (key, value) =>
-//        schema.addProp(key, value)
-//    }
-//    SchemaFor[E](schema)
-//  }
-//
-//
-//  implicit object CharSequenceEncoder extends Encoder[CharSequence] {
-//    val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchemaFor
-//    def encode(value: CharSequence): AnyRef = value
-//  }
-//
-//  implicit val StringEncoder: Encoder[String] = new StringEncoder(SchemaFor.StringSchemaFor)
-//
-//  implicit val Utf8Codec: Encoder[Utf8] = new Encoder[Utf8] {
-//    val schemaFor: SchemaFor[Utf8] = SchemaFor.Utf8SchemaFor
-//    def encode(value: Utf8): AnyRef = value
-//  }
-//
-//  private[avro4s] class StringEncoder(val schemaFor: SchemaFor[String]) extends Encoder[String] {
-//
-//    val encoder: String => AnyRef = schema.getType match {
-//      case Schema.Type.STRING => new Utf8(_)
-//      case Schema.Type.FIXED  => encodeFixed
-//      case Schema.Type.BYTES =>
-//        str =>
-//          ByteBuffer.wrap(str.getBytes)
-//      case _ => throw new Avro4sConfigurationException(s"Unsupported type for string schema: $schema")
-//    }
-//
-//    def encodeFixed(value: String): AnyRef = {
-//      if (value.getBytes.length > schema.getFixedSize)
-//        throw new Avro4sEncodingException(
-//          s"Cannot write string with ${value.getBytes.length} bytes to fixed type of size ${schema.getFixedSize}",
-//          value,
-//          this)
-//      GenericData.get.createFixed(null, ByteBuffer.allocate(schema.getFixedSize).put(value.getBytes).array, schema)
-//    }
-//
-//    def encode(value: String): AnyRef = encoder(value)
-//
-//    override def withSchema(schemaFor: SchemaFor[String]): Encoder[String] = new StringEncoder(schemaFor)
-//  }
-//
-//  implicit val UUIDCodec: Encoder[UUID] = StringEncoder.comap[UUID](_.toString).withSchema(SchemaFor.UUIDSchemaFor)
 //
 //  implicit def javaEnumEncoder[E <: Enum[E]: ClassTag]: JavaEnumEncoder[E] = new JavaEnumEncoder[E]
 //
@@ -181,46 +65,6 @@
 //  }
 //}
 //
-//trait BaseDecoders {
-
-//
-
-//
-//  implicit object CharSequenceDecoder extends Decoder[CharSequence] {
-//    val schemaFor: SchemaFor[CharSequence] = SchemaFor.CharSequenceSchemaFor
-//    def decode(value: Any): CharSequence = value match {
-//      case cs: CharSequence => cs
-//      case _                => throw new Avro4sDecodingException(s"Unable to decode value $value to CharSequence", value, this)
-//    }
-//  }
-//
-//  implicit val StringDecoder: Decoder[String] = new StringDecoder(SchemaFor.StringSchemaFor)
-//
-//  implicit val Utf8Decoder: Decoder[Utf8] = new Decoder[Utf8] {
-//    val schemaFor: SchemaFor[Utf8] = SchemaFor.Utf8SchemaFor
-//    def decode(value: Any): Utf8 = value match {
-//      case u: Utf8        => u
-//      case b: Array[Byte] => new Utf8(b)
-//      case null           => throw new Avro4sDecodingException("Cannot decode <null> as utf8", value, this)
-//      case _              => new Utf8(value.toString)
-//    }
-//  }
-//
-//  private[avro4s] class StringDecoder(val schemaFor: SchemaFor[String]) extends Decoder[String] {
-//
-//    def decode(value: Any): String = value match {
-//      case u: Utf8             => u.toString
-//      case s: String           => s
-//      case chars: CharSequence => chars.toString
-//      case fixed: GenericFixed => new String(fixed.bytes())
-//      case a: Array[Byte]      => new String(a)
-//      case null                => throw new Avro4sDecodingException("Cannot decode <null> as a string", value, this)
-//      case other =>
-//        throw new Avro4sDecodingException(s"Cannot decode $other of type ${other.getClass} into a string", value, this)
-//    }
-//
-//    override def withSchema(schemaFor: SchemaFor[String]): Decoder[String] = new StringDecoder(schemaFor)
-//  }
 //
 //  implicit val UUIDDecoder: Decoder[UUID] = StringDecoder.map[UUID](UUID.fromString).withSchema(SchemaFor.UUIDSchemaFor)
 //

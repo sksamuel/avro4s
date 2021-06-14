@@ -58,42 +58,4 @@
 //  }
 //}
 //
-//trait BigDecimalEncoders {
-//
-//  implicit def bigDecimalEncoder(implicit scalePrecision: ScalePrecision = ScalePrecision.default,
-//                                 roundingMode: RoundingMode = RoundingMode.UNNECESSARY): Encoder[BigDecimal] =
-//    new BigDecimalBytesEncoder(SchemaFor.bigDecimalSchemaFor, roundingMode)
-//
-//  abstract class BigDecimalEncoderBase(roundingMode: RoundingMode) extends Encoder[BigDecimal] {
-//
-//    override def withSchema(schemaFor: SchemaFor[BigDecimal]): Encoder[BigDecimal] =
-//      schemaFor.schema.getType match {
-//        case Schema.Type.BYTES  => new BigDecimalBytesEncoder(schemaFor, roundingMode)
-//        case Schema.Type.STRING => new BigDecimalStringEncoder(schemaFor, roundingMode)
-//        case Schema.Type.FIXED  => new BigDecimalFixedEncoder(schemaFor, roundingMode)
-//        case t =>
-//          throw new Avro4sConfigurationException(
-//            s"Unable to create Encoder with schema type $t, only bytes, fixed, and string supported")
-//      }
-//  }
-//
-//  class BigDecimalBytesEncoder(val schemaFor: SchemaFor[BigDecimal], val roundingMode: RoundingMode)
-//      extends BigDecimalEncoderBase(roundingMode)
-//      with BigDecimalConversion[Encoder] {
-//    def encode(value: BigDecimal): AnyRef =
-//      converter.toBytes(value.underlying.setScale(decimal.getScale, rm), schema, decimal)
-//  }
-//
-//  class BigDecimalStringEncoder(val schemaFor: SchemaFor[BigDecimal], roundingMode: RoundingMode)
-//      extends BigDecimalEncoderBase(roundingMode) {
-//    def encode(value: BigDecimal): AnyRef = Encoder.StringEncoder.encode(value.toString())
-//  }
-//
-//  class BigDecimalFixedEncoder(val schemaFor: SchemaFor[BigDecimal], val roundingMode: RoundingMode)
-//      extends BigDecimalEncoderBase(roundingMode)
-//      with BigDecimalConversion[Encoder] {
-//    def encode(value: BigDecimal): AnyRef =
-//      converter.toFixed(value.underlying.setScale(decimal.getScale, rm), schema, decimal)
-//  }
-//}
-//
+

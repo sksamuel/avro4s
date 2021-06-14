@@ -12,6 +12,9 @@ trait ByteDecoders:
   given Decoder[Seq[Byte]] = ArrayByteDecoder.map(_.toList)
   given Decoder[Vector[Byte]] = ArrayByteDecoder.map(_.toVector)
 
+/**
+  * A [[Decoder]] for byte arrays that accepts any compatible type regardless of schema.
+  */
 object ArrayByteDecoder extends Decoder[Array[Byte]] :
   override def decode(schema: Schema): Any => Array[Byte] = { value =>
     value match {
@@ -31,3 +34,18 @@ object ByteBufferDecoder extends Decoder[ByteBuffer] :
       case _ => throw new Avro4sDecodingException(s"ByteBufferDecoder cannot decode '$value'", value)
     }
   }
+
+/**
+  * A Strict [[Decoder]] for byte arays that only works if the schema is FIXED.
+  */
+object FixedByteArrayDecoder extends Decoder[Array[Byte]] :
+  override def decode(schema: Schema): Any => Array[Byte] =
+    require(schema.getType == Schema.Type.FIXED, {
+      s"Fixed byte array decoder only supports schema type FIXED, got $schema"
+    })
+    { value =>
+      value match {
+        case fixed: org.apache.avro.generic.GenericFixed => fixed.bytes
+        case _ => throw new Avro4sDecodingException(s"FixedByteArrayDecoder cannot decode '$value'", value)
+      }
+    }

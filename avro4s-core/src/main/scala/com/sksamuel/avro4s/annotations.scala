@@ -126,3 +126,5 @@ case class AvroUnionPosition(position: Int) extends StaticAnnotation
   * Use this annotation to indicate that a record type should be generated as an avro error type.
   */
 case class AvroError() extends StaticAnnotation
+
+case class AvroScalePrecision(scale: Int, precision: Int) extends StaticAnnotation

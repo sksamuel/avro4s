@@ -54,16 +54,16 @@ trait SchemaFor[T] {
 
 object SchemaFor
   extends PrimitiveSchemas
-  with ByteIterableSchemas
-  with TemporalSchemas
-  with CollectionSchemas
-  with TupleSchemas
-  with EnumSchemas
-  with OptionSchemas
-  with EitherSchemas
-  with BigDecimalSchemas
-  with StringSchemas
-  with MagnoliaDerivedSchemas {
+    with BigDecimalSchemas
+    with ByteIterableSchemas
+    with CollectionSchemas
+    with EitherSchemas
+    with EnumSchemas
+    with OptionSchemas
+    with StringSchemas
+    with TemporalSchemas
+    with TupleSchemas
+    with MagnoliaDerivedSchemas {
 
   /**
     * Returns a [[SchemaFor]] that returns the given schema.

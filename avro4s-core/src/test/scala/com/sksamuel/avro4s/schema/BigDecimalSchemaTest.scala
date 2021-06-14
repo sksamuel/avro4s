@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroSchema, ScalePrecision, SchemaFor}
+import com.sksamuel.avro4s.{AvroSchema, BigDecimals, ScalePrecision, SchemaFor}
 import org.apache.avro.Schema
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -12,7 +12,7 @@ case class BigDecimalDefault(decimal: BigDecimal = 964.55)
 class BigDecimalSchemaTest extends AnyWordSpec with Matchers {
 
   "SchemaEncoder" should {
-    "accept big decimal as logical type on bytes" in {
+    "encode big decimal" in {
       case class Test(decimal: BigDecimal)
       val schema = AvroSchema[Test]
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal.json"))
@@ -47,9 +47,9 @@ class BigDecimalSchemaTest extends AnyWordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/bigdecimal_seq_option.json"))
       schema shouldBe expected
     }
-    "allow big decimals to be encoded as strings when custom typeclasses are provided" in {
+    "allow big decimals to be encoded as STRING when custom typeclasses are provided" in {
 
-      implicit val bigDecimalSchemaFor = com.sksamuel.avro4s.BigDecimals.AsString
+      given SchemaFor[BigDecimal] = BigDecimals.AsString
 
       case class BigDecimalAsStringTest(decimal: BigDecimal)
       val schema = AvroSchema[BigDecimalAsStringTest]
@@ -58,27 +58,24 @@ class BigDecimalSchemaTest extends AnyWordSpec with Matchers {
     }
     "allow big decimals to be encoded as FIXED when custom typeclasses are provided" in {
 
-      implicit val bigDecimalAsFixedSchemaFor = SchemaFor[BigDecimal](Schema.createFixed("bigdecimal", null, null, 55))
+      given SchemaFor[BigDecimal] = SchemaFor[BigDecimal](Schema.createFixed("bigdecimal", null, null, 55))
 
       case class BigDecimalAsFixedTest(decimal: BigDecimal)
       val schema = AvroSchema[BigDecimalAsFixedTest]
       val expected = new org.apache.avro.Schema.Parser().parse(this.getClass.getResourceAsStream("/bigdecimal_as_fixed.json"))
       schema shouldBe expected
     }
-    //
     //    "fail when trying to convert a BigDecimal into ByteBuffer without specifying the scale and precision and rounding mode and rounding is required" in {
     //      val n = BigDecimal(7.851)
     //      the[java.lang.ArithmeticException] thrownBy {
     //        BigDecimalFromValue.apply(BigDecimalToValue.apply(n))
     //      } should have message "Rounding necessary"
     //    }
-    //
     //    "convert a BigDecimal into ByteBuffer with specifying the scale and precision and rounding mode and rounding is not required" in {
     //      val sp = ScaleAndPrecisionAndRoundingMode(3, 8, HALF_EVEN)
     //      val n = BigDecimal(7.85)
     //      BigDecimalFromValue(sp)(BigDecimalToValue(sp)(n)) shouldBe BigDecimal(7.850)
     //    }
-    //
     //    "convert a BigDecimal into ByteBuffer with specifying the scale and precision and rounding mode and rounding is required" in {
     //      val sp = ScaleAndPrecisionAndRoundingMode(3, 8, HALF_EVEN)
     //      val n = BigDecimal(7.8516)
