@@ -96,8 +96,11 @@ object ByteStringDecoder extends Decoder[String] :
   * A [[Decoder]] for Strings that decodes from [[GenericFixed]]s.
   */
 object GenericFixedStringDecoder extends Decoder[String] :
-  override def decode(schema: Schema): Any => String = { input =>
-    input match {
-      case fixed: GenericFixed => new Utf8(fixed.bytes()).toString
+  override def decode(schema: Schema): Any => String = {
+    require(schema.getType == Schema.Type.FIXED)
+    { input =>
+      input match {
+        case fixed: GenericFixed => new Utf8(fixed.bytes()).toString
+      }
     }
   }

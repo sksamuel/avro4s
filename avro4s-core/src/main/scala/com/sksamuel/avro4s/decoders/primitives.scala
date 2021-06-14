@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.decoders
 
-import com.sksamuel.avro4s.{Avro4sDecodingException, BasicDecoder, Decoder}
+import com.sksamuel.avro4s.{Avro4sDecodingException, Decoder}
 import org.apache.avro.Schema
 
 trait PrimitiveDecoders {
@@ -57,3 +57,10 @@ trait PrimitiveDecoders {
     override def decode(value: Any): Boolean = value.asInstanceOf[Boolean]
   }
 }
+
+/**
+  * A [[BasicDecoder]] is one that does not require the [[Schema]].
+  */
+trait BasicDecoder[T] extends Decoder[T] :
+  def decode(value: Any): T
+  override def decode(schema: Schema): Any => T = { value => decode(value) }

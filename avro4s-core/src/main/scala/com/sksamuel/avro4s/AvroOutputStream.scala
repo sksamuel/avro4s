@@ -35,9 +35,9 @@ object AvroOutputStream:
     * Use this when you want the smallest messages possible at the cost of not having the
     * schema available in the messages for downstream clients.
     */
-  //  def binary[T](schema: Schema, encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
-  //    given Encoder[T] = encoder
-  //    new AvroOutputStreamBuilder[T](schema, AvroFormat.Binary)
+  def binary[T](schema: Schema, encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
+    given Encoder[T] = encoder
+    new AvroOutputStreamBuilder[T](schema, encoder, AvroFormat.Binary)
 
   def binary[T](using schemaFor: SchemaFor[T], encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
     new AvroOutputStreamBuilder[T](schemaFor.schema, encoder, AvroFormat.Binary)
