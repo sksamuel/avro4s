@@ -8,6 +8,7 @@ import scala.reflect.ClassTag
 
 trait EnumSchemas:
   given[T <: Enum[_]](using tag: ClassTag[T]): SchemaFor[T] = new JavaEnumSchemaFor(tag)
+//  given[T <: Enumeration#Value]: SchemaFor[T] = ScalaEnums.schema[T]
 
 //  object JavaEnumSchemaFor {
 //
