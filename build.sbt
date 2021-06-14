@@ -42,16 +42,17 @@ val `avro4s-cats` = project.in(file("avro4s-cats"))
 //    )
 //  )
 
-//val benchmarks = project
-//  .in(file("benchmarks"))
-//  .dependsOn(`avro4s-core`)
-//  .enablePlugins(JmhPlugin)
-//  .settings(
-//    libraryDependencies ++= Seq(
-//      "pl.project13.scala" % "sbt-jmh-extras" % SbtJmhVersion,
-//      "org.openjdk.jmh" % "jmh-core" % JmhVersion,
-//      "org.openjdk.jmh" % "jmh-generator-asm" % JmhVersion,
-//      "org.openjdk.jmh" % "jmh-generator-bytecode" % JmhVersion,
-//      "org.openjdk.jmh" % "jmh-generator-reflection" % JmhVersion
-//    )
-//  )
+val benchmarks = project
+  .in(file("benchmarks"))
+  .dependsOn(`avro4s-core`)
+  .enablePlugins(JmhPlugin)
+  .settings(
+    fork in Test := true,
+    libraryDependencies ++= Seq(
+      "pl.project13.scala" % "sbt-jmh-extras" % SbtJmhVersion,
+      "org.openjdk.jmh" % "jmh-core" % JmhVersion,
+      "org.openjdk.jmh" % "jmh-generator-asm" % JmhVersion,
+      "org.openjdk.jmh" % "jmh-generator-bytecode" % JmhVersion,
+      "org.openjdk.jmh" % "jmh-generator-reflection" % JmhVersion
+    )
+  )

@@ -1,0 +1,6 @@
+i9 32mb scala3 avro4s 5
+
+[info] Benchmark                     Mode  Cnt        Score        Error  Units
+[info] Decoding.avroSpecificRecord  thrpt   10  5006159.788 ± 443579.220  ops/s
+[info] Encoding.avro4sGenerated     thrpt   10   275992.310 ±   9880.629  ops/s
+[info] Encoding.avroSpecificRecord  thrpt   10  6534285.366 ±  39962.503  ops/s
