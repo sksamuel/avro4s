@@ -29,7 +29,7 @@ trait TupleSchemas:
     Schema.createRecord("Tuple4", null, "scala", false, fields)
   }
 
-  given [A, B, C, D, E](using a: SchemaFor[A], b: SchemaFor[B], c: SchemaFor[C], d: SchemaFor[D], e: SchemaFor[E]): SchemaFor[Tuple5[A, B, C, D, E]] = SchemaFor.from {
+  given[A, B, C, D, E](using a: SchemaFor[A], b: SchemaFor[B], c: SchemaFor[C], d: SchemaFor[D], e: SchemaFor[E]): SchemaFor[Tuple5[A, B, C, D, E]] = SchemaFor.from {
     val fields = java.util.ArrayList[Schema.Field]()
     fields.add(new Schema.Field("_1", a.schema))
     fields.add(new Schema.Field("_2", b.schema))
@@ -37,4 +37,15 @@ trait TupleSchemas:
     fields.add(new Schema.Field("_4", d.schema))
     fields.add(new Schema.Field("_5", e.schema))
     Schema.createRecord("Tuple5", null, "scala", false, fields)
+  }
+
+  given[A, B, C, D, E, F](using a: SchemaFor[A], b: SchemaFor[B], c: SchemaFor[C], d: SchemaFor[D], e: SchemaFor[E], f: SchemaFor[F]): SchemaFor[Tuple6[A, B, C, D, E, F]] = SchemaFor.from {
+    val fields = java.util.ArrayList[Schema.Field]()
+    fields.add(new Schema.Field("_1", a.schema))
+    fields.add(new Schema.Field("_2", b.schema))
+    fields.add(new Schema.Field("_3", c.schema))
+    fields.add(new Schema.Field("_4", d.schema))
+    fields.add(new Schema.Field("_5", e.schema))
+    fields.add(new Schema.Field("_6", e.schema))
+    Schema.createRecord("Tuple6", null, "scala", false, fields)
   }

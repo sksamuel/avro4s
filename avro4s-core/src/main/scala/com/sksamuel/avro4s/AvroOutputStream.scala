@@ -45,8 +45,8 @@ object AvroOutputStream:
   /**
     * An [[AvroOutputStream]] that writes as JSON.
     */
-  //  def json[T: Encoder](schema: Schema): AvroOutputStreamBuilder[T] =
-  //    new AvroOutputStreamBuilder[T](schema, AvroFormat.Json)
+  def json[T](schema: Schema, encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
+    new AvroOutputStreamBuilder[T](schema, encoder, AvroFormat.Json)
 
   def json[T](using schemaFor: SchemaFor[T], encoder: Encoder[T]): AvroOutputStreamBuilder[T] =
     new AvroOutputStreamBuilder[T](schemaFor.schema, encoder, AvroFormat.Json)
