@@ -20,12 +20,12 @@ class BigDecimalDecoderTest extends AnyFlatSpec with Matchers {
   }
 
   it should "scale big decimals before decoding" in {
-    given ScalePrecision = ScalePrecision(4, 8)
+    given ScalePrecision = ScalePrecision(3, 8)
     val schema = AvroSchema[WithBigDecimal]
     val record = new GenericData.Record(schema)
-    val bytes = new Conversions.DecimalConversion().toBytes(BigDecimal(12345.6789).underlying(), null, LogicalTypes.decimal(8, 4))
+    val bytes = new Conversions.DecimalConversion().toBytes(BigDecimal(12345.678).underlying(), null, LogicalTypes.decimal(8, 3))
     record.put("decimal", bytes)
-    Decoder[WithBigDecimal].decode(schema).apply(record) shouldBe WithBigDecimal(BigDecimal(12345.6789))
+    Decoder[WithBigDecimal].decode(schema).apply(record) shouldBe WithBigDecimal(BigDecimal(12345.678))
   }
 
   it should "support optional big decimals" in {
