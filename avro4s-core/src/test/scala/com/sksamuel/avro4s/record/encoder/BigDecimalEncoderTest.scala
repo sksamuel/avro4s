@@ -54,8 +54,7 @@ class BigDecimalEncoderTest extends AnyFunSuite with Matchers {
 
     case class Test(s: BigDecimal)
     given SchemaFor[BigDecimal] = SchemaFor[BigDecimal](
-      LogicalTypes.decimal(10, 8)
-        .addToSchema(SchemaBuilder.fixed("BigDecimal").size(8))
+      LogicalTypes.decimal(16, 8).addToSchema(SchemaBuilder.fixed("BigDecimal").size(8))
     )
 
     val schema = AvroSchema[Test]

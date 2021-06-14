@@ -30,7 +30,7 @@ class RecordDecoder[T](ctx: magnolia.CaseClass[Decoder, T]) extends Decoder[T] {
         values(i) = decoders(i).decode(record)
         i += 1
       }
-      ctx.rawConstruct(values)
+      ctx.rawConstruct(values.toIndexedSeq)
     case _ =>
       throw new Avro4sDecodingException(
         s"This decoder can only handle IndexedRecords or its subtypes such as GenericRecord [was ${value.getClass}]",
