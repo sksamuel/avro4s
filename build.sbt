@@ -11,29 +11,29 @@ lazy val root = Project("avro4s", file("."))
     name := "avro4s"
   )
   .aggregate(
-    `avro4s-core`
-   // `avro4s-cats`,
-//    `avro4s-kafka`
+    `avro4s-core`,
+    `avro4s-cats`
+    //    `avro4s-kafka`
   )
 
 val `avro4s-core` = project.in(file("avro4s-core"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.softwaremill.magnolia" % "magnolia-core_3" % MagnoliaVersion,
-//      "com.chuusai" %% "shapeless" % ShapelessVersion,
-//      "org.json4s" %% "json4s-native" % Json4sVersion
+      "com.softwaremill.magnolia" % "magnolia-core_3" % MagnoliaVersion
+      //      "com.chuusai" %% "shapeless" % ShapelessVersion,
+      //      "org.json4s" %% "json4s-native" % Json4sVersion
     )
   )
 
-//
-//val `avro4s-cats` = project.in(file("avro4s-cats"))
-//  .dependsOn(`avro4s-core`)
-//  .settings(
-//    libraryDependencies ++= Seq(
-//      "org.typelevel" %% "cats-core" % CatsVersion
-//    )
-//  )
-//
+val `avro4s-cats` = project.in(file("avro4s-cats"))
+  .dependsOn(`avro4s-core`)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % CatsVersion,
+      "org.typelevel" %% "cats-jvm" % CatsVersion
+    )
+  )
+
 //val `avro4s-kafka` = project.in(file("avro4s-kafka"))
 //  .dependsOn(`avro4s-core`)
 //  .settings(
