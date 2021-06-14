@@ -4,3 +4,13 @@ i9 32mb scala3 avro4s 5
 [info] Decoding.avroSpecificRecord  thrpt   10  5006159.788 ± 443579.220  ops/s
 [info] Encoding.avro4sGenerated     thrpt   10   275992.310 ±   9880.629  ops/s
 [info] Encoding.avroSpecificRecord  thrpt   10  6534285.366 ±  39962.503  ops/s
+
+scala 2.13 avro4s 4.0.9
+
+[info] Benchmark                     Mode  Cnt        Score       Error  Units
+[info] Decoding.avro4sGenerated     thrpt   10  1638737.327 ± 70792.983  ops/s
+[info] Decoding.avro4sHandrolled    thrpt   10  1701543.320 ± 21672.076  ops/s
+[info] Decoding.avroSpecificRecord  thrpt   10  5211411.669 ± 34334.890  ops/s
+[info] Encoding.avro4sGenerated     thrpt   10  4403288.685 ± 51304.956  ops/s
+[info] Encoding.avro4sHandrolled    thrpt   10  4975463.867 ± 19560.720  ops/s
+[info] Encoding.avroSpecificRecord  thrpt   10  6606364.433 ± 29425.717  ops/s
