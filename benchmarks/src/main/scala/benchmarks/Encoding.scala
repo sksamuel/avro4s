@@ -24,7 +24,7 @@ object Encoding extends BenchmarkHelpers {
 
     val (schema, avro4sEncoder, avro4sWriter) = {
       val schema = AvroSchema[RecordWithUnionAndTypeField]
-      val encoder = Encoder[RecordWithUnionAndTypeField]
+      val encoder = Encoder[RecordWithUnionAndTypeField].encode(schema)
       val writer = new GenericDatumWriter[GenericRecord](schema)
       (schema, encoder, writer)
     }
@@ -46,9 +46,9 @@ class Encoding extends CommonParams with BenchmarkHelpers {
 
   import Encoding._
 
-  def encode[T](value: T, schema: Schema, encoder: Encoder[T], writer: GenericDatumWriter[GenericRecord]): ByteBuffer = {
+  def encode[T](value: T, schema: Schema, encoder: T => Any, writer: GenericDatumWriter[GenericRecord]): ByteBuffer = {
     val outputStream = new ByteArrayOutputStream(512)
-    val record = encoder.encode(schema).apply(value).asInstanceOf[GenericRecord]
+    val record = encoder.apply(value).asInstanceOf[GenericRecord]
     val enc = EncoderFactory.get().directBinaryEncoder(outputStream, null)
     writer.write(record, enc)
     ByteBuffer.wrap(outputStream.toByteArray)
