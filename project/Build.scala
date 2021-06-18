@@ -9,7 +9,7 @@ object Build extends AutoPlugin {
     val AvroVersion = "1.10.2"
     val Log4jVersion = "1.2.17"
     val ScalatestVersion = "3.2.9"
-    val Slf4jVersion = "1.7.30"
+    val Slf4jVersion = "1.7.31"
     val Json4sVersion = "3.6.11"
     val CatsVersion = "2.6.1"
     val RefinedVersion = "0.9.26"
