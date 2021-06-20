@@ -1,15 +1,17 @@
 package com.sksamuel.avro4s
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
-
+import com.sksamuel.avro4s.CustomDefaults._
 import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.{GenericEnumSymbol, GenericFixed}
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
-import CustomDefaults._
+
+import java.lang.reflect.Field
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
 import scala.collection.JavaConverters._
+import scala.util.control.NonFatal
 
 /**
   * When we set a default on an avro field, the type must match
@@ -35,6 +37,7 @@ object DefaultResolver {
       val bd = decimalConversion.fromBytes(byteBuffer, schema, schema.getLogicalType)
       java.lang.Double.valueOf(bd.doubleValue)
     case byteBuffer: ByteBuffer => byteBuffer.array()
+    case x: String => x
     case x: scala.Long => java.lang.Long.valueOf(x)
     case x: scala.Boolean => java.lang.Boolean.valueOf(x)
     case x: scala.Int => java.lang.Integer.valueOf(x)
@@ -44,10 +47,22 @@ object DefaultResolver {
     case x: Seq[_] => x.asJava
     case x: Set[_] => x.asJava
     case shapeless.Inl(x) => apply(x, schema)
+    case x if isValueClass(x.getClass) => // must be tested before `Product` because most value classes are declared as case class.
+      val field: Field = x.getClass.getDeclaredFields.head
+      field.setAccessible(true) // can be private, like in Refined for example
+      apply(field.get(x), schema)
     case p: Product => customDefault(p, schema)
     case v if isScalaEnumeration(v) => customScalaEnumDefault(value)
-    case _ =>
-      value.asInstanceOf[AnyRef]
+    case _ => value.asInstanceOf[AnyRef]
   }
+
+  private[avro4s] def isValueClass(clazz: Class[_]): Boolean =
+    try {
+      import scala.reflect.runtime.universe
+      val mirror = universe.runtimeMirror(Thread.currentThread().getContextClassLoader)
+      mirror.staticClass(clazz.getName).isDerivedValueClass
+    } catch {
+      case NonFatal(_) => false
+    }
 
 }
