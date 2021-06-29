@@ -40,10 +40,8 @@ object Build extends AutoPlugin {
       "-unchecked", "-deprecation",
       "-encoding",
       "utf8",
-   //   "-Xfatal-warnings",
       "-feature",
       "-language:higherKinds",
-   //   "-Xlog-implicits",
       "-language:existentials",
       "-Ybackend-parallelism",
       "8"
