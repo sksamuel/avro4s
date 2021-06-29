@@ -11,7 +11,11 @@ import eu.timepit.refined.types.string.NonEmptyString
 import eu.timepit.refined.types.numeric.NonNegInt
 
 case class Foo(nonEmptyStr: String Refined NonEmpty)
+case class Bar(value: NonEmptyString = "Babar")
 case class FooMap(nonEmptyStrKeyMap: Map[NonEmptyString, NonNegInt])
+
+case class Tata(tutu: String) extends AnyVal
+case class Toto(tata: Tata = Tata("Default Tata Value"))
 
 class RefinedTest extends AnyWordSpec with Matchers {
 
@@ -24,8 +28,40 @@ class RefinedTest extends AnyWordSpec with Matchers {
           |	"name": "Foo",
           |	"namespace": "com.sksamuel.avro4s.refined",
           |	"fields": [{
-          |		"name": "nonEmptyStr",
-          |		"type": "string"
+          |    "name": "nonEmptyStr",
+          |    "type": "string"
+          |	}]
+          |}
+        """.stripMargin)
+    }
+
+    "accept default value" in {
+      AvroSchema[Bar] shouldBe new Schema.Parser().parse(
+        """
+          |{
+          |	"type": "record",
+          |	"name": "Bar",
+          |	"namespace": "com.sksamuel.avro4s.refined",
+          |	"fields": [{
+          |    "name": "value",
+          |    "type": "string",
+          |    "default": "Babar"
+          |	}]
+          |}
+        """.stripMargin)
+    }
+
+    "accept default value AnyVal" in {
+      AvroSchema[Toto] shouldBe new Schema.Parser().parse(
+        """
+          |{
+          |	"type": "record",
+          |	"name": "Toto",
+          |	"namespace": "com.sksamuel.avro4s.refined",
+          |	"fields": [{
+          |    "name": "tata",
+          |    "type": "string",
+          |    "default": "Default Tata Value"
           |	}]
           |}
         """.stripMargin)

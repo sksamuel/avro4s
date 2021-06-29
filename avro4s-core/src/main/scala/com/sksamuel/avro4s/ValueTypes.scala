@@ -66,7 +66,7 @@ object ValueTypes {
       val name = nameExtractor.name
 
       // if the class is a value type, then we need to use the schema for the single field inside the type
-      // in other words, if we have `case class Foo(str:String)` then this just acts like a string
+      // in other words, if we have `case class Foo(str:String) extends AnyVal` then this just acts like a string
       // if we have a value type AND @AvroFixed is present on the class, then we simply return a schema of type fixed
 
       annotationExtractor.fixed match {
