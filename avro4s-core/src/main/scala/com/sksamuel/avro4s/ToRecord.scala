@@ -14,10 +14,12 @@ import org.apache.avro.Schema
   * If you wish to convert an avro type other than record use an Encoder directly.
   *
   */
+@deprecated("import com.sksamuel.avro4s.asRecord and use <>.asRecord instead", since = "5.0.0")
 trait ToRecord[T] extends Serializable {
   def to(t: T): Record
 }
 
+@deprecated("import com.sksamuel.avro4s.asRecord and use <>.asRecord instead", since = "5.0.0")
 object ToRecord {
   def apply[T](schema: Schema)(using encoder: Encoder[T]): ToRecord[T] = new ToRecord[T] {
     def to(t: T): Record = encoder.encode(schema).apply(t) match {
