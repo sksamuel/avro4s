@@ -1,16 +1,22 @@
 package com.sksamuel.avro4s.record
 
+import com.sksamuel.avro4s.asRecord
 import com.sksamuel.avro4s.{AvroNamespace, AvroSchema, FromRecord, ToRecord}
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-class ToRecordTest extends AnyFunSuite with Matchers {
+sealed trait Foo
+case class Bar(i: Int) extends Foo
+case class Baz(s: String) extends Foo
 
-  test("encode to record") {
-    val schema = AvroSchema[HasSomeFields]
-    val record = ToRecord[HasSomeFields](schema).to(HasSomeFields("hello", 42, false, Nested("there")))
+case class MySchema(@AvroNamespace("broken") foo: Foo, id: String, x: Int)
+
+class AsRecordTest extends AnyFunSuite with Matchers:
+
+  test("asRecord") {
+    val record = HasSomeFields("hello", 42, false, Nested("there")).asRecord
     record.get("str") shouldBe new Utf8("hello")
     record.get("int").asInstanceOf[Int] shouldBe 42
     record.get("boolean").asInstanceOf[Boolean] shouldBe false
@@ -22,4 +28,3 @@ class ToRecordTest extends AnyFunSuite with Matchers {
   //    val ms = MySchema(Bar(1), "", 0)
   //    ToRecord[MySchema](schema).to(ms)
   //  }
-}
