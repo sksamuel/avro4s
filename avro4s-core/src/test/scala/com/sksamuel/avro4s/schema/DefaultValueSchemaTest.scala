@@ -90,6 +90,41 @@ class DefaultValueSchemaTest extends AnyWordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_list_multiple_default_values.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
+
+    "support default values that are lists of a single case class" in {
+      val schema = AvroSchema[UnionCollectionSingleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_class_list_single_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are lists of multiple case classes" in {
+      val schema = AvroSchema[UnionCollectionMultipleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_class_list_multiple_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are optional list of enum with None default" in {
+      val schema = AvroSchema[OptionalEnumCollectionNoneDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_enum_list_none.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are optional list of enum with a single case object" in {
+      val schema = AvroSchema[OptionalEnumCollectionSingleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_enum_list_single.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are optional lists of enum with multiple case objects" in {
+      val schema = AvroSchema[OptionalEnumCollectionMultipleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_enum_list_multiple.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
@@ -151,6 +186,11 @@ case class NoVarg(cupcat: Cupcat = Rendal)
 
 case class EnumCollectionSingleDefault(colors: List[Color] = List(Red))
 case class EnumCollectionMultipleDefault(colors: List[Color] = List(Red, Green))
+case class UnionCollectionSingleDefault(cupcats: List[Cupcat] = List(Rendal))
+case class UnionCollectionMultipleDefault(cupcats: List[Cupcat] = List(Rendal, Snoutley("hates varg")))
+case class OptionalEnumCollectionNoneDefault(colors: Option[List[Color]] = None)
+case class OptionalEnumCollectionSingleDefault(colors: Option[List[Color]] = Some(List(Red)))
+case class OptionalEnumCollectionMultipleDefault(colors: Option[List[Color]] = Some(List(Red, Green)))
 
 case class Song(title: String)
 
