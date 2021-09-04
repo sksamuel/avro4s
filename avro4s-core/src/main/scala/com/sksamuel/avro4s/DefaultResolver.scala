@@ -44,6 +44,8 @@ object DefaultResolver {
     case x: scala.Double => java.lang.Double.valueOf(x)
     case x: scala.Float => java.lang.Float.valueOf(x)
     case x: Map[_,_] => x.asJava
+    case x: Seq[Product] if !schema.isUnion && schema.getElementType.getType == Schema.Type.ENUM =>
+      customEnumArrayDefault(x)
     case x: Seq[_] => x.asJava
     case x: Set[_] => x.asJava
     case shapeless.Inl(x) => apply(x, schema)

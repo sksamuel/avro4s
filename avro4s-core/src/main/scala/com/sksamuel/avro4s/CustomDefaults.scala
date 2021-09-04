@@ -15,6 +15,7 @@ sealed trait CustomDefault
 case class CustomUnionDefault(className: String, values: java.util.Map[String, Any]) extends CustomDefault
 case class CustomUnionWithEnumDefault(parentName: String, default: String, value: String) extends CustomDefault
 case class CustomEnumDefault(value: String) extends CustomDefault
+case class CustomArrayDefault(values: java.util.List[String]) extends CustomDefault
 
 object CustomDefaults {
 
@@ -40,6 +41,9 @@ object CustomDefaults {
 
         }.asJava)
     }
+
+  def customEnumArrayDefault(values: Seq[Product]): CustomArrayDefault =
+    CustomArrayDefault((values map trimmedClassName).asJava)
 
   def isUnionOfEnum(schema: Schema) = schema.getType == Schema.Type.UNION && schema.getTypes.asScala.map(_.getType).contains(Schema.Type.ENUM)
 
