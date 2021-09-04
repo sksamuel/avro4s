@@ -45,7 +45,7 @@ object DefaultResolver {
     case x: scala.Float => java.lang.Float.valueOf(x)
     case x: Map[_,_] => x.asJava
     case x: Seq[_] => customArrayDefault(x, schema)
-    case x: Set[_] => x.asJava
+    case x: Set[_] => customArrayDefault(x.toList, schema)
     case shapeless.Inl(x) => apply(x, schema)
     case x if isValueClass(x.getClass) => // must be tested before `Product` because most value classes are declared as case class.
       val field: Field = x.getClass.getDeclaredFields.head
