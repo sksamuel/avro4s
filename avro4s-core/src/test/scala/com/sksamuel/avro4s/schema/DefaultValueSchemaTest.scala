@@ -76,6 +76,20 @@ class DefaultValueSchemaTest extends AnyWordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_default_values.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
+
+    "support default values that are lists of a single case object" in {
+      val schema = AvroSchema[EnumCollectionSingleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_list_single_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are lists of multiple case objects" in {
+      val schema = AvroSchema[EnumCollectionMultipleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_list_multiple_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
@@ -127,8 +141,16 @@ sealed trait Cupcat
 case object Rendal extends Cupcat
 case class Snoutley(snoutley: String) extends Cupcat
 
+sealed trait Color
+case object Red extends Color
+case object Green extends Color
+case object Blue extends Color
+
 case class Cuppers(cupcat: Cupcat = Snoutley("hates varg"))
 case class NoVarg(cupcat: Cupcat = Rendal)
+
+case class EnumCollectionSingleDefault(colors: List[Color] = List(Red))
+case class EnumCollectionMultipleDefault(colors: List[Color] = List(Red, Green))
 
 case class Song(title: String)
 
