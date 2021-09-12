@@ -1,0 +1,17 @@
+{
+  "type" : "record",
+  "name" : "OptionalEnumSetNoneDefault",
+  "namespace" : "com.sksamuel.avro4s.schema",
+  "fields" : [ {
+    "name" : "colors",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : {
+        "type" : "enum",
+        "name" : "Color",
+        "symbols" : [ "Blue", "Green", "Red" ]
+      }
+    } ],
+    "default" : null
+  } ]
+}

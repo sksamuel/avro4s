@@ -76,6 +76,104 @@ class DefaultValueSchemaTest extends AnyWordSpec with Matchers {
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_default_values.json"))
       schema.toString(true) shouldBe expected.toString(true)
     }
+
+    "support default values that are lists of a single case object" in {
+      val schema = AvroSchema[EnumCollectionSingleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_list_single_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are lists of multiple case objects" in {
+      val schema = AvroSchema[EnumCollectionMultipleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_list_multiple_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are lists of a single case class" in {
+      val schema = AvroSchema[UnionCollectionSingleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_class_list_single_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are lists of multiple case classes" in {
+      val schema = AvroSchema[UnionCollectionMultipleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_class_list_multiple_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are optional list of enum with None default" in {
+      val schema = AvroSchema[OptionalEnumCollectionNoneDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_enum_list_none.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are optional list of enum with a single case object" in {
+      val schema = AvroSchema[OptionalEnumCollectionSingleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_enum_list_single.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are optional lists of enum with multiple case objects" in {
+      val schema = AvroSchema[OptionalEnumCollectionMultipleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_enum_list_multiple.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are sets of a single case object" in {
+      val schema = AvroSchema[EnumSetSingleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_set_single_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are sets of multiple case objects" in {
+      val schema = AvroSchema[EnumSetMultipleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_object_set_multiple_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are set of a single case class" in {
+      val schema = AvroSchema[UnionSetSingleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_class_set_single_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are sets of multiple case classes" in {
+      val schema = AvroSchema[UnionSetMultipleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/case_class_set_multiple_default_values.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are optional set of enum with None default" in {
+      val schema = AvroSchema[OptionalEnumSetNoneDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_enum_set_none.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are optional set of enum with a single case object" in {
+      val schema = AvroSchema[OptionalEnumSetSingleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_enum_set_single.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+
+    "support default values that are optional sets of enum with multiple case objects" in {
+      val schema = AvroSchema[OptionalEnumSetMultipleDefault]
+
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/default_values_optional_enum_set_multiple.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
@@ -127,8 +225,29 @@ sealed trait Cupcat
 case object Rendal extends Cupcat
 case class Snoutley(snoutley: String) extends Cupcat
 
+sealed trait Color
+case object Red extends Color
+case object Green extends Color
+case object Blue extends Color
+
 case class Cuppers(cupcat: Cupcat = Snoutley("hates varg"))
 case class NoVarg(cupcat: Cupcat = Rendal)
+
+case class EnumCollectionSingleDefault(colors: List[Color] = List(Red))
+case class EnumCollectionMultipleDefault(colors: List[Color] = List(Red, Green))
+case class UnionCollectionSingleDefault(cupcats: List[Cupcat] = List(Rendal))
+case class UnionCollectionMultipleDefault(cupcats: List[Cupcat] = List(Rendal, Snoutley("hates varg")))
+case class OptionalEnumCollectionNoneDefault(colors: Option[List[Color]] = None)
+case class OptionalEnumCollectionSingleDefault(colors: Option[List[Color]] = Some(List(Red)))
+case class OptionalEnumCollectionMultipleDefault(colors: Option[List[Color]] = Some(List(Red, Green)))
+
+case class EnumSetSingleDefault(colors: Set[Color] = Set(Red))
+case class EnumSetMultipleDefault(colors: Set[Color] = Set(Red, Green))
+case class UnionSetSingleDefault(cupcats: Set[Cupcat] = Set(Rendal))
+case class UnionSetMultipleDefault(cupcats: Set[Cupcat] = Set(Rendal, Snoutley("hates varg")))
+case class OptionalEnumSetNoneDefault(colors: Option[Set[Color]] = None)
+case class OptionalEnumSetSingleDefault(colors: Option[Set[Color]] = Some(Set(Red)))
+case class OptionalEnumSetMultipleDefault(colors: Option[Set[Color]] = Some(Set(Red, Green)))
 
 case class Song(title: String)
 

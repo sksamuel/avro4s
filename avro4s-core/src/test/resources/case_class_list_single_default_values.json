@@ -1,0 +1,24 @@
+{
+  "type" : "record",
+  "name" : "UnionCollectionSingleDefault",
+  "namespace" : "com.sksamuel.avro4s.schema",
+  "fields" : [ {
+    "name" : "cupcats",
+    "type" : {
+      "type" : "array",
+      "items" : [ {
+        "type" : "record",
+        "name" : "Rendal",
+        "fields" : [ ]
+      }, {
+        "type" : "record",
+        "name" : "Snoutley",
+        "fields" : [ {
+          "name" : "snoutley",
+          "type" : "string"
+        } ]
+      } ]
+    },
+    "default" : [ { } ]
+  } ]
+}

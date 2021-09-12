@@ -234,6 +234,8 @@ object Records {
 
     val field = encodedDefault match {
       case null => new Schema.Field(name, schemaWithResolvedNamespace, doc)
+      case CustomArrayDefault(m) =>
+        new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
       case CustomUnionDefault(_, m) =>
         new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
       case CustomEnumDefault(m) =>
