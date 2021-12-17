@@ -67,6 +67,12 @@ object Build extends AutoPlugin {
       ossrhUsername,
       ossrhPassword
     ),
+    credentials += Credentials(
+      "Sonatype Nexus Repository Manager",
+      "s01.oss.sonatype.org",
+      ossrhUsername,
+      ossrhPassword
+    ),
     version := publishVersion,
     publishTo := {
       if (isRelease) {
