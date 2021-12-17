@@ -1,12 +1,11 @@
 package com.sksamuel.avro4s
 
-import java.nio.ByteBuffer
-
 import com.sksamuel.avro4s.BigDecimals.BigDecimalConversion
 import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericFixed
 import org.apache.avro.{Conversions, Schema, SchemaBuilder}
 
+import java.nio.ByteBuffer
 import scala.math.BigDecimal.RoundingMode
 import scala.math.BigDecimal.RoundingMode.RoundingMode
 
@@ -35,8 +34,10 @@ trait BigDecimalDecoders {
 
     def decode(value: Any): BigDecimal = value match {
       case bb: ByteBuffer => converter.fromBytes(bb, schema, decimal)
+      case f: GenericFixed => converter.fromFixed(f, schema, decimal)
+      case a: Array[Byte] => converter.fromBytes(ByteBuffer.wrap(a), schema, decimal)
       case _ =>
-        throw new Avro4sDecodingException(s"Unable to decode '$value' to BigDecimal via ByteBuffer", value, this)
+        throw new Avro4sDecodingException(s"Unable to decode '$value:${value.getClass}' to BigDecimal for schema type BYTES", value, this)
     }
   }
 
@@ -53,7 +54,7 @@ trait BigDecimalDecoders {
     def decode(value: Any): BigDecimal = value match {
       case f: GenericFixed => converter.fromFixed(f, schema, decimal)
       case _ =>
-        throw new Avro4sDecodingException(s"Unable to decode $value to BigDecimal via GenericFixed", value, this)
+        throw new Avro4sDecodingException(s"Schema specifies Fixed but value is '$value:${value.getClass}", value, this)
     }
   }
 }
