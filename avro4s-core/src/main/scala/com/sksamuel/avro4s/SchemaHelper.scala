@@ -1,8 +1,8 @@
 package com.sksamuel.avro4s
 
-import org.apache.avro.{JsonProperties, Schema}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
+import org.apache.avro.{JsonProperties, Schema, SchemaBuilder}
 
 import scala.util.matching.Regex
 
@@ -140,21 +140,27 @@ object SchemaHelper {
       case Schema.Type.RECORD =>
         val fields = schema.getFields.asScala.map { field =>
           new Schema.Field(field.name(),
-                           overrideNamespace(field.schema(), namespace),
-                           field.doc,
-                           field.defaultVal,
-                           field.order)
+            overrideNamespace(field.schema(), namespace),
+            field.doc,
+            field.defaultVal,
+            field.order)
         }
         val copy = Schema.createRecord(schema.getName, schema.getDoc, namespace, schema.isError, fields.asJava)
         schema.getAliases.asScala.foreach(copy.addAlias)
         schema.getObjectProps.asScala.foreach { case (k, v) => copy.addProp(k, v) }
         copy
       case Schema.Type.UNION => Schema.createUnion(schema.getTypes.asScala.map(overrideNamespace(_, namespace)).asJava)
-      case Schema.Type.ENUM  => Schema.createEnum(schema.getName, schema.getDoc, namespace, schema.getEnumSymbols)
+      case Schema.Type.ENUM =>
+        val symbols = schema.getEnumSymbols.asScala.toArray[String]
+        SchemaBuilder.enumeration(schema.getName)
+          .namespace(namespace)
+          .doc(schema.getDoc)
+          .defaultSymbol(schema.getEnumDefault)
+          .symbols(symbols: _*)
       case Schema.Type.FIXED => Schema.createFixed(schema.getName, schema.getDoc, namespace, schema.getFixedSize)
-      case Schema.Type.MAP   => Schema.createMap(overrideNamespace(schema.getValueType, namespace))
+      case Schema.Type.MAP => Schema.createMap(overrideNamespace(schema.getValueType, namespace))
       case Schema.Type.ARRAY => Schema.createArray(overrideNamespace(schema.getElementType, namespace))
-      case _                 => schema
+      case _ => schema
     }
   }
 }

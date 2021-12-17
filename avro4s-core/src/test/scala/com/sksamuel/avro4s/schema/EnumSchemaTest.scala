@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroEnumDefault, AvroName, AvroNamespace, AvroProp, AvroSchema, AvroSortPriority, JavaEnumSchemaFor, ScalaEnumSchemaFor, SchemaFor}
+import com.sksamuel.avro4s.{AvroEnumDefault, AvroName, AvroNamespace, AvroProp, AvroSchema, AvroSortPriority, AvroUnionPosition, JavaEnumSchemaFor, ScalaEnumSchemaFor, SchemaFor}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -776,6 +776,37 @@ class EnumSchemaTest extends AnyWordSpec with Matchers {
 
       schema.toString(true) shouldBe expected.toString(true)
     }
+
+    "changing enum namespace should preserve defaults" in {
+      val schema = AvroSchema[Bowl]
+      val expected = new org.apache.avro.Schema.Parser().parse(
+        """
+      {
+        "type": "record",
+        "name": "Bowl",
+        "namespace": "com.fruit",
+        "fields": [
+        {
+          "name": "fruit",
+          "type": {
+            "type": "enum",
+            "name": "Fruit",
+            "namespace": "com.fruit.bowl",
+            "symbols": [
+              "Unknown",
+              "Orange",
+              "Mango"
+            ],
+            "default": "Unknown"
+          },
+          "default": "Mango"
+        }
+        ]
+      }
+      """
+      )
+      schema.toString(true) shouldBe expected.toString(true)
+    }
   }
 }
 
@@ -800,3 +831,13 @@ sealed trait CupcatAnnotatedEnum
 @AvroSortPriority(0) case object SnoutleyAnnotatedEnum extends CupcatAnnotatedEnum
 @AvroSortPriority(1) case object CuppersAnnotatedEnum extends CupcatAnnotatedEnum
 
+@AvroEnumDefault(Unknown)
+@AvroNamespace("com.default.package")
+sealed trait Fruit
+
+@AvroUnionPosition(0) case object Unknown extends Fruit
+@AvroUnionPosition(1) case object Orange  extends Fruit
+@AvroUnionPosition(2) case object Mango   extends Fruit
+
+@AvroNamespace("com.fruit")
+case class Bowl(@AvroNamespace("com.fruit.bowl") fruit: Fruit = Mango)

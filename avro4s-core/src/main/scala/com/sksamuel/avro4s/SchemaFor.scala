@@ -124,7 +124,7 @@ object SchemaFor
     with ByteIterableSchemaFors
     with BaseSchemaFors {
 
-  def apply[T](schema: Schema, fieldMapper: FieldMapper = DefaultFieldMapper) = {
+  def apply[T](schema: Schema, fieldMapper: FieldMapper = DefaultFieldMapper): Typeclass[T] = {
     val s = schema
     val fm = fieldMapper
     new SchemaFor[T] {

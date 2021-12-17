@@ -33,7 +33,7 @@ case class NameExtractor(typeInfo: TypeInfo) {
     */
   def fullName: String = namespace.trim() match {
     case "" => name
-    case otherwise => namespace + "." + name
+    case _ => namespace + "." + name
   }
 
   /**
