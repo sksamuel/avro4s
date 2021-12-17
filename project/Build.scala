@@ -69,11 +69,10 @@ object Build extends AutoPlugin {
     ),
     version := publishVersion,
     publishTo := {
-      val nexus = "https://oss.sonatype.org/"
       if (isRelease) {
-        Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
+        Some("releases" at "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2")
       } else {
-        Some("snapshots" at s"${nexus}content/repositories/snapshots")
+        Some("snapshots" at "https://oss.sonatype.org/content/repositories/snapshots")
       }
     },
     pomExtra := {
