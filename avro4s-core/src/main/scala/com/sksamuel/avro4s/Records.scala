@@ -233,7 +233,7 @@ object Records {
       .getOrElse(schemaWithOrderedUnion)
 
     val field = encodedDefault match {
-      case null => new Schema.Field(name, schemaWithResolvedNamespace, doc)
+      case null => new Schema.Field(name, schemaWithResolvedNamespace, doc, null)
       case CustomArrayDefault(m) =>
         new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
       case CustomUnionDefault(_, m) =>
