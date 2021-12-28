@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.schemas
 import com.sksamuel.avro4s.SchemaFor
 import com.sksamuel.avro4s.avroutils.SchemaHelper
 import com.sksamuel.avro4s.typeutils.{Annotations, SubtypeOrdering}
-import magnolia.SealedTrait
+import magnolia1.SealedTrait
 import org.apache.avro.SchemaBuilder
 
 object TypeUnions {

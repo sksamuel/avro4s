@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.typeutils
 
 import com.sksamuel.avro4s.SchemaFor
-import magnolia.{CaseClass, SealedTrait}
+import magnolia1.{CaseClass, SealedTrait}
 
 enum CaseClassShape:
   case ValueType, Record
@@ -13,7 +13,7 @@ object DatatypeShape:
 
   def of[T](ctx: SealedTrait[_, T]): SealedTraitShape = {
     val allSubtypesAreObjects = ctx.subtypes.forall(_.isObject)
-    if (allSubtypesAreObjects) SealedTraitShape.Enum else SealedTraitShape.TypeUnion
+    if (ctx.isEnum || allSubtypesAreObjects) SealedTraitShape.Enum else SealedTraitShape.TypeUnion
   }
 
   def of[Typeclass[_], T](ctx: CaseClass[Typeclass, T]): CaseClassShape =

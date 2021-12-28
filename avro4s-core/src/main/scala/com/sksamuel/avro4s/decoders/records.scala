@@ -8,8 +8,9 @@ import org.apache.avro.generic.IndexedRecord
 
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
+import org.apache.avro.generic.GenericData
 
-class RecordDecoder[T](ctx: magnolia.CaseClass[Decoder, T]) extends Decoder[T] {
+class RecordDecoder[T](ctx: magnolia1.CaseClass[Decoder, T]) extends Decoder[T] {
 
   override def decode(schema: Schema): Any => T = {
     val decoders: Array[FieldDecoder[T]] = ctx.params
@@ -31,6 +32,8 @@ class RecordDecoder[T](ctx: magnolia.CaseClass[Decoder, T]) extends Decoder[T] {
         i += 1
       }
       ctx.rawConstruct(values.toIndexedSeq)
+    case enumSymbol: GenericData.EnumSymbol =>
+      ctx.rawConstruct(ctx.params)
     case _ =>
       throw new Avro4sDecodingException(
         s"This decoder can only handle IndexedRecords or its subtypes such as GenericRecord [was ${value.getClass}]",
@@ -52,7 +55,7 @@ object TransientFieldDecoder extends FieldDecoder[Nothing] {
 /**
   * Decodes normal fields based on the schema.
   */
-class SchemaFieldDecoder[T](param: magnolia.CaseClass.Param[Decoder, T], schema: Schema) extends FieldDecoder[T] :
+class SchemaFieldDecoder[T](param: magnolia1.CaseClass.Param[Decoder, T], schema: Schema) extends FieldDecoder[T] :
   require(schema.getType == Schema.Type.RECORD)
 
   private val fieldName = Annotations(param.annotations).name.getOrElse(param.label)

@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.encoders
 
 import com.sksamuel.avro4s.typeutils.{CaseClassShape, DatatypeShape, SealedTraitShape}
 import com.sksamuel.avro4s.{Encoder, SchemaFor}
-import magnolia.{CaseClass, AutoDerivation, SealedTrait, TypeInfo}
+import magnolia1.{CaseClass, AutoDerivation, SealedTrait, TypeInfo}
 import org.apache.avro.{Schema, SchemaBuilder}
 
 import scala.deriving.Mirror

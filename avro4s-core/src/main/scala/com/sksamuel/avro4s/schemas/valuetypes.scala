@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.schemas
 
 import com.sksamuel.avro4s.SchemaFor
 import com.sksamuel.avro4s.typeutils.{Annotations, Names}
-import magnolia.CaseClass
+import magnolia1.CaseClass
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.Schema
 
