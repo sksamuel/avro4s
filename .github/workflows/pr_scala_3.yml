@@ -7,7 +7,7 @@ on:
       - 'docs/**'
       - '*.md'
     branches:
-      - scala3/*
+      - master
 
 jobs:
   scala_3_0:
