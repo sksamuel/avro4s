@@ -14,7 +14,7 @@ object Build extends AutoPlugin {
     val CatsVersion = "2.7.0"
     val RefinedVersion = "0.9.26"
     val ShapelessVersion = "2.3.7"
-    val MagnoliaVersion = "2.0.0-M9"
+    val MagnoliaVersion = "1.0.0"
     val SbtJmhVersion = "0.3.7"
     val JmhVersion = "1.32"
   }
@@ -32,10 +32,11 @@ object Build extends AutoPlugin {
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
-    scalaVersion := "3.0.2",
+    scalaVersion := "3.1.0",
     resolvers += Resolver.mavenLocal,
-    parallelExecution in Test := false,
-    javacOptions := Seq("-source", "1.8", "-target", "1.8"),
+    Test / parallelExecution := false,
+    Test / scalacOptions ++= Seq("-Xmax-inlines:64"),
+    javacOptions := Seq("-source", "1.8", "-target", "1.8"),    
     libraryDependencies ++= Seq(
       "org.scala-lang"    % "scala3-compiler_3" % scalaVersion.value,
       "org.apache.avro"   % "avro"              % AvroVersion,

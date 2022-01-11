@@ -5,7 +5,7 @@ import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
-import magnolia.{AutoDerivation, CaseClass, SealedTrait}
+import magnolia1.{AutoDerivation, CaseClass, SealedTrait}
 
 class SealedTraitEncoderTest extends AnyFunSuite with Matchers {
 

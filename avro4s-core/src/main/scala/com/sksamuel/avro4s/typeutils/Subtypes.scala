@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.typeutils
 
-import magnolia.SealedTrait
+import magnolia1.SealedTrait
 
 object SubtypeOrdering extends Ordering[SealedTrait.Subtype[_, _, _]] {
   override def compare(a: SealedTrait.Subtype[_, _, _], b: SealedTrait.Subtype[_, _, _]): Int = {

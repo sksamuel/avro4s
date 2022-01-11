@@ -2,14 +2,14 @@ package com.sksamuel.avro4s.encoders
 
 import com.sksamuel.avro4s.typeutils.{Annotations, Names}
 import com.sksamuel.avro4s.{Avro4sConfigurationException, Encoder, ImmutableRecord, SchemaFor}
-import magnolia.CaseClass
+import magnolia1.CaseClass
 import org.apache.avro.Schema
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
-class RecordEncoder[T](ctx: magnolia.CaseClass[Encoder, T]) extends Encoder[T] {
+class RecordEncoder[T](ctx: magnolia1.CaseClass[Encoder, T]) extends Encoder[T] {
 
   def encode(schema: Schema): T => Any = {
     // the order of the encoders comes from the schema
@@ -25,7 +25,7 @@ class RecordEncoder[T](ctx: magnolia.CaseClass[Encoder, T]) extends Encoder[T] {
   /**
     * Finds the matching param from the case class for the given avro [[Schema.Field]].
     */
-  private def findParam(field: Schema.Field, ctx: magnolia.CaseClass[Encoder, T]): Option[CaseClass.Param[Encoder, T]] = {
+  private def findParam(field: Schema.Field, ctx: magnolia1.CaseClass[Encoder, T]): Option[CaseClass.Param[Encoder, T]] = {
     ctx.params.find { param =>
       val annotations = new Annotations(param.annotations)
       val paramName = annotations.name.getOrElse(param.label)
@@ -46,7 +46,7 @@ class RecordEncoder[T](ctx: magnolia.CaseClass[Encoder, T]) extends Encoder[T] {
   }
 }
 
-class FieldEncoder[T](param: magnolia.CaseClass.Param[Encoder, T], schema: Schema) extends Serializable :
+class FieldEncoder[T](param: magnolia1.CaseClass.Param[Encoder, T], schema: Schema) extends Serializable :
 
   private val encode = param.typeclass.encode(schema)
 

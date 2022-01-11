@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.schemas
 import com.sksamuel.avro4s.avroutils.SchemaHelper
 import com.sksamuel.avro4s.typeutils.{Annotations, Names}
 import com.sksamuel.avro4s.{FieldMapper, SchemaFor}
-import magnolia.CaseClass
+import magnolia1.CaseClass
 import org.apache.avro.{Schema, SchemaBuilder}
 
 import scala.jdk.CollectionConverters._

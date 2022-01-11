@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.encoders
 
 import com.sksamuel.avro4s.typeutils.{Annotations, Names, SubtypeOrdering}
 import com.sksamuel.avro4s.{Encoder, SchemaFor}
-import magnolia.SealedTrait
+import magnolia1.SealedTrait
 import org.apache.avro.generic.GenericData
 import org.apache.avro.{Schema, SchemaBuilder}
 

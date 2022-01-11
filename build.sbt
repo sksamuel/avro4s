@@ -19,7 +19,7 @@ lazy val root = Project("avro4s", file("."))
 val `avro4s-core` = project.in(file("avro4s-core"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.softwaremill.magnolia" % "magnolia-core_3" % MagnoliaVersion
+      "com.softwaremill.magnolia1_3" %% "magnolia" % MagnoliaVersion
       //      "com.chuusai" %% "shapeless" % ShapelessVersion,
       //      "org.json4s" %% "json4s-native" % Json4sVersion
     )
@@ -47,7 +47,7 @@ val benchmarks = project
   .dependsOn(`avro4s-core`)
   .enablePlugins(JmhPlugin)
   .settings(
-    fork in Test := true,
+    Test / fork := true,
     libraryDependencies ++= Seq(
       "pl.project13.scala" % "sbt-jmh-extras" % SbtJmhVersion,
       "org.openjdk.jmh" % "jmh-core" % JmhVersion,

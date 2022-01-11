@@ -1,7 +1,7 @@
 package com.sksamuel.avro4s.typeutils
 
 import com.sksamuel.avro4s.{AvroAliasable, AvroDoc, AvroDocumentable, AvroErasedName, AvroError, AvroFixed, AvroName, AvroNameable, AvroNamespace, AvroProp, AvroProperty, AvroSortPriority, AvroTransient, AvroUnionPosition}
-import magnolia.{CaseClass, TypeInfo}
+import magnolia1.{CaseClass, TypeInfo}
 
 class Annotations(annos: Seq[Any]) {
 

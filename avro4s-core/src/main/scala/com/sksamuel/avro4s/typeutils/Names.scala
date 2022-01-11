@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.typeutils
 
-import magnolia.TypeInfo
+import magnolia1.TypeInfo
 
 /**
   * Extracts names and namespaces from a type.
