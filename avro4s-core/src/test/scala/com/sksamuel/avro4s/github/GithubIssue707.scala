@@ -11,19 +11,19 @@ case class ChildA() extends Parent
 
 class GithubIssue707 extends AnyFunSuite {
 
-  test("Serializable Encoder[Holder] #432") {
+  test("Serializable Encoder[Holder]") {
     val oos = new ObjectOutputStream(new ByteArrayOutputStream())
     oos.writeObject(implicitly[Encoder[Holder]])
     oos.close()
   }
 
-  test("Serializable Decoder[Holder] #432") {
+  test("Serializable Decoder[Holder]") {
     val oos = new ObjectOutputStream(new ByteArrayOutputStream())
     oos.writeObject(implicitly[Decoder[Holder]])
     oos.close()
   }
 
-  test("Serializable SchemaFor[Holder] works") {
+  test("Serializable SchemaFor[Holder]") {
     val oos = new ObjectOutputStream(new ByteArrayOutputStream())
     oos.writeObject(implicitly[SchemaFor[Holder]])
     oos.close()
