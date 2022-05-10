@@ -384,7 +384,7 @@ trait BaseDecoders {
     val enum = tag.tpe match {
       case TypeRef(enumType, _, _) =>
         val moduleSymbol = enumType.termSymbol.asModule
-        val mirror: Mirror = runtimeMirror(getClass.getClassLoader)
+        val mirror: Mirror = runtimeMirror(Thread.currentThread().getContextClassLoader)
         mirror.reflectModule(moduleSymbol).instance.asInstanceOf[Enumeration]
     }
 
