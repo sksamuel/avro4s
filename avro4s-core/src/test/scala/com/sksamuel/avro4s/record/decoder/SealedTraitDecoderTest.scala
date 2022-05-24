@@ -23,7 +23,42 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
     Decoder[DibbleWrapper].decode(schema)(record2) shouldBe DibbleWrapper(Dabble)
   }
 
-  //test("support sealed traits of case classes") {
+  test("support sealed traits of case classes") {
+    val schema = AvroSchema[Wrapper]
+    val record = new GenericData.Record(schema)
+    val wobble = new GenericData.Record(AvroSchema[Wobble])
+    wobble.put("str", new Utf8("foo"))
+    record.put("wibble", wobble)
+
+    val wrapper = Decoder[Wrapper].decode(schema)(record)
+    wrapper shouldBe Wrapper(Wobble("foo"))
+  }
+
+  test("support trait subtypes fields with same name") {
+    val schema = AvroSchema[Trapper]
+    val record = new GenericData.Record(schema)
+    val tobble = new GenericData.Record(AvroSchema[Tobble])
+    tobble.put("str", new Utf8("foo"))
+    tobble.put("place", new Utf8("bar"))
+    record.put("tibble", tobble)
+
+    val trapper = Decoder[Trapper].decode(schema)(record)
+    trapper shouldBe Trapper(Tobble("foo", "bar"))
+  }
+
+  test("support trait subtypes fields with same name and same type") {
+    val schema = AvroSchema[Napper]
+    val record = new GenericData.Record(schema)
+    val nabble = new GenericData.Record(AvroSchema[Nabble])
+    nabble.put("str", new Utf8("foo"))
+    nabble.put("age", java.lang.Integer.valueOf(44))
+    record.put("nibble", nabble)
+
+    val napper = Decoder[Napper].decode(schema)(record)
+    napper shouldBe Napper(Nabble("foo", 44))
+  }
+
+    //test("support sealed traits of case classes") {
     //val schema = AvroSchema[Wrapper]
     //val record = new GenericData.Record(schema)
     //val wobble = new GenericData.Record(AvroSchema[Wobble])
