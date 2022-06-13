@@ -10,13 +10,13 @@ object Build extends AutoPlugin {
     val Log4jVersion = "1.2.17"
     val ScalatestVersion = "3.2.9"
     val Slf4jVersion = "1.7.30"
-    val Json4sVersion = "3.6.11"
+    val Json4sVersion = "4.0.5"
     val CatsVersion = "2.0.0"
-    val RefinedVersion = "0.9.26"
-    val ShapelessVersion = "2.3.7"
+    val RefinedVersion = "0.9.29"
+    val ShapelessVersion = "2.3.9"
     val MagnoliaVersion = "0.17.0"
     val SbtJmhVersion = "0.3.7"
-    val JmhVersion = "1.23"
+    val JmhVersion = "1.35"
   }
 
   import autoImport._
@@ -35,7 +35,7 @@ object Build extends AutoPlugin {
     scalaVersion := "2.13.5",
     crossScalaVersions := Seq("2.12.14", "2.13.5"),
     resolvers += Resolver.mavenLocal,
-    parallelExecution in Test := false,
+    Test / parallelExecution := false,
     scalacOptions := Seq(
       "-unchecked", "-deprecation",
       "-encoding",
@@ -60,7 +60,7 @@ object Build extends AutoPlugin {
 
   val publishingSettings = Seq(
     publishMavenStyle := true,
-    publishArtifact in Test := false,
+    Test / publishArtifact := false,
     credentials += Credentials(
       "Sonatype Nexus Repository Manager",
       "oss.sonatype.org",
