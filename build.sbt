@@ -18,6 +18,7 @@ lazy val root = Project("avro4s", file("."))
 
 val `avro4s-core` = project.in(file("avro4s-core"))
   .settings(
+    publishArtifact := true,
     libraryDependencies ++= Seq(
       "com.softwaremill.magnolia1_3" %% "magnolia" % MagnoliaVersion
       //      "com.chuusai" %% "shapeless" % ShapelessVersion,
@@ -28,6 +29,7 @@ val `avro4s-core` = project.in(file("avro4s-core"))
 val `avro4s-cats` = project.in(file("avro4s-cats"))
   .dependsOn(`avro4s-core`)
   .settings(
+    publishArtifact := true,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % CatsVersion,
       "org.typelevel" %% "cats-jvm" % CatsVersion
@@ -48,6 +50,7 @@ val benchmarks = project
   .enablePlugins(JmhPlugin)
   .settings(
     Test / fork := true,
+    publishArtifact := false,
     libraryDependencies ++= Seq(
       "pl.project13.scala" % "sbt-jmh-extras" % SbtJmhVersion,
       "org.openjdk.jmh" % "jmh-core" % JmhVersion,
