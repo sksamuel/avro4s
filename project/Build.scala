@@ -32,7 +32,7 @@ object Build extends AutoPlugin {
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
-    scalaVersion := "3.1.2",
+    scalaVersion := "3.1.3",
     resolvers += Resolver.mavenLocal,
     Test / parallelExecution := false,
     Test / scalacOptions ++= Seq("-Xmax-inlines:64"),
