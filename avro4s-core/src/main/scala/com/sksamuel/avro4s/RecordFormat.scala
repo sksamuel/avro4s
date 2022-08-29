@@ -18,4 +18,12 @@ object RecordFormat {
     override def from(record: IndexedRecord): T = fromRecord.from(record)
     override def to(t: T): Record = toRecord.to(t)
   }
+
+  def fromCodec[T: Codec](schema: Schema) = new RecordFormat[T] {
+    val toRecord: ToRecord[T] = ToRecord.apply[T](schema)
+    val fromRecord: FromRecord[T] = FromRecord.apply[T](schema)
+
+    override def from(record: IndexedRecord): T = fromRecord.from(record)
+    override def to(t: T): Record = toRecord.to(t)
+  }
 }

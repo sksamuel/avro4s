@@ -1044,9 +1044,7 @@ To convert from a class into a record:
 case class Composer(name: String, birthplace: String, compositions: Seq[String])
 val ennio = Composer("ennio morricone", "rome", Seq("legend of 1900", "ecstasy of gold"))
 val schema: Schema = AvroSchema[Composer]
-implicit val toRecord: ToRecord[Composer] = ToRecord.apply[Composer](schema)
-implicit val fromRecord: FromRecord[Composer] = FromRecord.apply[Composer](schema)
-val format: RecordFormat[Composer] = RecordFormat.apply[Composer](schema)
+val format: RecordFormat[Composer] = RecordFormat.fromCodec[Composer](schema)
 // record is a type that implements both GenericRecord and Specific Record
 val record = format.to(ennio)
 ```
