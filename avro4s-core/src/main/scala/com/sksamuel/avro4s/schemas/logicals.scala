@@ -19,3 +19,12 @@ object TimestampNanosLogicalType extends LogicalType("timestamp-nanos") {
     }
   }
 }
+
+object NanosOfTheDayLogicalType extends LogicalType("nanos-of-the-day") {
+  override def validate(schema: Schema): Unit = {
+    super.validate(schema)
+    if (schema.getType != Schema.Type.LONG) {
+      throw new IllegalArgumentException("Logical type nanos-of-the-day must be backed by long")
+    }
+  }
+}

@@ -7,7 +7,7 @@
       "name": "time",
       "type": {
         "type": "long",
-        "logicalType": "time-micros"
+        "logicalType": "nanos-of-the-day"
       }
     }
   ]

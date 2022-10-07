@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.decoders
 
-import com.sksamuel.avro4s.schemas.TimestampNanosLogicalType
+import com.sksamuel.avro4s.schemas.{NanosOfTheDayLogicalType, TimestampNanosLogicalType}
 import com.sksamuel.avro4s.{Avro4sConfigurationException, Decoder, SchemaFor}
 import org.apache.avro.LogicalTypes.{TimeMicros, TimeMillis, TimestampMicros, TimestampMillis}
 import org.apache.avro.Schema
@@ -42,6 +42,7 @@ trait TemporalDecoders:
       val toNanosFactor = schema.getLogicalType match {
         case _: TimeMicros => 1000L
         case _: TimeMillis => 1000000L
+        case NanosOfTheDayLogicalType => 1L
         case _ => throw new Avro4sConfigurationException(s"Unsupported logical type for LocalTime: ${schema}")
       }
 

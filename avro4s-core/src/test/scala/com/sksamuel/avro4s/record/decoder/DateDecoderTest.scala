@@ -18,10 +18,10 @@ class DateDecoderTest extends AnyFunSuite with Matchers {
   case class WithTimestamp(z: Timestamp)
   case class WithInstant(z: Instant)
 
-  test("decode int to LocalTime") {
+  test("decode long to LocalTime") {
     val schema = AvroSchema[WithLocalTime]
     val record = new GenericData.Record(schema)
-    record.put("z", 46245000000L)
+    record.put("z", 46245000000000L)
     Decoder[WithLocalTime].decode(schema).apply(record) shouldBe WithLocalTime(LocalTime.of(12, 50, 45))
   }
 

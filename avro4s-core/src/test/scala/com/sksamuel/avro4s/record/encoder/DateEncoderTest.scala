@@ -10,10 +10,10 @@ import org.scalatest.matchers.should.Matchers
 
 class DateEncoderTest extends AnyFunSuite with Matchers {
 
-  test("encode LocalTime as TIME-MILLIS") {
+  test("encode LocalTime as nanoseconds of the day") {
     case class Foo(s: LocalTime)
     val schema = AvroSchema[Foo]
-    Encoder[Foo].encode(schema).apply(Foo(LocalTime.of(12, 50, 45))) shouldBe expectedRecord(schema, 46245000000L)
+    Encoder[Foo].encode(schema).apply(Foo(LocalTime.of(12, 50, 45))) shouldBe expectedRecord(schema, 46245000000000L)
   }
 
   test("encode LocalDate as DATE") {

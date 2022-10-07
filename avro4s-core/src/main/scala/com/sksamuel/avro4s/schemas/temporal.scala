@@ -14,5 +14,5 @@ trait TemporalSchemas:
   given LocalDateSchemaFor: SchemaFor[LocalDate] = DateSchemaFor.forType
   given LocalDateTimeSchemaFor : SchemaFor[LocalDateTime] = SchemaFor(TimestampNanosLogicalType.addToSchema(SchemaBuilder.builder.longType))
   given OffsetDateTimeSchemaFor : SchemaFor[OffsetDateTime] = SchemaFor(OffsetDateTimeLogicalType.addToSchema(SchemaBuilder.builder.stringType))
-  given LocalTimeSchemaFor : SchemaFor[LocalTime] = SchemaFor(LogicalTypes.timeMicros().addToSchema(SchemaBuilder.builder.longType))
+  given LocalTimeSchemaFor : SchemaFor[LocalTime] = SchemaFor(NanosOfTheDayLogicalType.addToSchema(SchemaBuilder.builder.longType))
   given TimestampSchemaFor : SchemaFor[Timestamp] = SchemaFor[Timestamp](LogicalTypes.timestampMillis().addToSchema(SchemaBuilder.builder.longType))
