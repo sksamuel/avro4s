@@ -9,7 +9,7 @@ object Build extends AutoPlugin {
     val AvroVersion = "1.11.0"
     val Log4jVersion = "1.2.17"
     val ScalatestVersion = "3.2.14"
-    val Slf4jVersion = "1.7.36"
+    val Slf4jVersion = "2.0.5"
     val Json4sVersion = "3.6.11"
     val CatsVersion = "2.7.0"
     val RefinedVersion = "0.9.26"
@@ -32,7 +32,7 @@ object Build extends AutoPlugin {
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
-    scalaVersion := "3.1.3",
+    scalaVersion := "3.2.1",
     resolvers += Resolver.mavenLocal,
     Test / parallelExecution := false,
     Test / scalacOptions ++= Seq("-Xmax-inlines:64"),
