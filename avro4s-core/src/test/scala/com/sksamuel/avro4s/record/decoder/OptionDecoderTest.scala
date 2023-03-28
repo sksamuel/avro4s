@@ -1,17 +1,26 @@
 package com.sksamuel.avro4s.record.decoder
 
-import java.util
-
-import com.sksamuel.avro4s.{AvroSchema, Decoder}
+import com.sksamuel.avro4s.{AvroSchema, Decoder, ImmutableRecord}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
+import org.apache.avro.util.Utf8
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.util
 
 case class OptionBoolean(b: Option[Boolean])
 case class OptionString(s: Option[String])
 case class RequiredString(s: String)
 
+case class OptionEither(o: Option[Either[String, Boolean]])
+
+sealed trait Dimension
+case class HeightDimension(height: Double) extends Dimension
+case class WidthDimension(width: Double) extends Dimension
+case class MeasurableThing(dimension: Option[Dimension])
+
+case class OptionDibble(o: Option[Dibble])
 
 sealed trait CupcatOptionEnum
 case object CuppersOptionEnum extends CupcatOptionEnum
@@ -99,6 +108,67 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
       Decoder[OptionOfSeqOfCaseClass].decode(schema).apply(record2) shouldBe OptionOfSeqOfCaseClass(None)
     }
 
+    "option of either" in {
+      val schema = AvroSchema[OptionEither]
+      val unionSchema = schema.getField("o").schema()
+      require(unionSchema.getType == Schema.Type.UNION)
+      val stringSchema = unionSchema.getTypes.get(1)
+      require(stringSchema.getType == Schema.Type.STRING)
+      val booleanSchema = unionSchema.getTypes.get(2)
+      require(booleanSchema.getType == Schema.Type.BOOLEAN)
+
+      val noneRecord = new GenericData.Record(schema)
+      noneRecord.put("o", null)
+
+      val leftRecord = new GenericData.Record(schema)
+      leftRecord.put("o", new Utf8("foo"))
+
+      val rightRecord = new GenericData.Record(schema)
+      rightRecord.put("o", java.lang.Boolean.valueOf(true))
+
+      Decoder[OptionEither].decode(schema).apply(noneRecord) shouldBe OptionEither(None)
+      Decoder[OptionEither].decode(schema).apply(leftRecord) shouldBe OptionEither(Some(Left("foo")))
+      Decoder[OptionEither].decode(schema).apply(rightRecord) shouldBe OptionEither(Some(Right(true)))
+    }
+
+    "option of sealed trait" in {
+      val schema = AvroSchema[MeasurableThing]
+
+      val heightRecord = new GenericData.Record(schema)
+      val heightDimensionRecord = new GenericData.Record(AvroSchema[HeightDimension])
+      heightDimensionRecord.put("height", 1.23)
+      heightRecord.put("dimension", heightDimensionRecord)
+
+      val weightRecord = new GenericData.Record(schema)
+      val weightDimensionRecord = new GenericData.Record(AvroSchema[WidthDimension])
+      weightDimensionRecord.put("width", 1.23)
+      weightRecord.put("dimension", weightDimensionRecord)
+
+      val noneRecord = new GenericData.Record(schema)
+      noneRecord.put("dimension", null)
+
+      Decoder[MeasurableThing].decode(schema)(heightRecord) shouldBe MeasurableThing(Some(HeightDimension(1.23)))
+      Decoder[MeasurableThing].decode(schema)(weightRecord) shouldBe MeasurableThing(Some(WidthDimension(1.23)))
+      Decoder[MeasurableThing].decode(schema)(noneRecord) shouldBe MeasurableThing(None)
+    }
+
+    "option of enum" in {
+      val schema = AvroSchema[OptionDibble]
+      val dibbleSchema = AvroSchema[Dibble]
+
+      val dobbleRecord = new GenericData.Record(schema)
+      dobbleRecord.put("o", new GenericData.EnumSymbol(dibbleSchema, Dobble))
+
+      val dabbleRecord = new GenericData.Record(schema)
+      dabbleRecord.put("o", new GenericData.EnumSymbol(dibbleSchema, Dabble))
+
+      val noneRecord = new GenericData.Record(schema)
+      noneRecord.put("o", null)
+
+      Decoder[OptionDibble].decode(schema)(dobbleRecord) shouldBe OptionDibble(Some(Dobble))
+      Decoder[OptionDibble].decode(schema)(dabbleRecord) shouldBe OptionDibble(Some(Dabble))
+      Decoder[OptionDibble].decode(schema)(noneRecord) shouldBe OptionDibble(None)
+    }
   }
 }
 
