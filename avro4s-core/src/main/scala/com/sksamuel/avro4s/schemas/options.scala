@@ -12,8 +12,11 @@ trait OptionSchemas {
     override def schema: Schema = {
       val rhs: Schema = schemaFor.schema
       if (rhs.isUnion)
-        throw new Avro4sException("Options cannot contain other union types, such as sealed traits")
-      Schema.createUnion(Schema.create(Schema.Type.NULL), schemaFor.schema)
+        val types = rhs.getTypes
+        types.add(0, Schema.create(Schema.Type.NULL))
+        Schema.createUnion(types)
+      else
+        Schema.createUnion(Schema.create(Schema.Type.NULL), rhs)
     }
   }
 }
