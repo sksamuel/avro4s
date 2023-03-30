@@ -6,7 +6,39 @@ import org.scalatest.matchers.should.Matchers
 
 class OptionSchemaTest extends AnyFunSuite with Matchers {
 
-  test("generate option as Union[T, Null]") {
+  test("generate option of either Union[Null, A, B]") {
+    case class Test(option: Option[Either[String, Boolean]])
+
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option_either.json"))
+    val schema = AvroSchema[Test]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("generate option of sealed traits enums as Union[Null, {enum}]") {
+    sealed trait T
+    case object A extends T
+    case object B extends T
+    case object C extends T
+    case class Test(option: Option[T])
+
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option_enum.json"))
+    val schema = AvroSchema[Test]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("generate option of sealed traits as Union[Null, A, B, C]") {
+    sealed trait T
+    case class A(a: String) extends T
+    case class B(b: String) extends T
+    case class C(c: String) extends T
+    case class Test(option: Option[T])
+
+    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option_sealed_trait.json"))
+    val schema = AvroSchema[Test]
+    schema.toString(true) shouldBe expected.toString(true)
+  }
+
+  test("generate option as Union[Null, T]") {
     case class Test(option: Option[String])
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option.json"))
     val schema = AvroSchema[Test]

@@ -10,13 +10,16 @@ class OptionDecoder[T](decoder: Decoder[T]) extends Decoder[Option[T]] {
     require(schema.getType == Schema.Type.UNION, {
       "Options can only be encoded with a UNION schema"
     })
-    require(schema.getTypes.size() == 2, {
-      "Options can only be encoded with a 2 element union schema"
+    require(schema.getTypes.size() >= 2, {
+      "An option should be encoded with a UNION schema with at least 2 element types"
     })
     require(schema.getTypes.get(0).getType == Schema.Type.NULL, {
       "Options can only be encoded with a UNION schema with NULL as the first element type"
     })
-    val elementSchema = schema.getTypes.get(1)
+    val schemaSize = schema.getTypes.size()
+    val elementSchema = schemaSize match
+      case 2 => schema.getTypes.get(1)
+      case _ => Schema.createUnion(schema.getTypes.subList(1, schemaSize))
     val decode = decoder.decode(elementSchema)
     { value => if (value == null) None else Some(decode(value)) }
   }

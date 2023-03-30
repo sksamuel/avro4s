@@ -1,6 +1,5 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.record.encoder.MeasurableThing
 import com.sksamuel.avro4s.{Avro4sException, AvroName, AvroSchema}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -13,7 +12,8 @@ class SealedTraitSchemaTest extends AnyFunSuite with Matchers {
     schema.toString(true) shouldBe expected.toString(true)
   }
 
-  test("support trait subtypes fields with same name") {
+  test("support trait subtype" +
+    "s fields with same name") {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/trait_subtypes_duplicate_fields.json"))
     val schema = AvroSchema[Trapper]
     schema.toString(true) shouldBe expected.toString(true)
@@ -35,12 +35,6 @@ class SealedTraitSchemaTest extends AnyFunSuite with Matchers {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/sealed_trait_of_objects.json"))
     val schema = AvroSchema[Dibble]
     schema.toString(true) shouldBe expected.toString(true)
-  }
-
-  test("throw on options of sealed traits") {
-    intercept[Avro4sException] {
-      val schema = AvroSchema[MeasurableThing]
-    }
   }
 
   sealed trait Foo extends Product with Serializable

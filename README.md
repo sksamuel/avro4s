@@ -1104,49 +1104,52 @@ import shapeless.{:+:, CNil}
 The following table shows how types used in your code will be mapped / encoded in the generated Avro schemas and files.
 If a type can be mapped in multiple ways, it is listed more than once.
 
-| Scala Type                   	| Schema Type   	| Logical Type     	| Encoded Type |
-|------------------------------	|---------------	|------------------	| ------------ |
-| String                       	| STRING        	|                  	| Utf8                      |
-| String                       	| FIXED        	|                  	| GenericFixed         |
-| String                       	| BYTES        	|                  	| ByteBuffer         |
-| Boolean                      	| BOOLEAN       	|                  	| java.lang.Boolean |
-| Long                         	| LONG          	|                  	| java.lang.Long |
-| Int                          	| INT           	|                  	| java.lang.Integer |
-| Short                        	| INT           	|                  	| java.lang.Integer |
-| Byte                         	| INT           	|                  	| java.lang.Integer |
-| Double                       	| DOUBLE        	|                  	| java.lang.Double |
-| Float                        	| FLOAT         	|                  	| java.lang.Float |
-| UUID                         	| STRING        	| UUID             	| Utf8 |
-| LocalDate                    	| INT           	| Date             	| java.lang.Int |
-| LocalTime                    	| INT           	| time-millis      	| java.lang.Int |
-| LocalDateTime                	| LONG          	| timestamp-nanos 	| java.lang.Long |
-| java.sql.Date                	| INT           	| Date             	| java.lang.Int |
-| Instant                      	| LONG          	| Timestamp-Millis 	| java.lang.Long |
-| Timestamp                    	| LONG          	| Timestamp-Millis 	| java.lang.Long |
-| BigDecimal                   	| BYTES         	| Decimal<8,2>     	| ByteBuffer |
-| BigDecimal                   	| FIXED         	| Decimal<8,2>     	| GenericFixed |
-| BigDecimal                   	| STRING         	| Decimal<8,2>     	| String |
-| Option[T]                    	| UNION<null,T> 	|                  	| null, T |
-| Array[Byte]                  	| BYTES         	|                  	| ByteBuffer |
-| Array[Byte]                  	| FIXED         	|                  	| GenericFixed |
-| ByteBuffer                   	| BYTES         	|                  	| ByteBuffer |
-| Seq[Byte]                    	| BYTES         	|                  	| ByteBuffer |
-| List[Byte]                   	| BYTES         	|                  	| ByteBuffer |
-| Vector[Byte]                 	| BYTES         	|                  	| ByteBuffer |
-| Array[T]                     	| ARRAY<T>      	|                  	| Array[T] |
-| Vector[T]                    	| ARRAY<T>      	|                  	| Array[T] |
-| Seq[T]                       	| ARRAY<T>      	|                  	| Array[T] |
-| List[T]                      	| ARRAY<T>      	|                  	| Array[T] |
-| Set[T]                       	| ARRAY<T>      	|                  	| Array[T] |
-| sealed trait of case classes 	| UNION<A,B,..>  	|                  	| A, B, ... |
-| sealed trait of case objects 	| ENUM<A,B,..>  	|                  	| GenericEnumSymbol |
-| Map[String, V]              	| MAP<V>        	|                  	| java.util.Map[String, V] |
-| Either[A,B]                  	| UNION<A,B>    	|                  	| A, B |
-| A :+: B :+: C :+: CNil       	| UNION<A,B,C>  	|                  	| A, B, ... |
-| case class T                 	| RECORD        	|                  	| GenericRecord with SpecificRecord |
-| Scala enumeration            	| ENUM          	|                  	| GenericEnumSymbol |
-| Java enumeration             	| ENUM          	|                  	| GenericEnumSymbol |
-| Scala tuples                  | RECORD            |                   | GenericRecord with SpecificRecord |
+| Scala Type                   	         | Schema Type   	    | Logical Type     	| Encoded Type                      |
+|----------------------------------------|--------------------|------------------	|-----------------------------------|
+| String                       	         | STRING        	    |                  	| Utf8                              |
+| String                       	         | FIXED        	     |                  	| GenericFixed                      |
+| String                       	         | BYTES        	     |                  	| ByteBuffer                        |
+| Boolean                      	         | BOOLEAN       	    |                  	| java.lang.Boolean                 |
+| Long                         	         | LONG          	    |                  	| java.lang.Long                    |
+| Int                          	         | INT           	    |                  	| java.lang.Integer                 |
+| Short                        	         | INT           	    |                  	| java.lang.Integer                 |
+| Byte                         	         | INT           	    |                  	| java.lang.Integer                 |
+| Double                       	         | DOUBLE        	    |                  	| java.lang.Double                  |
+| Float                        	         | FLOAT         	    |                  	| java.lang.Float                   |
+| UUID                         	         | STRING        	    | UUID             	| Utf8                              |
+| LocalDate                    	         | INT           	    | Date             	| java.lang.Int                     |
+| LocalTime                    	         | INT           	    | time-millis      	| java.lang.Int                     |
+| LocalDateTime                	         | LONG          	    | timestamp-nanos 	| java.lang.Long                    |
+| java.sql.Date                	         | INT           	    | Date             	| java.lang.Int                     |
+| Instant                      	         | LONG          	    | Timestamp-Millis 	| java.lang.Long                    |
+| Timestamp                    	         | LONG          	    | Timestamp-Millis 	| java.lang.Long                    |
+| BigDecimal                   	         | BYTES         	    | Decimal<8,2>     	| ByteBuffer                        |
+| BigDecimal                   	         | FIXED         	    | Decimal<8,2>     	| GenericFixed                      |
+| BigDecimal                   	         | STRING         	   | Decimal<8,2>     	| String                            |
+| Option[T]                    	         | UNION<null,T> 	    |                  	| null, T                           |
+| Array[Byte]                  	         | BYTES         	    |                  	| ByteBuffer                        |
+| Array[Byte]                  	         | FIXED         	    |                  	| GenericFixed                      |
+| ByteBuffer                   	         | BYTES         	    |                  	| ByteBuffer                        |
+| Seq[Byte]                    	         | BYTES         	    |                  	| ByteBuffer                        |
+| List[Byte]                   	         | BYTES         	    |                  	| ByteBuffer                        |
+| Vector[Byte]                 	         | BYTES         	    |                  	| ByteBuffer                        |
+| Array[T]                     	         | ARRAY<T>      	    |                  	| Array[T]                          |
+| Vector[T]                    	         | ARRAY<T>      	    |                  	| Array[T]                          |
+| Seq[T]                       	         | ARRAY<T>      	    |                  	| Array[T]                          |
+| List[T]                      	         | ARRAY<T>      	    |                  	| Array[T]                          |
+| Set[T]                       	         | ARRAY<T>      	    |                  	| Array[T]                          |
+| sealed trait of case classes 	         | UNION<A,B,..>  	   |                  	| A, B, ...                         |
+| sealed trait of case objects 	         | ENUM<A,B,..>  	    |                  	| GenericEnumSymbol                 |
+| Map[String, V]              	          | MAP<V>        	    |                  	| java.util.Map[String, V]          |
+| Either[A,B]                  	         | UNION<A,B>    	    |                  	| A, B                              |
+| A :+: B :+: C :+: CNil       	         | UNION<A,B,C>  	    |                  	| A, B, ...                         |
+| case class T                 	         | RECORD        	    |                  	| GenericRecord with SpecificRecord |
+| Scala enumeration            	         | ENUM          	    |                  	| GenericEnumSymbol                 |
+| Java enumeration             	         | ENUM          	    |                  	| GenericEnumSymbol                 |
+| Scala tuples                           | RECORD             |                   | GenericRecord with SpecificRecord |
+| Option[Either[A,B]]                    | UNION<null,A,B>    |                   | null, A, B                        |
+| option of sealed trait of case classes | UNION<null,A,B,..> |                   | null, A, B, ...                   |
+| option of sealed trait of case objects   | UNION<null,A,B,..> |                   | null, GenericEnumSymbol           |
 
 To select the encoding in case multiple encoded types exist, create a new `Encoder` with a corresponding `SchemaFor` 
 instance to the via `withSchema`. For example, creating a string encoder that uses target type `BYTES` works like this:
