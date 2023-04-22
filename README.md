@@ -15,8 +15,7 @@ The features of the library are:
 
 ## Versioning
 
-The `master` branch contains version 5.0.x and is currently in development. This version is designed for Scala 3. New
-feature requests are welcome. This version may have minor breaking changes compared to previous major release in order to support the new features of Scala 3.
+The `master` branch contains version 5.0.x which is designed for Scala 3. PRs are welcome. This version may have minor breaking changes compared to previous major release in order to support the new features of Scala 3.
 
 The previous major version is 4.0.x located at branch `release/4.0.x` and is released for Scala 2.12 and Scala 2.13.
 This version is in support mode only. Bug reports are welcome and bug fixes will be released. No new features will be
