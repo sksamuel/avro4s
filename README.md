@@ -6,6 +6,8 @@
 [<img src="https://img.shields.io/maven-central/v/com.sksamuel.avro4s/avro4s-core_3.svg?label=latest%20release%20for%203.0"/>](http://search.maven.org/#search%7Cga%7C1%7Cavro4s-core_3)
 [<img src="https://img.shields.io/nexus/s/https/oss.sonatype.org/com.sksamuel.avro4s/avro4s-core_3.svg?label=latest%20snapshot&style=plastic"/>](https://oss.sonatype.org/content/repositories/snapshots/com/sksamuel/avro4s/)
 
+** This project is in maintaince only mode - PRs will be accepted and releases published but active development has ceased **
+
 Avro4s is a schema/class generation and serializing/deserializing library for [Avro](http://avro.apache.org/) written in Scala. The objective is to allow seamless use with Scala without the need to write boilerplate conversions yourself, and without the runtime overhead of reflection. Hence, this is a macro based library and generates code for use with Avro at _compile time_.
 
 The features of the library are:
