@@ -60,7 +60,9 @@ class SchemaFieldDecoder[T](param: magnolia1.CaseClass.Param[Decoder, T], schema
 
   private val fieldName = Annotations(param.annotations).name.getOrElse(param.label)
   private val fieldPosition = schema.getFields.asScala.indexWhere(_.name() == fieldName)
-  private val field = schema.getField(fieldName)
+  private val field =
+    Option(schema.getField(fieldName))
+      .getOrElse(throw new Avro4sDecodingException(s"""Field "$fieldName" not found in schema $schema""", fieldName))
   private val decoder = param.typeclass.asInstanceOf[Decoder[T]].decode(field.schema())
   private var fast: Boolean | Null = _
 
