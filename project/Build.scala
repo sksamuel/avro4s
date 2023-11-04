@@ -35,7 +35,7 @@ object Build extends AutoPlugin {
     scalaVersion := "3.2.2",
     resolvers += Resolver.mavenLocal,
     Test / parallelExecution := false,
-    Test / scalacOptions ++= Seq("-Xmax-inlines:64"),
+    Test / scalacOptions ++= Seq("-Xmax-inlines:100", "-Yretain-trees"),
     javacOptions := Seq("-source", "1.8", "-target", "1.8"),    
     libraryDependencies ++= Seq(
       "org.scala-lang"    % "scala3-compiler_3" % scalaVersion.value,

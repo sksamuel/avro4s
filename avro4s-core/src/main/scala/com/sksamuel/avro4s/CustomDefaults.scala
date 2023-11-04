@@ -57,11 +57,6 @@
 //
 //  def isScalaEnumeration(value: Any) = value.getClass.getCanonicalName == "scala.Enumeration.Val"
 //
-//  def customInstantDefault(instant: Instant): java.lang.Long = instant match {
-//    case Instant.MAX => Instant.ofEpochMilli(Long.MaxValue).toEpochMilli()
-//    case Instant.MIN => Instant.ofEpochMilli(Long.MinValue).toEpochMilli()
-//    case _ => instant.toEpochMilli()
-//  }
 //
 //  private def isEnum(product: Product, schemaType: Schema.Type) =
 //    product.productArity == 0 && schemaType == Schema.Type.ENUM

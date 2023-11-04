@@ -2,11 +2,10 @@ package com.sksamuel.avro4s.schemas
 
 import com.sksamuel.avro4s.avroutils.SchemaHelper
 import com.sksamuel.avro4s.typeutils.{Annotations, Names}
-import com.sksamuel.avro4s.{FieldMapper, SchemaFor}
+import com.sksamuel.avro4s.{DefaultResolver, FieldMapper, SchemaFor}
 import magnolia1.CaseClass
-import org.apache.avro.{Schema, SchemaBuilder}
-
-import scala.jdk.CollectionConverters._
+import org.apache.avro.{JsonProperties, Schema, SchemaBuilder}
+import scala.jdk.CollectionConverters.*
 
 object Records:
 
@@ -32,7 +31,7 @@ object Records:
         Some(buildSchemaField(param, fieldAnnos, record.getNamespace, doc))
       }
     }
-    record.setFields(fields.toList.asJava)
+    record.setFields(fields.asJava)
 
     annos.aliases.foreach(record.addAlias)
     annos.props.foreach { case (k, v) => record.addProp(k: String, v: AnyRef) }
@@ -65,27 +64,14 @@ object Records:
       SchemaBuilder.fixed(name).doc(doc).namespace(fieldNamespace).size(size)
     }
 
-    // the default value may be none, in which case it was not defined, or Some(null), in which case it was defined
-    // and set to null, or something else, in which case it's a non null value
-    // todo magnolia for scala 3 doesn't support defaults yet
-    val encodedDefault: AnyRef = param.default match {
-      case None => null
-      case Some(None) => null
-      case Some(null) => null
-      case Some(other) => null// DefaultResolver(other, baseSchema)
-    }
+    val encodedDefault = if fieldAnnos.noDefault then None else param.default.map(DefaultResolver(_, baseSchema))
 
     // for a union the type that has a default must be first (including null as an explicit default)
     // if there is no default then we'll move null to head (if present)
     // otherwise left as is
-    // todo magnolia for scala 3 doesn't support defaults yet
-    val schemaWithOrderedUnion = schema
-    //    val schemaWithOrderedUnion = (schemaWithPossibleNull.getType, encodedDefault) match {
-    //      case (Schema.Type.UNION, null) => SchemaHelper.moveNullToHead(schemaWithPossibleNull)
-    //      case (Schema.Type.UNION, JsonProperties.NULL_VALUE) => SchemaHelper.moveNullToHead(schemaWithPossibleNull)
-    //      case (Schema.Type.UNION, defaultValue) => SchemaHelper.moveDefaultToHead(schemaWithPossibleNull, defaultValue)
-    //      case _ => schemaWithPossibleNull
-    //    }
+    val schemaWithOrderedUnion = (schema.getType, encodedDefault) match
+      case (Schema.Type.UNION, Some(defaultValue)) => SchemaHelper.moveDefaultToHead(schema, defaultValue)
+      case _ => schema
 
     // the field can override the containingNamespace if the AvroNamespace annotation is present on the field
     // we may have annotated our field with @AvroNamespace so this containingNamespace should be applied
@@ -100,28 +86,20 @@ object Records:
     else
       schemaWithResolvedNamespace
 
-    val field = new Schema.Field(name, schemaWithResolvedError, doc)
+    val field = new Schema.Field(name, schemaWithResolvedError, doc, encodedDefault.orNull)
     props.foreach { case (k, v) => field.addProp(k, v: AnyRef) }
     aliases.foreach(field.addAlias)
     field
   }
-//
-//    val default: Option[AnyRef] = if (extractor.nodefault) None else param.default.asInstanceOf[Option[AnyRef]]
 
-//
 //    // the name could have been overriden with @AvroName, and then must be encoded with the field mapper
 //    val name = extractor.name.getOrElse(fieldMapper.to(param.label))
-//
 
-//
-//
 //    // if our default value is null, then we should change the type to be nullable even if we didn't use option
 //    val schemaWithPossibleNull = if (default.contains(null) && schema.getType != Schema.Type.UNION) {
 //      SchemaBuilder.unionOf().`type`(schema).and().`type`(Schema.create(Schema.Type.NULL)).endUnion()
 //    } else schema
-//
 
-//
 //    val field = encodedDefault match {
 //      case null => new Schema.Field(name, schemaWithResolvedNamespace, doc)
 //      case CustomUnionDefault(_, m) =>
