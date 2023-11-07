@@ -13,7 +13,7 @@ object SealedTraits {
     override def decode(schema: Schema): Any => T = {
       require(schema.getType == Schema.Type.ENUM)
       val typeForSymbol: Map[GenericData.EnumSymbol, SealedTrait.Subtype[Decoder, T, _]] =
-        ctx.subtypes.sorted(EnumOrdering).zipWithIndex.map { (st, i) =>
+        ctx.subtypes.sorted(EnumOrdering.reverse).zipWithIndex.map { (st, i) =>
           val enumSymbol = GenericData.get.createEnum(schema.getEnumSymbols.get(i), schema).asInstanceOf[GenericData.EnumSymbol]
           enumSymbol -> st
         }.toMap
