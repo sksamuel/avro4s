@@ -53,6 +53,7 @@ case object Rainy extends Weather
 case object Sunny extends Weather
 
 sealed trait Benelux
+
+case object Luxembourg extends Benelux
 @AvroName("foofoo")
 case object Belgium extends Benelux
-case object Luxembourg extends Benelux
