@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.schema
 
-import com.sksamuel.avro4s.{AvroName, AvroSchema, SnakeCase}
+import com.sksamuel.avro4s.{AvroName, AvroSortPriority, AvroSchema, SnakeCase}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
@@ -53,7 +53,7 @@ case object Rainy extends Weather
 case object Sunny extends Weather
 
 sealed trait Benelux
-
-case object Luxembourg extends Benelux
 @AvroName("foofoo")
+@AvroSortPriority(5)
 case object Belgium extends Benelux
+case object Luxembourg extends Benelux
