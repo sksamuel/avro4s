@@ -14,6 +14,6 @@ object SubtypeOrdering extends Ordering[SealedTrait.Subtype[_, _, _]] {
     val priorityA = annosA.sortPriority.getOrElse(999999F)
     val priorityB = annosB.sortPriority.getOrElse(999999F)
 
-    if (priorityA == priorityB) 0 else priorityA.compare(priorityB)
+    if (priorityA == priorityB) namesA.fullName.compare(namesB.fullName) else priorityA.compare(priorityB)
   }
 }
