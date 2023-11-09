@@ -11,6 +11,6 @@ object EnumOrdering extends Ordering[SealedTrait.Subtype[_, _, _]] {
     val priorityA = annosA.sortPriority.getOrElse(0F)
     val priorityB = annosB.sortPriority.getOrElse(0F)
 
-    if (priorityA == priorityB) 0 else priorityA.compare(priorityB)
+    if (priorityA == priorityB) 0 else priorityB.compare(priorityA)
   }
 }

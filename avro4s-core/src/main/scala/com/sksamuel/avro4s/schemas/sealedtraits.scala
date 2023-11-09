@@ -16,7 +16,7 @@ object SealedTraits {
     // if its name equals to the whole enumeration name.
     // Annotaions that are attached to the enum elements are not visible here.
     // Looks lilke we ned to have a look into either Magnolia or Scala 3.
-    val symbols = ctx.subtypes.sorted(EnumOrdering.reverse).map { st =>
+    val symbols = ctx.subtypes.sorted(EnumOrdering).map { st =>
       Names(
         st.typeInfo,
         Annotations(
