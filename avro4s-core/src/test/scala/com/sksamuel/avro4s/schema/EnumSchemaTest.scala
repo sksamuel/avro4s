@@ -680,11 +680,11 @@ enum Sport:
   case Boxing, Soccer, Ruggers
 
 sealed trait CupcatEnum
-@AvroSortPriority(0) case object SnoutleyEnum extends CupcatEnum
+@AvroSortPriority(2) case object SnoutleyEnum extends CupcatEnum
 @AvroSortPriority(1) case object CuppersEnum extends CupcatEnum
 
 @AvroEnumDefault(SnoutleyAnnotatedEnum)
 sealed trait CupcatAnnotatedEnum
-@AvroSortPriority(0) case object SnoutleyAnnotatedEnum extends CupcatAnnotatedEnum
+@AvroSortPriority(2) case object SnoutleyAnnotatedEnum extends CupcatAnnotatedEnum
 @AvroSortPriority(1) case object CuppersAnnotatedEnum extends CupcatAnnotatedEnum
 

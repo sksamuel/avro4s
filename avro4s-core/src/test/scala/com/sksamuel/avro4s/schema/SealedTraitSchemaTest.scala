@@ -67,8 +67,8 @@ case object Dabble extends Dibble
 case object Dobbles extends Dibble
 
 sealed trait Wibble
-case class Wobble(str: String) extends Wibble
 case class Wabble(dbl: Double) extends Wibble
+case class Wobble(str: String) extends Wibble
 case class Wrapper(wibble: Wibble)
 
 sealed trait Tibble

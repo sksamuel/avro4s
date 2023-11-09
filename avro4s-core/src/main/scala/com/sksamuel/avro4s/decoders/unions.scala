@@ -2,7 +2,7 @@ package com.sksamuel.avro4s.decoders
 
 import com.sksamuel.avro4s.{Avro4sDecodingException, Decoder, Encoder}
 import com.sksamuel.avro4s.avroutils.SchemaHelper
-import com.sksamuel.avro4s.typeutils.{Annotations, Names, SubtypeOrdering}
+import com.sksamuel.avro4s.typeutils.{Annotations, Names}
 import magnolia1.SealedTrait
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericContainer

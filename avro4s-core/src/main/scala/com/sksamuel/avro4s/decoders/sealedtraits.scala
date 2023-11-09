@@ -3,7 +3,7 @@ package com.sksamuel.avro4s.decoders
 import com.sksamuel.avro4s.{ Decoder, Avro4sConfigurationException }
 import org.apache.avro.Schema
 import com.sksamuel.avro4s.avroutils.SchemaHelper
-import com.sksamuel.avro4s.typeutils.{Annotations, Names, SubtypeOrdering}
+import com.sksamuel.avro4s.typeutils.{Annotations, Names, EnumOrdering}
 import org.apache.avro.generic.GenericData
 import magnolia1.SealedTrait
 
@@ -13,7 +13,7 @@ object SealedTraits {
     override def decode(schema: Schema): Any => T = {
       require(schema.getType == Schema.Type.ENUM)
       val typeForSymbol: Map[GenericData.EnumSymbol, SealedTrait.Subtype[Decoder, T, _]] =
-        ctx.subtypes.sorted(SubtypeOrdering).zipWithIndex.map { (st, i) =>
+        ctx.subtypes.sorted(EnumOrdering).zipWithIndex.map { (st, i) =>
           val enumSymbol = GenericData.get.createEnum(schema.getEnumSymbols.get(i), schema).asInstanceOf[GenericData.EnumSymbol]
           enumSymbol -> st
         }.toMap
