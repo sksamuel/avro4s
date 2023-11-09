@@ -22,3 +22,9 @@ credentials.sbt
 
 universe.avro
 sbt.json
+
+#vs-code
+.vscode
+.bloop
+.bsp
+.metals
