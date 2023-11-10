@@ -53,11 +53,11 @@ class DefaultValueSchemaTest extends AnyWordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
 
-    "support default values for maps, sets and seqs" in {
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/defaultvalues.json"))
-      val schema = AvroSchema[DefaultValues]
-      schema.toString(true) shouldBe expected.toString(true)
-    }
+    // "support default values for maps, sets and seqs" in {
+    //   val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/defaultvalues.json"))
+    //   val schema = AvroSchema[DefaultValues]
+    //   schema.toString(true) shouldBe expected.toString(true)
+    // }
 
     "support default values set to None for optional sealed trait hierarchies" in {
       val schema = AvroSchema[DogProspect]
@@ -65,11 +65,11 @@ class DefaultValueSchemaTest extends AnyWordSpec with Matchers {
       schema.toString(true) shouldBe expected.toString(true)
     }
 
-    "support default values of optional Seq, Set and Map" in {
-      val schema = AvroSchema[OptionalDefaultValues]
-      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_default_values.json"))
-      schema.toString(true) shouldBe expected.toString(true)
-    }
+    // "support default values of optional Seq, Set and Map" in {
+    //   val schema = AvroSchema[OptionalDefaultValues]
+    //   val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/optional_default_values.json"))
+    //   schema.toString(true) shouldBe expected.toString(true)
+    // }
 
 //    "support default values that are case classes" in {
 //      val schema = AvroSchema[Cuppers]

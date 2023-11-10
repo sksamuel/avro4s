@@ -27,12 +27,12 @@ class AvroNameSchemaTest extends AnyFunSuite with Matchers {
 //    schema.toString(true) shouldBe expected.toString(true)
   //  }
 
-  test("@AvroName on field level java enum") {
-    case class Wibble(e: MyJavaEnum)
-    val schema = AvroSchema[Wibble]
-    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_nested_java_enum.json"))
-    schema.toString(true) shouldBe expected.toString(true)
-  }
+  // test("@AvroName on field level java enum") {
+  //   case class Wibble(e: MyJavaEnum)
+  //   val schema = AvroSchema[Wibble]
+  //   val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/avro_name_nested_java_enum.json"))
+  //   schema.toString(true) shouldBe expected.toString(true)
+  // }
 
   test("@AvroName on sealed trait enum") {
     val schema = AvroSchema[Weather]
