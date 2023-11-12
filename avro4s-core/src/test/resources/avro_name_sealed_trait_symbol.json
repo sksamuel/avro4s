@@ -3,6 +3,8 @@
   "name": "Benelux",
   "namespace": "com.sksamuel.avro4s.schema",
   "symbols": [
+    "Netherlands",
+    "Vlaanderen",
     "Luxembourg",
     "foofoo"
   ]
