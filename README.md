@@ -45,7 +45,7 @@ To generate an Avro Schema, we need to use the `AvroSchema` object passing in th
 This will return an `org.apache.avro.Schema` instance.
 
 ```scala
-import com.sksamuel
+import com.sksamuel.avro4s.AvroSchema
 val schema = AvroSchema[Pizza]
 ```
 
