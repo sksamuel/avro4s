@@ -1,6 +1,6 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s._
+import com.sksamuel.avro4s.*
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
@@ -56,6 +56,17 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
 
     val napper = Decoder[Napper].decode(schema)(record)
     napper shouldBe Napper(Nabble("foo", 44))
+  }
+
+  test("support round-trip for sealed traits of case classes") {
+    val schema = AvroSchema[Fruits]
+
+    val fruits = Fruits(Apple(2.45), Orange("blue"))
+
+    val record = Encoder[Fruits].encode(schema)(fruits)
+    val fruitsAgain = Decoder[Fruits].decode(schema)(record)
+
+    fruitsAgain shouldBe fruits
   }
 
     //test("support sealed traits of case classes") {
@@ -165,6 +176,8 @@ final case class Apple(weight: Double) extends Fruit
 
 @AvroNamespace("market")
 final case class Orange(color: String) extends Fruit
+
+final case class Fruits(fruit1: Fruit, fruit2: Fruit)
 
 @AvroNamespace("market")
 final case class Buy(fruit: Fruit)

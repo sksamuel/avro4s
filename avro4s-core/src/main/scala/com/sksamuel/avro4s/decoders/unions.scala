@@ -17,7 +17,8 @@ object TypeUnions {
       require(schema.isUnion)
 
       val decodersByName = ctx.subtypes.map { st =>
-        val names = Names(st.typeInfo)
+        val annos: Annotations = Annotations(st.annotations)
+        val names = Names(st.typeInfo, annos)
         val subschema = SchemaHelper.extractTraitSubschema(names.fullName, schema)
         names.fullName -> st.typeclass.decode(subschema)
       }.toMap
