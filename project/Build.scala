@@ -38,7 +38,6 @@ object Build extends AutoPlugin {
     Test / scalacOptions ++= Seq("-Xmax-inlines:100", "-Yretain-trees"),
     javacOptions := Seq("-source", "1.8", "-target", "1.8"),    
     libraryDependencies ++= Seq(
-      "org.scala-lang"    % "scala3-compiler_3" % scalaVersion.value,
       "org.apache.avro"   % "avro"              % AvroVersion,
       "org.slf4j"         % "slf4j-api"         % Slf4jVersion          % "test",
       "log4j"             % "log4j"             % Log4jVersion          % "test",
