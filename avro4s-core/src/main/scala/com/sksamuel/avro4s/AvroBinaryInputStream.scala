@@ -23,12 +23,15 @@ import scala.util.Try
   * @see https://avro.apache.org/docs/current/spec.html#binary_encoding
   */
 class AvroBinaryInputStream[T](in: InputStream,
-                               writerSchema: Schema)
+                               writerSchema: Schema,
+                               readerSchema: Schema)
                               (using decoder: Decoder[T]) extends AvroInputStream[T] {
 
-  private val datumReader = GenericData.get.createDatumReader(writerSchema).asInstanceOf[DatumReader[Any]]
+  def this(in: InputStream, writerSchema: Schema)(using decoder: Decoder[T]) = this(in, writerSchema, writerSchema)
+
+  private val datumReader = new GenericDatumReader[Any](writerSchema, readerSchema, GenericData.get)
   private val avroDecoder = DecoderFactory.get().binaryDecoder(in, null)
-  private val decodeT = decoder.decode(writerSchema)
+  private val decodeT = decoder.decode(readerSchema)
 
   private val _iter = new Iterator[Any] {
     override def hasNext: Boolean = !avroDecoder.isEnd
