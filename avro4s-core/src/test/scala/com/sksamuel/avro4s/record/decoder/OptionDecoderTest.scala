@@ -1,6 +1,9 @@
 package com.sksamuel.avro4s.record.decoder
 
-import com.sksamuel.avro4s.{AvroSchema, Decoder, ImmutableRecord}
+import com.sksamuel.avro4s.AvroSchema
+import com.sksamuel.avro4s.Decoder
+import com.sksamuel.avro4s.Encoder
+import com.sksamuel.avro4s.ImmutableRecord
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
@@ -169,6 +172,17 @@ class OptionDecoderTest extends AnyWordSpec with Matchers {
       Decoder[OptionDibble].decode(schema)(dabbleRecord) shouldBe OptionDibble(Some(Dabble))
       Decoder[OptionDibble].decode(schema)(noneRecord) shouldBe OptionDibble(None)
     }
+
+    "Option with non-None default" in {
+      case class Foo(
+        bar: Option[Int] = Some(42)
+      )
+      val schema = AvroSchema[Foo]
+      for (foo <- Seq(Foo(), Foo(Some(17)), Foo(None))) {
+        val encoded = Encoder[Foo].encode(schema).apply(foo)
+        val decoded = Decoder[Foo].decode(schema).apply(encoded)
+        decoded shouldBe foo
+      }
+    }
   }
 }
-
