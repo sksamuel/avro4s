@@ -11,7 +11,7 @@ object Records:
 
   def schema[T](ctx: CaseClass[SchemaFor, T]): SchemaFor[T] = {
 
-    val annos = Annotations(ctx.annotations)
+    val annos = Annotations(ctx)
     val naming = Names(ctx.typeInfo, annos)
     val error = annos.error
 

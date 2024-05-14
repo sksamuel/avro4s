@@ -3,13 +3,14 @@ package com.sksamuel.avro4s.typeutils
 import com.sksamuel.avro4s.{AvroAliasable, AvroDoc, AvroDocumentable, AvroErasedName, AvroError, AvroFixed, AvroName, AvroNameable, AvroNamespace, AvroNoDefault, AvroProp, AvroProperty, AvroSortPriority, AvroTransient, AvroUnionPosition}
 import magnolia1.{CaseClass, TypeInfo}
 
-class Annotations(annos: Seq[Any]) {
+class Annotations(annos: Seq[Any], inheritedAnnos: Seq[Any]) {
+  private[this] val allAnnos: Seq[Any] = annos ++ inheritedAnnos
 
   def name: Option[String] = annos.collectFirst {
     case t: AvroNameable => t.name
   }
 
-  def namespace: Option[String] = annos.collectFirst {
+  def namespace: Option[String] = allAnnos.collectFirst {
     case t: AvroNamespace => t.namespace
   }
 
@@ -60,6 +61,6 @@ class Annotations(annos: Seq[Any]) {
 }
 
 object Annotations {
-  def apply(ctx: CaseClass[_, _]): Annotations = new Annotations(ctx.annotations)
-  def apply(annos: Seq[Any]): Annotations = new Annotations(annos)
+  def apply(ctx: CaseClass[_, _]): Annotations = new Annotations(ctx.annotations, ctx.inheritedAnnotations)
+  def apply(annos: Seq[Any]): Annotations = new Annotations(annos, Nil)
 }
