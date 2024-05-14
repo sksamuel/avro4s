@@ -13,7 +13,7 @@ object ValueTypes {
     */
   def schema[T](ctx: CaseClass[SchemaFor, T]): Schema =
     val annos: Annotations = Annotations(ctx) // taking over @AvroFixed and the like
-    val names = Names(ctx.typeInfo, annos, ctx.typeAnnotations)
+    val names = Names(ctx.typeInfo, annos)
 
     // if the class is a value type, then we need to use the schema for the single field inside the type
     // in other words, if we have `case class Foo(str: String) extends AnyVal` then this acts just like String.

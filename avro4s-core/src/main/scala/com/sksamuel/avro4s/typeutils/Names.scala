@@ -6,7 +6,7 @@ import magnolia1.TypeInfo
   * Extracts names and namespaces from a type.
   * Takes into consideration provided annotations.
   */
-case class Names(typeInfo: TypeInfo, val annos: Annotations, val typeAnnos: Seq[Any] = Nil) {
+case class Names(typeInfo: TypeInfo, val annos: Annotations) {
 
   private val defaultNamespace = typeInfo.owner.replaceAll("\\.<local .*?>", "").stripSuffix(".package")
 
@@ -62,7 +62,7 @@ case class Names(typeInfo: TypeInfo, val annos: Annotations, val typeAnnos: Seq[
 }
 
 object Names {
-  def apply(info: TypeInfo): Names = Names(info, Annotations(Nil), Nil)
+  def apply(info: TypeInfo): Names = Names(info, Annotations(Nil))
   //  def apply[F[_], T](subtype: Subtype[F, T]): NameExtractor = NameExtractor(subtype.typeName, subtype.annotations)
   //
   //  def apply(typeName: TypeName, annos: Seq[Any]): NameExtractor = NameExtractor(TypeInfo(typeName, annos))
