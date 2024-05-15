@@ -3,6 +3,8 @@ package com.sksamuel.avro4s.schema
 import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import com.sksamuel.avro4s.AvroNamespace
+import com.sksamuel.avro4s.AvroName
 
 class NamespaceSchemaTest extends AnyFunSuite with Matchers {
 
@@ -29,6 +31,16 @@ class NamespaceSchemaTest extends AnyFunSuite with Matchers {
     val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/local_class_namespace.json"))
     val schema = AvroSchema[NamespaceTestFoo]
     schema.toString(true) shouldBe expected.toString(true)
+  }
+  test("case classes should inherit namespace from parent sealed trait") {
+    @AvroNamespace("foobar")
+    @AvroName("Qux")
+    sealed trait Foo
+    object Foo {
+      case class Bla() extends Foo
+    }
+    AvroSchema[Foo.Bla].getNamespace() shouldBe "foobar"
+    AvroSchema[Foo.Bla].getName() shouldBe "Bla"
   }
 }
 
