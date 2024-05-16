@@ -18,7 +18,7 @@ object TypeUnions {
 
       val encoderBySubtype = ctx.subtypes.sorted(SubtypeOrdering).map(st => {
 
-        val annos: Annotations = Annotations(st.annotations)
+        val annos: Annotations = new Annotations(st.annotations, st.inheritedAnnotations)
         val names = Names(st.typeInfo, annos)
 
         val subschema: Schema = SchemaHelper.extractTraitSubschema(names.fullName, schema)
