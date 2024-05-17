@@ -6,6 +6,7 @@ import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.util.Utf8
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import org.apache.avro.generic.GenericContainer
 
 class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
 
@@ -67,6 +68,22 @@ class SealedTraitDecoderTest extends AnyFunSuite with Matchers {
     val fruitsAgain = Decoder[Fruits].decode(schema)(record)
 
     fruitsAgain shouldBe fruits
+  }
+
+  test("support round-trip for sealed traits with inheritable namespace") {
+    @AvroNamespace("spam")
+    sealed trait Foo
+    object Foo {
+      case class Bar(i: Int) extends Foo
+    }
+
+    val value: Foo = Foo.Bar(42)
+    val encoded = Encoder[Foo].encode(AvroSchema[Foo])(value)
+    encoded.asInstanceOf[GenericContainer].getSchema().getNamespace() shouldBe "spam"
+
+    val decoded = Decoder[Foo].decode(AvroSchema[Foo])(encoded)
+
+    decoded shouldBe value
   }
 
     //test("support sealed traits of case classes") {
