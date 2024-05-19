@@ -1,10 +1,10 @@
 package com.sksamuel.avro4s.decoders
 
-import com.sksamuel.avro4s.encoders.{ByteStringEncoder, StringEncoder, UTF8StringEncoder}
-import com.sksamuel.avro4s.{Avro4sConfigurationException, Avro4sDecodingException, Decoder, Encoder}
-import org.apache.avro.generic.{GenericData, GenericFixed}
+import com.sksamuel.avro4s.avroutils.ByteBufferHelper
+import com.sksamuel.avro4s.{Avro4sConfigurationException, Avro4sDecodingException, Decoder}
+import org.apache.avro.generic.GenericFixed
 import org.apache.avro.util.Utf8
-import org.apache.avro.{AvroRuntimeException, Schema}
+import org.apache.avro.Schema
 
 import java.nio.ByteBuffer
 import java.util.UUID
@@ -28,7 +28,7 @@ object StringDecoder extends Decoder[String] :
       case string: String => string
       case charseq: CharSequence => charseq.toString
       case b: Array[Byte] => new Utf8(b).toString
-      case bytes: ByteBuffer => new Utf8(bytes.array()).toString
+      case bytes: ByteBuffer => new Utf8(ByteBufferHelper.asArray(bytes)).toString
       case fixed: GenericFixed => new Utf8(fixed.bytes()).toString
       case _ => throw new Avro4sDecodingException(s"Unsupported type $string ${string.getClass} for StringDecoder", string)
     }
@@ -41,7 +41,7 @@ object CharSequenceDecoder extends Decoder[CharSequence]:
       case string: String => string
       case charseq: CharSequence => charseq
       case b: Array[Byte] => new Utf8(b)
-      case bytes: ByteBuffer => new Utf8(bytes.array())
+      case bytes: ByteBuffer => new Utf8(ByteBufferHelper.asArray(bytes))
       case fixed: GenericFixed => new Utf8(fixed.bytes())
     }
   }
@@ -58,7 +58,7 @@ object UTF8Decoder extends Decoder[Utf8] :
       case utf8: Utf8 => utf8
       case string: String => new Utf8(string)
       case b: Array[Byte] => new Utf8(b)
-      case bytes: ByteBuffer => new Utf8(bytes.array())
+      case bytes: ByteBuffer => new Utf8(ByteBufferHelper.asArray(bytes))
       case fixed: GenericFixed => new Utf8(fixed.bytes())
     }
   }
@@ -88,7 +88,7 @@ object ByteStringDecoder extends Decoder[String] :
   override def decode(schema: Schema): Any => String = { input =>
     input match {
       case b: Array[Byte] => new Utf8(b).toString
-      case bytes: ByteBuffer => new Utf8(bytes.array()).toString
+      case bytes: ByteBuffer => new Utf8(ByteBufferHelper.asArray(bytes)).toString
     }
   }
 

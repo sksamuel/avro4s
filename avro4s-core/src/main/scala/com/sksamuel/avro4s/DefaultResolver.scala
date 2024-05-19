@@ -4,8 +4,9 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 
+import com.sksamuel.avro4s.avroutils.ByteBufferHelper
 import org.apache.avro.LogicalTypes.Decimal
-import org.apache.avro.generic.{GenericEnumSymbol, GenericFixed}
+import org.apache.avro.generic.GenericFixed
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
 //import CustomDefaults._
@@ -31,11 +32,11 @@ object DefaultResolver {
     case instant: Instant => customInstantDefault(instant)
     case fixed: GenericFixed => fixed.bytes()
     case bd: BigDecimal => bd.toString()
-    case byteBuffer: ByteBuffer if schema.getLogicalType.isInstanceOf[Decimal] =>
+    case byteBuffer: ByteBuffer if (schema.getLogicalType.isInstanceOf[Decimal]) =>
       val decimalConversion = new Conversions.DecimalConversion
       val bd = decimalConversion.fromBytes(byteBuffer, schema, schema.getLogicalType)
       java.lang.Double.valueOf(bd.doubleValue)
-    case byteBuffer: ByteBuffer => byteBuffer.array()
+    case byteBuffer: ByteBuffer => ByteBufferHelper.asArray(byteBuffer)
     case x: scala.Long => java.lang.Long.valueOf(x)
     case x: scala.Boolean => java.lang.Boolean.valueOf(x)
     case x: scala.Int => java.lang.Integer.valueOf(x)
