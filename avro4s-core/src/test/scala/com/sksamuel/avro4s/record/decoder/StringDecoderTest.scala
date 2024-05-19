@@ -7,6 +7,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 class StringDecoderTest extends AnyFunSuite with Matchers {
 
@@ -43,14 +44,14 @@ class StringDecoderTest extends AnyFunSuite with Matchers {
   test("decode from byte buffers to strings") {
     val schema = AvroSchema[FooString]
     val record = new GenericData.Record(schema)
-    record.put("str", ByteBuffer.wrap("hello".getBytes))
+    record.put("str", ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)))
     Decoder[FooString].decode(schema).apply(record) shouldBe FooString("hello")
   }
 
   test("decode from byte arrays to strings") {
     val schema = AvroSchema[FooString]
     val record = new GenericData.Record(schema)
-    record.put("str", "hello".getBytes)
+    record.put("str", "hello".getBytes(StandardCharsets.UTF_8))
     Decoder[FooString].decode(schema).apply(record) shouldBe FooString("hello")
   }
 }
