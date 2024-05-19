@@ -32,7 +32,7 @@ object DefaultResolver {
     case instant: Instant => customInstantDefault(instant)
     case fixed: GenericFixed => fixed.bytes()
     case bd: BigDecimal => bd.toString()
-    case byteBuffer: ByteBuffer if (schema.getLogicalType.isInstanceOf[Decimal]) =>
+    case byteBuffer: ByteBuffer if schema.getLogicalType.isInstanceOf[Decimal] =>
       val decimalConversion = new Conversions.DecimalConversion
       val bd = decimalConversion.fromBytes(byteBuffer, schema, schema.getLogicalType)
       java.lang.Double.valueOf(bd.doubleValue)
