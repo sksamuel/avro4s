@@ -20,8 +20,8 @@ class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
       val output = AvroOutputStream.data[Composer](schema, Encoder[Composer]).to(baos).build()
       output.write(ennio)
       output.close()
-      baos.toString(StandardCharsets.UTF_8) should include("birthplace")
-      baos.toString(StandardCharsets.UTF_8) should include("compositions")
+      baos.toString(StandardCharsets.UTF_8.name()) should include("birthplace")
+      baos.toString(StandardCharsets.UTF_8.name()) should include("compositions")
     }
 
     "include deflate coded in metadata when serialized with deflate" in {
@@ -29,7 +29,7 @@ class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
       val output = AvroOutputStream.data[Composer](schema, Encoder[Composer]).to(baos).withCodec(CodecFactory.deflateCodec(CodecFactory.DEFAULT_DEFLATE_LEVEL)).build()
       output.write(ennio)
       output.close()
-      baos.toString(StandardCharsets.UTF_8) should include("deflate")
+      baos.toString(StandardCharsets.UTF_8.name()) should include("deflate")
     }
 
     "include bzip2 coded in metadata when serialized with bzip2" in {
@@ -37,7 +37,7 @@ class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
       val output = AvroOutputStream.data[Composer](schema, Encoder[Composer]).to(baos).withCodec(CodecFactory.bzip2Codec).build()
       output.write(ennio)
       output.close()
-      baos.toString(StandardCharsets.UTF_8) should include("bzip2")
+      baos.toString(StandardCharsets.UTF_8.name()) should include("bzip2")
     }
   }
 }
