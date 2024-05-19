@@ -39,32 +39,32 @@ object SchemaHelper {
     // this is totally not FP but what the heck it's late and it's perfectly valid
     arrayTypeNamePattern.findFirstMatchIn(fullName) match {
       case Some(_) =>
-        return types.asScala.find(_.getType == Schema.Type.ARRAY).getOrElse {
+        types.asScala.find(_.getType == Schema.Type.ARRAY).getOrElse {
           throw new Avro4sConfigurationException(s"Could not find array type to match $fullName")
         }
       case None =>
-    }
+        // Finds the matching schema and keeps track a null type if any.
+        // If the schema is size 2, and one of them is null, then the other type is returned, regardless of its name.
+        // See https://github.com/sksamuel/avro4s/issues/268
+        var result: Schema = null
+        var nullIndex: Int = -1
+        var i = 0
+        while
+          i < size && result == null
+        do
+          val s = types.get(i)
+          if (s.getFullName == fullName) result = s
+          else if (s.getType == Schema.Type.NULL) nullIndex = i
+          i = i + 1
 
-    // Finds the matching schema and keeps track a null type if any.
-    // If the schema is size 2, and one of them is null, then the other type is returned, regardless of its name.
-    // See https://github.com/sksamuel/avro4s/issues/268
-    var result: Schema = null
-    var nullIndex: Int = -1
-    var i = 0
-    while
-      i < size && result == null
-    do
-      val s = types.get(i)
-      if (s.getFullName == fullName) result = s
-      else if (s.getType == Schema.Type.NULL) nullIndex = i
-      i = i + 1
+        if (result != null) { // Return the name based match
+          result
+        } else if (nullIndex != -1 && size == 2) { // Return the non null type.
+          types.get(i - nullIndex)
+        } else {
+          throw new Avro4sConfigurationException(s"Cannot find subschema for type [$fullName] in ${union.getTypes}")
+        }
 
-    if (result != null) { // Return the name based match
-      result
-    } else if (nullIndex != -1 && size == 2) { // Return the non null type.
-      types.get(i - nullIndex)
-    } else {
-      throw new Avro4sConfigurationException(s"Cannot find subschema for type [$fullName] in ${union.getTypes}")
     }
   }
 
