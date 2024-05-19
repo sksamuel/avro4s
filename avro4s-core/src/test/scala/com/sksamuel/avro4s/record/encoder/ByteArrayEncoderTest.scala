@@ -90,6 +90,15 @@ class ByteArrayEncoderTest extends AnyFunSuite with Matchers {
     fixed.bytes().length shouldBe 7
   }
 
+  test("encode byte buffers as FIXED (ReadOnlyBuffer)") {
+    val schema = SchemaBuilder.fixed("foo").size(7)
+    val fixed = Encoder[ByteBuffer]
+      .encode(schema)
+      .apply(ByteBuffer.wrap("hello".getBytes).asReadOnlyBuffer())
+      .asInstanceOf[GenericFixed]
+    fixed.bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
+    fixed.bytes().length shouldBe 7
+  }
 
   test("encode top level byte arrays") {
     val encoder = Encoder[Array[Byte]]
