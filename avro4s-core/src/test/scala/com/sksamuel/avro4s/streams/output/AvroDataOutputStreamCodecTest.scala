@@ -1,6 +1,8 @@
 package com.sksamuel.avro4s.streams.output
 
 import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
+
 import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
 import org.apache.avro.file.CodecFactory
 import org.scalatest.matchers.should.Matchers
@@ -18,8 +20,8 @@ class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
       val output = AvroOutputStream.data[Composer](schema, Encoder[Composer]).to(baos).build()
       output.write(ennio)
       output.close()
-      new String(baos.toByteArray) should include("birthplace")
-      new String(baos.toByteArray) should include("compositions")
+      baos.toString(StandardCharsets.UTF_8) should include("birthplace")
+      baos.toString(StandardCharsets.UTF_8) should include("compositions")
     }
 
     "include deflate coded in metadata when serialized with deflate" in {
@@ -27,7 +29,7 @@ class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
       val output = AvroOutputStream.data[Composer](schema, Encoder[Composer]).to(baos).withCodec(CodecFactory.deflateCodec(CodecFactory.DEFAULT_DEFLATE_LEVEL)).build()
       output.write(ennio)
       output.close()
-      new String(baos.toByteArray) should include("deflate")
+      baos.toString(StandardCharsets.UTF_8) should include("deflate")
     }
 
     "include bzip2 coded in metadata when serialized with bzip2" in {
@@ -35,7 +37,7 @@ class AvroDataOutputStreamCodecTest extends AnyWordSpec with Matchers {
       val output = AvroOutputStream.data[Composer](schema, Encoder[Composer]).to(baos).withCodec(CodecFactory.bzip2Codec).build()
       output.write(ennio)
       output.close()
-      new String(baos.toByteArray) should include("bzip2")
+      baos.toString(StandardCharsets.UTF_8) should include("bzip2")
     }
   }
 }

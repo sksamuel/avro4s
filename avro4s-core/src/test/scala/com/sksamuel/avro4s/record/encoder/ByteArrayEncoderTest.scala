@@ -1,11 +1,13 @@
 package com.sksamuel.avro4s.record.encoder
 
-import java.nio.ByteBuffer
 import com.sksamuel.avro4s.{AvroSchema, Encoder, SchemaFor}
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.{GenericFixed, GenericRecord}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 class ByteArrayEncoderTest extends AnyFunSuite with Matchers {
 
@@ -72,7 +74,7 @@ class ByteArrayEncoderTest extends AnyFunSuite with Matchers {
     val schema = SchemaBuilder.fixed("foo").size(7)
     val fixed = Encoder[Array[Byte]]
       .encode(schema)
-      .apply("hello".getBytes)
+      .apply("hello".getBytes(StandardCharsets.UTF_8))
       .asInstanceOf[GenericFixed]
     fixed.bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
     fixed.bytes().length shouldBe 7
@@ -82,7 +84,7 @@ class ByteArrayEncoderTest extends AnyFunSuite with Matchers {
     val schema = SchemaBuilder.fixed("foo").size(7)
     val fixed = Encoder[ByteBuffer]
       .encode(schema)
-      .apply(ByteBuffer.wrap("hello".getBytes))
+      .apply(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)))
       .asInstanceOf[GenericFixed]
     fixed.bytes().toList shouldBe Seq(104, 101, 108, 108, 111, 0, 0)
     fixed.bytes().length shouldBe 7

@@ -4,6 +4,8 @@ import com.sksamuel.avro4s.AvroSchema
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.nio.charset.StandardCharsets
+
 /**
   * Tests created from README examples
   *
@@ -51,7 +53,7 @@ class ReadMeExamples extends AnyWordSpec with Matchers {
 
       json shouldBe ("{\"name\":\"ennio morricone\",\"birthplace\":\"rome\",\"compositions\":[\"legend of 1900\",\"ecstasy of gold\"]}")
 
-      val in = new ByteArrayInputStream(json.getBytes("UTF-8"))
+      val in = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))
       val schema = AvroSchema[Composer]
       val input = AvroInputStream.json[Composer].from(in).build(schema)
       val result = input.iterator.toSeq
