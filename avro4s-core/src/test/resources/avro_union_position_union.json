@@ -1,0 +1,32 @@
+{
+  "type": "record",
+  "name": "FightingStyleWrapper",
+  "namespace": "com.sksamuel.avro4s.schema.AvroUnionPositionSchemaTestContext",
+  "fields": [
+    {
+      "name": "fightingstyle",
+      "type": [
+        {
+          "type": "record",
+          "name": "DefensiveFightingStyle",
+          "fields": [
+            {
+              "name": "has_armor",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "AggressiveFightingStyle",
+          "fields": [
+            {
+              "name": "agressiveness",
+              "type": "float"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
