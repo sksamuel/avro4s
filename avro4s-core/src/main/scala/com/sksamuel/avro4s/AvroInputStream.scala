@@ -4,6 +4,7 @@ import java.io.{ByteArrayInputStream, File, InputStream}
 import java.nio.ByteBuffer
 import java.nio.file.{Files, Path, Paths}
 
+import com.sksamuel.avro4s.avroutils.ByteBufferHelper
 import org.apache.avro.Schema
 
 import scala.util.Try
@@ -55,7 +56,8 @@ class AvroInputStreamBuilder[T: Decoder](format: AvroFormat) {
   def from(file: File): AvroInputStreamBuilderWithSource[T] = from(file.toPath)
   def from(in: InputStream): AvroInputStreamBuilderWithSource[T] = new AvroInputStreamBuilderWithSource(format, in)
   def from(bytes: Array[Byte]): AvroInputStreamBuilderWithSource[T] = from(new ByteArrayInputStream(bytes))
-  def from(buffer: ByteBuffer): AvroInputStreamBuilderWithSource[T] = from(new ByteArrayInputStream(buffer.array))
+  def from(buffer: ByteBuffer): AvroInputStreamBuilderWithSource[T] = from(
+    new ByteArrayInputStream(ByteBufferHelper.asArray(buffer)))
 }
 
 

@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.decoders
 
+import com.sksamuel.avro4s.avroutils.ByteBufferHelper
 import com.sksamuel.avro4s.{Avro4sDecodingException, Decoder}
 import org.apache.avro.Schema
 
@@ -18,7 +19,7 @@ trait ByteDecoders:
 object ArrayByteDecoder extends Decoder[Array[Byte]] :
   override def decode(schema: Schema): Any => Array[Byte] = { value =>
     value match {
-      case buffer: ByteBuffer => buffer.array
+      case buffer: ByteBuffer => ByteBufferHelper.asArray(buffer)
       case array: Array[Byte] => array
       case fixed: org.apache.avro.generic.GenericFixed => fixed.bytes
       case _ => throw new Avro4sDecodingException(s"ArrayByteDecoder cannot decode '$value'", value)

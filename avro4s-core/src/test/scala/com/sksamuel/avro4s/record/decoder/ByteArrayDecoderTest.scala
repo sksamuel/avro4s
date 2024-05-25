@@ -44,6 +44,13 @@ class ByteArrayDecoderTest extends AnyFunSuite with Matchers {
     Decoder[VectorTest].decode(schema).apply(record).z shouldBe Vector[Byte](1, 4, 9)
   }
 
+  test("decode read-only ByteBuffer to Vector[Byte]") {
+    val schema = AvroSchema[VectorTest]
+    val record = new GenericData.Record(schema)
+    record.put("z", ByteBuffer.wrap(Array[Byte](1, 4, 9)).asReadOnlyBuffer())
+    Decoder[VectorTest].decode(schema).apply(record).z shouldBe Vector[Byte](1, 4, 9)
+  }
+
   test("decode Array[Byte] to List[Byte]") {
     val schema = AvroSchema[ListTest]
     val record = new GenericData.Record(schema)

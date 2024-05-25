@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.encoders
 
+import com.sksamuel.avro4s.avroutils.ByteBufferHelper
 import com.sksamuel.avro4s.{Avro4sConfigurationException, Encoder}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
@@ -37,7 +38,8 @@ object ByteArrayEncoder extends Encoder[Array[Byte]] :
 object FixedByteBufferEncoder extends Encoder[ByteBuffer] {
   override def encode(schema: Schema): ByteBuffer => Any = { value =>
     val array = new Array[Byte](schema.getFixedSize)
-    System.arraycopy(value.array(), 0, array, 0, value.array().length)
+    val bbArray = ByteBufferHelper.asArray(value)
+    System.arraycopy(bbArray, 0, array, 0, bbArray.length)
     GenericData.get.createFixed(null, array, schema)
   }
 }
