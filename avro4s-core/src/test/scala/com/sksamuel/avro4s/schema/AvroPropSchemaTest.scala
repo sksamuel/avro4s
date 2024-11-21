@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.schema
 
+import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.sksamuel.avro4s.{AvroProp, AvroSchema}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -16,6 +17,13 @@ class AvroPropSchemaTest extends AnyWordSpec with Matchers {
     "support prop annotation on field" in {
       case class Annotated(@AvroProp("cold", "play") str: String, @AvroProp("kate", "bush") long: Long, int: Int)
       val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/props_annotation_field.json"))
+      val schema = AvroSchema[Annotated]
+      schema.toString(true) shouldBe expected.toString(true)
+    }
+    "support json prop annotation on field" in {
+      val jsonArray = (new ObjectMapper()).createArrayNode().add("foo").add("bar")
+      case class Annotated(@AvroProp("terms", jsonArray) str: String)
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/props_annotation_json_field.json"))
       val schema = AvroSchema[Annotated]
       schema.toString(true) shouldBe expected.toString(true)
     }
