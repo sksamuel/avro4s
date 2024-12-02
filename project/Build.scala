@@ -51,7 +51,7 @@ object Build extends AutoPlugin {
     Test / publishArtifact := false,
     credentials += Credentials(
       "Sonatype Nexus Repository Manager",
-      "oss.sonatype.org",
+      "s01.oss.sonatype.org",
       ossrhUsername,
       ossrhPassword
     ),
