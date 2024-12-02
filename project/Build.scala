@@ -87,3 +87,4 @@ object Build extends AutoPlugin {
     }
   )
 }
+
