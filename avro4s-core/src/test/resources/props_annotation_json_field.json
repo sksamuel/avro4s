@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "Annotated",
+  "namespace": "com.sksamuel.avro4s.schema.AvroPropSchemaTest",
+  "fields": [
+    {
+      "name": "str",
+      "type": "string",
+      "terms": [
+        "foo",
+        "bar"
+      ]
+    }
+  ]
+}

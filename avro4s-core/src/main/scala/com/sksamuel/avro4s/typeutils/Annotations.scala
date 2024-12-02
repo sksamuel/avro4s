@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s.typeutils
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.sksamuel.avro4s.{AvroAliasable, AvroDoc, AvroDocumentable, AvroErasedName, AvroError, AvroFixed, AvroName, AvroNameable, AvroNamespace, AvroNoDefault, AvroProp, AvroProperty, AvroSortPriority, AvroTransient, AvroUnionPosition}
 import magnolia1.{CaseClass, TypeInfo}
 
@@ -18,7 +19,7 @@ class Annotations(annos: Seq[Any], inheritedAnnos: Seq[Any] = Nil) {
     case t: AvroAliasable => t.alias
   }.filterNot(_.trim.isEmpty)
 
-  def props: Map[String, String] = annos.collect {
+  def props: Map[String, String | JsonNode] = annos.collect {
     case t: AvroProperty => (t.key, t.value)
   }.toMap
 

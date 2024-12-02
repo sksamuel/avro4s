@@ -1,5 +1,6 @@
 package com.sksamuel.avro4s
 
+import com.fasterxml.jackson.databind.JsonNode
 import scala.annotation.StaticAnnotation
 
 case class AvroAlias(override val alias: String) extends AvroAliasable
@@ -79,11 +80,11 @@ trait AvroNamespaceable extends AvroFieldReflection {
   val namespace: String
 }
 
-case class AvroProp(override val key: String, override val value:String) extends AvroProperty
+case class AvroProp(override val key: String, override val value: String | JsonNode) extends AvroProperty
 
 trait AvroProperty extends AvroFieldReflection {
   val key: String
-  val value: String
+  val value: String | JsonNode
 }
 
 /**
