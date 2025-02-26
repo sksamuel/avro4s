@@ -1071,15 +1071,15 @@ Note that this class is not integrated with the schema registry.
   import java.util.Properties
   import org.apache.kafka.clients.CommonClientConfigs
   import org.apache.kafka.clients.producer.ProducerConfig
-  import com.sksamuel.avro4s.BinaryFormat
+  import com.sksamuel.avro4s.AvroFormat
 
   case class TheKafkaKey(id: String)
   case class TheKafkaValue(name: String, location: String)
 
   val producerProps = new Properties();
   producerProps.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "...")
-  producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, new GenericSerde[TheKafkaKey](BinaryFormat))
-  producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, new GenericSerde[TheKafkaValue](BinaryFormat))
+  producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, new GenericSerde[TheKafkaKey](AvroFormat.Binary))
+  producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, new GenericSerde[TheKafkaValue](AvroFormat.Binary))
   new ProducerConfig(producerProps)
 ```
 
