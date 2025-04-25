@@ -38,7 +38,7 @@ import org.apache.avro.specific.SpecificRecord
   * However for interop with other systems you may wish to customize this, for example, by
   * writing out field names in snake_case or adding a prefix.
   */
-trait Encoder[T] {
+trait Encoder[T] extends Serializable {
   self =>
 
   def encode(schema: Schema): T => Any
