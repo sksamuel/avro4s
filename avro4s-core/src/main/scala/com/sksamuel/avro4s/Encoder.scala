@@ -41,14 +41,14 @@ import org.apache.avro.specific.SpecificRecord
 trait Encoder[T] extends Serializable {
   self =>
 
-  def encode(schema: Schema): T => Any
+  def encode(schema: Schema): T => AnyRef
 
   /**
     * Returns an [[Encoder[U]] by applying a function that maps a U
     * to an T, before encoding as an T using this encoder.
     */
   final def contramap[U](f: U => T): Encoder[U] = new Encoder[U] {
-    override def encode(schema: Schema): U => Any = { u => self.encode(schema).apply(f(u)) }
+    override def encode(schema: Schema): U => AnyRef = { u => self.encode(schema).apply(f(u)) }
   }
 }
 
@@ -67,14 +67,14 @@ object Encoder
   /**
     * Returns an [Encoder] that encodes using the supplied function.
     */
-  def apply[T](f: T => Any) = new Encoder[T] {
-    def encode(schema: Schema): T => Any = { t => f(t) }
+  def apply[T](f: T => AnyRef) = new Encoder[T] {
+    def encode(schema: Schema): T => AnyRef = f
   }
 
   /**
     * Returns an [Encoder] that encodes by simply returning the input value.
     */
-  def identity[T]: Encoder[T] = Encoder[T](t => t)
+  def identity[T <: AnyRef]: Encoder[T] = Encoder[T](t => t)
 
   def apply[T](using encoder: Encoder[T]): Encoder[T] = encoder
 }

@@ -16,5 +16,5 @@ trait PrimitiveEncoders {
 }
 
 object IntEncoder extends Encoder[Int] {
-  override def encode(schema: Schema): Int => Any = { value => java.lang.Integer.valueOf(value) }
+  override def encode(schema: Schema): Int => AnyRef = { value => java.lang.Integer.valueOf(value) }
 }

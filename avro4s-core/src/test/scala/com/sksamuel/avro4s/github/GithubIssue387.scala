@@ -14,12 +14,12 @@ class GithubIssue387 extends AnyWordSpec with Matchers {
     "encode the value to a int represented as milliseconds since midnight" in {
       val localTime = LocalTime.now()
       val encoded = Encoder[LocalTime].encode(AvroSchema[LocalTime]).apply(localTime)
-      encoded shouldBe localTime.toNanoOfDay / NANOSECONDS_IN_A_MICROSECOND
+      (encoded: Any) shouldBe localTime.toNanoOfDay / NANOSECONDS_IN_A_MICROSECOND
     }
 
     "encode the value and truncate any precision beyond milliseconds" in {
       val encoded = Encoder[LocalTime].encode(AvroSchema[LocalTime]).apply(LocalTime.MAX)
-      encoded shouldBe LocalTime.MAX.toNanoOfDay / NANOSECONDS_IN_A_MICROSECOND
+      (encoded: Any) shouldBe LocalTime.MAX.toNanoOfDay / NANOSECONDS_IN_A_MICROSECOND
     }
 
     "encode and decode back to an equivalent LocalTime object when Local has microsecond precision" in {
