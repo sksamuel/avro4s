@@ -22,12 +22,12 @@ trait TemporalEncoders:
   given Encoder[OffsetDateTime] = OffsetDateTimeEncoder
 
 object OffsetDateTimeEncoder extends Encoder[OffsetDateTime] :
-  override def encode(schema: Schema): OffsetDateTime => Any = { value =>
+  override def encode(schema: Schema): OffsetDateTime => AnyRef = { value =>
     value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
   }
 
 object LocalTimeEncoder extends Encoder[LocalTime] :
-  override def encode(schema: Schema): LocalTime => Any = {
+  override def encode(schema: Schema): LocalTime => AnyRef = {
     val toNanosFactor = schema.getLogicalType match {
       case _: TimeMicros => 1000L
       case _: TimeMillis => 1000000L
@@ -52,7 +52,7 @@ private abstract class TemporalWithLogicalTypeEncoder[T] extends Encoder[T] :
   def epochSeconds(temporal: T): Long
   def nanos(temporal: T): Long
 
-  override def encode(schema: Schema): T => Any = {
+  override def encode(schema: Schema): T => AnyRef = {
     val toLong: T => Long = schema.getLogicalType match {
       case _: TimestampMillis => epochMillis
       case _: TimestampMicros => t => epochSeconds(t) * 1000000L + nanos(t) / 1000L

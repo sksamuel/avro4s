@@ -6,7 +6,7 @@ import org.apache.avro.Schema
 
 trait EitherEncoders:
   given eitherEncoder[A, B] (using a: Encoder[A], b: Encoder[B]): Encoder[Either[A, B]] with
-    override def encode(schema: Schema): Either[A, B] => Any = {
+    override def encode(schema: Schema): Either[A, B] => AnyRef = {
       require(schema.isUnion)
 
       val leftSchema = SchemaHelper.extractEitherLeftSchema(schema)
