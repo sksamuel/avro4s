@@ -18,10 +18,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK
-        uses: actions/setup-java@v1
+      - name: Set up SBT
+        uses: coursier/setup-action@v1
         with:
-          java-version: 11
+          apps: sbt
+          jvm: temurin:11
 
       - name: run tests
         run: sbt ++2.12.10 test
@@ -34,10 +35,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK
-        uses: actions/setup-java@v1
+      - name: Set up SBT
+        uses: coursier/setup-action@v1
         with:
-          java-version: 11
+          apps: sbt
+          jvm: temurin:11
 
       - name: run tests
         run: sbt ++2.13.3 test

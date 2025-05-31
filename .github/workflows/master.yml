@@ -20,7 +20,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: olafurpg/setup-scala@v11
+      - uses: coursier/setup-action@v1
+        with:
+          apps: sbt
+          jvm: temurin:11
 
       - name: run tests
         run: sbt test
