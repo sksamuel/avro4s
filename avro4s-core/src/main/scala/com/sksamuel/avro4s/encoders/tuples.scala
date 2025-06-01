@@ -13,7 +13,7 @@ trait TupleEncoders:
     Tuple5Encoder(a, b, c, d, e)
 
 class Tuple2Encoder[A, B](a: Encoder[A], b: Encoder[B]) extends Encoder[Tuple2[A, B]] {
-  override def encode(schema: Schema): ((A, B)) => Any = {
+  override def encode(schema: Schema): ((A, B)) => AnyRef = {
     val fieldA: Schema.Field = schema.getFields.get(0)
     val fieldB: Schema.Field = schema.getFields.get(1)
     val encoderA = a.encode(fieldA.schema())
@@ -28,7 +28,7 @@ class Tuple2Encoder[A, B](a: Encoder[A], b: Encoder[B]) extends Encoder[Tuple2[A
 }
 
 class Tuple3Encoder[A, B, C](a: Encoder[A], b: Encoder[B], c: Encoder[C]) extends Encoder[Tuple3[A, B, C]] {
-  override def encode(schema: Schema): ((A, B, C)) => Any = {
+  override def encode(schema: Schema): ((A, B, C)) => AnyRef = {
     val fieldA: Schema.Field = schema.getFields.get(0)
     val fieldB: Schema.Field = schema.getFields.get(1)
     val fieldC: Schema.Field = schema.getFields.get(2)
@@ -46,7 +46,7 @@ class Tuple3Encoder[A, B, C](a: Encoder[A], b: Encoder[B], c: Encoder[C]) extend
 }
 
 class Tuple4Encoder[A, B, C, D](a: Encoder[A], b: Encoder[B], c: Encoder[C], d: Encoder[D]) extends Encoder[Tuple4[A, B, C, D]] {
-  override def encode(schema: Schema): ((A, B, C, D)) => Any = {
+  override def encode(schema: Schema): ((A, B, C, D)) => AnyRef = {
     val fieldA: Schema.Field = schema.getFields.get(0)
     val fieldB: Schema.Field = schema.getFields.get(1)
     val fieldC: Schema.Field = schema.getFields.get(2)
@@ -67,7 +67,7 @@ class Tuple4Encoder[A, B, C, D](a: Encoder[A], b: Encoder[B], c: Encoder[C], d: 
 }
 
 class Tuple5Encoder[A, B, C, D, E](a: Encoder[A], b: Encoder[B], c: Encoder[C], d: Encoder[D], e: Encoder[E]) extends Encoder[Tuple5[A, B, C, D, E]] {
-  override def encode(schema: Schema): ((A, B, C, D, E)) => Any = {
+  override def encode(schema: Schema): ((A, B, C, D, E)) => AnyRef = {
     val fieldA: Schema.Field = schema.getFields.get(0)
     val fieldB: Schema.Field = schema.getFields.get(1)
     val fieldC: Schema.Field = schema.getFields.get(2)

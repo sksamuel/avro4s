@@ -8,7 +8,7 @@ import scala.jdk.CollectionConverters.*
 
 class OptionEncoder[T](encoder: Encoder[T]) extends Encoder[Option[T]] {
 
-  override def encode(schema: Schema): Option[T] => Any = {
+  override def encode(schema: Schema): Option[T] => AnyRef = {
     // nullables must be encoded with a union of 2 elements, one of which is null
     require(schema.getType == Schema.Type.UNION, {
       "Options can only be encoded with a UNION schema"

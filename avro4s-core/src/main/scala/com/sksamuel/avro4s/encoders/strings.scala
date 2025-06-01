@@ -17,7 +17,7 @@ trait StringEncoders:
   given Encoder[UUID] = UUIDEncoder
 
 object StringEncoder extends Encoder[String] :
-  override def encode(schema: Schema): String => Any = schema.getType match {
+  override def encode(schema: Schema): String => AnyRef = schema.getType match {
     case Schema.Type.STRING if schema.getObjectProp("avro.java.string") == "String" => Encoder.identity[String].encode(schema)
     case Schema.Type.STRING => UTF8StringEncoder.encode(schema)
     case Schema.Type.BYTES => ByteStringEncoder.encode(schema)
@@ -26,26 +26,26 @@ object StringEncoder extends Encoder[String] :
   }
 
 object UUIDEncoder extends Encoder[UUID] :
-  override def encode(schema: Schema): UUID => Any = uuid => new Utf8(uuid.toString)
+  override def encode(schema: Schema): UUID => AnyRef = uuid => new Utf8(uuid.toString)
 
 /**
   * An [[Encoder]] for Strings that encodes as avro [[Utf8]]s.
   */
 object UTF8StringEncoder extends Encoder[String] :
-  override def encode(schema: Schema): String => Any = string => new Utf8(string)
+  override def encode(schema: Schema): String => AnyRef = string => new Utf8(string)
 
 /**
   * An [[Encoder]] for Strings that encodes as [[ByteBuffer]]s.
   */
 object ByteStringEncoder extends Encoder[String] :
-  override def encode(schema: Schema): String => Any = string =>
+  override def encode(schema: Schema): String => AnyRef = string =>
     ByteBuffer.wrap(string.getBytes(StandardCharsets.UTF_8))
 
 /**
   * An [[Encoder]] for Strings that encodes as [[GenericFixed]]s.
   */
 object FixedStringEncoder extends Encoder[String] :
-  override def encode(schema: Schema): String => Any = string =>
+  override def encode(schema: Schema): String => AnyRef = string =>
     val bytes = string.getBytes(StandardCharsets.UTF_8)
     if (bytes.length > schema.getFixedSize)
       throw new Avro4sEncodingException(s"Cannot write string with ${bytes.length} bytes to fixed type of size ${schema.getFixedSize}")

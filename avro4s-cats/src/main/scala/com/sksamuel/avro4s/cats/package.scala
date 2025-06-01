@@ -16,21 +16,21 @@ package object cats:
   given[T](using schemaFor: SchemaFor[T]): SchemaFor[NonEmptyChain[T]] = SchemaFor(Schema.createArray(schemaFor.schema))
 
   given[T](using encoder: Encoder[T]): Encoder[NonEmptyList[T]] = new Encoder[NonEmptyList[T]] :
-    override def encode(schema: Schema): NonEmptyList[T] => Any = {
+    override def encode(schema: Schema): NonEmptyList[T] => AnyRef = {
       require(schema.getType == Schema.Type.ARRAY)
       val encode = encoder.encode(schema)
       { value => value.map(encode).toList.asJava }
     }
 
   given[T](using encoder: Encoder[T]): Encoder[NonEmptyVector[T]] = new Encoder[NonEmptyVector[T]] :
-    override def encode(schema: Schema): NonEmptyVector[T] => Any = {
+    override def encode(schema: Schema): NonEmptyVector[T] => AnyRef = {
       require(schema.getType == Schema.Type.ARRAY)
       val encode = encoder.encode(schema)
       { value => value.map(encode).toVector.asJava }
     }
 
   given[T](using encoder: Encoder[T]): Encoder[NonEmptyChain[T]] = new Encoder[NonEmptyChain[T]] :
-    override def encode(schema: Schema): NonEmptyChain[T] => Any = {
+    override def encode(schema: Schema): NonEmptyChain[T] => AnyRef = {
       require(schema.getType == Schema.Type.ARRAY)
       val encode = encoder.encode(schema)
       { value => value.map(encode).toNonEmptyList.toList.asJava }

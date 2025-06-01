@@ -16,7 +16,7 @@ trait ByteIterableEncoders:
   given Encoder[Seq[Byte]] = IterableByteEncoder.contramap(_.toIterable)
 
 object ByteBufferEncoder extends Encoder[ByteBuffer] :
-  override def encode(schema: Schema): ByteBuffer => Any = {
+  override def encode(schema: Schema): ByteBuffer => AnyRef = {
     schema.getType match {
       case Schema.Type.BYTES => identity
       case Schema.Type.FIXED => FixedByteBufferEncoder.encode(schema)
@@ -26,7 +26,7 @@ object ByteBufferEncoder extends Encoder[ByteBuffer] :
   }
 
 object ByteArrayEncoder extends Encoder[Array[Byte]] :
-  override def encode(schema: Schema): Array[Byte] => Any = {
+  override def encode(schema: Schema): Array[Byte] => AnyRef = {
     schema.getType match {
       case Schema.Type.BYTES => { bytes => ByteBuffer.wrap(bytes) }
       case Schema.Type.FIXED => FixedByteArrayEncoder.encode(schema)
@@ -36,7 +36,7 @@ object ByteArrayEncoder extends Encoder[Array[Byte]] :
   }
 
 object FixedByteBufferEncoder extends Encoder[ByteBuffer] {
-  override def encode(schema: Schema): ByteBuffer => Any = { value =>
+  override def encode(schema: Schema): ByteBuffer => AnyRef = { value =>
     val array = new Array[Byte](schema.getFixedSize)
     val bbArray = ByteBufferHelper.asArray(value)
     System.arraycopy(bbArray, 0, array, 0, bbArray.length)
@@ -45,7 +45,7 @@ object FixedByteBufferEncoder extends Encoder[ByteBuffer] {
 }
 
 object FixedByteArrayEncoder extends Encoder[Array[Byte]] {
-  override def encode(schema: Schema): Array[Byte] => Any = { value =>
+  override def encode(schema: Schema): Array[Byte] => AnyRef = { value =>
     val array = new Array[Byte](schema.getFixedSize)
     System.arraycopy(value, 0, array, 0, value.length)
     GenericData.get.createFixed(null, array, schema)
