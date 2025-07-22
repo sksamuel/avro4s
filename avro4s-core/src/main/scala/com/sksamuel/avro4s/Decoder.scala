@@ -19,8 +19,9 @@ trait Decoder[T] extends Serializable {
   def decode(schema: Schema): Any => T
 
   final def map[U](f: T => U): Decoder[U] = new Decoder[U] {
-    override def decode(schema: Schema): Any => U = { input =>
-      f(self.decode(schema).apply(input))
+    override def decode(schema: Schema): Any => U = {
+      val decode = self.decode(schema)
+      input => f(decode(input))
     }
   }
 }
