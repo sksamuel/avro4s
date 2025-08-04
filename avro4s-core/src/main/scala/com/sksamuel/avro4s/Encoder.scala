@@ -48,7 +48,10 @@ trait Encoder[T] extends Serializable {
     * to an T, before encoding as an T using this encoder.
     */
   final def contramap[U](f: U => T): Encoder[U] = new Encoder[U] {
-    override def encode(schema: Schema): U => AnyRef = { u => self.encode(schema).apply(f(u)) }
+    override def encode(schema: Schema): U => AnyRef = {
+      val encode = self.encode(schema)
+      u => encode(f(u))
+    }
   }
 }
 
