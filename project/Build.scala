@@ -1,5 +1,5 @@
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
+import sbt.*
 
 /** Adds common settings automatically to all subprojects */
 object Build extends AutoPlugin {
@@ -14,7 +14,7 @@ object Build extends AutoPlugin {
     val CatsVersion = "2.7.0"
     val RefinedVersion = "0.9.26"
     val ShapelessVersion = "2.3.7"
-    val MagnoliaVersion = "1.1.4"
+    val MagnoliaVersion = "1.3.18"
     val SbtJmhVersion = "0.3.7"
     val JmhVersion = "1.32"
   }
@@ -57,11 +57,10 @@ object Build extends AutoPlugin {
     ),
     version := publishVersion,
     publishTo := {
-      if (isRelease) {
-        Some("releases" at "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-      } else {
-        Some("snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots/")
-      }
+      if (isRelease)
+        Some("releases" at "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
+      else
+        Some("snapshots" at "https://central.sonatype.com/repository/maven-snapshots/")
     },
     pomExtra := {
       <url>https://github.com/sksamuel/avro4s</url>
