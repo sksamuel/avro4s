@@ -3,6 +3,7 @@ package com.sksamuel.avro4s.schemas
 import com.sksamuel.avro4s.avroutils.SchemaHelper
 import com.sksamuel.avro4s.{Avro4sException, FieldMapper, SchemaFor}
 import org.apache.avro.{Schema, SchemaBuilder}
+import scala.jdk.CollectionConverters.*
 
 trait OptionSchemas {
 
@@ -12,8 +13,7 @@ trait OptionSchemas {
     override def schema: Schema = {
       val rhs: Schema = schemaFor.schema
       if (rhs.isUnion)
-        val types = rhs.getTypes
-        types.add(0, Schema.create(Schema.Type.NULL))
+        val types = rhs.getTypes.asScala.prepended(Schema.create(Schema.Type.NULL)).asJava
         Schema.createUnion(types)
       else
         Schema.createUnion(Schema.create(Schema.Type.NULL), rhs)
