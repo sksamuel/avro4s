@@ -1,6 +1,7 @@
 package com.sksamuel.avro4s.avroutils
 
 import com.sksamuel.avro4s.{Avro4sConfigurationException, FieldMapper}
+import com.sksamuel.avro4s.{CustomUnionDefault, CustomUnionWithEnumDefault}
 import org.apache.avro.generic.GenericData
 import org.apache.avro.util.Utf8
 import org.apache.avro.{JsonProperties, Schema, SchemaBuilder}
@@ -119,15 +120,13 @@ object SchemaHelper {
       case _: java.util.Map[_, _] => Schema.Type.MAP
       case JsonProperties.NULL_VALUE => Schema.Type.NULL
       case Schema.Field.NULL_DEFAULT_VALUE => Schema.Type.NULL
-      //      case CustomEnumDefault(_) => Schema.Type.ENUM
       case other => other
     }
 
     val (first, rest) = schema.getTypes.asScala.partition { t =>
-      defaultType match {
-        //        case CustomUnionDefault(name, _) => name == t.getName
-        //        case CustomUnionWithEnumDefault(name, default, _) =>
-        //          name == t.getName
+      default match {
+        case CustomUnionDefault(name, _) => name == t.getName
+        case CustomUnionWithEnumDefault(name, _, _) => name == t.getName
         case _ => t.getType == defaultType
       }
     }

@@ -64,12 +64,11 @@ class OptionSchemaTest extends AnyFunSuite with Matchers {
   //    bothOptional.toString(true) shouldBe expected.toString(true).replace("OptionalUnion", "AllOptionals")
   //  }
 
-  // todo requires defaults
-  // test("move default option values to first schema as per avro spec") {
-  //    val schema = AvroSchema[OptionWithDefault]
-  //    val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option_default_value.json"))
-  //    schema.toString(true) shouldBe expected.toString(true)
-  // }
+   test("move default option values to first schema as per avro spec") {
+      val schema = AvroSchema[OptionWithDefault]
+      val expected = new org.apache.avro.Schema.Parser().parse(getClass.getResourceAsStream("/option_default_value.json"))
+      schema.toString(true) shouldBe expected.toString(true)
+   }
 
   // todo requires defaults
   // test("if a field has a default value of null then define the field to be nullable") {

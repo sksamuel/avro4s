@@ -9,7 +9,7 @@ import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericFixed
 import org.apache.avro.util.Utf8
 import org.apache.avro.{Conversions, Schema}
-//import CustomDefaults._
+import CustomDefaults._
 import scala.collection.JavaConverters._
 
 /**
@@ -46,7 +46,7 @@ object DefaultResolver {
     case x: Seq[_] => x.asJava
     case x: Set[_] => x.asJava
 //    case shapeless.Inl(x) => apply(x, schema)
-//    case p: Product => customDefault(p, schema)
+    case p: Product => customDefault(p, schema)
 //    case v if isScalaEnumeration(v) => customScalaEnumDefault(value)
     case _ => value.asInstanceOf[AnyRef]
   }
