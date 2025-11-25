@@ -17,6 +17,10 @@ trait MagnoliaDerivedSchemas extends AutoDerivation[SchemaFor] :
 
   override def split[T](ctx: SealedTrait[SchemaFor, T]): SchemaFor[T] =
     DatatypeShape.of[T](ctx) match {
-      case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx)
+      case SealedTraitShape.TypeUnion =>
+        ctx.subtypes match {
+          case IArray(single) => single.typeclass.forType[T]
+          case multiple => TypeUnions.schema(ctx)
+        }
       case SealedTraitShape.Enum => SchemaFor[T](SealedTraits.schema(ctx))
     }
