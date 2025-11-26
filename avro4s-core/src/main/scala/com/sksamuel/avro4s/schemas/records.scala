@@ -99,14 +99,4 @@ object Records:
 //    val schemaWithPossibleNull = if (default.contains(null) && schema.getType != Schema.Type.UNION) {
 //      SchemaBuilder.unionOf().`type`(schema).and().`type`(Schema.create(Schema.Type.NULL)).endUnion()
 //    } else schema
-
-//    val field = encodedDefault match {
-//      case null => new Schema.Field(name, schemaWithResolvedNamespace, doc)
-//      case CustomUnionDefault(_, m) =>
-//        new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
-//      case CustomEnumDefault(m) =>
-//        new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
-//      case CustomUnionWithEnumDefault(_, _, m) => new Schema.Field(name, schemaWithResolvedNamespace, doc, m)
-//      case _                                   => new Schema.Field(name, schemaWithResolvedNamespace, doc, encodedDefault)
-//    }
 //
