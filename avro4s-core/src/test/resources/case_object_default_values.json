@@ -18,6 +18,10 @@
             {
               "name": "snoutley",
               "type": "string"
+            },
+            {
+              "name": "age",
+              "type": ["null", "int"]
             }
           ]
         }

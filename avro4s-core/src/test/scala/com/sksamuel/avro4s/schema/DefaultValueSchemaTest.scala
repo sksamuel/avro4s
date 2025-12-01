@@ -90,7 +90,8 @@ case class UnderDog(how_unfortunate: Double) extends Dog
 case class UpperDog(how_fortunate: Double) extends Dog
 case class DogProspect(dog: Option[Dog] = None)
 
-case class OptionalDefaultValues(name: Option[String] = Some("sammy"),
+case class OptionalDefaultValues(id: Option[String] = None,
+                                 name: Option[String] = Some("sammy"),
                                  age: Option[Int] = Some(21),
                                  isFemale: Option[Boolean] = Some(false),
                                  length: Option[Double] = Some(6.2),
@@ -131,9 +132,9 @@ case class DefaultValues(name: String = "sammy",
 
 sealed trait Cupcat
 case object Rendal extends Cupcat
-case class Snoutley(snoutley: String) extends Cupcat
+case class Snoutley(snoutley: String, age: Option[Int]) extends Cupcat
 
-case class Cuppers(cupcat: Cupcat = Snoutley("hates varg"))
+case class Cuppers(cupcat: Cupcat = Snoutley("hates varg", None))
 case class NoVarg(cupcat: Cupcat = Rendal)
 
 case class Song(title: String)

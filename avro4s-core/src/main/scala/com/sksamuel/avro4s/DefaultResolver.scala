@@ -5,6 +5,7 @@ import java.time.Instant
 import java.util.UUID
 
 import com.sksamuel.avro4s.avroutils.ByteBufferHelper
+import org.apache.avro.JsonProperties
 import org.apache.avro.LogicalTypes.Decimal
 import org.apache.avro.generic.GenericFixed
 import org.apache.avro.util.Utf8
@@ -24,7 +25,7 @@ import scala.collection.JavaConverters._
 object DefaultResolver {
 
   def apply(value: Any, schema: Schema): AnyRef = value match {
-    case None => Schema.Field.NULL_DEFAULT_VALUE
+    case None => JsonProperties.NULL_VALUE
     case Some(x) => apply(x, schema)
     case u: Utf8 => u.toString
     case uuid: UUID => uuid.toString

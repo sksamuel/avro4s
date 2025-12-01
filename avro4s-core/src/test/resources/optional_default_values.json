@@ -4,6 +4,11 @@
   "namespace": "com.sksamuel.avro4s.schema",
   "fields": [
     {
+      "name": "id",
+      "type": ["null", "string"],
+      "default": null
+    },
+    {
       "name": "name",
       "type": ["string", "null"],
       "default" : "sammy"

@@ -13,6 +13,10 @@
             {
               "name": "snoutley",
               "type": "string"
+            },
+            {
+              "name": "age",
+              "type": ["null", "int"]
             }
           ]
         },
@@ -23,7 +27,8 @@
         }
       ],
       "default": {
-        "snoutley" : "hates varg"
+        "snoutley" : "hates varg",
+        "age": null
       }
     }
   ]
