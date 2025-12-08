@@ -6,6 +6,7 @@ import magnolia1.{CaseClass, AutoDerivation, SealedTrait, TypeInfo}
 import org.apache.avro.{Schema, SchemaBuilder}
 
 import scala.deriving.Mirror
+import scala.IArray
 
 trait MagnoliaDerivedSchemas extends AutoDerivation[SchemaFor] :
 
@@ -17,6 +18,9 @@ trait MagnoliaDerivedSchemas extends AutoDerivation[SchemaFor] :
 
   override def split[T](ctx: SealedTrait[SchemaFor, T]): SchemaFor[T] =
     DatatypeShape.of[T](ctx) match {
-      case SealedTraitShape.TypeUnion => TypeUnions.schema(ctx)
+      case SealedTraitShape.TypeUnion =>
+        ctx.subtypes match
+          case IArray(single) => single.typeclass.forType[T]
+          case _ => TypeUnions.schema(ctx)
       case SealedTraitShape.Enum => SchemaFor[T](SealedTraits.schema(ctx))
     }

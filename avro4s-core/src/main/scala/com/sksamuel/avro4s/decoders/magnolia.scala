@@ -3,6 +3,7 @@ package com.sksamuel.avro4s.decoders
 import com.sksamuel.avro4s.typeutils.{CaseClassShape, DatatypeShape, SealedTraitShape}
 import com.sksamuel.avro4s.{Decoder, Encoder}
 import magnolia1.{AutoDerivation, CaseClass, SealedTrait}
+import scala.IArray
 
 trait MagnoliaDerivedDecoder extends AutoDerivation[Decoder] :
 
@@ -14,6 +15,9 @@ trait MagnoliaDerivedDecoder extends AutoDerivation[Decoder] :
 
   override def split[T](ctx: SealedTrait[Decoder, T]): Decoder[T] =
     DatatypeShape.of[T](ctx) match {
-      case SealedTraitShape.TypeUnion => TypeUnions.decoder(ctx)
+      case SealedTraitShape.TypeUnion =>
+        ctx.subtypes match
+          case IArray(single) => single.typeclass.asInstanceOf[Decoder[T]]
+          case _ => TypeUnions.decoder(ctx)
       case SealedTraitShape.Enum => SealedTraits.decoder(ctx)
     }

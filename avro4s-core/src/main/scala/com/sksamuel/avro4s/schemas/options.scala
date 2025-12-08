@@ -12,9 +12,9 @@ trait OptionSchemas {
     override def schema: Schema = {
       val rhs: Schema = schemaFor.schema
       if (rhs.isUnion)
-        val types = rhs.getTypes
-        types.add(0, Schema.create(Schema.Type.NULL))
-        Schema.createUnion(types)
+        val withNullFirst = new java.util.ArrayList[Schema](rhs.getTypes)
+        withNullFirst.add(0, Schema.create(Schema.Type.NULL))
+        Schema.createUnion(withNullFirst)
       else
         Schema.createUnion(Schema.create(Schema.Type.NULL), rhs)
     }

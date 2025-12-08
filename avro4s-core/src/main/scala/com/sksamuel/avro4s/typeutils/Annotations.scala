@@ -18,8 +18,8 @@ class Annotations(annos: Seq[Any], inheritedAnnos: Seq[Any] = Nil) {
     case t: AvroAliasable => t.alias
   }.filterNot(_.trim.isEmpty)
 
-  def props: Map[String, String] = annos.collect {
-    case t: AvroProperty => (t.key, t.value)
+  def props: Map[String, AnyRef] = annos.collect {
+    case t: AvroProperty => (t.key, t.value.asInstanceOf[AnyRef])
   }.toMap
 
   def doc: Option[String] = annos.collectFirst {

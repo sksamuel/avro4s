@@ -116,16 +116,19 @@ object Records:
     else
       schemaWithResolvedNamespace
 
-    val field = encodedDefault match {
-      case null => new Schema.Field(name, schemaWithResolvedError, doc)
-      case CustomUnionDefault(_, m) =>
-        new Schema.Field(name, schemaWithResolvedError, doc, m)
-      case CustomEnumDefault(m) =>
-        new Schema.Field(name, schemaWithResolvedError, doc, m)
-      case CustomUnionWithEnumDefault(_, _, m) => new Schema.Field(name, schemaWithResolvedError, doc, m)
-      case UserConvertedValue(jsonNode) => new Schema.Field(name, schemaWithResolvedError, doc, jsonNode)
-      case _                                   => new Schema.Field(name, schemaWithResolvedError, doc, encodedDefault)
-    }
+    val field =
+      if default.isEmpty then new Schema.Field(name, schemaWithResolvedError, doc)
+      else
+        encodedDefault match {
+          case null => new Schema.Field(name, schemaWithResolvedError, doc, null)
+          case CustomUnionDefault(_, m) =>
+            new Schema.Field(name, schemaWithResolvedError, doc, m)
+          case CustomEnumDefault(m) =>
+            new Schema.Field(name, schemaWithResolvedError, doc, m)
+          case CustomUnionWithEnumDefault(_, _, m) => new Schema.Field(name, schemaWithResolvedError, doc, m)
+          case UserConvertedValue(jsonNode) => new Schema.Field(name, schemaWithResolvedError, doc, jsonNode)
+          case _                                   => new Schema.Field(name, schemaWithResolvedError, doc, encodedDefault)
+        }
 
     props.foreach { case (k, v) => field.addProp(k, v: AnyRef) }
     aliases.foreach(field.addAlias)

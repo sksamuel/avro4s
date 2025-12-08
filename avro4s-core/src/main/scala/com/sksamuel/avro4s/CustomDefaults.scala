@@ -7,7 +7,7 @@ import org.json4s.native.JsonMethods.parse
 import org.json4s.native.Serialization.write
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
-import org.json4s.DefaultFormats
+import org.json4s.{DefaultFormats, MappingException}
 import org.json4s.jvalue2extractable
 import scala.reflect.Enum
 import scala.collection.JavaConverters._
@@ -33,7 +33,8 @@ object CustomDefaults {
        val enumType = schema.getTypes.asScala.filter(_.getType == Schema.Type.ENUM).head
        CustomUnionWithEnumDefault(enumType.getName, trimmedClassName(p), p.toString)
      } else
-       CustomUnionDefault(trimmedClassName(p), parse(write(p)).extract[Map[String, Any]].map {
+      val fields = productValues(p)
+      CustomUnionDefault(trimmedClassName(p), fields.map {
          case (name, b: BigInt) if b.isValidInt => name -> b.intValue
          case (name, b: BigInt) if b.isValidLong => name -> b.longValue
          case (name, z) if schema.getType == Type.UNION => name ->
@@ -44,9 +45,8 @@ object CustomDefaults {
        }.asJava)
    }
 
- def isUnionOfEnum(schema: Schema) = 
-    val types = schema.getTypes.asScala.map(_.getType)
-    schema.getType == Schema.Type.UNION && schema.getTypes.asScala.map(_.getType).contains(Schema.Type.ENUM)
+ def isUnionOfEnum(schema: Schema) =
+    schema.getType == Schema.Type.UNION && schema.getTypes.asScala.exists(_.getType == Schema.Type.ENUM)
 
  def sealedTraitEnumDefaultValue[T](ctx: SealedTrait[SchemaFor, T]): Option[String] =
     val defaultExtractor = Annotations(ctx.annotations)
@@ -72,6 +72,14 @@ object CustomDefaults {
 
  private def isEnum(product: Product, schemaType: Schema.Type) =
    product.productArity == 0 && schemaType == Schema.Type.ENUM
+
+private def productValues(p: Product): Map[String, Any] =
+  try {
+    parse(write(p)).extract[Map[String, Any]]
+  } catch {
+    case _: MappingException =>
+      p.productElementNames.zip(p.productIterator).toMap
+  }
 
  private def trimmedClassName(p: Product) = trimDollar(p.getClass.getSimpleName)
 
