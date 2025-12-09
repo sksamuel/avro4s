@@ -14,7 +14,7 @@ class GithubIssue387 extends AnyWordSpec with Matchers {
     "encode the value to a long represented as nanoseconds since midnight" in {
       val localTime = LocalTime.now()
       val encoded = Encoder[LocalTime].encode(AvroSchema[LocalTime]).apply(localTime)
-      encoded shouldBe localTime.toNanoOfDay
+      encoded.asInstanceOf[Long] shouldBe localTime.toNanoOfDay
     }
 
     "encode and decode back to an equivalent LocalTime object when Local has nanosecond precision" in {

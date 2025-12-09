@@ -6,7 +6,7 @@ import org.apache.avro.{Conversions, Schema}
 
 trait BigDecimalEncoders:
   given Encoder[BigDecimal] = new Encoder[BigDecimal] :
-    override def encode(schema: Schema): BigDecimal => Any = {
+    override def encode(schema: Schema): BigDecimal => AnyRef = {
       schema.getType match {
         case Schema.Type.BYTES => BigDecimalBytesEncoder.encode(schema)
         case Schema.Type.STRING => BigDecimalStringEncoder.encode(schema)
@@ -22,7 +22,7 @@ trait BigDecimalEncoders:
   */
 object BigDecimalBytesEncoder extends Encoder[BigDecimal] {
 
-  override def encode(schema: Schema): BigDecimal => Any = {
+  override def encode(schema: Schema): BigDecimal => AnyRef = {
     require(schema.getType == Schema.Type.BYTES)
 
     val logical = schema.getLogicalType.asInstanceOf[Decimal]
@@ -38,7 +38,7 @@ object BigDecimalBytesEncoder extends Encoder[BigDecimal] {
   */
 object BigDecimalStringEncoder extends Encoder[BigDecimal] {
 
-  override def encode(schema: Schema): BigDecimal => Any = {
+  override def encode(schema: Schema): BigDecimal => AnyRef = {
     require(schema.getType == Schema.Type.STRING)
 
     val logical = schema.getLogicalType.asInstanceOf[Decimal]
@@ -54,7 +54,7 @@ object BigDecimalStringEncoder extends Encoder[BigDecimal] {
   */
 object BigDecimalFixedEncoder extends Encoder[BigDecimal] {
 
-  override def encode(schema: Schema): BigDecimal => Any = {
+  override def encode(schema: Schema): BigDecimal => AnyRef = {
     require(schema.getType == Schema.Type.FIXED)
 
     val logical = schema.getLogicalType.asInstanceOf[Decimal]

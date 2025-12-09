@@ -73,13 +73,13 @@ object CustomDefaults {
  private def isEnum(product: Product, schemaType: Schema.Type) =
    product.productArity == 0 && schemaType == Schema.Type.ENUM
 
-private def productValues(p: Product): Map[String, Any] =
-  try {
-    parse(write(p)).extract[Map[String, Any]]
-  } catch {
-    case _: MappingException =>
-      p.productElementNames.zip(p.productIterator).toMap
-  }
+ private def productValues(p: Product): Map[String, Any] =
+   try {
+     parse(write(p)).extract[Map[String, Any]]
+   } catch {
+     case _: MappingException =>
+       p.productElementNames.zip(p.productIterator).toMap
+   }
 
  private def trimmedClassName(p: Product) = trimDollar(p.getClass.getSimpleName)
 

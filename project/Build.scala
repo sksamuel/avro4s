@@ -8,16 +8,16 @@ object Build extends AutoPlugin {
 
   object autoImport {
     val org = "com.natural-transformation"
-    val AvroVersion = "1.11.4"
+    val AvroVersion = "1.11.5"
     val Log4jVersion = "1.2.17"
     val ScalatestVersion = "3.2.17"
-    val Slf4jVersion = "2.0.13"
+    val Slf4jVersion = "2.0.17"
     val Json4sVersion = "4.0.6"
     val CatsVersion = "2.10.0"
     val RefinedVersion = "0.9.26"
     val ShapelessVersion = "2.3.7"
-    val MagnoliaVersion = "1.3.3"
-    val SbtJmhVersion = "0.3.7"
+    val MagnoliaVersion = "1.3.18"
+    val SbtJmhVersion = "0.4.8"
     val JmhVersion = "1.32"
   }
 
@@ -33,7 +33,7 @@ object Build extends AutoPlugin {
   
   val commonSettings = Seq(
     organization       := org,
-    scalaVersion := "3.3.4",
+    scalaVersion := "3.3.7",
     resolvers += Resolver.mavenLocal,
     Test / parallelExecution := false,
     Test / scalacOptions ++= Seq("-Xmax-inlines:100", "-Yretain-trees"),
