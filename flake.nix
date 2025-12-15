@@ -29,6 +29,8 @@
         libPath = nixpkgs.lib.makeLibraryPath [ newPkgs.lmdb ];
         # Import the sbtix.nix file directly, not the flake's default.nix (which is a stub)
         sbtixPkg = newPkgs.callPackage "${sbtix}/plugin/nix-exprs/sbtix.nix" {};
+        # Get the sbtix CLI tool from the flake for devShell
+        sbtixCli = inputs'.sbtix.packages.sbtix;
       in {
         # Make packages.default lazy - wrap in a function that's only called when needed
         # This prevents it from being evaluated when only devShells is needed
@@ -41,7 +43,7 @@
         devShells.default = newPkgs.mkShell {
           nativeBuildInputs = with newPkgs; [
             sbt
-            sbtixPkg
+            sbtixCli
             jdk
           ];
           # environment variables go here:
