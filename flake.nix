@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
     sbtix.url = "github:natural-transformation/sbtix";
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";
@@ -31,6 +32,7 @@
         packages.default = import ./default.nix { 
           pkgs = newPkgs; 
           gitignore = gitignore.lib;
+          sbtix = sbtixPkg;
         };
 
         devShells.default = newPkgs.mkShell {

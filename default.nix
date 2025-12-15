@@ -12,10 +12,11 @@
                     sha256 = "sha256:vky6VPK1n1od6vXbqzOXnekrQpTL4hbPAwUhT5J9c9E=";
                   };
                 in import src { inherit (pkgs) lib; })
+, sbtix
 }:
 
 let
-  sbtix = pkgs.callPackage ./sbtix.nix {};
+  # sbtix is provided by flake.nix from the sbtix flake input
 in
   sbtix.buildSbtLibrary {
     name = "avro4s";
