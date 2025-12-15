@@ -27,7 +27,8 @@
           overlays = [ jdk21-overlay ];
         };
         libPath = nixpkgs.lib.makeLibraryPath [ newPkgs.lmdb ];
-        sbtixPkg = import sbtix { pkgs = newPkgs; };
+        # Import the sbtix.nix file directly, not the flake's default.nix (which is a stub)
+        sbtixPkg = newPkgs.callPackage "${sbtix}/plugin/nix-exprs/sbtix.nix" {};
       in {
         # Make packages.default lazy - wrap in a function that's only called when needed
         # This prevents it from being evaluated when only devShells is needed
