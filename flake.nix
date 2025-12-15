@@ -29,11 +29,13 @@
         libPath = nixpkgs.lib.makeLibraryPath [ newPkgs.lmdb ];
         sbtixPkg = import sbtix { pkgs = newPkgs; };
       in {
-        packages.default = import ./default.nix { 
+        # Make packages.default lazy - wrap in a function that's only called when needed
+        # This prevents it from being evaluated when only devShells is needed
+        packages.default = (import ./default.nix { 
           pkgs = newPkgs; 
           gitignore = gitignore.lib;
           sbtix = sbtixPkg;
-        };
+        });
 
         devShells.default = newPkgs.mkShell {
           nativeBuildInputs = with newPkgs; [
