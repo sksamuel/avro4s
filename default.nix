@@ -25,6 +25,9 @@ in
     repo = [
       (import ./repo.nix)
       (import ./project/repo.nix)
+      # Some sbt plugins (from project/plugins.sbt) end up locked under
+      # project/project/repo.nix. Include it so Nix builds stay fully offline.
+      (if builtins.pathExists ./project/project/repo.nix then import ./project/project/repo.nix else {})
       (import ./manual-repo.nix)
     ];
   }
