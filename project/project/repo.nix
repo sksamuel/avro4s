@@ -2,7 +2,7 @@
 {
   "versioning" = [{
       "scalaVersion" = "2.12.20";
-      "sbtVersion" = "1.10.6";
+      "sbtVersion" = "1.10.7";
     }];
   "repos" = {
     "nix-artima-maven" = "";

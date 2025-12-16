@@ -110,7 +110,7 @@ POM_EOF
             module="sbtix"
             revision="${pluginVersion}"
             status="release"
-            publication="1765836707662"
+            publication="1765910353587"
             e:sbtVersion="1.0"
             e:scalaVersion="2.12">
         <description>

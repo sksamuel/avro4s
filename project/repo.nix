@@ -2,7 +2,7 @@
 {
   "versioning" = [{
       "scalaVersion" = "2.12.20";
-      "sbtVersion" = "1.10.6";
+      "sbtVersion" = "1.10.7";
     }];
   "repos" = {
     "nix-public" = "";
@@ -90,21 +90,21 @@
       url = "https://repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.12.20/scala-reflect-2.12.20.pom";
       sha256 = "6151C44B5EC49F7E9555450D6ACE47E994129B511119CF364045E18864AF8E96";
     };
-    "nix-public/org/scala-sbt/sbt/1.10.6/sbt-1.10.6-javadoc.jar" = {
-      url = "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.10.6/sbt-1.10.6-javadoc.jar";
+    "nix-public/org/scala-sbt/sbt/1.10.7/sbt-1.10.7-javadoc.jar" = {
+      url = "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.10.7/sbt-1.10.7-javadoc.jar";
       sha256 = "AEE229482E8BC0ACF525AF586B5024B11ED6DAF2F8AC0C8C8B47E8B10AED72FD";
     };
-    "nix-public/org/scala-sbt/sbt/1.10.6/sbt-1.10.6-sources.jar" = {
-      url = "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.10.6/sbt-1.10.6-sources.jar";
-      sha256 = "0831E45C111802C29327EDCE94FBF3D6CD8AAF84AC5CC8EEFB42594EFBC7DEA3";
+    "nix-public/org/scala-sbt/sbt/1.10.7/sbt-1.10.7-sources.jar" = {
+      url = "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.10.7/sbt-1.10.7-sources.jar";
+      sha256 = "347D478E1336FBF12435AAFEFB79ACA48570FC4BE5E29E42B2D1B47EABFCE39E";
     };
-    "nix-public/org/scala-sbt/sbt/1.10.6/sbt-1.10.6.jar" = {
-      url = "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.10.6/sbt-1.10.6.jar";
-      sha256 = "9BFA7D3ABAF6DA733180FCD574CE928683242240E680A5302503A4CDA8EAB59F";
+    "nix-public/org/scala-sbt/sbt/1.10.7/sbt-1.10.7.jar" = {
+      url = "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.10.7/sbt-1.10.7.jar";
+      sha256 = "DAAE3F9FB7D2C50A08F28FE119CB70E9CAB6E0DDE61575F4233E819D2725B7EE";
     };
-    "nix-public/org/scala-sbt/sbt/1.10.6/sbt-1.10.6.pom" = {
-      url = "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.10.6/sbt-1.10.6.pom";
-      sha256 = "DC93CCE3BE8E46CCC9B0988AD2332AC04B3D995B83AADA166C39DD3CB8973B0B";
+    "nix-public/org/scala-sbt/sbt/1.10.7/sbt-1.10.7.pom" = {
+      url = "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.10.7/sbt-1.10.7.pom";
+      sha256 = "16DCB76F61D297899078B02375A8F1481AF678272D029617F2E535D163F3F5FA";
     };
   };
 }
