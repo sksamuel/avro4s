@@ -29,6 +29,9 @@ let
   ivyRepoPattern =
     "[organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]";
 
+  importIfExists = path:
+    if builtins.pathExists path then import path else {};
+
   projectProjectRepo =
     let repoPath = ./project/project/repo.nix;
     in
@@ -48,6 +51,12 @@ in
     #sbtixBuildInputs = pkgs.callPackage ./sbtix-build-inputs.nix {};
     repo = [
       (import ./repo.nix)
+      # The root sbt project is an aggregate with (almost) no direct dependencies.
+      # Its real dependencies live in the subprojects, so we must include their
+      # sbtix-generated `repo.nix` locks to keep sandboxed/offline builds working.
+      (importIfExists ./avro4s-core/repo.nix)
+      (importIfExists ./avro4s-cats/repo.nix)
+      (importIfExists ./avro4s-kafka/repo.nix)
       (import ./project/repo.nix)
       # Some sbt plugins (from project/plugins.sbt) end up locked under
       # project/project/repo.nix. Include it so Nix builds stay fully offline.
