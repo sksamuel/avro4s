@@ -5,11 +5,11 @@
       "sbtVersion" = "1.10.7";
     }];
   "repos" = {
-    "nix-artima-maven" = "";
+    "nix-artima-maven" = "[organization]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]";
     "nix-public" = "";
-    "nix-sbt-plugin-releases" = "";
-    "nix-sbtix-plugin-repo" = "";
-    "nix-typesafe-alt-ivy-releases" = "";
+    "nix-sbt-plugin-releases" = "[organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)([branch]/)[revision]/[type]s/[artifact](-[classifier]).[ext]";
+    "nix-sbtix-plugin-repo" = "[organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)([branch]/)[revision]/[type]s/[artifact](-[classifier]).[ext]";
+    "nix-typesafe-alt-ivy-releases" = "[organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)([branch]/)[revision]/[type]s/[artifact](-[classifier]).[ext]";
   };
 
   "artifacts" = {

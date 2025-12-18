@@ -6,7 +6,7 @@
     }];
   "repos" = {
     "nix-public" = "";
-    "nix-sbt-plugin-releases" = "";
+    "nix-sbt-plugin-releases" = "[organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)([branch]/)[revision]/[type]s/[artifact](-[classifier]).[ext]";
   };
 
   "artifacts" = {

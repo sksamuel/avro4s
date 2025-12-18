@@ -24,9 +24,9 @@ let
   sbtixSource = sbtixSourceFetcher {
     type = "git";
     url = "https://github.com/natural-transformation/sbtix";
-    rev = "cbc81e97fdb76fb56f86c54a84164427552d4c1b";
-    narHash = "sha256-o0fIcmBuZaNxSrqGyG4SmcsTH0UXEG5rME3hyEwPcV0=";
-    sha256 = "0pbi1x6ciqad61mnw40p8lgi7jwr29pci1ms99qs6rbfc1rchix3";
+    rev = "015a811972c413876b99103a01b82e79848d34d3";
+    narHash = "sha256-lVs8fw3ZXSPO/CtlWboA5IJLjvQmprYklc56dHdH3Dc=";
+    sha256 = "0dyw8xvp8ynfjljbd9i6yj74p0p402x5jr9bzk726pfr1mzkqnwm";
   };
 
   sbtixPluginRepos = [
@@ -83,7 +83,7 @@ in
     pluginBootstrap = ''
       pluginJar="${sbtixPluginJarPath}"
 
-ivyDir="./.ivy2-home/local/se.nullable.sbtix/sbtix/scala_3/sbt_1.0/${pluginVersion}"
+ivyDir="./.ivy2-home/local/se.nullable.sbtix/sbtix/scala_2.12/sbt_1.0/${pluginVersion}"
 mkdir -p "$ivyDir/jars" "$ivyDir/ivys" "$ivyDir/poms"
 if [ -n "${pluginJar:-}" ] && [ -f "$pluginJar" ]; then
   cp "$pluginJar" $ivyDir/jars/sbtix.jar
@@ -110,7 +110,7 @@ POM_EOF
             module="sbtix"
             revision="${pluginVersion}"
             status="release"
-            publication="1765910353587"
+            publication="1766002983324"
             e:sbtVersion="1.0"
             e:scalaVersion="2.12">
         <description>
