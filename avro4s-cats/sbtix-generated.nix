@@ -24,9 +24,9 @@ let
   sbtixSource = sbtixSourceFetcher {
     type = "git";
     url = "https://github.com/natural-transformation/sbtix";
-    rev = "015a811972c413876b99103a01b82e79848d34d3";
-    narHash = "sha256-lVs8fw3ZXSPO/CtlWboA5IJLjvQmprYklc56dHdH3Dc=";
-    sha256 = "0dyw8xvp8ynfjljbd9i6yj74p0p402x5jr9bzk726pfr1mzkqnwm";
+    rev = "cea84ef6e5c1fdaddf86d14ec7406d27c6eb272b";
+    narHash = "sha256-UIJjNBgBracQX5gkDmEQB0jD4tCNxeMu4M2fLs7zamA=";
+    sha256 = "0q3ayg72x7ydw0pf7icds3ic6j0721hhw94qbw8agb8130s670jh";
   };
 
   sbtixPluginRepos = [
@@ -110,7 +110,7 @@ POM_EOF
             module="sbtix"
             revision="${pluginVersion}"
             status="release"
-            publication="1766002983324"
+            publication="1766259341292"
             e:sbtVersion="1.0"
             e:scalaVersion="2.12">
         <description>
