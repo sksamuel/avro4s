@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
     sbtix.url = "github:natural-transformation/sbtix";
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";
@@ -26,17 +27,23 @@
           overlays = [ jdk21-overlay ];
         };
         libPath = nixpkgs.lib.makeLibraryPath [ newPkgs.lmdb ];
-        sbtixPkg = import sbtix { pkgs = newPkgs; };
+        # Import the sbtix.nix file directly, not the flake's default.nix (which is a stub)
+        sbtixPkg = newPkgs.callPackage "${sbtix}/plugin/nix-exprs/sbtix.nix" {};
+        # Get the sbtix CLI tool from the flake for devShell
+        sbtixCli = inputs'.sbtix.packages.sbtix;
       in {
-        packages.default = import ./default.nix { 
+        # Make packages.default lazy - wrap in a function that's only called when needed
+        # This prevents it from being evaluated when only devShells is needed
+        packages.default = (import ./default.nix { 
           pkgs = newPkgs; 
           gitignore = gitignore.lib;
-        };
+          sbtix = sbtixPkg;
+        });
 
         devShells.default = newPkgs.mkShell {
           nativeBuildInputs = with newPkgs; [
             sbt
-            sbtixPkg
+            sbtixCli
             jdk
           ];
           # environment variables go here:

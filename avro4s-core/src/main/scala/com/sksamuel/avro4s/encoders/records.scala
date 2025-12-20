@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 
 class RecordEncoder[T](ctx: magnolia1.CaseClass[Encoder, T]) extends Encoder[T] {
 
-  def encode(schema: Schema): T => Any = {
+  def encode(schema: Schema): T => AnyRef = {
     // the order of the encoders comes from the schema
     val encoders: Array[FieldEncoder[T]] = schema.getFields.asScala.map { field =>
       val param = findParam(field, ctx)

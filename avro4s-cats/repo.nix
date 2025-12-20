@@ -993,6 +993,22 @@
       url = "https://repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_3/2.1.0/scala-xml_3-2.1.0.pom";
       sha256 = "D96029BE9FF2C847BDDE53A580E32CF769D9D6FBD3D025224BF66612B9EBE008";
     };
+    "nix-public/org/scala-lang/scala-library/2.13.10/scala-library-2.13.10-javadoc.jar" = {
+      url = "https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.10/scala-library-2.13.10-javadoc.jar";
+      sha256 = "267884FFB2A709374EBD774C5382621202494D090CD4EBCA4D9824A3CCCE80CA";
+    };
+    "nix-public/org/scala-lang/scala-library/2.13.10/scala-library-2.13.10-sources.jar" = {
+      url = "https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.10/scala-library-2.13.10-sources.jar";
+      sha256 = "A991527579C81765CC74ECDBF57FE8FDA9C1FD88FCEEBF19266F030E456EE0F0";
+    };
+    "nix-public/org/scala-lang/scala-library/2.13.10/scala-library-2.13.10.jar" = {
+      url = "https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.10/scala-library-2.13.10.jar";
+      sha256 = "E6CA607C3FCE03E8FA38AF3374CE1F8BB098E316E8BF6F6D27331360FEDDB1C1";
+    };
+    "nix-public/org/scala-lang/scala-library/2.13.10/scala-library-2.13.10.pom" = {
+      url = "https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.10/scala-library-2.13.10.pom";
+      sha256 = "C9686FD8BA7C62F0928F09D0B105AADC82BDAB06241424BA2660E285DC559546";
+    };
     "nix-public/org/scala-lang/scala-library/2.13.16/scala-library-2.13.16-javadoc.jar" = {
       url = "https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.16/scala-library-2.13.16-javadoc.jar";
       sha256 = "97F4264F4B5B5377D29A79A3B098BEC4DDB0A855BC57B66071F1E99BCFAB25FB";
@@ -1104,6 +1120,22 @@
     "nix-public/org/scala-lang/scala3-library_3/3.1.3/scala3-library_3-3.1.3.pom" = {
       url = "https://repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.1.3/scala3-library_3-3.1.3.pom";
       sha256 = "D61E035994E678729D9EF1DCFE538BFE1E4A94E665DBD961A0FA327411A2F4D3";
+    };
+    "nix-public/org/scala-lang/scala3-library_3/3.3.0/scala3-library_3-3.3.0-javadoc.jar" = {
+      url = "https://repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.3.0/scala3-library_3-3.3.0-javadoc.jar";
+      sha256 = "E606E5E0DB465E1F03663E2F0BF5B7137C034B72DA0661DE4520236FEE86955B";
+    };
+    "nix-public/org/scala-lang/scala3-library_3/3.3.0/scala3-library_3-3.3.0-sources.jar" = {
+      url = "https://repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.3.0/scala3-library_3-3.3.0-sources.jar";
+      sha256 = "7AD1C5CCD27408703AA6F5A1889E55B7FC475486E25D9DE76A314CE649759357";
+    };
+    "nix-public/org/scala-lang/scala3-library_3/3.3.0/scala3-library_3-3.3.0.jar" = {
+      url = "https://repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.3.0/scala3-library_3-3.3.0.jar";
+      sha256 = "78ADD3AAA13701690B73FD90A13D1CAE1DA32565DEDB379E65ADE30A16973F6B";
+    };
+    "nix-public/org/scala-lang/scala3-library_3/3.3.0/scala3-library_3-3.3.0.pom" = {
+      url = "https://repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.3.0/scala3-library_3-3.3.0.pom";
+      sha256 = "DCDD13A079385543CC1C5D99EA672B307CD4DEF1217DE7CD867B9B42347C4EE7";
     };
     "nix-public/org/scala-lang/scala3-library_3/3.3.7/scala3-library_3-3.3.7-javadoc.jar" = {
       url = "https://repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.3.7/scala3-library_3-3.3.7-javadoc.jar";
@@ -1576,6 +1608,38 @@
     "nix-public/org/sonatype/oss/oss-parent/9/oss-parent-9.pom" = {
       url = "https://repo1.maven.org/maven2/org/sonatype/oss/oss-parent/9/oss-parent-9.pom";
       sha256 = "FB40265F982548212FF82E362E59732B2187EC6F0D80182885C14EF1F982827A";
+    };
+    "nix-public/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0-javadoc.jar" = {
+      url = "https://repo1.maven.org/maven2/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0-javadoc.jar";
+      sha256 = "1BFB4B45530E55F98AF503D700028D5816C0CDC4E92CB63F0EF4037D04465EA5";
+    };
+    "nix-public/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0-sources.jar" = {
+      url = "https://repo1.maven.org/maven2/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0-sources.jar";
+      sha256 = "757AAC768783DA1A381C51E54E4779FC470368AE4566F5883E82708BD0D4A592";
+    };
+    "nix-public/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0.jar" = {
+      url = "https://repo1.maven.org/maven2/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0.jar";
+      sha256 = "B9BBFA77B02B46E75CA176027BB5B1F7ED2C792805F73DD9A70CE0C9EC23FD08";
+    };
+    "nix-public/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0.pom" = {
+      url = "https://repo1.maven.org/maven2/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0.pom";
+      sha256 = "F5903C62CE8E48305C6EA403D6279D4A4742A843D28867F140B1ECFDEF01E13A";
+    };
+    "nix-public/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0-javadoc.jar" = {
+      url = "https://repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0-javadoc.jar";
+      sha256 = "AF0838902FE110C930545E4D0478D146DF51B72CA2D5EFACFB35F38C6E80978D";
+    };
+    "nix-public/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0-sources.jar" = {
+      url = "https://repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0-sources.jar";
+      sha256 = "6B7DB8ABB8CACDA2EA9A6AB3D325BE06519414A48125764F3211E835F72E9414";
+    };
+    "nix-public/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0.jar" = {
+      url = "https://repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0.jar";
+      sha256 = "AB2ED30CECAA9559A50641F17DA92E2ACB90787149C993080D86E1BBA976C7D7";
+    };
+    "nix-public/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0.pom" = {
+      url = "https://repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0.pom";
+      sha256 = "C3EC5DC3656A758BAC98068F263A876ACCF474C8B1000518252246C4B8785C3E";
     };
     "nix-public/org/yaml/snakeyaml/2.0/snakeyaml-2.0-javadoc.jar" = {
       url = "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.0/snakeyaml-2.0-javadoc.jar";

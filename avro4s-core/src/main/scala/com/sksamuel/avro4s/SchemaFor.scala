@@ -16,7 +16,7 @@ import java.util.{Date, UUID}
   * For example, a SchemaFor[String] could return a schema of type Schema.Type.STRING, and
   * a SchemaFor[Int] could return an schema of type Schema.Type.INT
   */
-trait SchemaFor[T] {
+trait SchemaFor[T] extends Serializable {
   self =>
 
   /**

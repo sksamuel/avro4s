@@ -26,3 +26,6 @@ credentials.sbt
 
 universe.avro
 sbt.json
+
+# from nix build
+result

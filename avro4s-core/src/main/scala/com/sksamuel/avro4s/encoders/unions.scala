@@ -13,7 +13,7 @@ object TypeUnions {
     * Builds an [[Encoder]] for a sealed trait enum.
     */
   def encoder[T](ctx: SealedTrait[Encoder, T]): Encoder[T] = new Encoder[T] {
-    override def encode(schema: Schema): T => Any = {
+    override def encode(schema: Schema): T => AnyRef = {
       require(schema.isUnion)
 
       val encoderBySubtype = ctx.subtypes.sorted(SubtypeOrdering).map(st => {
@@ -28,7 +28,9 @@ object TypeUnions {
       }).toMap
 
       { value =>
-        ctx.choose(value) { st => encoderBySubtype(st.subtype).apply(st.cast(value)) }
+        ctx.choose(value) { st =>
+          encoderBySubtype(st.subtype).apply(st.cast(value)).asInstanceOf[AnyRef]
+        }
       }
     }
   }

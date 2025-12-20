@@ -19,21 +19,21 @@ package object cats:
   given[T](using schemaFor: SchemaFor[T]): SchemaFor[NonEmptyChain[T]] = SchemaFor(Schema.createArray(schemaFor.schema))
 
   given[T](using encoder: Encoder[T], schemaFor: SchemaFor[T]): Encoder[NonEmptyList[T]] = new Encoder[NonEmptyList[T]] :
-    override def encode(schema: Schema): NonEmptyList[T] => Any = {
+    override def encode(schema: Schema): NonEmptyList[T] => AnyRef = {
       require(schema.getType == Schema.Type.ARRAY)
       val encode = encoder.encode(schemaFor.schema)
       { value => value.map(encode).toList.asJava }
     }
 
   given[T](using encoder: Encoder[T], schemaFor: SchemaFor[T]): Encoder[NonEmptyVector[T]] = new Encoder[NonEmptyVector[T]] :
-    override def encode(schema: Schema): NonEmptyVector[T] => Any = {
+    override def encode(schema: Schema): NonEmptyVector[T] => AnyRef = {
       require(schema.getType == Schema.Type.ARRAY)
       val encode = encoder.encode(schemaFor.schema)
       { value => value.map(encode).toVector.asJava }
     }
 
   given[T](using encoder: Encoder[T], schemaFor: SchemaFor[T]): Encoder[NonEmptyChain[T]] = new Encoder[NonEmptyChain[T]] :
-    override def encode(schema: Schema): NonEmptyChain[T] => Any = {
+    override def encode(schema: Schema): NonEmptyChain[T] => AnyRef = {
       require(schema.getType == Schema.Type.ARRAY)
       val encode = encoder.encode(schemaFor.schema)
       { value => value.map(encode).toNonEmptyList.toList.asJava }
@@ -100,7 +100,7 @@ package object cats:
 
   given [E, T] (using eEncoder: Encoder[E], eSchemaFor: SchemaFor[E], tEncoder: Encoder[T], tSchemaFor: SchemaFor[T]): Encoder[Validated[E, T]] = 
     new Encoder[Validated[E, T]] {
-      override def encode(schema: Schema): Validated[E, T] => Any = {
+      override def encode(schema: Schema): Validated[E, T] => AnyRef = {
         require(schema.getType == Schema.Type.UNION)
         val invalidSchema = SchemaHelper.getFirstFromUnionOfTwo(schema, "InvalidWrapper")
         val validSchema = SchemaHelper.getSecondFromUnionOfTwo(schema, "ValidWrapper")

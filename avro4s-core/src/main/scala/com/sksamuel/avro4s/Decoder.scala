@@ -13,14 +13,15 @@ import org.apache.avro.Schema
   * Another example, a decoder for Option[String] would handle inputs of null
   * by emitting a None, and a non-null input by emitting a String wrapped in a Some.
   */
-trait Decoder[T] {
+trait Decoder[T] extends Serializable {
   self =>
 
   def decode(schema: Schema): Any => T
 
   final def map[U](f: T => U): Decoder[U] = new Decoder[U] {
-    override def decode(schema: Schema): Any => U = { input =>
-      f(self.decode(schema).apply(input))
+    override def decode(schema: Schema): Any => U = {
+      val decodeT = self.decode(schema)
+      input => f(decodeT(input))
     }
   }
 }

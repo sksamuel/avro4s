@@ -12,10 +12,38 @@
                     sha256 = "sha256:vky6VPK1n1od6vXbqzOXnekrQpTL4hbPAwUhT5J9c9E=";
                   };
                 in import src { inherit (pkgs) lib; })
+, sbtix
 }:
 
 let
-  sbtix = pkgs.callPackage ./sbtix.nix {};
+  # sbtix is provided by flake.nix from the sbtix flake input
+  #
+  # Some Sbtix-generated repo locks (notably `project/project/repo.nix`) contain
+  # sbt plugin artifacts under an *Ivy-style* layout (e.g.
+  # `nix-sbt-plugin-releases/com.dwijnand/.../ivys/ivy.xml`), but declare the repo
+  # pattern as empty (which the sbt launcher interprets as Maven layout).
+  #
+  # When building in the Nix sandbox (no network), this makes sbt fail to find
+  # plugin dependencies like `com.dwijnand:sbt-compat`. We fix this by overriding
+  # the repo pattern to the Ivy layout when we include `project/project/repo.nix`.
+  ivyRepoPattern =
+    "[organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]";
+
+  importIfExists = path:
+    if builtins.pathExists path then import path else {};
+
+  projectProjectRepo =
+    let repoPath = ./project/project/repo.nix;
+    in
+      if builtins.pathExists repoPath then
+        let repo = import repoPath;
+        in repo // {
+          repos = (repo.repos or {}) // {
+            "nix-sbt-plugin-releases" = ivyRepoPattern;
+          };
+        }
+      else
+        {};
 in
   sbtix.buildSbtLibrary {
     name = "avro4s";
@@ -23,7 +51,16 @@ in
     #sbtixBuildInputs = pkgs.callPackage ./sbtix-build-inputs.nix {};
     repo = [
       (import ./repo.nix)
+      # The root sbt project is an aggregate with (almost) no direct dependencies.
+      # Its real dependencies live in the subprojects, so we must include their
+      # sbtix-generated `repo.nix` locks to keep sandboxed/offline builds working.
+      (importIfExists ./avro4s-core/repo.nix)
+      (importIfExists ./avro4s-cats/repo.nix)
+      (importIfExists ./avro4s-kafka/repo.nix)
       (import ./project/repo.nix)
+      # Some sbt plugins (from project/plugins.sbt) end up locked under
+      # project/project/repo.nix. Include it so Nix builds stay fully offline.
+      projectProjectRepo
       (import ./manual-repo.nix)
     ];
   }
