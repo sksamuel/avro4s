@@ -28,20 +28,21 @@ object Build extends AutoPlugin {
   private val UseMavenLocalEnvVar: String = "AVRO4S_USE_MAVEN_LOCAL"
   private def useMavenLocalResolver: Boolean = sys.env.get(UseMavenLocalEnvVar).contains("1")
 
-  // Since OSSRH (s01.oss.sonatype.org / oss.sonatype.org) reached end-of-life,
-  // publishing happens via the Central Publisher Portal:
-  // - SNAPSHOTs: https://central.sonatype.com/repository/maven-snapshots/
-  // - Releases: compatibility "OSSRH staging API": https://ossrh-staging-api.central.sonatype.com
+  // Since OSSRH (s01.oss.sonatype.org / oss.sonatype.org) reached end-of-life for the *UI* flow,
+  // we publish SNAPSHOTs via the Central Portal snapshots repository.
+  //
+  // For releases, sbt-sonatype still relies on Nexus 2 staging endpoints.
+  // As of 2025-12, the "OSSRH staging API compatibility" host doesn't support all the endpoints sbt-sonatype uses
+  // (e.g. `/service/local/staging/profile_repositories`), so we keep using the classic OSSRH host for release staging.
   //
   // Docs:
   // - https://central.sonatype.org/pages/ossrh-eol/
   // - https://central.sonatype.org/publish/publish-portal-snapshots/
   private val CentralPortalHost           = "central.sonatype.com"
   private val CentralPortalSnapshotsRepo  = "https://central.sonatype.com/repository/maven-snapshots/"
-  private val OssrhStagingApiHost         = "ossrh-staging-api.central.sonatype.com"
-  private val OssrhStagingApiServiceLocal = "https://ossrh-staging-api.central.sonatype.com/service/local"
+  private val OssrhHost                  = "s01.oss.sonatype.org"
+  private val OssrhServiceLocal          = "https://s01.oss.sonatype.org/service/local"
   private val CentralNexusRealm           = "Sonatype Nexus Repository Manager"
-  private val OssrhStagingApiRealm        = "OSSRH Staging API Service"
 
   override def trigger = allRequirements
   override def projectSettings = commonSettings ++ publishingSettings 
@@ -114,8 +115,8 @@ object Build extends AutoPlugin {
           Seq(
             // Central Portal snapshots (for -SNAPSHOT versions)
             Credentials(CentralNexusRealm, CentralPortalHost, user, pass),
-            // Central Portal OSSRH staging API (for releases)
-            Credentials(OssrhStagingApiRealm, OssrhStagingApiHost, user, pass)
+            // OSSRH staging (for releases)
+            Credentials(CentralNexusRealm, OssrhHost, user, pass)
           )
         case None =>
           // No file and no env variables means no credentials are provided
@@ -131,8 +132,8 @@ object Build extends AutoPlugin {
       if (isSnapshot.value) Some("central-portal-snapshots" at CentralPortalSnapshotsRepo)
       else sonatypePublishToBundle.value
     },
-    sonatypeCredentialHost := OssrhStagingApiHost,
-    sonatypeRepository := OssrhStagingApiServiceLocal,
+    sonatypeCredentialHost := OssrhHost,
+    sonatypeRepository := OssrhServiceLocal,
     sonatypeProfileName := "com.natural-transformation",
     sonatypeProjectHosting := Some(GitHubHosting("natural-transformation", "avro4s", "zli@natural-transformation.com")),
     licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
