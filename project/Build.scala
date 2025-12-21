@@ -28,21 +28,35 @@ object Build extends AutoPlugin {
   private val UseMavenLocalEnvVar: String = "AVRO4S_USE_MAVEN_LOCAL"
   private def useMavenLocalResolver: Boolean = sys.env.get(UseMavenLocalEnvVar).contains("1")
 
-  // Since OSSRH (s01.oss.sonatype.org / oss.sonatype.org) reached end-of-life for the *UI* flow,
-  // we publish SNAPSHOTs via the Central Portal snapshots repository.
+  // OSSRH (Nexus 2) is sunset; publishing happens via Sonatype Central.
   //
-  // For releases, sbt-sonatype still relies on Nexus 2 staging endpoints.
-  // As of 2025-12, the "OSSRH staging API compatibility" host doesn't support all the endpoints sbt-sonatype uses
-  // (e.g. `/service/local/staging/profile_repositories`), so we keep using the classic OSSRH host for release staging.
+  // - SNAPSHOTs: publish directly to the Central Portal snapshots repository.
+  // - Releases: use sbt-sonatype's *Central* commands (sonatypeCentralUpload/sonatypeCentralRelease),
+  //   which talk to the OSSRH Staging API Service (a compatibility layer backed by Central).
   //
   // Docs:
   // - https://central.sonatype.org/pages/ossrh-eol/
   // - https://central.sonatype.org/publish/publish-portal-snapshots/
   private val CentralPortalHost           = "central.sonatype.com"
   private val CentralPortalSnapshotsRepo  = "https://central.sonatype.com/repository/maven-snapshots/"
-  private val OssrhHost                  = "s01.oss.sonatype.org"
-  private val OssrhServiceLocal          = "https://s01.oss.sonatype.org/service/local"
   private val CentralNexusRealm           = "Sonatype Nexus Repository Manager"
+  private val OssrhStagingApiHost         = "ossrh-staging-api.central.sonatype.com"
+  private val OssrhStagingApiServiceLocal = "https://ossrh-staging-api.central.sonatype.com/service/local"
+  private val OssrhStagingApiRealm        = "OSSRH Staging API Service"
+
+  // Publishing credentials (env vars):
+  // - SONATYPE_CENTRAL_*: Central Portal snapshots repository (central.sonatype.com)
+  // - SONATYPE_STAGING_*: OSSRH Staging API Service for releases (ossrh-staging-api.central.sonatype.com)
+  private val CentralUserEnvVar: String  = "SONATYPE_CENTRAL_USERNAME"
+  private val CentralPassEnvVar: String  = "SONATYPE_CENTRAL_PASSWORD"
+  private val StagingUserEnvVar: String  = "SONATYPE_STAGING_USERNAME"
+  private val StagingPassEnvVar: String  = "SONATYPE_STAGING_PASSWORD"
+
+  private def envUserPass(userKey: String, passKey: String): Option[(String, String)] = {
+    val user = sys.env.getOrElse(userKey, "")
+    val pass = sys.env.getOrElse(passKey, "")
+    if (user.nonEmpty && pass.nonEmpty) Some((user, pass)) else None
+  }
 
   override def trigger = allRequirements
   override def projectSettings = commonSettings ++ publishingSettings 
@@ -74,11 +88,8 @@ object Build extends AutoPlugin {
       val credsFile = Path.userHome / ".sbt" / "sonatype_credentials"
       // We support either:
       // - ~/.sbt/sonatype_credentials (local)
-      // - OSSRH_USERNAME / OSSRH_PASSWORD (CI or local env)
-      //
-      // The same Central user token can authenticate both:
-      // - Central Portal snapshots repository (Nexus 3)
-      // - OSSRH staging API compatibility service (Nexus 2-like API)
+      // - SONATYPE_CENTRAL_USERNAME / SONATYPE_CENTRAL_PASSWORD (Central Portal snapshots)
+      // - SONATYPE_STAGING_USERNAME / SONATYPE_STAGING_PASSWORD (release publishing via OSSRH Staging API Service)
       val userPassFromFile: Option[(String, String)] =
         if (credsFile.exists()) {
           // We parse the file ourselves instead of using Credentials(file) because
@@ -102,26 +113,27 @@ object Build extends AutoPlugin {
           if (user.nonEmpty && pass.nonEmpty) Some((user, pass)) else None
         } else None
 
-      val userPassFromEnv: Option[(String, String)] = {
-        val user = sys.env.getOrElse("OSSRH_USERNAME", "")
-        val pass = sys.env.getOrElse("OSSRH_PASSWORD", "")
-        if (user.nonEmpty && pass.nonEmpty) Some((user, pass)) else None
+      val centralUserPass: Option[(String, String)] =
+        envUserPass(CentralUserEnvVar, CentralPassEnvVar)
+          .orElse(userPassFromFile)
+
+      val stagingUserPass: Option[(String, String)] =
+        envUserPass(StagingUserEnvVar, StagingPassEnvVar)
+          .orElse(userPassFromFile)
+
+      val creds = Seq.newBuilder[Credentials]
+
+      centralUserPass.foreach { case (user, pass) =>
+        // Central Portal snapshots (for -SNAPSHOT versions)
+        creds += Credentials(CentralNexusRealm, CentralPortalHost, user, pass)
       }
 
-      val userPass = userPassFromFile.orElse(userPassFromEnv)
-
-      userPass match {
-        case Some((user, pass)) =>
-          Seq(
-            // Central Portal snapshots (for -SNAPSHOT versions)
-            Credentials(CentralNexusRealm, CentralPortalHost, user, pass),
-            // OSSRH staging (for releases)
-            Credentials(CentralNexusRealm, OssrhHost, user, pass)
-          )
-        case None =>
-          // No file and no env variables means no credentials are provided
-          Nil
+      stagingUserPass.foreach { case (user, pass) =>
+        // OSSRH Staging API Service (for releases; backed by Central)
+        creds += Credentials(OssrhStagingApiRealm, OssrhStagingApiHost, user, pass)
       }
+
+      creds.result()
     },
 
     version := publishVersion,
@@ -132,8 +144,9 @@ object Build extends AutoPlugin {
       if (isSnapshot.value) Some("central-portal-snapshots" at CentralPortalSnapshotsRepo)
       else sonatypePublishToBundle.value
     },
-    sonatypeCredentialHost := OssrhHost,
-    sonatypeRepository := OssrhServiceLocal,
+    // sbt-sonatype Central commands use the OSSRH Staging API Service (backed by Central).
+    sonatypeCredentialHost := OssrhStagingApiHost,
+    sonatypeRepository := OssrhStagingApiServiceLocal,
     sonatypeProfileName := "com.natural-transformation",
     sonatypeProjectHosting := Some(GitHubHosting("natural-transformation", "avro4s", "zli@natural-transformation.com")),
     licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
