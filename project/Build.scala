@@ -5,7 +5,6 @@ import sbt.*
 object Build extends AutoPlugin {
 
   object autoImport {
-    val org = "com.sksamuel.avro4s"
     val AvroVersion = "1.11.5"
     val Log4jVersion = "1.2.17"
     val ScalatestVersion = "3.2.17"
@@ -31,7 +30,6 @@ object Build extends AutoPlugin {
 
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
-    organization := org,
     scalaVersion := "3.3.7",
     resolvers += Resolver.mavenLocal,
     Test / parallelExecution := false,
@@ -47,42 +45,26 @@ object Build extends AutoPlugin {
   )
 
   val publishingSettings = Seq(
+    pomIncludeRepository := { _ => false },
     publishMavenStyle := true,
     Test / publishArtifact := false,
+    publishTo := {
+      val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+      if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+      else localStaging.value
+    },
     credentials += Credentials(
-      "Sonatype Nexus Repository Manager",
-      "s01.oss.sonatype.org",
+      null,
+      "central.sonatype.com",
       ossrhUsername,
       ossrhPassword
     ),
     version := publishVersion,
-    publishTo := {
-      if (isRelease)
-        Some("releases" at "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
-      else
-        Some("snapshots" at "https://central.sonatype.com/repository/maven-snapshots/")
-    },
-    pomExtra := {
-      <url>https://github.com/sksamuel/avro4s</url>
-        <licenses>
-          <license>
-            <name>The Apache 2.0 License</name>
-            <url>https://opensource.org/licenses/Apache-2.0</url>
-            <distribution>repo</distribution>
-          </license>
-        </licenses>
-        <scm>
-          <url>git@github.com:sksamuel/avro4s.git</url>
-          <connection>scm:git@github.com:sksamuel/avro4s.git</connection>
-        </scm>
-        <developers>
-          <developer>
-            <id>sksamuel</id>
-            <name>sksamuel</name>
-            <url>http://github.com/sksamuel</url>
-          </developer>
-        </developers>
-    }
+    organization := "com.sksamuel.avro4s",
+    homepage := Some(url("https://github.com/sksamuel/avro4s")),
+    scmInfo := Some(ScmInfo(url("https://github.com/sksamuel/avro4s"), "scm:git@github.com:sksamuel/avro4s.git")),
+    licenses := List("The Apache 2.0 License" -> url("https://opensource.org/licenses/Apache-2.0")),
+    developers := List(Developer("sksamuel", "sksamuel", "", url("http://github.com/sksamuel")))
   )
 }
 
