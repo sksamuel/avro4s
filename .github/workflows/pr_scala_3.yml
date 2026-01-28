@@ -13,18 +13,18 @@ jobs:
   scala_3_0:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout the repo
+      - name: Checkout the repo
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: setup sbt
+      - name: Setup sbt
         uses: coursier/setup-action@v1
         with:
           apps: sbt
           jvm: temurin:11
 
-      - name: run tests
+      - name: Run tests
         run: sbt test
 
       - name: Import GPG key
@@ -34,5 +34,5 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
-      - name: publish local
+      - name: Publish local
         run: sbt publishLocalSigned

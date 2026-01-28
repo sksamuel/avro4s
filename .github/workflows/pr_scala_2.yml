@@ -13,7 +13,7 @@ jobs:
   scala-2_12:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout the repo
+      - name: Checkout the repo
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -24,13 +24,13 @@ jobs:
           apps: sbt
           jvm: temurin:11
 
-      - name: run tests
+      - name: Run tests
         run: sbt ++2.12.10 test
 
   scala-2_13:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout the repo
+      - name: Checkout the repo
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -41,5 +41,5 @@ jobs:
           apps: sbt
           jvm: temurin:11
 
-      - name: run tests
+      - name: Run tests
         run: sbt ++2.13.3 test

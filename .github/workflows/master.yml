@@ -42,7 +42,7 @@ jobs:
           echo "name:        ${{ steps.import_gpg.outputs.name }}"
           echo "email:       ${{ steps.import_gpg.outputs.email }}"
 
-      - name: publish snapshot
+      - name: Publish snapshot
         run: sbt publishSigned
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}

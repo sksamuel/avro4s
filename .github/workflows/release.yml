@@ -16,7 +16,7 @@ jobs:
   scala-3:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout the repo
+      - name: Checkout the repo
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -41,8 +41,8 @@ jobs:
           echo "name:        ${{ steps.import_gpg.outputs.name }}"
           echo "email:       ${{ steps.import_gpg.outputs.email }}"
 
-      - name: publish release
-        run: sbt sonaUpload sonaRelease
+      - name: Publish release
+        run: sbt publishSigned sonaUpload sonaRelease
         env:
           RELEASE_VERSION: ${{ github.event.inputs.version }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
