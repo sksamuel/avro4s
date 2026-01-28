@@ -42,7 +42,7 @@ jobs:
           echo "email:       ${{ steps.import_gpg.outputs.email }}"
 
       - name: publish release
-        run: sbt publishSigned
+        run: sbt sonaUpload sonaRelease
         env:
           RELEASE_VERSION: ${{ github.event.inputs.version }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
