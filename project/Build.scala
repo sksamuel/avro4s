@@ -7,7 +7,7 @@ object Build extends AutoPlugin {
   object autoImport {
     val AvroVersion = "1.11.5"
     val Log4jVersion = "1.2.17"
-    val ScalatestVersion = "3.2.17"
+    val ScalatestVersion = "3.2.20"
     val Slf4jVersion = "2.0.17"
     val Json4sVersion = "3.6.11"
     val CatsVersion = "2.7.0"
