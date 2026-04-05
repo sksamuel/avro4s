@@ -16,4 +16,14 @@ class TransientDecoderTest extends AnyFunSuite with Matchers {
     record.put("a", new Utf8("hello"))
     Decoder[TransientFoo].decode(schema).apply(record) shouldBe TransientFoo("hello", None)
   }
+
+  case class Foo(name:String)
+  case class TransientFooWithDefault(a: String, @AvroTransient(true) b: Foo = Foo("hello"))
+
+  test("decoder should populate transient fields with default case class value") {
+    val schema = AvroSchema[TransientFooWithDefault]
+    val record = new GenericData.Record(schema)
+    record.put("a", new Utf8("hello"))
+    Decoder[TransientFooWithDefault].decode(schema).apply(record) shouldBe TransientFooWithDefault("hello")
+  }
 }

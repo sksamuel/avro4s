@@ -24,7 +24,7 @@ object Records:
 
     val fields = ctx.params.toList.flatMap { param =>
       val fieldAnnos = Annotations(param.annotations)
-      if (fieldAnnos.transient) None
+      if (fieldAnnos.transient.isDefined) None
       else {
         val doc = fieldAnnos.doc //.orElse(valueTypeDoc).orNull
         //        val doc = valueTypeDoc(ctx, param)
