@@ -28,6 +28,7 @@ jobs:
         run: sbt test
 
       - name: Import GPG key
+        if: github.event.pull_request.head.repo.fork == false
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v3
         with:
@@ -35,4 +36,5 @@ jobs:
           passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
       - name: publish local
+        if: github.event.pull_request.head.repo.fork == false
         run: sbt publishLocalSigned
