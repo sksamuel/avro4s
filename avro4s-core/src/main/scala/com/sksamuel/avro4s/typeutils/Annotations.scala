@@ -27,10 +27,10 @@ class Annotations(annos: Seq[Any], inheritedAnnos: Seq[Any] = Nil) {
     case t: AvroDocumentable => t.doc
   }
 
-  def transient: Boolean = annos.collectFirst {
-    case t: AvroTransient => t
-  }.isDefined
-
+  def transient: Option[Boolean] = annos.collectFirst {
+    case t: AvroTransient => t.useDefault
+  }
+  
   def erased: Boolean = annos.collectFirst {
     case t: AvroErasedName => t
   }.isDefined

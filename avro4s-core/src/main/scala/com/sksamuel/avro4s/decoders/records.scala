@@ -16,7 +16,10 @@ class RecordDecoder[T](ctx: magnolia1.CaseClass[Decoder, T]) extends Decoder[T] 
     val decoders: Array[FieldDecoder[T]] = ctx.params
       .map { param =>
         val annos = Annotations(param.annotations)
-        if (annos.transient) TransientFieldDecoder else new SchemaFieldDecoder(param, schema)
+        annos.transient match {
+          case Some(useDefault) => TransientFieldDecoder(useDefault, param)
+          case None => new SchemaFieldDecoder(param, schema)
+        }
       }.toArray
     { t => decodeT(schema, decoders, t) }
   }
@@ -48,8 +51,13 @@ trait FieldDecoder[+T] extends Serializable {
 /**
   * Fields marked with @AvroTransient are always decoded as None's.
   */
-object TransientFieldDecoder extends FieldDecoder[Nothing] {
-  override def decode(record: IndexedRecord): Any = None
+case class TransientFieldDecoder[T](useDefault:Boolean, param: magnolia1.CaseClass.Param[Decoder, T]) extends FieldDecoder[Nothing] {
+  override def decode(record: IndexedRecord): Any = {
+    if(useDefault)
+      param.default.get
+    else 
+     None  
+  }
 }
 
 /**
