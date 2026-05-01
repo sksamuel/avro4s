@@ -8,15 +8,15 @@ object Build extends AutoPlugin {
     val org = "com.sksamuel.avro4s"
     val AvroVersion = "1.9.2"
     val Log4jVersion = "1.2.17"
-    val ScalatestVersion = "3.2.9"
+    val ScalatestVersion = "3.2.20"
     val Slf4jVersion = "1.7.30"
-    val Json4sVersion = "4.0.5"
+    val Json4sVersion = "4.1.0"
     val CatsVersion = "2.0.0"
     val RefinedVersion = "0.9.29"
-    val ShapelessVersion = "2.3.9"
+    val ShapelessVersion = "2.3.13"
     val MagnoliaVersion = "0.17.0"
     val SbtJmhVersion = "0.3.7"
-    val JmhVersion = "1.35"
+    val JmhVersion = "1.37"
   }
 
   import autoImport._
@@ -32,8 +32,8 @@ object Build extends AutoPlugin {
   override def trigger = allRequirements
   override def projectSettings = publishingSettings ++ Seq(
     organization := org,
-    scalaVersion := "2.13.5",
-    crossScalaVersions := Seq("2.12.14", "2.13.5"),
+    scalaVersion := "2.13.17",
+    crossScalaVersions := Seq("2.12.14", "2.13.17"),
     resolvers += Resolver.mavenLocal,
     Test / parallelExecution := false,
     scalacOptions := Seq(

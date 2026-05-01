@@ -23,7 +23,7 @@ val `avro4s-core` = project.in(file("avro4s-core"))
     libraryDependencies ++= Seq(
       "com.propensive" %% "magnolia" % MagnoliaVersion,
       "com.chuusai" %% "shapeless" % ShapelessVersion,
-      "org.json4s" %% "json4s-native" % Json4sVersion
+      "io.github.json4s" %% "json4s-native" % Json4sVersion
     )
   )
 
@@ -31,7 +31,7 @@ val `avro4s-json` = project.in(file("avro4s-json"))
   .dependsOn(`avro4s-core`)
   .settings(
     libraryDependencies ++= Seq(
-      "org.json4s" %% "json4s-native" % Json4sVersion
+      "io.github.json4s" %% "json4s-native" % Json4sVersion
     )
   )
 
