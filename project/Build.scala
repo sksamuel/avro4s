@@ -68,11 +68,8 @@ object Build extends AutoPlugin {
     ),
     version := publishVersion,
     publishTo := {
-      if (isRelease) {
-        Some("releases" at "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2")
-      } else {
-        Some("central-snapshots" at "https://central.sonatype.com/repository/maven-snapshots/")
-      }
+      if (isRelease) localStaging.value
+      else Some("central-snapshots" at "https://central.sonatype.com/repository/maven-snapshots/")
     },
     pomExtra := {
       <url>https://github.com/sksamuel/avro4s</url>
