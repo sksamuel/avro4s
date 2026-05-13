@@ -61,14 +61,8 @@ object Build extends AutoPlugin {
     publishMavenStyle := true,
     Test / publishArtifact := false,
     credentials += Credentials(
-      "Sonatype Nexus Repository Manager",
-      "oss.sonatype.org",
-      ossrhUsername,
-      ossrhPassword
-    ),
-    credentials += Credentials(
-      "Sonatype Nexus Repository Manager",
-      "s01.oss.sonatype.org",
+      null,
+      "central.sonatype.com",
       ossrhUsername,
       ossrhPassword
     ),
@@ -77,7 +71,7 @@ object Build extends AutoPlugin {
       if (isRelease) {
         Some("releases" at "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2")
       } else {
-        Some("snapshots" at "https://oss.sonatype.org/content/repositories/snapshots")
+        Some("central-snapshots" at "https://central.sonatype.com/repository/maven-snapshots/")
       }
     },
     pomExtra := {
